@@ -6,7 +6,7 @@ Status: Baseline assessment
 
 ## Executive Summary
 
-EVO has adopted local profiles for AES-DEV-001 and AES-SEC-001. The repository has an architecture and algorithm documentation set, a versioned public C API surface, small source modules, tests, CMake build configuration, and CI workflows for build, test, formatting, static analysis, AddressSanitizer, and UndefinedBehaviorSanitizer.
+EVO has adopted local profiles for AES-DEV-001 and AES-SEC-001. The repository has an architecture and algorithm documentation set, a versioned public C API surface, small source modules, tests, CMake build configuration, an accepted initial architecture decision record, and CI workflows for build, test, formatting, static analysis, AddressSanitizer, and UndefinedBehaviorSanitizer.
 
 The repository passes the minimum AES-SEC-001 adoption gate after this change series because the secure C/C++ profile and explicit waiver log exist and no banned unsafe API use was found in the current project-owned C source.
 
@@ -25,7 +25,7 @@ Full compliance is not yet claimed. Component and property tests remain incomple
 | Observable behavior | Partial | Statistics API and benchmark plan exist; runtime diagnostics are not implemented |
 | Recovery and failure behavior | Partial | Documented as a design requirement but not yet implemented |
 | Security/trust-boundary review | Pass at scaffold stage | Local secure profile and request templates added |
-| ADR for major architecture choices | Gap | `docs/adr/` and initial ADRs should be added before major API commitments |
+| ADR for major architecture choices | Pass | `docs/adr/ADR-0001-library-boundary-and-build-system.md` |
 
 ## AES-SEC-001 Matrix
 
@@ -44,7 +44,6 @@ Full compliance is not yet claimed. Component and property tests remain incomple
 
 ## Required Follow-Up
 
-1. Add `docs/adr/` and record initial API/build-system decisions.
-2. Add component tests for selection, crossover, mutation, diversity, RNG, and checkpoint behavior.
-3. Add fuzz harnesses before checkpoint or other external-input parsing becomes stable.
-4. Preserve this audit as the baseline and ratchet enforcement against new work.
+1. Add component tests for selection, crossover, mutation, diversity, RNG, and checkpoint behavior.
+2. Add fuzz harnesses before checkpoint or other external-input parsing becomes stable.
+3. Preserve this audit as the baseline and ratchet enforcement against new work.
