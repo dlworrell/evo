@@ -1,0 +1,30 @@
+manifest_version: "0.1"
+repository:
+  id: evo
+  name: Catalyst EVO
+  owner: dlworrell
+  role: reusable-engineering-library
+lifecycle:
+  state: project-zero
+project_zero:
+  state: in-progress
+standards:
+  - AES-000
+  - AES-001
+  - AES-002
+  - AES-003
+dependencies:
+  upstream:
+    - AES
+  downstream:
+    - AEMS
+    - atarix
+documentation:
+  root: docs
+source:
+  public_api: include/catalyst/evo
+  implementation: src
+testing:
+  root: tests
+benchmarks:
+  root: benchmarks
