@@ -1,0 +1,71 @@
+name: Code change request
+description: Request a code, interface, build, workflow, or behavior change governed by AES-DEV-001 and AES-SEC-001.
+title: "[change]: "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        All code changes must satisfy AES-DEV-001 and AES-SEC-001. Complete the design, test, recovery, observability, and security sections before implementation begins.
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objective
+      description: What must change, and why?
+    validations:
+      required: true
+  - type: textarea
+    id: specification
+    attributes:
+      label: Architecture or specification
+      description: Link the governing design, specification, or ADR. State whether this is exploratory work.
+    validations:
+      required: true
+  - type: textarea
+    id: interfaces
+    attributes:
+      label: Interface and versioning impact
+      description: Identify affected APIs, protocols, formats, workflows, or compatibility commitments and the migration plan.
+    validations:
+      required: true
+  - type: textarea
+    id: tests
+    attributes:
+      label: Test plan
+      description: Describe unit, integration, property, regression, sanitizer, fuzz, or benchmark evidence. Justify any omitted category.
+    validations:
+      required: true
+  - type: textarea
+    id: observability
+    attributes:
+      label: Observability and diagnostics
+      description: Describe status, counters, fault history, health metrics, logs, traces, or why they are not applicable.
+    validations:
+      required: true
+  - type: textarea
+    id: recovery
+    attributes:
+      label: Failure modes and recovery
+      description: Identify failure modes, recovery behavior, reset behavior, and operator or automation actions.
+    validations:
+      required: true
+  - type: textarea
+    id: security
+    attributes:
+      label: Security and trust boundaries
+      description: Identify authorities, external inputs, trust boundaries, unsafe operations, length and overflow checks, cryptography, and required waivers.
+    validations:
+      required: true
+  - type: checkboxes
+    id: discipline
+    attributes:
+      label: Check-in discipline
+      options:
+        - label: The change can be delivered as small logical commits.
+          required: true
+        - label: Documentation will be updated in the same change series.
+          required: true
+        - label: New banned unsafe interfaces will not be introduced.
+          required: true
+        - label: Any AES exception will be recorded as an approved waiver or ADR.
+          required: true
