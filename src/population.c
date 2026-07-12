@@ -2,13 +2,11 @@
 
 #include <stdlib.h>
 
-int evo_run(const evo_problem_t *problem, const evo_config_t *config, void *context,
-            evo_result_t *result)
+int evo_run(const evo_problem_t *problem, const evo_config_t *config, void *context, evo_result_t *result)
 {
     (void)context;
 
-    if (problem == NULL || config == NULL || result == NULL || problem->genome_size == 0 ||
-        config->population_size == 0) {
+    if (problem == NULL || config == NULL || result == NULL || problem->genome_size == 0 || config->population_size == 0) {
         return -1;
     }
 
