@@ -1,0 +1,55 @@
+name: Code Quality
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  formatting:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install clang-format
+        run: sudo apt-get update && sudo apt-get install -y clang-format
+
+      - name: Check formatting
+        shell: bash
+        run: |
+          mapfile -t files < <(find include src tests examples -type f \( -name '*.c' -o -name '*.h' \) 2>/dev/null | sort)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No C source files found."
+            exit 0
+          fi
+          clang-format --dry-run --Werror "${files[@]}"
+
+  static-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install analysis tools
+        run: sudo apt-get update && sudo apt-get install -y clang-tidy cppcheck
+
+      - name: Configure compile database
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DBUILD_TESTING=ON
+
+      - name: Run cppcheck
+        run: cppcheck --enable=warning,performance,portability --error-exitcode=1 --inline-suppr -I include src tests
+
+      - name: Run clang-tidy
+        shell: bash
+        run: |
+          mapfile -t files < <(find src tests -type f -name '*.c' | sort)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No C source files found."
+            exit 0
+          fi
+          clang-tidy -p build "${files[@]}"
