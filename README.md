@@ -1,2 +1,2 @@
-# evo
-Catalyst evolutionary optimization library for engineering search, tuning, and design-space exploration.
+#EVO 
+is the Catalyst Engineering Evolution Library. It provides deterministic, reproducible evolutionary optimization algorithms—including genetic algorithms and related metaheuristics—for engineering applications such as repository assessment, compiler optimization, operating system policy tuning, FPGA design-space exploration, and automated software engineering.
