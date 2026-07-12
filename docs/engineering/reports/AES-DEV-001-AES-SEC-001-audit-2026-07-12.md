@@ -6,11 +6,11 @@ Status: Baseline assessment
 
 ## Executive Summary
 
-EVO has adopted local profiles for AES-DEV-001 and AES-SEC-001. The repository has an architecture and algorithm documentation set, a versioned public C API surface, small source modules, tests, CMake build configuration, and CI workflows for build, test, formatting, and static analysis.
+EVO has adopted local profiles for AES-DEV-001 and AES-SEC-001. The repository has an architecture and algorithm documentation set, a versioned public C API surface, small source modules, tests, CMake build configuration, and CI workflows for build, test, formatting, static analysis, AddressSanitizer, and UndefinedBehaviorSanitizer.
 
 The repository passes the minimum AES-SEC-001 adoption gate after this change series because the secure C/C++ profile and explicit waiver log exist and no banned unsafe API use was found in the current project-owned C source.
 
-Full compliance is not yet claimed. Sanitizer execution and fuzz coverage are still required before external-input parsers or serialization handlers are accepted.
+Full compliance is not yet claimed. Component and property tests remain incomplete, and fuzz coverage must be added before external-input parsers or serialization handlers are accepted.
 
 ## AES-DEV-001 Matrix
 
@@ -36,7 +36,7 @@ Full compliance is not yet claimed. Sanitizer execution and fuzz coverage are st
 | Banned unsafe APIs absent | Pass for current source | Repository search found no banned API use |
 | Warning-clean build profile | Pass at configuration level | `-Wall -Wextra -Wpedantic` in CMake |
 | Static analysis | Pass at workflow level | `cppcheck` and `clang-tidy` in `.github/workflows/quality.yml` |
-| Sanitizers | Gap | Add ASan/UBSan CI build before accepting memory-sensitive implementation |
+| Sanitizers | Pass at workflow level | ASan and UBSan in `.github/workflows/sanitizers.yml` |
 | Fuzzing | Not yet applicable | Required when parsers, checkpoint readers, or external-input handlers are implemented |
 | Explicit lengths and overflow checks | Pending implementation | Must be demonstrated in code reviews as relevant code is added |
 | Unsafe code isolation | Pending implementation | No current unsafe boundary requiring isolation |
@@ -45,7 +45,6 @@ Full compliance is not yet claimed. Sanitizer execution and fuzz coverage are st
 ## Required Follow-Up
 
 1. Add `docs/adr/` and record initial API/build-system decisions.
-2. Add sanitizer-enabled CI.
-3. Add component tests for selection, crossover, mutation, diversity, RNG, and checkpoint behavior.
-4. Add fuzz harnesses before checkpoint or other external-input parsing becomes stable.
-5. Preserve this audit as the baseline and ratchet enforcement against new work.
+2. Add component tests for selection, crossover, mutation, diversity, RNG, and checkpoint behavior.
+3. Add fuzz harnesses before checkpoint or other external-input parsing becomes stable.
+4. Preserve this audit as the baseline and ratchet enforcement against new work.
