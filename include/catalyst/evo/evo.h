@@ -23,8 +23,7 @@ typedef struct evo_problem {
     size_t genome_size;
     void (*initialize)(void *genome, void *context);
     void (*mutate)(void *genome, double mutation_rate, void *context);
-    void (*crossover)(const void *parent_a, const void *parent_b, void *child_a,
-                      void *child_b, void *context);
+    void (*crossover)(const void *parent_a, const void *parent_b, void *child_a, void *child_b, void *context);
     evo_fitness_t (*evaluate)(const void *genome, void *context);
     bool (*is_valid)(const void *genome, void *context);
 } evo_problem_t;
@@ -45,8 +44,7 @@ typedef struct evo_result {
     uint64_t random_seed;
 } evo_result_t;
 
-int evo_run(const evo_problem_t *problem, const evo_config_t *config, void *context,
-            evo_result_t *result);
+int evo_run(const evo_problem_t *problem, const evo_config_t *config, void *context, evo_result_t *result);
 
 void evo_result_destroy(evo_result_t *result);
 
