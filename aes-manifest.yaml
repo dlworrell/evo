@@ -1,26 +1,66 @@
-manifest_version: "0.1"
+manifest_version: 1.0.0
+schema_version: 1
+
 repository:
-  id: evo
+  id: EVO
   name: Catalyst EVO
+  full_name: dlworrell/evo
   owner: dlworrell
-  role: reusable-engineering-library
-lifecycle:
-  state: project-zero
-project_zero:
-  state: in-progress
-standards:
-  - AES-000
-  - AES-001
-  - AES-002
-  - AES-003
-dependencies:
-  upstream:
-    - AES
-  downstream:
-    - AEMS
-    - atarix
+  role: evolutionary-optimization-library
+  ownership: project-owned
+  lifecycle: project-zero
+  primary_branch: main
+  issue_tracker: https://github.com/dlworrell/evo/issues
+
 documentation:
-  root: docs
+  authority: local
+  roots:
+    - docs
+    - benchmarks
+    - examples
+
+governance:
+  authority_repository: dlworrell/Catylist
+  standards_repository: dlworrell/AES
+  dependency_direction:
+    upstream:
+      - dlworrell/Catylist
+      - dlworrell/AES
+      - dlworrell/AEMS
+      - dlworrell/P0
+      - dlworrell/repo_templates
+    downstream:
+      - dlworrell/AEMS
+      - dlworrell/atarix
+
+standards:
+  applicable:
+    - AES-000
+    - AES-001
+    - AES-002
+    - AES-003
+    - AES-DEV-001
+    - AES-SEC-001
+
+project_zero:
+  state: CERTIFICATION
+  certification:
+    status: candidate
+    evidence: docs/engineering/reports/EVO-P0-001-certification-candidate.md
+  accepted_deferrals: []
+
+automation:
+  enabled_modules:
+    - inventory
+    - manifest-validation
+    - issue-graph
+
+evidence:
+  output_root: build/aems/project-zero
+  formats:
+    - json
+    - markdown
+
 source:
   public_api: include/catalyst/evo
   implementation: src
