@@ -1,0 +1,130 @@
+name: Project Zero Self-Test
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/p0.yml'
+      - '.github/workflows/verify.yml'
+      - '.github/workflows/documentation.yml'
+      - '.github/workflows/compliance.yml'
+      - '.github/workflows/optimization.yml'
+      - '.github/workflows/release.yml'
+      - '.github/workflows/project-zero.yml'
+      - '.github/workflows/project-zero-self-test.yml'
+      - '.aems/project-zero/**'
+      - 'docs/standards/repository-lifecycle-contract.md'
+      - 'scripts/project-zero'
+      - 'templates/project_zero/**'
+      - 'tools/project_zero.py'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/p0.yml'
+      - '.github/workflows/verify.yml'
+      - '.github/workflows/documentation.yml'
+      - '.github/workflows/compliance.yml'
+      - '.github/workflows/optimization.yml'
+      - '.github/workflows/release.yml'
+      - '.github/workflows/project-zero.yml'
+      - '.github/workflows/project-zero-self-test.yml'
+      - '.aems/project-zero/**'
+      - 'docs/standards/repository-lifecycle-contract.md'
+      - 'scripts/project-zero'
+      - 'templates/project_zero/**'
+      - 'tools/project_zero.py'
+
+permissions:
+  contents: read
+
+jobs:
+  self-test:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate Python and JSON inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile tools/project_zero.py
+          python3 -m json.tool .aems/project-zero/profiles/default/profile.json >/dev/null
+          python3 -m json.tool templates/project_zero/template.json >/dev/null
+
+      - name: Validate lifecycle workflow inventory
+        shell: bash
+        run: |
+          set -euo pipefail
+          required=(
+            .github/workflows/p0.yml
+            .github/workflows/verify.yml
+            .github/workflows/documentation.yml
+            .github/workflows/compliance.yml
+            .github/workflows/optimization.yml
+            .github/workflows/release.yml
+          )
+          for file in "${required[@]}"; do
+            test -s "$file"
+            grep -q 'workflow_dispatch:' "$file"
+          done
+          grep -q 'workflow_call:' .github/workflows/project-zero.yml
+          grep -q 'Production mutation: \*\*not permitted\*\*' .github/workflows/optimization.yml
+          grep -q 'does not create tags or publish releases' .github/workflows/release.yml
+          test -s docs/standards/repository-lifecycle-contract.md
+
+      - name: Run inspection contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf build/project-zero-self-test
+          bash scripts/project-zero inspect --output build/project-zero-self-test/inspect
+          test -s build/project-zero-self-test/inspect/executive-summary.md
+          test -s build/project-zero-self-test/inspect/run-manifest.json
+          test -s build/project-zero-self-test/inspect/repository-inventory.json
+          test -s build/project-zero-self-test/inspect/findings.json
+          test -s build/project-zero-self-test/inspect/remediation-plan.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root = Path('build/project-zero-self-test/inspect')
+          run = json.loads((root / 'run-manifest.json').read_text())
+          findings = json.loads((root / 'findings.json').read_text())
+          assert run['mode'] == 'inspect'
+          assert isinstance(findings, list)
+          assert run['profile_id'] == 'P0-DEFAULT-001'
+          PY
+
+      - name: Exercise isolated remediation contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          sandbox="$(mktemp -d)"
+          cp -a . "$sandbox/repository"
+          cd "$sandbox/repository"
+          rm -f SECURITY.md CONTRIBUTING.md GOVERNANCE.md repo.yaml p0.yaml .github/pull_request_template.md
+          python3 tools/project_zero.py remediate --output build/project-zero-self-test/remediate
+          test -s SECURITY.md
+          test -s CONTRIBUTING.md
+          test -s GOVERNANCE.md
+          test -s repo.yaml
+          test -s p0.yaml
+          test -s .github/pull_request_template.md
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root = Path('build/project-zero-self-test/remediate')
+          run = json.loads((root / 'run-manifest.json').read_text())
+          plan = json.loads((root / 'remediation-plan.json').read_text())
+          assert run['mode'] == 'remediate'
+          assert len(plan['applied_changes']) == 6
+          assert not [f for f in plan['findings'] if f['path'] in set(plan['applied_changes'])]
+          PY
+
+      - name: Upload self-test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: project-zero-self-test-${{ github.run_id }}
+          path: build/project-zero-self-test/
+          if-no-files-found: warn
+          retention-days: 30

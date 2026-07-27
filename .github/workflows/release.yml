@@ -1,0 +1,74 @@
+name: Release Readiness
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Proposed release version or tag
+        required: true
+        type: string
+      release_type:
+        description: Release classification
+        required: true
+        default: candidate
+        type: choice
+        options: [candidate, production, documentation]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    uses: ./.github/workflows/project-zero.yml
+    with:
+      mode: verify
+      repository_state: existing
+      profile: .aems/project-zero/profiles/default/profile.json
+      mutation_policy: report-only
+
+  package:
+    needs: verify
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Build release evidence manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/release-readiness
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          manifest = {
+              'schema': 'catalyst.release-readiness.v1',
+              'repository': os.environ.get('GITHUB_REPOSITORY', 'local'),
+              'commit': os.environ.get('GITHUB_SHA', 'local'),
+              'version': os.environ['RELEASE_VERSION'],
+              'release_type': os.environ['RELEASE_TYPE'],
+              'verification': 'passed',
+              'tag_created': False,
+              'release_published': False,
+          }
+          out = Path('build/release-readiness')
+          (out / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
+          (out / 'report.md').write_text(
+              '# Release Readiness\n\n'
+              f"Version: `{manifest['version']}`\n\n"
+              f"Type: `{manifest['release_type']}`\n\n"
+              'Verification: **passed**\n\n'
+              'This template workflow does not create tags or publish releases.\n'
+          )
+          PY
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+          RELEASE_TYPE: ${{ inputs.release_type }}
+      - name: Publish summary
+        run: cat build/release-readiness/report.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload release evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-readiness-${{ inputs.version }}-${{ github.run_id }}
+          path: build/release-readiness/
+          retention-days: 365

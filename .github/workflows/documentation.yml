@@ -1,0 +1,72 @@
+name: Documentation Report
+
+on:
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: Documentation scope
+        required: true
+        default: repository
+        type: choice
+        options: [repository, docs, full-tree]
+  pull_request:
+    paths:
+      - '**/*.md'
+      - '**/*.rst'
+      - '**/*.adoc'
+      - '**/*.txt'
+      - '.github/workflows/documentation.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  documentation:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build documentation inventory and report
+        shell: bash
+        run: |
+          set -euo pipefail
+          out=build/documentation-report
+          mkdir -p "$out"
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          scope = os.environ.get('DOC_SCOPE', 'repository')
+          extensions = {'.md', '.rst', '.adoc', '.txt'}
+          files = []
+          for path in Path('.').rglob('*'):
+              if not path.is_file() or '.git' in path.parts or 'build' in path.parts:
+                  continue
+              if path.suffix.lower() in extensions:
+                  files.append({'path': path.as_posix(), 'bytes': path.stat().st_size})
+          files.sort(key=lambda item: item['path'])
+          report = {
+              'schema': 'catalyst.documentation-report.v1',
+              'repository': os.environ.get('GITHUB_REPOSITORY', 'local'),
+              'commit': os.environ.get('GITHUB_SHA', 'local'),
+              'scope': scope,
+              'document_count': len(files),
+              'documents': files,
+          }
+          out = Path('build/documentation-report')
+          (out / 'report.json').write_text(json.dumps(report, indent=2) + '\n')
+          lines = ['# Documentation Report', '', f"Documents: **{len(files)}**", '', '| Path | Bytes |', '|---|---:|']
+          lines.extend(f"| `{item['path']}` | {item['bytes']} |" for item in files)
+          (out / 'report.md').write_text('\n'.join(lines) + '\n')
+          PY
+        env:
+          DOC_SCOPE: ${{ inputs.scope || 'repository' }}
+      - name: Publish summary
+        if: always()
+        run: cat build/documentation-report/report.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload documentation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation-report-${{ github.run_id }}
+          path: build/documentation-report/
+          retention-days: 90

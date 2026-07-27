@@ -1,0 +1,18 @@
+project_zero:
+  profile: .aems/project-zero/profiles/default/profile.json
+  repository_state: existing
+  lifecycle_workflows:
+    - .github/workflows/p0.yml
+    - .github/workflows/verify.yml
+    - .github/workflows/documentation.yml
+    - .github/workflows/compliance.yml
+    - .github/workflows/optimization.yml
+    - .github/workflows/release.yml
+  remediation:
+    direct_default_branch_writes: false
+    overwrite_existing_files: false
+    pull_request_required: true
+  reporting:
+    markdown: true
+    json: true
+    preserve_on_failure: true

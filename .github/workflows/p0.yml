@@ -1,0 +1,43 @@
+name: P0 Repository Lifecycle
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: P0 operation
+        required: true
+        default: inspect
+        type: choice
+        options: [inspect, plan, remediate, verify, certify]
+      repository_state:
+        description: Repository state
+        required: true
+        default: existing
+        type: choice
+        options: [existing, new]
+      profile:
+        description: P0 profile path
+        required: true
+        default: .aems/project-zero/profiles/default/profile.json
+        type: string
+      mutation_policy:
+        description: Permitted mutation
+        required: true
+        default: report-only
+        type: choice
+        options: [report-only, create-issues, open-remediation-pr]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  p0:
+    uses: ./.github/workflows/project-zero.yml
+    with:
+      mode: ${{ inputs.mode }}
+      repository_state: ${{ inputs.repository_state }}
+      profile: ${{ inputs.profile }}
+      mutation_policy: ${{ inputs.mutation_policy }}
+    secrets: inherit

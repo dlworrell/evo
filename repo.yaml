@@ -1,0 +1,23 @@
+repository:
+  id: EVO
+  name: Catalyst EVO
+  class: reusable-library
+  purpose: Deterministic evolutionary optimization for bounded Catalyst engineering problems.
+  owner: dlworrell
+  lifecycle: project-zero
+  authority_chain:
+    - Catylist
+    - AES
+    - AEMS
+    - Project Zero
+    - repo_templates
+    - EVO
+  governing_documents:
+    - AES-002
+    - AES-003
+    - AES-DEV-001
+    - AES-SEC-001
+  outputs:
+    - C17 evolutionary-optimization library
+    - deterministic optimization evidence
+    - bounded optimization experiment interface

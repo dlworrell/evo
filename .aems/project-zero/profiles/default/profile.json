@@ -1,0 +1,29 @@
+{
+  "profile_id": "P0-DEFAULT-001",
+  "title": "Project Zero default repository profile",
+  "version": "0.1.0",
+  "required_files": [
+    "README.md",
+    "LICENSE",
+    "SECURITY.md",
+    "CONTRIBUTING.md",
+    "GOVERNANCE.md",
+    "repo.yaml",
+    "p0.yaml",
+    ".github/pull_request_template.md"
+  ],
+  "recommended_directories": [
+    ".github/workflows",
+    "docs",
+    "scripts",
+    "tests"
+  ],
+  "required_workflow_fragments": [
+    "workflow_dispatch"
+  ],
+  "certification": {
+    "maximum_open_critical_findings": 0,
+    "maximum_open_high_findings": 0,
+    "require_clean_working_tree": true
+  }
+}

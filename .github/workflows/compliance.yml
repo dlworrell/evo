@@ -1,0 +1,58 @@
+name: Repository Compliance
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: Compliance profile
+        required: true
+        default: .aems/project-zero/profiles/default/profile.json
+        type: string
+  pull_request:
+    paths:
+      - 'README.md'
+      - 'LICENSE*'
+      - 'SECURITY.md'
+      - 'CONTRIBUTING.md'
+      - 'GOVERNANCE.md'
+      - 'repo.yaml'
+      - 'p0.yaml'
+      - '.aems/**'
+      - '.github/workflows/compliance.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  compliance:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run repository compliance assessment
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p build
+          profile="${{ inputs.profile || '.aems/project-zero/profiles/default/profile.json' }}"
+          python3 tools/project_zero.py verify \
+            --repository-state existing \
+            --profile "$profile" \
+            --output build/compliance-report \
+            | tee build/compliance-console.log
+      - name: Publish compliance summary
+        if: always()
+        shell: bash
+        run: |
+          if [[ -f build/compliance-report/executive-summary.md ]]; then
+            cat build/compliance-report/executive-summary.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Upload compliance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: compliance-report-${{ github.run_id }}
+          path: |
+            build/compliance-report/
+            build/compliance-console.log
+          if-no-files-found: warn
+          retention-days: 90
