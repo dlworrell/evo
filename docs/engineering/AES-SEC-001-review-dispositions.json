@@ -1,0 +1,71 @@
+{
+  "schema_version": "1.0.0",
+  "repository": "dlworrell/evo",
+  "baseline": {
+    "captured_at": "2026-07-27",
+    "source": "AEMS workflow run 30327790203; artifact 8676292176; sha256:d29ea776a6ccf9f5e40e92597235ffedf7ddb35e5364b68ca57f5a3bdda97679",
+    "findings": [
+      {
+        "finding_id": "aes-sec-001:a0b520e22372a9aacceb0423bde001914fb49920c8920e08246871c3c00ddc53",
+        "source_fingerprint": "sha256:8353964d178901b525a6a0ad12f9a1ded6c1a442c850f3b2aa4fdacc6f0bf0c8",
+        "path": "src/population.c",
+        "line": 13,
+        "symbol": "calloc"
+      },
+      {
+        "finding_id": "aes-sec-001:8f875c3663019f836001bb8e903c133bba0acb900a69bbb7e1cce50be1d7b4bf",
+        "source_fingerprint": "sha256:c3438c9b1445751c4284ca7ad2fd2c6d43ffeee5dac9a79477c4f61e69648050",
+        "path": "src/population.c",
+        "line": 29,
+        "symbol": "free"
+      }
+    ]
+  },
+  "dispositions": [
+    {
+      "finding_id": "aes-sec-001:a0b520e22372a9aacceb0423bde001914fb49920c8920e08246871c3c00ddc53",
+      "source_fingerprint": "sha256:8353964d178901b525a6a0ad12f9a1ded6c1a442c850f3b2aa4fdacc6f0bf0c8",
+      "path": "src/population.c",
+      "line": 27,
+      "symbol": "calloc",
+      "classification": "approved-invariant",
+      "rationale": "The allocation requests one element of problem->genome_size bytes, so its element-count multiplication cannot overflow. The byte count must be nonzero and no greater than the trusted caller policy in config->max_genome_bytes. Allocation failure is checked and restores the empty result state.",
+      "invariant": "calloc(1, problem->genome_size) executes only after problem->genome_size is proven nonzero and within the caller's per-genome byte budget. Successful storage is zero-initialized; validation or allocation failure leaves every result field zero.",
+      "evidence": [
+        "include/catalyst/evo/evo.h",
+        "src/population.c",
+        "tests/evo_lifecycle_test.c::test_resource_limit_rejections",
+        "tests/evo_lifecycle_test.c::test_successful_allocation_and_zero_initialization",
+        "tests/allocation_failure_test.c",
+        "https://github.com/dlworrell/evo/issues/4"
+      ],
+      "owner": "dlworrell",
+      "reviewer": "dlworrell",
+      "reviewed_at": "2026-07-29",
+      "reassess_after": "2027-07-29",
+      "resolution_commit": null
+    },
+    {
+      "finding_id": "aes-sec-001:8f875c3663019f836001bb8e903c133bba0acb900a69bbb7e1cce50be1d7b4bf",
+      "source_fingerprint": "sha256:c3438c9b1445751c4284ca7ad2fd2c6d43ffeee5dac9a79477c4f61e69648050",
+      "path": "src/population.c",
+      "line": 45,
+      "symbol": "free",
+      "classification": "approved-invariant",
+      "rationale": "The result object is the sole owner of best_genome. An active result cannot be overwritten by evo_run, and callers may not free or reallocate non-owning aliases. Destruction releases the owned allocation and resets the complete result state.",
+      "invariant": "evo_result_destroy is null-safe for initialized objects, calls free exactly once through the owning result field, and then zeros every result field. Repeated destruction is safe through that field, and all non-owning aliases become invalid at the first destruction.",
+      "evidence": [
+        "include/catalyst/evo/evo.h",
+        "src/population.c",
+        "tests/evo_lifecycle_test.c::test_destruction_idempotency",
+        "tests/evo_lifecycle_test.c::test_active_result_rejection_and_reuse",
+        "https://github.com/dlworrell/evo/issues/4"
+      ],
+      "owner": "dlworrell",
+      "reviewer": "dlworrell",
+      "reviewed_at": "2026-07-29",
+      "reassess_after": "2027-07-29",
+      "resolution_commit": null
+    }
+  ]
+}
