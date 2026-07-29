@@ -1,7 +1,7 @@
 # EVO-001: Evolutionary Optimization Library Contract
 
 Status: Baseline
-Version: 0.1.0
+Version: 0.2.0
 Owner: EVO
 
 ## Purpose
@@ -13,7 +13,7 @@ embedding consumer policy in the library.
 
 ## Public Interface
 
-The public ABI is declared in `include/catalyst/evo/evo.h`.
+The public API is declared in `include/catalyst/evo/evo.h`.
 
 ### Problem definition
 
@@ -26,55 +26,88 @@ The public ABI is declared in `include/catalyst/evo/evo.h`.
 
 The consumer owns callback code and context lifetime. Callback behavior must be
 deterministic for a fixed input, context, and random stream unless the consumer
-explicitly records additional sources of variation.
+records an additional source of variation.
 
 ### Run configuration
 
 `evo_config_t` records population size, generation limit, tournament size,
-crossover rate, mutation rate, and the random seed. A reproducible run must
-retain the complete configuration and the versioned inputs used for fitness
-evaluation.
+crossover rate, mutation rate, random seed, and `max_genome_bytes`.
 
-### Fitness
+`max_genome_bytes` is trusted caller policy for the largest individual genome
+allocation accepted by `evo_run`. It avoids a platform-specific hard-coded
+limit. It does not represent the eventual total population working-set budget.
+When population storage is implemented, its specification must add checked
+size arithmetic and an explicit total-memory policy before allocating
+`population_size * genome_size` bytes or additional generation buffers.
 
-`evo_fitness_t` separates correctness, performance, memory use, reliability,
-maintainability, constraint penalty, and total fitness. Correctness and
-consumer-defined validity are hard acceptance boundaries; an optimization
-result must not bypass them merely because another score improves.
+### Result lifecycle
 
-### Result ownership
+The caller must zero-initialize `evo_result_t` before its first use:
 
-On success, EVO owns the allocation stored in `evo_result_t.best_genome` and
-transfers that allocation to the caller. The caller releases it with
-`evo_result_destroy`. Destruction is null-safe and clears `best_genome`.
+```c
+evo_result_t result = {0};
+```
 
-## Current 0.1.0 Conformance Boundary
+The lifecycle contract is:
 
-The current implementation is an API and build scaffold:
+1. `evo_run` rejects a result whose `best_genome` is non-null and preserves the
+   active result unchanged.
+2. Null input, invalid resource policy, and allocation failure leave a
+   non-null, inactive result in the empty zero state.
+3. On success, the result exclusively owns `best_genome`.
+4. Callers may use bounded, non-owning aliases to read or write genome bytes
+   while the result remains alive. An alias may not free or reallocate the
+   storage and must not survive result destruction.
+5. `evo_result_destroy` releases the owned allocation and resets every result
+   field to zero. Destruction is null-safe and repeatable for initialized
+   result objects.
+6. A destroyed result may be passed to `evo_run` again immediately.
 
-- `evo_run` rejects null required objects, a zero genome size, or a zero
-  population size with `-1`;
-- allocation failure returns `-2`;
-- success allocates a zero-initialized result genome, records the configured
-  seed, records zero completed generations, and returns `0`; and
-- selection, crossover, mutation, evaluation, diversity, checkpointing, and
-  generation iteration are not yet implemented.
+`evo_result_destroy` does not securely erase genome bytes. Consumers must not
+place secret or cryptographic material in genomes without a separately
+reviewed erasure boundary.
 
-Consumers must not treat the current successful return as evidence that an
-optimization search was performed. Implementing the first complete search loop
-requires an updated specification, tests for callback order and failures, and
-versioned result semantics.
+### Status values
 
-## Safety and Failure Requirements
+`evo_run` returns:
 
-- Validate every public pointer and size before use.
-- Reject size arithmetic that can overflow before allocation or copying.
-- Do not invoke a callback whose contract has not been validated.
-- Preserve the caller's ability to destroy a partially initialized result.
-- Do not return an invalid genome as a successful optimum.
-- Treat checkpoint and serialized state as untrusted input when those
-  facilities are added.
-- Record the seed and stopping reason for every completed run.
+| Status | Meaning |
+|---|---|
+| `EVO_SUCCESS` | The scaffold completed and transferred ownership of a genome allocation. |
+| `EVO_ERROR_INVALID_ARGUMENT` | A required pointer argument is null. |
+| `EVO_ERROR_OUT_OF_MEMORY` | The system allocator returned null. |
+| `EVO_ERROR_RESULT_ACTIVE` | The result already owns a genome and is preserved unchanged. |
+| `EVO_ERROR_RESOURCE_LIMIT` | A required size is zero or the genome exceeds caller policy. |
+
+### Fitness placeholder
+
+The 0.2.0 scaffold initializes all seven `evo_fitness_t` fields to zero. This
+is a deterministic "not yet evaluated" placeholder, not evidence of a valid
+zero-valued fitness or completed optimization run. A later implementation must
+introduce explicit evaluated-result semantics before returning an optimum.
+
+## API Compatibility
+
+Version 0.2.0 appends `max_genome_bytes` to `evo_config_t` and changes
+`evo_run` from a raw `int` result to `evo_status_t`. Existing member offsets are
+preserved, but `sizeof(evo_config_t)` and its array stride change. Consumers
+must rebuild against the 0.2.0 header and set a nonzero genome budget.
+
+## Current 0.2.0 Conformance Boundary
+
+The current implementation remains an API and lifecycle scaffold:
+
+- validation enforces required pointers, an inactive result, nonzero size
+  policy, and the caller-provided genome bound;
+- success allocates one zero-initialized result genome and records the seed;
+- allocation failure returns a deterministic empty result;
+- result destruction is null-safe, repeatable, and restores the empty state;
+  and
+- population arrays, selection, crossover, mutation, evaluation, diversity,
+  checkpointing, and generation iteration are not implemented.
+
+Consumers must not treat `EVO_SUCCESS` in the current scaffold as evidence that
+an optimization search was performed.
 
 ## Verification
 
@@ -86,14 +119,20 @@ cmake --build build --parallel
 ctest --test-dir build --output-on-failure
 ```
 
-CI additionally covers GCC, Clang, macOS Clang, formatting, static analysis,
+The portable lifecycle test runs across supported platforms. A separate
+Linux-only static-link test uses the GNU-compatible `--wrap=calloc` linker
+facility to prove the allocation-failure state deterministically. CI
+additionally covers GCC, Clang, macOS Clang, formatting, static analysis,
 AddressSanitizer, and UndefinedBehaviorSanitizer.
 
 ## Related Records
 
+- `docs/adr/ADR-0001-library-boundary-and-build-system.md`
 - `docs/architecture.md`
 - `docs/algorithms.md`
 - `docs/benchmarks.md`
-- `docs/adr/ADR-0001-library-boundary-and-build-system.md`
 - `docs/engineering/AES-DEV-001-development-principles.md`
 - `docs/engineering/SECURE-C-CXX.md`
+- `docs/engineering/AES-SEC-001-review-dispositions.json`
+- `https://github.com/dlworrell/evo/issues/4`
+- `https://github.com/dlworrell/AEMS/issues/18`

@@ -40,10 +40,31 @@ baseline, lifecycle entry points, manifest, local standards profiles,
 architecture decision, specification, build, tests, quality checks, and
 sanitizer checks are present and reviewable.
 
-The implementation remains an early `0.1.0` scaffold. `evo_run` currently
-validates its required inputs, allocates a result genome, and records the
-requested seed; the evolutionary operators described in the roadmap are not
-yet implemented.
+EVO 0.2.0 is an API and memory-lifecycle scaffold. `evo_run` currently
+validates its required inputs and caller-provided genome budget, allocates one
+zero-initialized result genome, and records the requested seed. Population
+arrays and the evolutionary operators remain future work.
+
+## Result Lifecycle
+
+Callers must zero-initialize an `evo_result_t` before first use. A successful
+run transfers exclusive ownership of `best_genome` to that result. Reusing an
+active result is rejected; `evo_result_destroy` releases the allocation,
+resets the full result to zero, and makes it immediately reusable.
+
+`max_genome_bytes` is a required caller-provided per-genome policy bound. It is
+not a total future population memory budget.
+
+The 0.2.0 status values are:
+
+- `EVO_SUCCESS`
+- `EVO_ERROR_INVALID_ARGUMENT`
+- `EVO_ERROR_OUT_OF_MEMORY`
+- `EVO_ERROR_RESULT_ACTIVE`
+- `EVO_ERROR_RESOURCE_LIMIT`
+
+See `docs/specs/EVO-001-library-contract.md` for the complete API, ownership,
+failure-state, alias, compatibility, and secure-erasure boundaries.
 
 ## Project Zero
 
