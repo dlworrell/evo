@@ -9,6 +9,18 @@
 extern "C" {
 #endif
 
+#define EVO_VERSION_MAJOR 0
+#define EVO_VERSION_MINOR 2
+#define EVO_VERSION_PATCH 0
+
+typedef enum evo_status {
+    EVO_SUCCESS = 0,
+    EVO_ERROR_INVALID_ARGUMENT = -1,
+    EVO_ERROR_OUT_OF_MEMORY = -2,
+    EVO_ERROR_RESULT_ACTIVE = -3,
+    EVO_ERROR_RESOURCE_LIMIT = -4
+} evo_status_t;
+
 typedef struct evo_fitness {
     double correctness;
     double performance;
@@ -35,6 +47,7 @@ typedef struct evo_config {
     double crossover_rate;
     double mutation_rate;
     uint64_t random_seed;
+    size_t max_genome_bytes;
 } evo_config_t;
 
 typedef struct evo_result {
@@ -44,8 +57,30 @@ typedef struct evo_result {
     uint64_t random_seed;
 } evo_result_t;
 
-int evo_run(const evo_problem_t *problem, const evo_config_t *config, void *context, evo_result_t *result);
+/**
+ * Execute the bounded optimization scaffold.
+ *
+ * The result object must be zero-initialized before its first use. A successful
+ * call transfers exclusive ownership of best_genome to the result object.
+ * Callers may use bounded, non-owning aliases to the genome bytes while the
+ * result remains alive, but aliases may not free or reallocate the storage and
+ * must not survive evo_result_destroy().
+ *
+ * An active result is rejected without modification. Other failures leave a
+ * non-null, inactive result in its empty, zero-initialized state.
+ *
+ * A zero-valued best_fitness is the deterministic "not yet evaluated" state
+ * used by the 0.2.0 scaffold, not a valid evaluated optimum.
+ */
+evo_status_t evo_run(const evo_problem_t *problem, const evo_config_t *config, void *context, evo_result_t *result);
 
+/**
+ * Release the owned genome and reset every result field to zero.
+ *
+ * This operation is null-safe and repeatable for initialized result objects.
+ * It does not securely erase genome bytes before releasing them. Consumers
+ * handling secret material require a separately reviewed erasure boundary.
+ */
 void evo_result_destroy(evo_result_t *result);
 
 #ifdef __cplusplus
