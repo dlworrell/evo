@@ -1,0 +1,71 @@
+name: EVO Optimization Experiment
+
+on:
+  workflow_dispatch:
+    inputs:
+      experiment_id:
+        description: Stable experiment identifier
+        required: true
+        type: string
+      objective:
+        description: Measurable optimization objective
+        required: true
+        type: string
+      candidate_command:
+        description: Optional read-only candidate measurement command
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  experiment:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Initialize experiment record
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/evo-experiment
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          record = {
+              'schema': 'catalyst.evo-experiment.v1',
+              'experiment_id': os.environ['EXPERIMENT_ID'],
+              'objective': os.environ['OBJECTIVE'],
+              'repository': os.environ.get('GITHUB_REPOSITORY', 'local'),
+              'commit': os.environ.get('GITHUB_SHA', 'local'),
+              'status': 'initialized',
+              'production_mutation_allowed': False,
+          }
+          Path('build/evo-experiment/experiment.json').write_text(json.dumps(record, indent=2) + '\n')
+          Path('build/evo-experiment/report.md').write_text(
+              '# EVO Optimization Experiment\n\n'
+              f"Experiment: `{record['experiment_id']}`\n\n"
+              f"Objective: {record['objective']}\n\n"
+              'Production mutation: **not permitted**\n'
+          )
+          PY
+        env:
+          EXPERIMENT_ID: ${{ inputs.experiment_id }}
+          OBJECTIVE: ${{ inputs.objective }}
+      - name: Run optional candidate measurement
+        if: inputs.candidate_command != ''
+        shell: bash
+        run: |
+          set -o pipefail
+          bash -lc "${{ inputs.candidate_command }}" 2>&1 | tee build/evo-experiment/measurement.log
+      - name: Publish summary
+        if: always()
+        run: cat build/evo-experiment/report.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload experiment evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evo-experiment-${{ inputs.experiment_id }}-${{ github.run_id }}
+          path: build/evo-experiment/
+          retention-days: 90

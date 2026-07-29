@@ -16,6 +16,7 @@ dlworrell/AES/standards/AES-DEV-001-development-principles-and-check-in-discipli
 ## Authoritative Paths
 
 - `docs/architecture.md`
+- `docs/specs/`
 - `docs/theory.md`
 - `docs/algorithms.md`
 - `docs/benchmarks.md`

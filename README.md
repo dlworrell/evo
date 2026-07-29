@@ -35,4 +35,43 @@ EVO may optimize bounded configurations and design choices, but evolved candidat
 
 ## Status
 
-Project Zero / initial repository bootstrap.
+The repository is a Project Zero certification candidate. Its repository
+baseline, lifecycle entry points, manifest, local standards profiles,
+architecture decision, specification, build, tests, quality checks, and
+sanitizer checks are present and reviewable.
+
+The implementation remains an early `0.1.0` scaffold. `evo_run` currently
+validates its required inputs, allocates a result genome, and records the
+requested seed; the evolutionary operators described in the roadmap are not
+yet implemented.
+
+## Project Zero
+
+The Project Zero interface is installed from the canonical `repo_templates`
+contract:
+
+```sh
+bash scripts/project-zero inspect
+bash scripts/project-zero verify
+python3 ../AEMS/scripts/aems_project_zero.py \
+  . \
+  --output build/aems/project-zero \
+  --format all
+```
+
+The local workflow reports whether the repository baseline is certifiable.
+AEMS remains authoritative for AES-002 lifecycle state. This repository does
+not approve its own transition to `ENGINEERING_READY`.
+
+The stable GitHub Actions entry points are:
+
+- `P0 Repository Lifecycle`
+- `Verify Repository`
+- `Documentation Report`
+- `Repository Compliance`
+- `EVO Optimization Experiment`
+- `Release Readiness`
+
+See `docs/standards/repository-lifecycle-contract.md` and
+`docs/engineering/reports/EVO-P0-001-certification-candidate.md` for the
+governing contract and certification boundary.

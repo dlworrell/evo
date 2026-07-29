@@ -1,0 +1,144 @@
+name: Project Zero
+
+on:
+  workflow_call:
+    inputs:
+      mode:
+        required: true
+        type: string
+      repository_state:
+        required: true
+        type: string
+      profile:
+        required: true
+        type: string
+      mutation_policy:
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Project Zero operation
+        required: true
+        default: inspect
+        type: choice
+        options:
+          - inspect
+          - plan
+          - remediate
+          - verify
+          - certify
+      repository_state:
+        description: Repository state
+        required: true
+        default: existing
+        type: choice
+        options:
+          - existing
+          - new
+      profile:
+        description: Profile JSON path in this repository
+        required: true
+        default: .aems/project-zero/profiles/default/profile.json
+        type: string
+      mutation_policy:
+        description: Permitted workflow mutation
+        required: true
+        default: report-only
+        type: choice
+        options:
+          - report-only
+          - create-issues
+          - open-remediation-pr
+
+concurrency:
+  group: project-zero-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  project-zero:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Project Zero engine
+        id: p0
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p build
+          python3 tools/project_zero.py \
+            "${{ inputs.mode }}" \
+            --repository-state "${{ inputs.repository_state }}" \
+            --profile "${{ inputs.profile }}" \
+            --output build/project-zero-report \
+            | tee build/project-zero-console.log
+          status=${PIPESTATUS[0]}
+          echo "engine_status=${status}" >> "$GITHUB_OUTPUT"
+
+      - name: Publish workflow summary
+        if: always()
+        shell: bash
+        run: |
+          if [[ -f build/project-zero-report/executive-summary.md ]]; then
+            cat build/project-zero-report/executive-summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            printf '## Project Zero\n\nThe engine failed before producing its report.\n' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload evidence package
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: project-zero-report-${{ github.run_id }}
+          path: |
+            build/project-zero-report/
+            build/project-zero-console.log
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Create remediation issue
+        if: inputs.mutation_policy == 'create-issues' && hashFiles('build/project-zero-report/findings.json') != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          count=$(python3 -c 'import json; print(len(json.load(open("build/project-zero-report/findings.json"))))')
+          if [[ "$count" -gt 0 ]]; then
+            gh issue create \
+              --title "Project Zero remediation required ($count findings)" \
+              --body-file build/project-zero-report/executive-summary.md
+          fi
+
+      - name: Open remediation pull request
+        if: inputs.mode == 'remediate' && inputs.mutation_policy == 'open-remediation-pr'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add SECURITY.md CONTRIBUTING.md GOVERNANCE.md repo.yaml p0.yaml .github/pull_request_template.md 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "No safe remediation changes were generated." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          branch="p0/remediation-${GITHUB_RUN_ID}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git commit -m "fix(p0): apply safe repository baseline remediation"
+          git push --set-upstream origin "$branch"
+          gh pr create \
+            --base "${GITHUB_REF_NAME}" \
+            --head "$branch" \
+            --title "Project Zero baseline remediation" \
+            --body-file build/project-zero-report/executive-summary.md
+
+      - name: Enforce verification or certification result
+        if: always() && (inputs.mode == 'verify' || inputs.mode == 'certify')
+        shell: bash
+        run: test "${{ steps.p0.outputs.engine_status }}" = "0"

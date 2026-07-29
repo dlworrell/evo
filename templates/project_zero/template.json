@@ -1,0 +1,27 @@
+{
+  "template_id": "project_zero",
+  "version": "0.1.0",
+  "description": "Installs the Project Zero workflow, shared engine, local command wrapper, and default readiness profile.",
+  "files": [
+    {
+      "source": ".github/workflows/project-zero.yml",
+      "target": ".github/workflows/project-zero.yml"
+    },
+    {
+      "source": "tools/project_zero.py",
+      "target": "tools/project_zero.py"
+    },
+    {
+      "source": "scripts/project-zero",
+      "target": "scripts/project-zero"
+    },
+    {
+      "source": ".aems/project-zero/profiles/default/profile.json",
+      "target": ".aems/project-zero/profiles/default/profile.json"
+    }
+  ],
+  "post_install": {
+    "local_inspection": "bash scripts/project-zero inspect",
+    "github_action": "Actions > Project Zero > Run workflow"
+  }
+}

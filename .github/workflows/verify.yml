@@ -1,0 +1,57 @@
+name: Verify Repository
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: P0 verification profile
+        required: true
+        default: .aems/project-zero/profiles/default/profile.json
+        type: string
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run repository verification
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p build
+          profile="${{ inputs.profile || '.aems/project-zero/profiles/default/profile.json' }}"
+          python3 tools/project_zero.py verify \
+            --repository-state existing \
+            --profile "$profile" \
+            --output build/verification-report \
+            | tee build/verification-console.log
+      - name: Configure EVO
+        run: cmake -S . -B build/evo -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON
+      - name: Build EVO
+        run: cmake --build build/evo --parallel
+      - name: Test EVO
+        run: ctest --test-dir build/evo --output-on-failure
+      - name: Publish verification summary
+        if: always()
+        shell: bash
+        run: |
+          if [[ -f build/verification-report/executive-summary.md ]]; then
+            cat build/verification-report/executive-summary.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Upload verification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verification-report-${{ github.run_id }}
+          path: |
+            build/verification-report/
+            build/verification-console.log
+            build/evo/Testing/Temporary/
+          if-no-files-found: warn
+          retention-days: 90
