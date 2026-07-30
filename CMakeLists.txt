@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(catalyst_evo VERSION 0.3.0 LANGUAGES C)
+project(catalyst_evo VERSION 0.4.0 LANGUAGES C)
 
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -8,6 +8,7 @@ set(CMAKE_C_EXTENSIONS OFF)
 add_library(catalyst_evo
     src/population.c
     src/population_storage.c
+    src/population_initialization.c
     src/selection.c
     src/crossover.c
     src/mutation.c
