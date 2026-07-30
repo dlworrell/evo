@@ -44,6 +44,20 @@ This stream is designed for repeatable engineering search. It is not
 cryptographically secure and must not generate secrets, keys, nonces, or
 authentication material.
 
+## Seed-Schedule Research
+
+EVO-RNG-001 compared the version-1 baseline with a plain tuple-mixed control,
+a Code Noodling-derived prime-indexed schedule, and a portable finite-field
+elliptic schedule. The prime and elliptic candidates did not improve the
+measured separation over the simpler control, and the elliptic candidate added
+approximately 600-fold derivation cost.
+
+EVO therefore preserves RNG algorithm version 1 and does not link the research
+schedules into the production library. If future operators require
+independently addressable streams, their consumption model will be specified
+first and a new versioned design will begin from the plain tuple-mixed control.
+See `docs/adr/ADR-0003-prime-and-elliptic-seed-schedules.md`.
+
 ## Generation-Zero Initialization
 
 The version 0.4.0 private population initializer consumes one continuous
