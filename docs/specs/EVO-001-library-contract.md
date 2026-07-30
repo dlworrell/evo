@@ -1,7 +1,7 @@
 # EVO-001: Evolutionary Optimization Library Contract
 
 Status: Baseline
-Version: 0.4.0
+Version: 0.5.0
 Owner: EVO
 
 ## Purpose
@@ -31,8 +31,8 @@ records an additional source of variation.
 ### Run configuration
 
 `evo_config_t` records population size, generation limit, tournament size,
-crossover rate, mutation rate, random seed, `max_genome_bytes`, and
-`max_population_bytes`.
+crossover rate, mutation rate, random seed, `max_genome_bytes`,
+`max_population_bytes`, and `max_evaluation_bytes`.
 
 `max_genome_bytes` is trusted caller policy for the largest individual genome
 allocation accepted by `evo_run`. It avoids a platform-specific hard-coded
@@ -46,6 +46,12 @@ by that subsystem. It does not silently authorize future fitness arrays,
 second-generation buffers, checkpoint state, or a total run working set; each
 additional allocation class requires an updated specification and explicit
 policy.
+
+`max_evaluation_bytes` independently bounds the private candidate-evaluation
+record array. EVO checks
+`population_size * sizeof(evo_candidate_evaluation_t)` for `size_t` overflow
+before allocation. The field does not authorize future generation buffers,
+operator scratch space, checkpoint state, or parallel-worker storage.
 
 ### Internal population storage
 
@@ -109,6 +115,41 @@ subsystem remains disconnected from `evo_run` so the public scaffold does not
 allocate and discard a population or claim that initialization, validation,
 evaluation, or search completed.
 
+### Generation-zero validation and evaluation
+
+Version 0.5.0 adds a private evaluation phase after successful population
+initialization. The normative decision is recorded in
+`docs/adr/ADR-0004-generation-zero-validation-and-evaluation.md`.
+
+The evaluation lifecycle is:
+
+1. The population must be active, initialized, unevaluated, and structurally
+   consistent with the supplied problem and configuration.
+2. The evaluator callback is required. A missing evaluator returns
+   `EVO_ERROR_INVALID_ARGUMENT`.
+3. EVO proves the evaluation-record byte count is representable and no greater
+   than `config->max_evaluation_bytes`.
+4. If `problem->is_valid` is null, every candidate is valid. Otherwise EVO
+   calls it exactly once for every genome in ascending index order.
+5. EVO calls `problem->evaluate` exactly once for each valid genome in
+   ascending index order. Invalid candidates are never evaluated.
+6. Every field in the returned `evo_fitness_t` must be finite. NaN or infinity
+   returns `EVO_ERROR_EVALUATION`, releases provisional records, and preserves
+   the initialized population as unevaluated.
+7. Validity is a hard gate. Higher consumer-computed `fitness.total` wins, and
+   the lower population index wins an exact tie. EVO records but does not
+   independently rank the other fitness components.
+8. A completed all-invalid population returns `EVO_SUCCESS`, records zero
+   valid candidates, and has no best-candidate index.
+9. Repeated evaluation is rejected with `EVO_ERROR_STATE` without modifying
+   the completed records.
+10. Population destruction releases the evaluation records together with the
+    genome slab and resets all lifecycle, count, and winner metadata.
+
+Callbacks receive bounded, non-owning, read-only genome views. They must not
+change storage ownership or retain a view. EVO can roll back only its private
+provisional records; side effects in consumer context remain consumer-owned.
+
 ### Result lifecycle
 
 The caller must zero-initialize `evo_result_t` before its first use:
@@ -146,8 +187,9 @@ reviewed erasure boundary.
 | `EVO_ERROR_INVALID_ARGUMENT` | A required pointer argument is null. |
 | `EVO_ERROR_OUT_OF_MEMORY` | The system allocator returned null. |
 | `EVO_ERROR_RESULT_ACTIVE` | The result already owns a genome and is preserved unchanged. |
-| `EVO_ERROR_RESOURCE_LIMIT` | A required size is zero or the genome exceeds caller policy. |
+| `EVO_ERROR_RESOURCE_LIMIT` | A required size is zero, arithmetic overflows, or a caller budget is exceeded. |
 | `EVO_ERROR_STATE` | A private lifecycle operation received inactive, initialized, or inconsistent state. |
+| `EVO_ERROR_EVALUATION` | A fitness callback returned a non-finite component. |
 
 ### Fitness placeholder
 
@@ -159,16 +201,16 @@ introduce explicit evaluated-result semantics before returning an optimum.
 ## API Compatibility
 
 Version 0.2.0 appended `max_genome_bytes` to `evo_config_t` and changed
-`evo_run` from a raw `int` result to `evo_status_t`. Version 0.3.0 appends
-`max_population_bytes`. Existing member offsets remain preserved, but
-`sizeof(evo_config_t)` and its array stride change again. Consumers must
-rebuild against the 0.4.0 header. Version 0.4.0 appends one status enumerator
-without changing public structure layout. The current public scaffold still
-requires a nonzero per-genome budget; population-backed execution will
-additionally require a nonzero population-storage budget when it is
-integrated.
+`evo_run` from a raw `int` result to `evo_status_t`. Version 0.3.0 appended
+`max_population_bytes`, and version 0.4.0 appended one status enumerator.
+Version 0.5.0 appends `max_evaluation_bytes` and one additional status value.
+Existing member offsets remain preserved, but `sizeof(evo_config_t)` and its
+array stride change again. Consumers must rebuild against the 0.5.0 header.
+The current public scaffold still requires only a nonzero per-genome budget;
+population-backed execution will additionally require population-storage and
+evaluation-record budgets when it is integrated.
 
-## Current 0.4.0 Conformance Boundary
+## Current 0.5.0 Conformance Boundary
 
 The current implementation remains an API and lifecycle scaffold with a
 verified private population-storage foundation:
@@ -187,8 +229,12 @@ verified private population-storage foundation:
 - private population initialization is seed-reproducible and records its RNG
   algorithm version;
 - optional initializers run exactly once in ascending genome order; and
-- validation, evaluation, selection, crossover, mutation, diversity,
-  checkpointing, and generation iteration are not implemented.
+- private validation and evaluation run in deterministic ascending passes;
+- invalid candidates are not evaluated;
+- finite consumer totals select a stable generation-zero winner;
+- all-invalid populations complete without a winner; and
+- selection, crossover, mutation, diversity, checkpointing, public population
+  integration, and generation iteration are not implemented.
 
 Consumers must not treat `EVO_SUCCESS` in the current scaffold as evidence that
 an optimization search was performed. The internal storage subsystem is not
@@ -204,15 +250,17 @@ cmake --build build --parallel
 ctest --test-dir build --output-on-failure
 ```
 
-The portable result-lifecycle, population-storage, RNG-vector, and
-population-initialization tests run across supported platforms. A separate
-Linux-only static-link test uses the GNU-compatible `--wrap=calloc` linker
-facility to prove both allocation-failure states deterministically.
+The portable result-lifecycle, population-storage, RNG-vector,
+population-initialization, and population-evaluation tests run across supported
+platforms. A separate Linux-only static-link test uses the GNU-compatible
+`--wrap=calloc` linker facility to prove result, population, and evaluation
+allocation-failure states deterministically.
 
 ## Related Records
 
 - `docs/adr/ADR-0001-library-boundary-and-build-system.md`
 - `docs/adr/ADR-0002-deterministic-rng-and-population-initialization.md`
+- `docs/adr/ADR-0004-generation-zero-validation-and-evaluation.md`
 - `docs/architecture.md`
 - `docs/algorithms.md`
 - `docs/benchmarks.md`
@@ -222,4 +270,5 @@ facility to prove both allocation-failure states deterministically.
 - `https://github.com/dlworrell/evo/issues/4`
 - `https://github.com/dlworrell/evo/issues/6`
 - `https://github.com/dlworrell/evo/issues/8`
+- `https://github.com/dlworrell/evo/issues/12`
 - `https://github.com/dlworrell/AEMS/issues/18`
