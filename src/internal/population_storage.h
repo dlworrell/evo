@@ -3,14 +3,26 @@
 
 #include "catalyst/evo/evo.h"
 
+typedef struct evo_candidate_evaluation {
+    evo_fitness_t fitness;
+    bool valid;
+    bool evaluated;
+} evo_candidate_evaluation_t;
+
 typedef struct evo_population {
     unsigned char *genomes;
+    evo_candidate_evaluation_t *evaluations;
     size_t population_size;
     size_t genome_size;
     size_t storage_bytes;
+    size_t evaluation_bytes;
+    size_t valid_count;
+    size_t best_index;
     uint64_t initialization_seed;
     uint32_t rng_algorithm_version;
     bool initialized;
+    bool has_best;
+    bool evaluated;
 } evo_population_t;
 
 /*
@@ -44,6 +56,35 @@ evo_status_t evo_population_initialize(const evo_problem_t *problem,
                                        const evo_config_t *config,
                                        void *context,
                                        evo_population_t *population);
+
+/*
+ * Validate every initialized generation-zero candidate, then evaluate only
+ * valid candidates in ascending index order.
+ *
+ * Evaluation records are private, caller-budgeted, and committed to the
+ * population only after every returned fitness field is proven finite.
+ * Completing the phase with no valid candidates succeeds without a best
+ * candidate.
+ */
+evo_status_t evo_population_evaluate(const evo_problem_t *problem,
+                                     const evo_config_t *config,
+                                     void *context,
+                                     evo_population_t *population);
+
+/*
+ * Return a read-only evaluation record for a completed population, or NULL
+ * when the phase is incomplete or the index is out of range.
+ */
+const evo_candidate_evaluation_t *
+evo_population_evaluation_const(const evo_population_t *population,
+                                size_t index);
+
+/*
+ * Store the deterministic best-candidate index and return true, or return
+ * false without modifying best_index when no evaluated winner exists.
+ */
+bool evo_population_best_index(const evo_population_t *population,
+                               size_t *best_index);
 
 /*
  * Release the population storage and reset the complete object to zero.
