@@ -9,6 +9,9 @@ static void assert_population_empty(const evo_population_t *population)
     assert(population->population_size == 0);
     assert(population->genome_size == 0);
     assert(population->storage_bytes == 0);
+    assert(population->initialization_seed == 0);
+    assert(population->rng_algorithm_version == 0);
+    assert(!population->initialized);
 }
 
 static evo_problem_t test_problem(size_t genome_size)
@@ -175,6 +178,9 @@ static void test_active_rejection_and_destruction_idempotency(void)
     assert(population.population_size == active.population_size);
     assert(population.genome_size == active.genome_size);
     assert(population.storage_bytes == active.storage_bytes);
+    assert(population.initialization_seed == active.initialization_seed);
+    assert(population.rng_algorithm_version == active.rng_algorithm_version);
+    assert(population.initialized == active.initialized);
 
     evo_population_destroy(&population);
     assert_population_empty(&population);
