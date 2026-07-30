@@ -1,4 +1,5 @@
 #include "catalyst/evo/evo.h"
+#include "internal/population_storage.h"
 
 #include <assert.h>
 #include <stddef.h>
@@ -33,7 +34,12 @@ static void assert_completely_empty(const evo_result_t *result)
 int main(void)
 {
     evo_problem_t problem = {.genome_size = 32};
-    evo_config_t config = {.population_size = 10, .max_genome_bytes = 100};
+    evo_config_t config = {
+        .population_size = 10,
+        .max_genome_bytes = 100,
+        .max_population_bytes = 320,
+    };
+    evo_population_t population = {0};
     evo_result_t result = {0};
 
     assert(evo_run(&problem, &config, NULL, &result) == EVO_SUCCESS);
@@ -45,5 +51,15 @@ int main(void)
     inject_allocation_failure = 0;
 
     assert_completely_empty(&result);
+
+    inject_allocation_failure = 1;
+    assert(evo_population_create(&problem, &config, &population) ==
+           EVO_ERROR_OUT_OF_MEMORY);
+    inject_allocation_failure = 0;
+
+    assert(population.genomes == NULL);
+    assert(population.population_size == 0);
+    assert(population.genome_size == 0);
+    assert(population.storage_bytes == 0);
     return 0;
 }
