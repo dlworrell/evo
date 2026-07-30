@@ -8,6 +8,9 @@ typedef struct evo_population {
     size_t population_size;
     size_t genome_size;
     size_t storage_bytes;
+    uint64_t initialization_seed;
+    uint32_t rng_algorithm_version;
+    bool initialized;
 } evo_population_t;
 
 /*
@@ -28,6 +31,19 @@ evo_status_t evo_population_create(const evo_problem_t *problem,
 void *evo_population_genome(evo_population_t *population, size_t index);
 const void *evo_population_genome_const(const evo_population_t *population,
                                         size_t index);
+
+/*
+ * Fill every genome from the configured deterministic random stream, then
+ * invoke the optional problem initializer once per genome in ascending order.
+ *
+ * The population must be active, uninitialized, and consistent with the
+ * supplied problem and configuration. Lifecycle-state rejection preserves the
+ * complete population unchanged.
+ */
+evo_status_t evo_population_initialize(const evo_problem_t *problem,
+                                       const evo_config_t *config,
+                                       void *context,
+                                       evo_population_t *population);
 
 /*
  * Release the population storage and reset the complete object to zero.
