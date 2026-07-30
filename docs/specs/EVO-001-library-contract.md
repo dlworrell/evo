@@ -1,7 +1,7 @@
 # EVO-001: Evolutionary Optimization Library Contract
 
 Status: Baseline
-Version: 0.3.0
+Version: 0.4.0
 Owner: EVO
 
 ## Purpose
@@ -70,9 +70,44 @@ Population destruction does not securely erase the genome slab. The same
 secret-material restriction defined for `evo_result_destroy` applies to
 population storage and every non-owning genome view.
 
-The private subsystem is deliberately not allocated and discarded inside the
-current scaffold. It will be integrated when generation-zero initialization,
-validation, and evaluation have executable semantics.
+### Deterministic population initialization
+
+Version 0.4.0 defines private RNG algorithm version 1 and a generation-zero
+population initializer. The normative algorithm decision is recorded in
+`docs/adr/ADR-0002-deterministic-rng-and-population-initialization.md`.
+
+RNG version 1 uses PCG-XSH-RR with 64-bit state, 32-bit output, a fixed odd
+stream increment, and explicit least-significant-byte-first output. Unsigned
+fixed-width wraparound is intentional. Every `uint64_t` seed, including zero,
+is valid. No global RNG state, clock, process identity, platform entropy, or
+native byte-order conversion participates in the stream.
+
+The initialization lifecycle is:
+
+1. The population must be active, uninitialized, and structurally consistent
+   with the supplied problem and configuration.
+2. EVO seeds one operation-local RNG from `config->random_seed`.
+3. EVO fills the complete contiguous slab from one continuous stream.
+4. If `problem->initialize` is non-null, EVO calls it once per genome in
+   ascending index order.
+5. Each callback receives deterministic prefilled bytes as a bounded,
+   non-owning view. It must be deterministic for fixed bytes and context,
+   remain within the genome, preserve ownership, and not retain the view.
+6. After all callbacks return, the population records the seed, RNG algorithm
+   version, and initialized state.
+7. Null arguments return `EVO_ERROR_INVALID_ARGUMENT`. Inactive, previously
+   initialized, policy-inconsistent, or metadata-inconsistent populations
+   return `EVO_ERROR_STATE` without modification.
+8. Population destruction clears the initialization metadata together with
+   the owned storage.
+
+The RNG is not cryptographically secure and is not approved for secrets, keys,
+nonces, authentication, or adversarial unpredictability.
+
+Population initialization does not call `is_valid` or `evaluate`. The private
+subsystem remains disconnected from `evo_run` so the public scaffold does not
+allocate and discard a population or claim that initialization, validation,
+evaluation, or search completed.
 
 ### Result lifecycle
 
@@ -103,7 +138,7 @@ reviewed erasure boundary.
 
 ### Status values
 
-`evo_run` returns:
+`evo_status_t` defines:
 
 | Status | Meaning |
 |---|---|
@@ -112,6 +147,7 @@ reviewed erasure boundary.
 | `EVO_ERROR_OUT_OF_MEMORY` | The system allocator returned null. |
 | `EVO_ERROR_RESULT_ACTIVE` | The result already owns a genome and is preserved unchanged. |
 | `EVO_ERROR_RESOURCE_LIMIT` | A required size is zero or the genome exceeds caller policy. |
+| `EVO_ERROR_STATE` | A private lifecycle operation received inactive, initialized, or inconsistent state. |
 
 ### Fitness placeholder
 
@@ -126,11 +162,13 @@ Version 0.2.0 appended `max_genome_bytes` to `evo_config_t` and changed
 `evo_run` from a raw `int` result to `evo_status_t`. Version 0.3.0 appends
 `max_population_bytes`. Existing member offsets remain preserved, but
 `sizeof(evo_config_t)` and its array stride change again. Consumers must
-rebuild against the 0.3.0 header. The current public scaffold still requires a
-nonzero per-genome budget; population-backed execution will additionally
-require a nonzero population-storage budget when it is integrated.
+rebuild against the 0.4.0 header. Version 0.4.0 appends one status enumerator
+without changing public structure layout. The current public scaffold still
+requires a nonzero per-genome budget; population-backed execution will
+additionally require a nonzero population-storage budget when it is
+integrated.
 
-## Current 0.3.0 Conformance Boundary
+## Current 0.4.0 Conformance Boundary
 
 The current implementation remains an API and lifecycle scaffold with a
 verified private population-storage foundation:
@@ -144,13 +182,17 @@ verified private population-storage foundation:
   budgets before allocating a contiguous zero-initialized slab;
 - private population views are bounds-checked and non-owning;
 - private population destruction is null-safe, repeatable, and fully
-  resetting; and
-- population initialization, selection, crossover, mutation, evaluation,
-  diversity, checkpointing, and generation iteration are not implemented.
+  resetting;
+- private RNG output and byte order are locked by fixed vectors;
+- private population initialization is seed-reproducible and records its RNG
+  algorithm version;
+- optional initializers run exactly once in ascending genome order; and
+- validation, evaluation, selection, crossover, mutation, diversity,
+  checkpointing, and generation iteration are not implemented.
 
 Consumers must not treat `EVO_SUCCESS` in the current scaffold as evidence that
 an optimization search was performed. The internal storage subsystem is not
-evidence that a population has been initialized, evaluated, or searched.
+evidence that a population has been validated, evaluated, or searched.
 
 ## Verification
 
@@ -162,14 +204,15 @@ cmake --build build --parallel
 ctest --test-dir build --output-on-failure
 ```
 
-The portable result-lifecycle and population-storage tests run across supported
-platforms. A separate Linux-only static-link test uses the GNU-compatible
-`--wrap=calloc` linker facility to prove both allocation-failure states
-deterministically.
+The portable result-lifecycle, population-storage, RNG-vector, and
+population-initialization tests run across supported platforms. A separate
+Linux-only static-link test uses the GNU-compatible `--wrap=calloc` linker
+facility to prove both allocation-failure states deterministically.
 
 ## Related Records
 
 - `docs/adr/ADR-0001-library-boundary-and-build-system.md`
+- `docs/adr/ADR-0002-deterministic-rng-and-population-initialization.md`
 - `docs/architecture.md`
 - `docs/algorithms.md`
 - `docs/benchmarks.md`
@@ -178,4 +221,5 @@ deterministically.
 - `docs/engineering/AES-SEC-001-review-dispositions.json`
 - `https://github.com/dlworrell/evo/issues/4`
 - `https://github.com/dlworrell/evo/issues/6`
+- `https://github.com/dlworrell/evo/issues/8`
 - `https://github.com/dlworrell/AEMS/issues/18`
