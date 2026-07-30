@@ -35,17 +35,29 @@ EVO may optimize bounded configurations and design choices, but evolved candidat
 
 ## Status
 
-EVO 0.3.0 is an API and memory-lifecycle scaffold. `evo_run` currently
+EVO 0.4.0 is an API and memory-lifecycle scaffold. `evo_run` currently
 validates its required inputs and caller-provided genome budget, allocates one
 zero-initialized result genome, and records the requested seed. Population
-initialization and the evolutionary operators remain future work.
+execution and the evolutionary operators remain future work.
 
-Version 0.3.0 adds the independently tested private population-storage
+Version 0.3.0 added the independently tested private population-storage
 foundation: checked `population_size * genome_size` arithmetic, a
 caller-provided total slab budget, contiguous zero-initialized storage, bounded
 non-owning genome views, and fully resetting destruction. The subsystem is not
 yet invoked by `evo_run`, so the library does not allocate and discard a fake
 population or claim that a search occurred.
+
+Version 0.4.0 adds private deterministic RNG algorithm version 1 and
+generation-zero population initialization. A configured seed deterministically
+prefills the complete population slab using an explicit cross-platform byte
+order. EVO then calls the optional consumer initializer once per genome in
+ascending order. Successful initialization records the seed and algorithm
+version; lifecycle rejection preserves existing storage unchanged.
+
+Consumer initializers must be bounded deterministic transformations of their
+prefilled genome and context. The RNG is not cryptographically secure.
+Population initialization remains private and does not validate, evaluate,
+rank, select, mutate, cross over, or iterate candidates.
 
 ## Result Lifecycle
 
@@ -58,19 +70,20 @@ resets the full result to zero, and makes it immediately reusable.
 not a total population budget. `max_population_bytes` separately bounds the
 private population genome slab. Neither field is an arbitrary compiled-in cap.
 
-The public status values remain:
+The status values are:
 
 - `EVO_SUCCESS`
 - `EVO_ERROR_INVALID_ARGUMENT`
 - `EVO_ERROR_OUT_OF_MEMORY`
 - `EVO_ERROR_RESULT_ACTIVE`
 - `EVO_ERROR_RESOURCE_LIMIT`
+- `EVO_ERROR_STATE`
 
 See `docs/specs/EVO-001-library-contract.md` for the complete API, ownership,
 failure-state, alias, compatibility, and secure-erasure boundaries.
 
-The next implementation boundary is deterministic random-number generation,
-followed by generation-zero initialization, validation, and evaluation.
+The next implementation boundary is generation-zero validation and evaluation,
+including explicit failure, invalid-candidate, and best-candidate semantics.
 
 ## Project Zero
 
