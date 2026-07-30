@@ -10,7 +10,7 @@ extern "C" {
 #endif
 
 #define EVO_VERSION_MAJOR 0
-#define EVO_VERSION_MINOR 3
+#define EVO_VERSION_MINOR 4
 #define EVO_VERSION_PATCH 0
 
 typedef enum evo_status {
@@ -18,7 +18,8 @@ typedef enum evo_status {
     EVO_ERROR_INVALID_ARGUMENT = -1,
     EVO_ERROR_OUT_OF_MEMORY = -2,
     EVO_ERROR_RESULT_ACTIVE = -3,
-    EVO_ERROR_RESOURCE_LIMIT = -4
+    EVO_ERROR_RESOURCE_LIMIT = -4,
+    EVO_ERROR_STATE = -5
 } evo_status_t;
 
 typedef struct evo_fitness {
@@ -33,6 +34,11 @@ typedef struct evo_fitness {
 
 typedef struct evo_problem {
     size_t genome_size;
+    /*
+     * Generation-zero population initialization receives deterministic bytes
+     * supplied by EVO. The callback may transform only its genome, must be
+     * deterministic for fixed bytes and context, and may not retain the view.
+     */
     void (*initialize)(void *genome, void *context);
     void (*mutate)(void *genome, double mutation_rate, void *context);
     void (*crossover)(const void *parent_a, const void *parent_b, void *child_a, void *child_b, void *context);
