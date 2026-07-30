@@ -1,0 +1,107 @@
+{
+  "schema_version": "1.0.0",
+  "experiment": "EVO-RNG-001",
+  "rng_algorithm_version": 1,
+  "research_schedule_version": 1,
+  "code_noodling_commit": "43c4b386acfcc634f1d62e96a5b7809e96d8a1ec",
+  "prime_vector": {"count": 4099, "first": 2, "last": 38917, "encoding": "little-endian-uint32", "sha256": "a6ad2811fbf74c2879900a93fecd6ae85b4915e0d9fb2192f4241ac0a2b91869", "fnv1a64": "0df978217b36289c"},
+  "curve": {"field_prime": 2147483647, "a": 1, "b": 1, "base_x": 0, "base_y": 1},
+  "corpus": {"master_seeds": 4, "generations": 8, "population_indices": 32, "domains": 4, "tuples": 4096},
+  "fixed_tuple": {"master_seed": 42, "generation": 7, "population_index": 11, "domain": "mutation"},
+  "fixed_vectors": [
+    {"candidate": "v1-baseline", "state": "977afd8015414a94", "increment": "14057b7ef767814f", "prefix_u32": ["c2f57bd6", "6b07c4a9", "72b7b29b", "44215383"]},
+    {"candidate": "mixed-control", "state": "524955425ff5cf53", "increment": "5e6ab376c2e2ce3d", "prefix_u32": ["80524a0e", "665016de", "2feb6ab6", "bb7ebd14"]},
+    {"candidate": "prime-indexed", "state": "6247e56edd869b81", "increment": "372f16ff356ca537", "prefix_u32": ["fe448ffb", "73394107", "c0adcd2d", "cc8b085a"]},
+    {"candidate": "elliptic", "state": "3ef5b4a0b4b5b60e", "increment": "1182e91ce7f6dc5b", "prefix_u32": ["77bd6ec7", "d798b537", "518f2208", "bd599819"]}
+  ],
+  "curve_fixed_points": [
+    {"scalar": 1, "x": 0, "y": 1},
+    {"scalar": 2, "x": 536870912, "y": 1879048190},
+    {"scalar": 3, "x": 72, "y": 611},
+    {"scalar": 17, "x": 1195819830, "y": 1566573052},
+    {"scalar": 65537, "x": 1531601172, "y": 1989404780}
+  ],
+  "environment": {"platform": "linux", "compiler_family": "gcc", "compiler_version": "13.3.0", "c_standard": 201710, "clock_ticks_per_second": 1000000},
+  "candidates": [
+    {
+      "candidate": "v1-baseline",
+      "schedule_collisions": 4092,
+      "four_word_prefix_collisions": 4092,
+      "state_one_bit_fraction": 0.484375000000,
+      "increment_one_bit_fraction": 0.546875000000,
+      "master_seed_flip_mean_hamming_128": 17.308593750000,
+      "master_seed_flip_histogram_8_bit_buckets": [1888, 1792, 1696, 2336, 480, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      "domain_pair_metrics": [
+        {"pair": "initialization-selection", "mean_hamming_128": 0.000000000000, "prefix_correlation": 1.000000000000},
+        {"pair": "initialization-crossover", "mean_hamming_128": 0.000000000000, "prefix_correlation": 1.000000000000},
+        {"pair": "initialization-mutation", "mean_hamming_128": 0.000000000000, "prefix_correlation": 1.000000000000},
+        {"pair": "selection-crossover", "mean_hamming_128": 0.000000000000, "prefix_correlation": 1.000000000000},
+        {"pair": "selection-mutation", "mean_hamming_128": 0.000000000000, "prefix_correlation": 1.000000000000},
+        {"pair": "crossover-mutation", "mean_hamming_128": 0.000000000000, "prefix_correlation": 1.000000000000}
+      ],
+      "timed_derivations": 16777216,
+      "clock_ticks": 186903,
+      "derivations_per_cpu_second": 89764294.848
+    },
+    {
+      "candidate": "mixed-control",
+      "schedule_collisions": 0,
+      "four_word_prefix_collisions": 0,
+      "state_one_bit_fraction": 0.498802185059,
+      "increment_one_bit_fraction": 0.507488250732,
+      "master_seed_flip_mean_hamming_128": 63.501464843750,
+      "master_seed_flip_histogram_8_bit_buckets": [0, 0, 0, 0, 0, 24, 607, 3461, 3472, 613, 15, 0, 0, 0, 0, 0, 0],
+      "domain_pair_metrics": [
+        {"pair": "initialization-selection", "mean_hamming_128": 63.419921875000, "prefix_correlation": -0.067606162629},
+        {"pair": "initialization-crossover", "mean_hamming_128": 63.461914062500, "prefix_correlation": 0.019507697668},
+        {"pair": "initialization-mutation", "mean_hamming_128": 63.337890625000, "prefix_correlation": -0.032307345499},
+        {"pair": "selection-crossover", "mean_hamming_128": 63.321289062500, "prefix_correlation": -0.041759924728},
+        {"pair": "selection-mutation", "mean_hamming_128": 63.328125000000, "prefix_correlation": -0.022948725540},
+        {"pair": "crossover-mutation", "mean_hamming_128": 63.543945312500, "prefix_correlation": -0.014148113804}
+      ],
+      "timed_derivations": 16777216,
+      "clock_ticks": 187612,
+      "derivations_per_cpu_second": 89425068.759
+    },
+    {
+      "candidate": "prime-indexed",
+      "schedule_collisions": 0,
+      "four_word_prefix_collisions": 0,
+      "state_one_bit_fraction": 0.500221252441,
+      "increment_one_bit_fraction": 0.508529663086,
+      "master_seed_flip_mean_hamming_128": 63.630981445312,
+      "master_seed_flip_histogram_8_bit_buckets": [0, 0, 0, 0, 0, 19, 596, 3394, 3521, 649, 13, 0, 0, 0, 0, 0, 0],
+      "domain_pair_metrics": [
+        {"pair": "initialization-selection", "mean_hamming_128": 63.657226562500, "prefix_correlation": 0.056578779155},
+        {"pair": "initialization-crossover", "mean_hamming_128": 63.629882812500, "prefix_correlation": -0.016439061236},
+        {"pair": "initialization-mutation", "mean_hamming_128": 63.771484375000, "prefix_correlation": 0.020902360287},
+        {"pair": "selection-crossover", "mean_hamming_128": 63.593750000000, "prefix_correlation": -0.011960608498},
+        {"pair": "selection-mutation", "mean_hamming_128": 63.659179687500, "prefix_correlation": 0.026058743196},
+        {"pair": "crossover-mutation", "mean_hamming_128": 63.536132812500, "prefix_correlation": 0.039049284038}
+      ],
+      "timed_derivations": 16777216,
+      "clock_ticks": 173907,
+      "derivations_per_cpu_second": 96472344.414
+    },
+    {
+      "candidate": "elliptic",
+      "schedule_collisions": 0,
+      "four_word_prefix_collisions": 0,
+      "state_one_bit_fraction": 0.500240325928,
+      "increment_one_bit_fraction": 0.509090423584,
+      "master_seed_flip_mean_hamming_128": 63.603393554688,
+      "master_seed_flip_histogram_8_bit_buckets": [0, 0, 0, 0, 0, 14, 581, 3456, 3505, 620, 16, 0, 0, 0, 0, 0, 0],
+      "domain_pair_metrics": [
+        {"pair": "initialization-selection", "mean_hamming_128": 63.388671875000, "prefix_correlation": -0.035730684196},
+        {"pair": "initialization-crossover", "mean_hamming_128": 63.424804687500, "prefix_correlation": 0.010740517322},
+        {"pair": "initialization-mutation", "mean_hamming_128": 63.352539062500, "prefix_correlation": 0.026831035509},
+        {"pair": "selection-crossover", "mean_hamming_128": 63.303710937500, "prefix_correlation": 0.010942947703},
+        {"pair": "selection-mutation", "mean_hamming_128": 63.764648437500, "prefix_correlation": -0.005787528137},
+        {"pair": "crossover-mutation", "mean_hamming_128": 63.431640625000, "prefix_correlation": 0.067276858674}
+      ],
+      "timed_derivations": 131072,
+      "clock_ticks": 863719,
+      "derivations_per_cpu_second": 151753.059
+    }
+  ]
+}
