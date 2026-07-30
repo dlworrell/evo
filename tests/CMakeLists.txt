@@ -11,6 +11,16 @@ target_include_directories(evo_population_storage_test PRIVATE ${PROJECT_SOURCE_
 target_link_libraries(evo_population_storage_test PRIVATE catalyst_evo)
 add_test(NAME evo_population_storage_test COMMAND evo_population_storage_test)
 
+add_executable(evo_rng_test rng_test.c)
+target_include_directories(evo_rng_test PRIVATE ${PROJECT_SOURCE_DIR}/src)
+target_link_libraries(evo_rng_test PRIVATE catalyst_evo)
+add_test(NAME evo_rng_test COMMAND evo_rng_test)
+
+add_executable(evo_population_initialization_test population_initialization_test.c)
+target_include_directories(evo_population_initialization_test PRIVATE ${PROJECT_SOURCE_DIR}/src)
+target_link_libraries(evo_population_initialization_test PRIVATE catalyst_evo)
+add_test(NAME evo_population_initialization_test COMMAND evo_population_initialization_test)
+
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux"
    AND CMAKE_C_COMPILER_ID MATCHES "GNU|Clang"
    AND NOT BUILD_SHARED_LIBS)
