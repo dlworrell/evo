@@ -35,15 +35,17 @@ EVO may optimize bounded configurations and design choices, but evolved candidat
 
 ## Status
 
-The repository is a Project Zero certification candidate. Its repository
-baseline, lifecycle entry points, manifest, local standards profiles,
-architecture decision, specification, build, tests, quality checks, and
-sanitizer checks are present and reviewable.
-
-EVO 0.2.0 is an API and memory-lifecycle scaffold. `evo_run` currently
+EVO 0.3.0 is an API and memory-lifecycle scaffold. `evo_run` currently
 validates its required inputs and caller-provided genome budget, allocates one
 zero-initialized result genome, and records the requested seed. Population
-arrays and the evolutionary operators remain future work.
+initialization and the evolutionary operators remain future work.
+
+Version 0.3.0 adds the independently tested private population-storage
+foundation: checked `population_size * genome_size` arithmetic, a
+caller-provided total slab budget, contiguous zero-initialized storage, bounded
+non-owning genome views, and fully resetting destruction. The subsystem is not
+yet invoked by `evo_run`, so the library does not allocate and discard a fake
+population or claim that a search occurred.
 
 ## Result Lifecycle
 
@@ -53,9 +55,10 @@ active result is rejected; `evo_result_destroy` releases the allocation,
 resets the full result to zero, and makes it immediately reusable.
 
 `max_genome_bytes` is a required caller-provided per-genome policy bound. It is
-not a total future population memory budget.
+not a total population budget. `max_population_bytes` separately bounds the
+private population genome slab. Neither field is an arbitrary compiled-in cap.
 
-The 0.2.0 status values are:
+The public status values remain:
 
 - `EVO_SUCCESS`
 - `EVO_ERROR_INVALID_ARGUMENT`
@@ -65,6 +68,9 @@ The 0.2.0 status values are:
 
 See `docs/specs/EVO-001-library-contract.md` for the complete API, ownership,
 failure-state, alias, compatibility, and secure-erasure boundaries.
+
+The next implementation boundary is deterministic random-number generation,
+followed by generation-zero initialization, validation, and evaluation.
 
 ## Project Zero
 

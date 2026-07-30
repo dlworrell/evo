@@ -10,7 +10,7 @@ extern "C" {
 #endif
 
 #define EVO_VERSION_MAJOR 0
-#define EVO_VERSION_MINOR 2
+#define EVO_VERSION_MINOR 3
 #define EVO_VERSION_PATCH 0
 
 typedef enum evo_status {
@@ -47,7 +47,10 @@ typedef struct evo_config {
     double crossover_rate;
     double mutation_rate;
     uint64_t random_seed;
+    /* Maximum bytes accepted for one genome allocation. */
     size_t max_genome_bytes;
+    /* Maximum bytes accepted for the contiguous population genome slab. */
+    size_t max_population_bytes;
 } evo_config_t;
 
 typedef struct evo_result {
@@ -70,7 +73,7 @@ typedef struct evo_result {
  * non-null, inactive result in its empty, zero-initialized state.
  *
  * A zero-valued best_fitness is the deterministic "not yet evaluated" state
- * used by the 0.2.0 scaffold, not a valid evaluated optimum.
+ * used by the current scaffold, not a valid evaluated optimum.
  */
 evo_status_t evo_run(const evo_problem_t *problem, const evo_config_t *config, void *context, evo_result_t *result);
 

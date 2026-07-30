@@ -1,7 +1,7 @@
 # EVO-001: Evolutionary Optimization Library Contract
 
 Status: Baseline
-Version: 0.2.0
+Version: 0.3.0
 Owner: EVO
 
 ## Purpose
@@ -31,14 +31,48 @@ records an additional source of variation.
 ### Run configuration
 
 `evo_config_t` records population size, generation limit, tournament size,
-crossover rate, mutation rate, random seed, and `max_genome_bytes`.
+crossover rate, mutation rate, random seed, `max_genome_bytes`, and
+`max_population_bytes`.
 
 `max_genome_bytes` is trusted caller policy for the largest individual genome
 allocation accepted by `evo_run`. It avoids a platform-specific hard-coded
-limit. It does not represent the eventual total population working-set budget.
-When population storage is implemented, its specification must add checked
-size arithmetic and an explicit total-memory policy before allocating
-`population_size * genome_size` bytes or additional generation buffers.
+limit.
+
+`max_population_bytes` is trusted caller policy for the contiguous genome slab
+owned by the internal population subsystem. Before allocation, EVO proves that
+`population_size * genome_size` is representable as `size_t` and no greater
+than this budget. The v0.3.0 field bounds the complete storage allocation made
+by that subsystem. It does not silently authorize future fitness arrays,
+second-generation buffers, checkpoint state, or a total run working set; each
+additional allocation class requires an updated specification and explicit
+policy.
+
+### Internal population storage
+
+Version 0.3.0 adds a private, independently verified population-storage
+subsystem. It is not part of the installed public API and is not yet invoked by
+`evo_run`.
+
+The internal lifecycle contract is:
+
+1. A population object is zero-initialized before its first construction.
+2. Construction rejects an active population without modifying it.
+3. Null input, invalid size policy, arithmetic overflow, budget excess, and
+   allocation failure leave an inactive population in the empty zero state.
+4. Successful construction owns one contiguous, zero-initialized genome slab
+   of exactly `population_size * genome_size` bytes.
+5. Indexed genome access returns a bounded, non-owning view. Out-of-range
+   access returns null, and no view may outlive the population.
+6. Destruction releases the slab and resets every population field to zero.
+   It is null-safe and repeatable for initialized objects.
+
+Population destruction does not securely erase the genome slab. The same
+secret-material restriction defined for `evo_result_destroy` applies to
+population storage and every non-owning genome view.
+
+The private subsystem is deliberately not allocated and discarded inside the
+current scaffold. It will be integrated when generation-zero initialization,
+validation, and evaluation have executable semantics.
 
 ### Result lifecycle
 
@@ -81,33 +115,42 @@ reviewed erasure boundary.
 
 ### Fitness placeholder
 
-The 0.2.0 scaffold initializes all seven `evo_fitness_t` fields to zero. This
+The public scaffold initializes all seven `evo_fitness_t` fields to zero. This
 is a deterministic "not yet evaluated" placeholder, not evidence of a valid
 zero-valued fitness or completed optimization run. A later implementation must
 introduce explicit evaluated-result semantics before returning an optimum.
 
 ## API Compatibility
 
-Version 0.2.0 appends `max_genome_bytes` to `evo_config_t` and changes
-`evo_run` from a raw `int` result to `evo_status_t`. Existing member offsets are
-preserved, but `sizeof(evo_config_t)` and its array stride change. Consumers
-must rebuild against the 0.2.0 header and set a nonzero genome budget.
+Version 0.2.0 appended `max_genome_bytes` to `evo_config_t` and changed
+`evo_run` from a raw `int` result to `evo_status_t`. Version 0.3.0 appends
+`max_population_bytes`. Existing member offsets remain preserved, but
+`sizeof(evo_config_t)` and its array stride change again. Consumers must
+rebuild against the 0.3.0 header. The current public scaffold still requires a
+nonzero per-genome budget; population-backed execution will additionally
+require a nonzero population-storage budget when it is integrated.
 
-## Current 0.2.0 Conformance Boundary
+## Current 0.3.0 Conformance Boundary
 
-The current implementation remains an API and lifecycle scaffold:
+The current implementation remains an API and lifecycle scaffold with a
+verified private population-storage foundation:
 
 - validation enforces required pointers, an inactive result, nonzero size
   policy, and the caller-provided genome bound;
 - success allocates one zero-initialized result genome and records the seed;
 - allocation failure returns a deterministic empty result;
 - result destruction is null-safe, repeatable, and restores the empty state;
-  and
-- population arrays, selection, crossover, mutation, evaluation, diversity,
-  checkpointing, and generation iteration are not implemented.
+- private population construction checks size arithmetic and both caller
+  budgets before allocating a contiguous zero-initialized slab;
+- private population views are bounds-checked and non-owning;
+- private population destruction is null-safe, repeatable, and fully
+  resetting; and
+- population initialization, selection, crossover, mutation, evaluation,
+  diversity, checkpointing, and generation iteration are not implemented.
 
 Consumers must not treat `EVO_SUCCESS` in the current scaffold as evidence that
-an optimization search was performed.
+an optimization search was performed. The internal storage subsystem is not
+evidence that a population has been initialized, evaluated, or searched.
 
 ## Verification
 
@@ -119,11 +162,10 @@ cmake --build build --parallel
 ctest --test-dir build --output-on-failure
 ```
 
-The portable lifecycle test runs across supported platforms. A separate
-Linux-only static-link test uses the GNU-compatible `--wrap=calloc` linker
-facility to prove the allocation-failure state deterministically. CI
-additionally covers GCC, Clang, macOS Clang, formatting, static analysis,
-AddressSanitizer, and UndefinedBehaviorSanitizer.
+The portable result-lifecycle and population-storage tests run across supported
+platforms. A separate Linux-only static-link test uses the GNU-compatible
+`--wrap=calloc` linker facility to prove both allocation-failure states
+deterministically.
 
 ## Related Records
 
@@ -135,4 +177,5 @@ AddressSanitizer, and UndefinedBehaviorSanitizer.
 - `docs/engineering/SECURE-C-CXX.md`
 - `docs/engineering/AES-SEC-001-review-dispositions.json`
 - `https://github.com/dlworrell/evo/issues/4`
+- `https://github.com/dlworrell/evo/issues/6`
 - `https://github.com/dlworrell/AEMS/issues/18`
