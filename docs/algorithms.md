@@ -71,3 +71,21 @@ view violates the EVO contract.
 
 Initialization does not validate or evaluate candidates. Those phases remain
 separate algorithm boundaries.
+
+## Generation-Zero Validation and Evaluation
+
+Version 0.5.0 implements validation and evaluation as two deterministic passes
+over the initialized population. The optional `is_valid` callback runs once
+per genome in ascending index order. A missing validator accepts every
+candidate. The `evaluate` callback then runs once for each valid candidate in
+ascending order; invalid candidates are never evaluated.
+
+All seven returned fitness components must be finite. `fitness.total` is the
+consumer-computed scalar objective, and EVO selects the greatest total. Exact
+ties preserve the lower population index. The remaining components are
+recorded for evidence but receive no library-defined ordering.
+
+An all-invalid population completes evaluation without a winner. Evaluation
+records are bounded by `max_evaluation_bytes`, and failures discard provisional
+records while preserving the initialized genome slab. The phase remains
+private and does not yet drive `evo_run`, selection, or generation iteration.
