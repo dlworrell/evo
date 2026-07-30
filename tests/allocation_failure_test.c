@@ -61,5 +61,8 @@ int main(void)
     assert(population.population_size == 0);
     assert(population.genome_size == 0);
     assert(population.storage_bytes == 0);
+    assert(population.initialization_seed == 0);
+    assert(population.rng_algorithm_version == 0);
+    assert(!population.initialized);
     return 0;
 }
