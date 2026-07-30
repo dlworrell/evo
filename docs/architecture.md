@@ -27,7 +27,30 @@ provided by the caller.
 Indexed genome pointers are bounded non-owning views. Population destruction
 invalidates every view, releases the slab, and resets the complete private
 object. The subsystem is independently tested and remains disconnected from
-`evo_run` until initialization, validity, and evaluation semantics are defined.
+`evo_run` until validity and evaluation semantics are defined.
+
+## Deterministic Initialization Boundary
+
+Version 0.4.0 adds private RNG algorithm version 1 and generation-zero
+population initialization. One operation-local PCG-XSH-RR stream fills the
+complete contiguous population slab using an explicit low-byte-first order.
+The configured `uint64_t` seed, including zero, completely determines the raw
+population bytes.
+
+After prefill, EVO calls the optional consumer initializer once per genome in
+ascending index order. The callback is a bounded deterministic transformation:
+it may change only the provided genome, may not change ownership or retain the
+view, and may not consult unrecorded entropy.
+
+Successful initialization records the seed, RNG algorithm version, and
+lifecycle state. Inactive, already initialized, or inconsistent populations
+are rejected unchanged. Population destruction clears this metadata together
+with the owned slab.
+
+The random stream is reproducible rather than cryptographically secure.
+Private population initialization remains disconnected from `evo_run`; it
+does not call validity or fitness callbacks and does not represent a completed
+search.
 
 ## Execution Flow
 
@@ -39,8 +62,10 @@ object. The subsystem is independently tested and remains disconnected from
 6. Record statistics and evidence.
 7. Stop on convergence, stagnation, generation limit, or an application-defined condition.
 
-Only the storage prerequisite for step 1 exists in version 0.3.0. No current
-success status indicates that any execution-flow step has completed.
+Version 0.4.0 implements deterministic byte initialization and the optional
+domain initializer portion of step 1. Candidate validation begins in step 2
+and remains unimplemented. No current public success status indicates that an
+execution-flow step or optimization search completed.
 
 ## Correctness Boundary
 
