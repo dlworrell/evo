@@ -66,6 +66,53 @@
       "reviewed_at": "2026-07-29",
       "reassess_after": "2027-07-29",
       "resolution_commit": null
+    },
+    {
+      "finding_id": "aes-sec-001:8260fb8f0b7882fee250777bf5d8f83789ace1a92d9cc34969e65dac4637427f",
+      "source_fingerprint": "sha256:33f30f0a3647096f06513e1344b529a035ee58f112a9d7683c034c2cf95840ba",
+      "path": "src/population_storage.c",
+      "line": 78,
+      "symbol": "calloc",
+      "classification": "approved-invariant",
+      "rationale": "Population construction proves that both dimensions are nonzero, the per-genome byte count is within caller policy, population_size multiplied by genome_size is representable as size_t, and the resulting slab is within config->max_population_bytes. The allocator receives one element of that already checked byte count, and allocation failure is handled.",
+      "invariant": "calloc(1, storage_bytes) executes only after storage_bytes is proven equal to population_size * genome_size without overflow and no greater than the caller's total slab budget. Successful storage is fully zero-initialized; allocation failure leaves every population field zero.",
+      "evidence": [
+        "include/catalyst/evo/evo.h",
+        "src/internal/population_storage.h",
+        "src/population_storage.c",
+        "tests/population_storage_test.c::test_resource_limit_rejections",
+        "tests/population_storage_test.c::test_population_size_overflow_rejection",
+        "tests/population_storage_test.c::test_contiguous_zero_initialized_storage_and_access",
+        "tests/allocation_failure_test.c",
+        "https://github.com/dlworrell/evo/issues/6"
+      ],
+      "owner": "dlworrell",
+      "reviewer": "dlworrell",
+      "reviewed_at": "2026-07-30",
+      "reassess_after": "2027-07-30",
+      "resolution_commit": null
+    },
+    {
+      "finding_id": "aes-sec-001:9efc28f4f8386f209d08a1ea3991cc23fb3a84a6352fb3bcbda0ec6a93ab1f79",
+      "source_fingerprint": "sha256:6bab52bad9d98e48c526670e1bf78f6aaea122336c9fd1e8259da3a146d3bd10",
+      "path": "src/population_storage.c",
+      "line": 118,
+      "symbol": "free",
+      "classification": "approved-invariant",
+      "rationale": "The private population object is the sole owner of the contiguous genome slab. Indexed genome pointers are bounds-checked non-owning views, active construction is rejected without losing the owner, and destruction releases storage only through the owning field.",
+      "invariant": "evo_population_destroy is null-safe for initialized objects, calls free through the sole owning population field, and immediately zeros every population field. The first destruction invalidates all non-owning genome views, and repeated destruction is safe through the reset owner field.",
+      "evidence": [
+        "src/internal/population_storage.h",
+        "src/population_storage.c",
+        "tests/population_storage_test.c::test_contiguous_zero_initialized_storage_and_access",
+        "tests/population_storage_test.c::test_active_rejection_and_destruction_idempotency",
+        "https://github.com/dlworrell/evo/issues/6"
+      ],
+      "owner": "dlworrell",
+      "reviewer": "dlworrell",
+      "reviewed_at": "2026-07-30",
+      "reassess_after": "2027-07-30",
+      "resolution_commit": null
     }
   ]
 }
