@@ -21,6 +21,37 @@ target_include_directories(evo_population_initialization_test PRIVATE ${PROJECT_
 target_link_libraries(evo_population_initialization_test PRIVATE catalyst_evo)
 add_test(NAME evo_population_initialization_test COMMAND evo_population_initialization_test)
 
+add_library(evo_seed_schedule_research STATIC
+    research/seed_schedule_research.c
+)
+target_include_directories(evo_seed_schedule_research
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}
+    PRIVATE
+        ${PROJECT_SOURCE_DIR}/src
+)
+target_link_libraries(evo_seed_schedule_research PRIVATE catalyst_evo)
+target_compile_options(evo_seed_schedule_research PRIVATE -Wall -Wextra -Wpedantic)
+
+add_executable(evo_seed_schedule_research_test seed_schedule_research_test.c)
+target_include_directories(evo_seed_schedule_research_test PRIVATE ${PROJECT_SOURCE_DIR}/src)
+target_link_libraries(evo_seed_schedule_research_test
+    PRIVATE
+        evo_seed_schedule_research
+        catalyst_evo
+)
+add_test(NAME evo_seed_schedule_research_test COMMAND evo_seed_schedule_research_test)
+
+add_executable(evo_seed_schedule_experiment seed_schedule_experiment.c)
+target_link_libraries(evo_seed_schedule_experiment
+    PRIVATE
+        evo_seed_schedule_research
+)
+if(NOT MSVC)
+    target_link_libraries(evo_seed_schedule_experiment PRIVATE m)
+endif()
+add_test(NAME evo_seed_schedule_experiment COMMAND evo_seed_schedule_experiment)
+
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux"
    AND CMAKE_C_COMPILER_ID MATCHES "GNU|Clang"
    AND NOT BUILD_SHARED_LIBS)
