@@ -52,6 +52,30 @@ Private population initialization remains disconnected from `evo_run`; it
 does not call validity or fitness callbacks and does not represent a completed
 search.
 
+## Validation and Evaluation Boundary
+
+Version 0.5.0 adds private generation-zero validation and evaluation. EVO first
+classifies every candidate in ascending index order. A missing validator means
+all candidates are valid. It then evaluates only valid candidates, again in
+ascending order.
+
+One caller-budgeted private record stores each candidate's validity and fitness
+evidence. EVO checks the record-array multiplication for `size_t` overflow and
+enforces `max_evaluation_bytes` independently from the genome-slab budget.
+Provisional records are attached to the population only after all returned
+fitness fields are proven finite.
+
+Validity is a hard correctness gate. Among valid candidates, higher
+consumer-computed `fitness.total` wins, and the lower index wins an exact tie.
+The other component fields remain evidence rather than library-defined
+objectives. An all-invalid population is a completed evaluation state with no
+winner.
+
+Resource, allocation, and non-finite-fitness failures leave the initialized
+genome slab owned and unevaluated. Population destruction releases both the
+genome slab and evaluation records and resets the complete private object.
+Evaluation remains disconnected from `evo_run`.
+
 ## Execution Flow
 
 1. Initialize a population.
@@ -62,11 +86,15 @@ search.
 6. Record statistics and evidence.
 7. Stop on convergence, stagnation, generation limit, or an application-defined condition.
 
-Version 0.4.0 implements deterministic byte initialization and the optional
-domain initializer portion of step 1. Candidate validation begins in step 2
-and remains unimplemented. No current public success status indicates that an
-execution-flow step or optimization search completed.
+Version 0.5.0 implements deterministic byte initialization and the optional
+domain initializer portion of step 1, plus generation-zero validation,
+evaluation, and best-candidate identification from step 2. The private
+subsystem is not yet connected to `evo_run`; no current public success status
+indicates that the population execution flow or an optimization search
+completed.
 
 ## Correctness Boundary
 
-Candidate correctness is a hard gate. Invalid candidates are rejected or heavily penalized before performance optimization is considered.
+Candidate correctness is a hard gate. Invalid candidates are not evaluated and
+cannot win. Fitness callbacks must return finite evidence, and consumer policy
+is responsible for producing the scalar `total` used for comparison.
