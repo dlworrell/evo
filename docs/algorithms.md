@@ -40,6 +40,12 @@ state and consumes no clock, process, operating-system, or hardware entropy.
 Every `uint64_t` seed is valid. Fixed vectors in `tests/rng_test.c` prevent an
 implementation change from silently altering reproducibility.
 
+Version 0.7.0 adds unbiased bounded-index sampling. One sample combines two
+successive 32-bit outputs into an explicit low-word/high-word 64-bit value,
+rejects the modulo-bias prefix, and reduces an accepted value by the bound.
+Fixed vectors cover normal and rejection paths, exact stream consumption, and
+replay.
+
 This stream is designed for repeatable engineering search. It is not
 cryptographically secure and must not generate secrets, keys, nonces, or
 authentication material.
@@ -106,3 +112,24 @@ This boundary performs no parent selection, crossover, mutation, elitism,
 diversity processing, or generation transition. A successful call therefore
 records `generations_completed == 0`; it is generation-zero evidence rather
 than a completed optimization search.
+
+## Deterministic Tournament Selection
+
+Version 0.7.0 implements tournament selection as a private operator over a
+completed evaluation population.
+
+- `tournament_size` is in `1..population_size`.
+- Draws are with replacement.
+- Only valid, evaluated candidates participate.
+- A valid-candidate ordinal is sampled without modulo bias and mapped to the
+  corresponding ascending population index.
+- Higher `fitness.total` wins; the lower population index wins an exact tie.
+- Completed all-invalid input returns `EVO_ERROR_NO_VALID_CANDIDATE`.
+- Invalid lifecycle or evidence returns `EVO_ERROR_STATE`.
+- The population and output are unchanged on failure, and validation consumes
+  no RNG state.
+
+The caller supplies the seeded private stream. This isolates selection
+semantics from the still-undecided generation-level stream schedule. The
+operator is not called by `evo_run` and performs no crossover, mutation,
+elitism, or generation advancement.
