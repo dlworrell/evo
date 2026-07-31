@@ -33,6 +33,36 @@ EVO may optimize bounded configurations and design choices, but evolved candidat
 - `benchmarks/` — performance and algorithm benchmarks
 - `docs/` — architecture, theory, algorithms, and evidence guidance
 
+## Authoritative Native Builds
+
+EVO treats CMake and GNU Autotools as independent, equivalent build
+frontends. The checked-in AES-BLD-001 profiles bind:
+
+- CMake + Clang 18 to LLVM archive/inspection tools and LLD
+- CMake + GCC 13 to GNU Binutils and the BFD linker
+- Autotools to both GCC/GNU tools and Clang/LLVM tools
+
+The canonical local entry points are:
+
+```sh
+cmake --preset aes-clang
+cmake --build --preset aes-clang
+ctest --preset aes-clang
+
+autoreconf -fvi
+mkdir -p build/autotools-gcc
+cd build/autotools-gcc
+CC=gcc ../../configure
+make
+make check
+```
+
+`CMakePresets.json`, `configure.ac`, and `Makefile.am` enumerate the same C17
+library sources and normative tests. CI also compares staged install
+manifests, public symbols, package metadata, and a downstream consumer built
+against each installed result. See
+`docs/engineering/AES-BLD-001-toolchain-profile.md`.
+
 ## Status
 
 EVO 0.5.0 is an API and memory-lifecycle scaffold. `evo_run` currently
