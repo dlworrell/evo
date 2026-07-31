@@ -181,7 +181,8 @@ evo_status_t evo_population_select_tournament(
         if (!evo_rng_uniform_index(
                 rng, valid_count, &valid_ordinal) ||
             !valid_index_from_ordinal(
-                population, valid_ordinal, &candidate_index)) {
+                population, valid_ordinal, &candidate_index) ||
+            candidate_index >= population->population_size) {
             return EVO_ERROR_STATE;
         }
 
