@@ -7,14 +7,24 @@ static void test_invalid_state_rejection(void)
     evo_rng_t rng = {0};
     uint32_t value = 0;
     unsigned char byte = 0;
+    size_t index = 19;
 
     assert(!evo_rng_seed(NULL, 0));
     assert(!evo_rng_next_u32(NULL, &value));
     assert(!evo_rng_next_u32(&rng, NULL));
     assert(!evo_rng_next_u32(&rng, &value));
+    assert(!evo_rng_uniform_index(NULL, 3, &index));
+    assert(!evo_rng_uniform_index(&rng, 3, &index));
     assert(!evo_rng_fill_bytes(&rng, &byte, 1));
 
     assert(evo_rng_seed(&rng, 0));
+    const evo_rng_t seeded = rng;
+    assert(!evo_rng_uniform_index(&rng, 0, &index));
+    assert(!evo_rng_uniform_index(&rng, 3, NULL));
+    assert(index == 19);
+    assert(rng.state == seeded.state);
+    assert(rng.increment == seeded.increment);
+    assert(rng.seeded == seeded.seeded);
     assert(!evo_rng_fill_bytes(&rng, NULL, 1));
     assert(evo_rng_fill_bytes(&rng, NULL, 0));
 }
@@ -133,6 +143,75 @@ static void test_reseeding_restores_stream(void)
     assert(first == replay);
 }
 
+static void test_uniform_index_fixed_vector(void)
+{
+    static const size_t bounds[] = {1, 2, 10};
+    static const size_t expected[] = {0, 1, 3};
+    evo_rng_t rng = {0};
+    uint32_t next_value = 0;
+
+    assert(evo_rng_seed(&rng, 42));
+    for (size_t vector_index = 0;
+         vector_index < sizeof(bounds) / sizeof(bounds[0]);
+         ++vector_index) {
+        size_t actual = SIZE_MAX;
+
+        assert(evo_rng_uniform_index(
+            &rng, bounds[vector_index], &actual));
+        assert(actual == expected[vector_index]);
+    }
+
+    assert(evo_rng_next_u32(&rng, &next_value));
+    assert(next_value == UINT32_C(0xcbc7312c));
+}
+
+static void test_uniform_index_replay(void)
+{
+    evo_rng_t first = {0};
+    evo_rng_t replay = {0};
+
+    assert(evo_rng_seed(&first, UINT64_C(20260731)));
+    assert(evo_rng_seed(&replay, UINT64_C(20260731)));
+
+    for (size_t draw = 0; draw < 32; ++draw) {
+        size_t first_index = SIZE_MAX;
+        size_t replay_index = SIZE_MAX;
+
+        assert(evo_rng_uniform_index(&first, 17, &first_index));
+        assert(evo_rng_uniform_index(&replay, 17, &replay_index));
+        assert(first_index == replay_index);
+        assert(first_index < 17);
+    }
+
+    assert(first.state == replay.state);
+    assert(first.increment == replay.increment);
+    assert(first.seeded == replay.seeded);
+}
+
+static void test_uniform_index_rejection_path(void)
+{
+#if SIZE_MAX > UINT32_MAX
+    const size_t bound =
+        (size_t)UINT64_C(0x8000000000000001);
+    const size_t expected =
+        (size_t)UINT64_C(0x55efc7d7cbc7312b);
+    evo_rng_t rng = {0};
+    size_t actual = SIZE_MAX;
+    uint32_t next_value = 0;
+
+    assert(evo_rng_seed(&rng, 42));
+    assert(evo_rng_uniform_index(&rng, bound, &actual));
+    assert(actual == expected);
+
+    /*
+     * The first three 64-bit samples are below the rejection threshold.
+     * The accepted fourth sample consumes words seven and eight.
+     */
+    assert(evo_rng_next_u32(&rng, &next_value));
+    assert(next_value == UINT32_C(0x7aec0808));
+#endif
+}
+
 int main(void)
 {
     test_invalid_state_rejection();
@@ -141,5 +220,8 @@ int main(void)
     test_explicit_byte_emission_order();
     test_partial_word_boundary();
     test_reseeding_restores_stream();
+    test_uniform_index_fixed_vector();
+    test_uniform_index_replay();
+    test_uniform_index_rejection_path();
     return 0;
 }
