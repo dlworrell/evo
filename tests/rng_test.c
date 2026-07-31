@@ -279,6 +279,135 @@ static void test_uniform_index_rejection_path(void)
 #endif
 }
 
+static void test_operator_stream_invalid_input_preserves_output(void)
+{
+    evo_rng_t output = {
+        .state = UINT64_C(11),
+        .increment = UINT64_C(13),
+        .seeded = true,
+    };
+    const evo_rng_t before = output;
+
+    assert(!evo_rng_derive_operator_stream(
+        NULL,
+        42,
+        7,
+        11,
+        EVO_OPERATOR_RNG_DOMAIN_SELECTION));
+    assert(!evo_rng_derive_operator_stream(
+        &output,
+        42,
+        7,
+        11,
+        (evo_operator_rng_domain_t)1));
+    assert(output.state == before.state);
+    assert(output.increment == before.increment);
+    assert(output.seeded == before.seeded);
+
+    assert(!evo_rng_derive_operator_stream(
+        &output,
+        42,
+        7,
+        11,
+        (evo_operator_rng_domain_t)5));
+    assert(output.state == before.state);
+    assert(output.increment == before.increment);
+    assert(output.seeded == before.seeded);
+}
+
+static void test_operator_stream_fixed_vector(void)
+{
+    static const uint32_t expected[] = {
+        UINT32_C(0x80524a0e),
+        UINT32_C(0x665016de),
+        UINT32_C(0x2feb6ab6),
+        UINT32_C(0xbb7ebd14),
+    };
+    evo_rng_t rng = {0};
+
+    assert(EVO_OPERATOR_SEED_SCHEDULE_VERSION == UINT32_C(1));
+    assert(evo_rng_derive_operator_stream(
+        &rng,
+        42,
+        7,
+        11,
+        EVO_OPERATOR_RNG_DOMAIN_MUTATION));
+    assert(rng.state == UINT64_C(0x524955425ff5cf53));
+    assert(rng.increment == UINT64_C(0x5e6ab376c2e2ce3d));
+    assert(rng.seeded);
+
+    for (size_t index = 0;
+         index < sizeof(expected) / sizeof(expected[0]);
+         ++index) {
+        uint32_t actual = 0;
+
+        assert(evo_rng_next_u32(&rng, &actual));
+        assert(actual == expected[index]);
+    }
+}
+
+static void test_operator_stream_domain_separation_and_replay(void)
+{
+    evo_rng_t selection = {0};
+    evo_rng_t selection_replay = {0};
+    evo_rng_t crossover = {0};
+    evo_rng_t mutation = {0};
+    evo_rng_t next_generation = {0};
+    evo_rng_t next_index = {0};
+
+    assert(evo_rng_derive_operator_stream(
+        &selection,
+        42,
+        7,
+        11,
+        EVO_OPERATOR_RNG_DOMAIN_SELECTION));
+    assert(evo_rng_derive_operator_stream(
+        &selection_replay,
+        42,
+        7,
+        11,
+        EVO_OPERATOR_RNG_DOMAIN_SELECTION));
+    assert(evo_rng_derive_operator_stream(
+        &crossover,
+        42,
+        7,
+        11,
+        EVO_OPERATOR_RNG_DOMAIN_CROSSOVER));
+    assert(evo_rng_derive_operator_stream(
+        &mutation,
+        42,
+        7,
+        11,
+        EVO_OPERATOR_RNG_DOMAIN_MUTATION));
+    assert(evo_rng_derive_operator_stream(
+        &next_generation,
+        42,
+        8,
+        11,
+        EVO_OPERATOR_RNG_DOMAIN_SELECTION));
+    assert(evo_rng_derive_operator_stream(
+        &next_index,
+        42,
+        7,
+        12,
+        EVO_OPERATOR_RNG_DOMAIN_SELECTION));
+
+    assert(selection.state == selection_replay.state);
+    assert(selection.increment == selection_replay.increment);
+    assert(selection.seeded == selection_replay.seeded);
+
+    assert(selection.state != crossover.state ||
+           selection.increment != crossover.increment);
+    assert(selection.state != mutation.state ||
+           selection.increment != mutation.increment);
+    assert(crossover.state != mutation.state ||
+           crossover.increment != mutation.increment);
+    assert(selection.state != next_generation.state ||
+           selection.increment != next_generation.increment);
+    assert(selection.state != next_index.state ||
+           selection.increment != next_index.increment);
+}
+
 int main(void)
 {
     test_invalid_state_rejection();
@@ -292,5 +421,8 @@ int main(void)
     test_uniform_index_rejection_path();
     test_probability_event_fixed_vector();
     test_probability_event_replay();
+    test_operator_stream_invalid_input_preserves_output();
+    test_operator_stream_fixed_vector();
+    test_operator_stream_domain_separation_and_replay();
     return 0;
 }

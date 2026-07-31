@@ -6,6 +6,13 @@
 #include <stdint.h>
 
 #define EVO_RNG_ALGORITHM_VERSION UINT32_C(1)
+#define EVO_OPERATOR_SEED_SCHEDULE_VERSION UINT32_C(1)
+
+typedef enum evo_operator_rng_domain {
+    EVO_OPERATOR_RNG_DOMAIN_SELECTION = 2,
+    EVO_OPERATOR_RNG_DOMAIN_CROSSOVER = 3,
+    EVO_OPERATOR_RNG_DOMAIN_MUTATION = 4
+} evo_operator_rng_domain_t;
 
 typedef struct evo_rng {
     uint64_t state;
@@ -19,6 +26,19 @@ typedef struct evo_rng {
  * secure and must not be used to generate secrets.
  */
 bool evo_rng_seed(evo_rng_t *rng, uint64_t seed);
+
+/*
+ * Derive one independently addressable operator stream from the accepted
+ * version-1 tuple-mixed schedule. population_index means pair ordinal for
+ * selection/crossover and child index for mutation. Invalid input preserves
+ * the destination stream.
+ */
+bool evo_rng_derive_operator_stream(
+    evo_rng_t *rng,
+    uint64_t master_seed,
+    uint64_t source_generation,
+    uint64_t population_index,
+    evo_operator_rng_domain_t domain);
 
 /* Advance the seeded stream and return its next 32-bit value. */
 bool evo_rng_next_u32(evo_rng_t *rng, uint32_t *value);

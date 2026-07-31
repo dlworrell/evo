@@ -357,6 +357,42 @@ static void test_domain_separation_and_replay(void)
     }
 }
 
+static void test_mixed_control_matches_production_operator_schedule(void)
+{
+    const evo_research_seed_tuple_t tuple = {
+        .master_seed = 42,
+        .generation = 7,
+        .population_index = 11,
+        .domain = EVO_RESEARCH_DOMAIN_MUTATION,
+    };
+    evo_research_pcg_schedule_t research = {0};
+    evo_rng_t production = {0};
+
+    assert(evo_research_derive_schedule(
+        EVO_RESEARCH_CANDIDATE_MIXED_CONTROL,
+        &tuple,
+        NULL,
+        0,
+        &research));
+    assert(evo_rng_derive_operator_stream(
+        &production,
+        tuple.master_seed,
+        tuple.generation,
+        tuple.population_index,
+        EVO_OPERATOR_RNG_DOMAIN_MUTATION));
+    assert(production.state == research.state);
+    assert(production.increment == research.increment);
+
+    for (size_t index = 0; index < 16; ++index) {
+        uint32_t production_value = 0;
+
+        assert(evo_rng_next_u32(
+            &production, &production_value));
+        assert(production_value ==
+               evo_research_schedule_next_u32(&research));
+    }
+}
+
 int main(void)
 {
     test_prime_vector();
@@ -365,5 +401,6 @@ int main(void)
     test_baseline_matches_rng_version_one();
     test_schedule_fixed_vectors();
     test_domain_separation_and_replay();
+    test_mixed_control_matches_production_operator_schedule();
     return 0;
 }

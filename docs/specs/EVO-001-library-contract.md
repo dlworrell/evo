@@ -1,7 +1,7 @@
 # EVO-001: Evolutionary Optimization Library Contract
 
 Status: Baseline
-Version: 0.10.0
+Version: 0.11.0
 Owner: EVO
 
 ## Purpose
@@ -137,6 +137,38 @@ Population initialization does not itself call `is_valid` or `evaluate`.
 Version 0.6.0 composes it with the distinct evaluation phase; initialization
 failure prevents every later callback and result transfer.
 
+### Private operator seed schedule
+
+Version 0.11.0 adds operator seed-schedule version 1 without changing RNG
+algorithm version 1 or generation-zero initialization. The normative decision
+is recorded in
+`docs/adr/ADR-0010-versioned-operator-substreams-and-parent-pair-planning.md`.
+
+The schedule promotes the exact plain tuple-mixed control measured by
+EVO-RNG-001. It derives a PCG state and odd increment from:
+
+```text
+(master_seed, source_generation, population_index, operation_domain)
+```
+
+The contract is:
+
+1. Every transformation uses modulo-2^64 unsigned fixed-width arithmetic.
+2. Stable operation-domain values are selection `2`, crossover `3`, and
+   mutation `4`.
+3. Selection and crossover use complete-pair ordinals as tuple indexes;
+   mutation uses child population indexes.
+4. Identical tuples reproduce exact state, increment, and output prefixes.
+5. Changing source generation, tuple index, or domain derives an independently
+   addressable stream rather than advancing another operation's stream.
+6. Null output or an invalid domain returns false and preserves the destination
+   RNG object.
+7. Schedule version 1 does not add entropy, make a cryptographic claim, or
+   modify the generation-zero stream.
+
+Prime-indexed and finite-field elliptic schedules remain research-only and are
+not linked into the production library.
+
 ### Generation-zero validation and evaluation
 
 Version 0.5.0 adds a private evaluation phase after successful population
@@ -243,9 +275,8 @@ The selection lifecycle is:
 
 The caller supplies an already seeded private RNG stream. Version 0.7.0 does
 not derive a selection seed, split initialization streams, or alter RNG
-algorithm version 1. The future generation-transition boundary must define
-stream ownership, derivation, and persistence before composing this operator
-with `evo_run`.
+algorithm version 1. Version 0.11.0 separately defines pair-local selection-
+stream ownership without composing this operator with `evo_run`.
 
 ### Private deterministic crossover dispatch
 
@@ -282,8 +313,9 @@ The crossover lifecycle is:
 
 The operator performs no allocation, does not select parents, and does not own
 child storage. It is private and is not called by `evo_run`. Version 0.8.0 does
-not implement a next-generation population, generation-level stream
-derivation, or a generation transition.
+not implement a next-generation population or a generation transition.
+Version 0.11.0 later defines pair-local crossover stream derivation without
+invoking this dispatcher.
 
 ### Private deterministic mutation dispatch
 
@@ -321,8 +353,9 @@ The mutation lifecycle is:
 The operator performs no allocation and does not own genome storage. It is
 private and is not called by `evo_run`. Version 0.9.0 does not implement
 built-in representation-specific mutation helpers, adaptive mutation, a
-next-generation population, generation-level stream derivation, or a
-generation transition.
+next-generation population, or a generation transition. Version 0.11.0 later
+defines child-indexed mutation stream derivation without invoking this
+dispatcher.
 
 ### Private child-population ownership
 
@@ -362,6 +395,44 @@ The child-storage lifecycle is:
 The child operation does not select or pair parents, invoke crossover or
 mutation, mark genomes complete, evaluate children, swap populations, derive
 operator streams, increment a generation, or participate in `evo_run`.
+
+### Private complete-parent-pair planning
+
+Version 0.11.0 adds a private read-only pair-planning boundary over a completed
+parent population. The normative decision is recorded in ADR-0010.
+
+The planning lifecycle is:
+
+1. Configuration, completed parent population, and output plan must be
+   non-null.
+2. `population_size` and `tournament_size` must be nonzero, and tournament size
+   must not exceed population size; otherwise planning returns
+   `EVO_ERROR_RESOURCE_LIMIT`.
+3. Exactly `floor(population_size / 2)` complete pair ordinals are valid. An
+   out-of-range ordinal returns `EVO_ERROR_RESOURCE_LIMIT` and preserves the
+   output.
+4. EVO proves the completed parent storage and evaluation evidence through the
+   shared population validator. Inconsistent evidence returns
+   `EVO_ERROR_STATE`; a consistent all-invalid parent returns
+   `EVO_ERROR_NO_VALID_CANDIDATE`.
+5. Pair ordinal `i` maps to child indexes `2i` and `2i + 1`. These arithmetic
+   results are in range by construction.
+6. EVO derives one selection-domain schedule-version-1 stream from the
+   configured master seed, source generation, and pair ordinal.
+7. Two deterministic tournaments execute sequentially on the pair-local
+   stream. Sampling remains with replacement, so both outputs may identify the
+   same parent.
+8. The plan records both parent indexes, both child indexes, pair ordinal,
+   source generation, and seed-schedule version only after both tournaments
+   succeed.
+9. Every rejection preserves the output object and the complete parent
+   population.
+10. For an odd population, the final child index is not part of a complete
+    pair. A later singleton or elitism policy owns it.
+
+The planner receives no child pointer, writes no genome, invokes no crossover
+or mutation callback, marks no lifecycle state, and does not participate in
+`evo_run`.
 
 ### Result lifecycle
 
@@ -445,7 +516,12 @@ increase, so consumers must rebuild. Generation-zero `evo_run` behavior and
 the installed public function signatures remain unchanged; the appended field
 is used only by the new private child-storage boundary.
 
-## Current 0.10.0 Conformance Boundary
+Version 0.11.0 changes no public layout, function signature, installed symbol,
+memory policy, or `evo_run` behavior. It adds private operator-stream derivation
+and complete parent-pair planning. Consumers rebuilding from 0.10.0 require no
+source change.
+
+## Current 0.11.0 Conformance Boundary
 
 The current implementation exposes a complete generation-zero boundary:
 
@@ -468,6 +544,9 @@ The current implementation exposes a complete generation-zero boundary:
 - private RNG output and byte order are locked by fixed vectors;
 - private bounded-index sampling is unbiased, fixed-vector locked, and replay
   stable;
+- private operator streams are versioned, tuple-addressable, domain-separated,
+  fixed-vector locked, and exactly matched to the accepted mixed-control
+  research schedule;
 - private population initialization is seed-reproducible and records its RNG
   algorithm version;
 - optional initializers run exactly once in ascending genome order;
@@ -482,9 +561,12 @@ The current implementation exposes a complete generation-zero boundary:
   preserves genome output on precondition failure;
 - private child-population creation validates completed parent evidence,
   enforces a separate checked budget, and creates independently owned empty
-  output storage; and
-- adaptive mutation, diversity, checkpointing, operator orchestration, and
-  generation iteration are not implemented.
+  output storage;
+- private complete-pair planning derives a pair-local selection stream, runs
+  two tournaments with replacement, maps consecutive child slots, and
+  preserves output and parent evidence on rejection; and
+- child production, odd-slot policy, adaptive mutation, diversity,
+  checkpointing, and generation iteration are not implemented.
 
 Consumers may treat `EVO_SUCCESS` as evidence of a valid evaluated
 generation-zero winner. They must not treat it as evidence that an
@@ -527,6 +609,13 @@ child rejection, all-invalid storage behavior, and independent destruction.
 The allocation-failure test separately proves empty-child cleanup while the
 completed parent remains intact.
 
+The parent-pair test proves policy and pair bounds, completed-parent and all-
+invalid handling, fixed pair vectors, valid-only selection with replacement,
+replay, odd trailing-slot exclusion, output preservation, and parent
+preservation. RNG tests lock the production operator schedule, and the seed-
+schedule research test proves byte-for-byte stream agreement with the accepted
+plain mixed control.
+
 ## Related Records
 
 - `docs/adr/ADR-0001-library-boundary-and-build-system.md`
@@ -537,6 +626,7 @@ completed parent remains intact.
 - `docs/adr/ADR-0007-deterministic-crossover-dispatch.md`
 - `docs/adr/ADR-0008-deterministic-mutation-dispatch.md`
 - `docs/adr/ADR-0009-bounded-child-population-ownership.md`
+- `docs/adr/ADR-0010-versioned-operator-substreams-and-parent-pair-planning.md`
 - `docs/architecture.md`
 - `docs/algorithms.md`
 - `docs/benchmarks.md`
