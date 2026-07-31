@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(catalyst_evo VERSION 0.5.0 LANGUAGES C)
+project(catalyst_evo VERSION 0.6.0 LANGUAGES C)
 
 include(CTest)
 include(GNUInstallDirs)
