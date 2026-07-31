@@ -63,11 +63,29 @@ elliptic schedule. The prime and elliptic candidates did not improve the
 measured separation over the simpler control, and the elliptic candidate added
 approximately 600-fold derivation cost.
 
-EVO therefore preserves RNG algorithm version 1 and does not link the research
-schedules into the production library. If future operators require
-independently addressable streams, their consumption model will be specified
-first and a new versioned design will begin from the plain tuple-mixed control.
-See `docs/adr/ADR-0003-prime-and-elliptic-seed-schedules.md`.
+EVO preserves RNG algorithm version 1 and does not link the prime or elliptic
+research schedules into the production library. Version 0.11.0 supplies the
+required operator-consumption model and promotes only the plain tuple-mixed
+control as a separately versioned production schedule. See
+`docs/adr/ADR-0003-prime-and-elliptic-seed-schedules.md` and ADR-0010.
+
+## Operator Seed Schedule
+
+Operator seed-schedule version 1 derives an independently addressable PCG
+stream from:
+
+```text
+(master_seed, source_generation, population_index, operation_domain)
+```
+
+Selection and crossover own pair ordinals as tuple indexes; mutation owns child
+indexes. Stable domains separate selection, crossover, and mutation. The
+unsigned fixed-width tuple mix and fixed schedule vectors are normative. Pair-
+local derivation prevents rejection sampling or changed operator consumption
+in one pair from shifting a later pair's stream.
+
+This schedule does not alter generation-zero initialization, add entropy, or
+make PCG cryptographically secure.
 
 ## Generation-Zero Initialization
 
@@ -134,9 +152,9 @@ completed evaluation population.
 - The population and output are unchanged on failure, and validation consumes
   no RNG state.
 
-The caller supplies the seeded private stream. This isolates selection
-semantics from the still-undecided generation-level stream schedule. The
-operator is not called by `evo_run` and performs no crossover, mutation,
+The caller supplies the seeded private stream. Version 0.11.0 derives that
+stream for complete parent pairs while keeping selection semantics independent.
+The operator is not called by `evo_run` and performs no crossover, mutation,
 elitism, or generation advancement.
 
 ## Deterministic Crossover Dispatch
@@ -202,3 +220,22 @@ operators can be composed.
 This boundary does not select or pair parents, invoke crossover or mutation,
 mark children complete, evaluate children, swap populations, derive operator
 streams, or advance a generation.
+
+## Complete Parent-Pair Planning
+
+Version 0.11.0 adds a read-only private planner over completed parent evidence.
+
+- Exactly `population_size / 2` complete pairs are addressable.
+- Pair `i` owns child indexes `2i` and `2i + 1`.
+- The selection stream is derived from the master seed, source generation,
+  pair ordinal, and selection domain.
+- Two tournaments run sequentially on that pair-local stream, with replacement.
+- Both parents must be selected before the output plan is committed.
+- The plan records pair ordinal, source generation, and seed-schedule version.
+- Null, policy, lifecycle, all-invalid, and pair-bound failures preserve parent
+  evidence and the output object.
+- An odd trailing child index is outside complete-pair planning and remains
+  reserved for later singleton or elitism policy.
+
+The planner does not accept child pointers, write genome bytes, invoke
+crossover or mutation, mark child storage complete, or advance a generation.

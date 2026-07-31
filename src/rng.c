@@ -6,6 +6,36 @@
 #define EVO_PCG32_INCREMENT UINT64_C(1442695040888963407)
 #define EVO_PROBABILITY_SCALE 4294967296.0
 
+#define EVO_GENERATION_TAG UINT64_C(0x9e3779b97f4a7c15)
+#define EVO_POPULATION_TAG UINT64_C(0xd1b54a32d192ed03)
+#define EVO_DOMAIN_TAG UINT64_C(0x94d049bb133111eb)
+#define EVO_STATE_TAG UINT64_C(0xa0761d6478bd642f)
+#define EVO_STREAM_TAG UINT64_C(0xe7037ed1a0b428db)
+
+static uint64_t rotate_left_64(uint64_t value, unsigned int distance)
+{
+    const unsigned int normalized_distance = distance & 63u;
+
+    return (value << normalized_distance) |
+           (value >> ((64u - normalized_distance) & 63u));
+}
+
+static uint64_t mix_64(uint64_t value)
+{
+    value ^= value >> 30u;
+    value *= UINT64_C(0xbf58476d1ce4e5b9);
+    value ^= value >> 27u;
+    value *= UINT64_C(0x94d049bb133111eb);
+    value ^= value >> 31u;
+    return value;
+}
+
+static bool operator_domain_is_valid(evo_operator_rng_domain_t domain)
+{
+    return domain >= EVO_OPERATOR_RNG_DOMAIN_SELECTION &&
+           domain <= EVO_OPERATOR_RNG_DOMAIN_MUTATION;
+}
+
 static uint32_t pcg32_advance(evo_rng_t *rng)
 {
     const uint64_t previous_state = rng->state;
@@ -31,6 +61,37 @@ bool evo_rng_seed(evo_rng_t *rng, uint64_t seed)
     rng->state += seed;
     (void)pcg32_advance(rng);
     rng->seeded = true;
+    return true;
+}
+
+bool evo_rng_derive_operator_stream(
+    evo_rng_t *rng,
+    uint64_t master_seed,
+    uint64_t source_generation,
+    uint64_t population_index,
+    evo_operator_rng_domain_t domain)
+{
+    evo_rng_t derived = {0};
+    uint64_t material = 0;
+
+    if (rng == NULL || !operator_domain_is_valid(domain)) {
+        return false;
+    }
+
+    material = mix_64(
+        master_seed ^
+        mix_64(source_generation ^ EVO_GENERATION_TAG) ^
+        mix_64(population_index ^ EVO_POPULATION_TAG) ^
+        mix_64((uint64_t)domain ^ EVO_DOMAIN_TAG));
+
+    derived.state = mix_64(material ^ EVO_STATE_TAG);
+    derived.increment =
+        (mix_64(rotate_left_64(material, 23u) ^ EVO_STREAM_TAG)
+         << 1u) |
+        UINT64_C(1);
+    derived.seeded = true;
+
+    *rng = derived;
     return true;
 }
 

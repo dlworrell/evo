@@ -65,13 +65,13 @@ against each installed result. See
 
 ## Status
 
-EVO 0.10.0 retains the complete public generation-zero boundary and adds
-bounded private child-population ownership after the independently tested
-tournament-selection, crossover, and mutation boundaries. `evo_run` still
-constructs and deterministically initializes a private population, validates
-every candidate, evaluates only valid candidates, selects the stable
-generation-zero winner, and transfers an independent genome copy plus its
-complete fitness evidence to the public result.
+EVO 0.11.0 retains the complete public generation-zero boundary and adds
+versioned, independently addressable operator streams plus deterministic
+complete-parent-pair planning. `evo_run` still constructs and deterministically
+initializes a private population, validates every candidate, evaluates only
+valid candidates, selects the stable generation-zero winner, and transfers an
+independent genome copy plus its complete fitness evidence to the public
+result.
 
 Version 0.3.0 added the independently tested private population-storage
 foundation: checked `population_size * genome_size` arithmetic, a
@@ -119,10 +119,9 @@ the lower population index. The operator validates the completed population
 before consuming RNG state, performs no allocation, and preserves its output
 on failure.
 
-Selection accepts an explicitly seeded private RNG stream. It does not define a
-new seed schedule, change RNG algorithm version 1, or connect selection to
-`evo_run`. Generation orchestration will define stream ownership and sequencing
-when the first transition is implemented.
+Selection accepts an explicitly seeded private RNG stream. Version 0.11.0 adds
+the separate owner that derives a selection stream for each complete pair; the
+selection operator itself remains unchanged and disconnected from `evo_run`.
 
 Version 0.8.0 adds a private probability gate and crossover pair dispatcher.
 The gate quantizes `crossover_rate` to a 32-bit threshold and consumes exactly
@@ -160,6 +159,20 @@ dimensions, begins without initialization or evaluation evidence, and may be
 destroyed independently. This boundary does not select parents, invoke genetic
 operators, mark children complete, swap populations, or advance a generation.
 
+Version 0.11.0 promotes the plain tuple-mixed seed schedule measured in the
+EVO-RNG-001 research into production as operator seed-schedule version 1.
+Selection, crossover, and mutation streams are independently addressable by
+master seed, source generation, pair or child index, and operation domain. RNG
+algorithm version 1 and every generation-zero initialization vector remain
+unchanged.
+
+The private parent-pair planner maps each complete pair ordinal to consecutive
+child slots and performs two deterministic tournaments with replacement using
+that pair's selection-domain stream. It commits no output until both parents
+are selected, leaves the completed parent read-only, and writes no child bytes.
+Only `population_size / 2` complete pairs are planned; an odd trailing slot is
+reserved for a later singleton or elitism policy.
+
 ## Result Lifecycle
 
 Callers must zero-initialize an `evo_result_t` before first use. A successful
@@ -187,11 +200,11 @@ The status values are:
 See `docs/specs/EVO-001-library-contract.md` for the complete API, ownership,
 failure-state, alias, compatibility, and secure-erasure boundaries.
 
-The private tournament, crossover-dispatch, mutation-dispatch, and child-
-population ownership boundaries are independently verified. Operator stream
-orchestration, pair production, adaptive mutation, and the first generation
-transition remain the next execution boundaries; none is implied by
-`evo_run` success in version 0.10.0.
+The private tournament, crossover-dispatch, mutation-dispatch, child-population
+ownership, operator-stream, and complete-pair-planning boundaries are
+independently verified. Child production, odd-slot policy, adaptive mutation,
+and the first generation transition remain later execution boundaries; none
+is implied by `evo_run` success in version 0.11.0.
 
 ## Project Zero
 

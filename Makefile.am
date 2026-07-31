@@ -21,6 +21,7 @@ libcatalyst_evo_la_SOURCES = \
 	src/selection.c \
 	src/crossover.c \
 	src/mutation.c \
+	src/parent_pair.c \
 	src/diversity.c \
 	src/fitness.c \
 	src/statistics.c \
@@ -37,6 +38,7 @@ noinst_HEADERS = \
 	src/internal/selection.h \
 	src/internal/crossover.h \
 	src/internal/mutation.h \
+	src/internal/parent_pair.h \
 	tests/research/seed_schedule_research.h
 
 noinst_LTLIBRARIES = libevo_seed_schedule_research.la
@@ -55,6 +57,7 @@ check_PROGRAMS = \
 	tests/evo_crossover_test \
 	tests/evo_mutation_test \
 	tests/evo_child_population_test \
+	tests/evo_parent_pair_test \
 	tests/evo_seed_schedule_research_test \
 	tests/evo_seed_schedule_experiment \
 	tests/evo_allocation_failure_test
@@ -93,6 +96,9 @@ tests_evo_mutation_test_LDADD = libcatalyst_evo.la -lm
 tests_evo_child_population_test_SOURCES = \
 	tests/child_population_test.c
 tests_evo_child_population_test_LDADD = libcatalyst_evo.la -lm
+
+tests_evo_parent_pair_test_SOURCES = tests/parent_pair_test.c
+tests_evo_parent_pair_test_LDADD = libcatalyst_evo.la -lm
 
 tests_evo_seed_schedule_research_test_SOURCES = \
 	tests/seed_schedule_research_test.c

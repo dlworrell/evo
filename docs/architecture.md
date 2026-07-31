@@ -113,9 +113,8 @@ are excluded before sampling rather than sampled and retried.
 
 Selection is read-only over population state, performs no allocation, and
 commits its output only after all draws succeed. It does not define stream
-derivation or persistence. The future generation-transition owner must make
-that sequencing decision before composing selection with crossover and
-mutation.
+derivation or persistence. Version 0.11.0 supplies that ownership separately
+for complete parent pairs without changing the selection operator.
 
 ## Private Crossover Boundary
 
@@ -134,8 +133,9 @@ both children without changing parent bytes, ownership, or retaining any view.
 The dispatcher performs no allocation and has no callback rollback path.
 
 This boundary does not select parents or own next-generation storage. It is not
-called by `evo_run`. Child-population ownership, operator stream sequencing,
-and the first generation transition remain future orchestration work.
+called by `evo_run`. Child-population ownership and operator stream derivation
+are separate private boundaries; child production and the first generation
+transition remain future orchestration work.
 
 ## Private Mutation Boundary
 
@@ -157,8 +157,8 @@ callback mutates in place and returns no status, the dispatcher has no rollback
 path.
 
 This boundary performs no allocation and is not called by `evo_run`. Built-in
-representation-specific mutation helpers, adaptive schedules, operator stream
-sequencing, and the first generation transition remain future work.
+representation-specific mutation helpers, adaptive schedules, child
+production, and the first generation transition remain future work.
 
 ## Private Child-Population Ownership Boundary
 
@@ -182,6 +182,28 @@ This boundary performs no selection, pairing, crossover, mutation, elitism,
 child completion, evaluation, swapping, RNG stream derivation, or generation
 advancement. It is not called by `evo_run`.
 
+## Private Operator-Stream and Pair-Planning Boundary
+
+Version 0.11.0 promotes the plain tuple-mixed schedule measured by EVO-RNG-001
+into operator seed-schedule version 1. Each stream is independently derived
+from the configured master seed, source generation, pair or child index, and a
+stable selection, crossover, or mutation domain. This schedule is separate
+from RNG algorithm version 1 and leaves generation-zero initialization
+unchanged.
+
+The private parent-pair planner owns selection-stream derivation. For complete
+pair ordinal `i`, it derives the selection-domain stream at tuple index `i`,
+runs two tournaments with replacement, and maps the output to child indexes
+`2i` and `2i + 1`. The plan records its source generation and seed-schedule
+version and is committed only after both selections succeed.
+
+The completed parent remains read-only, and no child pointer is accepted or
+written. Exactly `population_size / 2` complete pairs are planned. An odd
+trailing slot remains explicitly unassigned until a singleton or elitism
+policy is selected. Future crossover streams use pair ordinals and future
+mutation streams use child indexes, but this milestone invokes neither
+operator.
+
 ## Execution Flow
 
 1. Initialize a population.
@@ -192,11 +214,12 @@ advancement. It is not called by `evo_run`.
 6. Record statistics and evidence.
 7. Stop on convergence, stagnation, generation limit, or an application-defined condition.
 
-Version 0.10.0 publicly implements steps 1 and 2 for generation zero and
+Version 0.11.0 publicly implements steps 1 and 2 for generation zero and
 transfers the best valid candidate. Step 3 has an independently tested private
 tournament operator, and both crossover and mutation in step 4 have
-independently tested private dispatchers. A separate child slab can now own the
-future outputs. `evo_run` invokes none of these later boundaries. `EVO_SUCCESS`
+independently tested private dispatchers. A separate child slab can own future
+outputs, and complete parent pairs now have deterministic domain-separated
+plans. `evo_run` invokes none of these later boundaries. `EVO_SUCCESS`
 therefore still does not indicate that steps 3 through 7, a generation
 transition, or an optimization search completed.
 

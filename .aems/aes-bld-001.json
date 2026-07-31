@@ -92,6 +92,7 @@
       "src/selection.c",
       "src/crossover.c",
       "src/mutation.c",
+      "src/parent_pair.c",
       "src/diversity.c",
       "src/fitness.c",
       "src/statistics.c",
@@ -158,6 +159,12 @@
         "source": "tests/child_population_test.c",
         "cmake": "evo_child_population_test",
         "autotools": "tests/evo_child_population_test"
+      },
+      {
+        "id": "parent-pair",
+        "source": "tests/parent_pair_test.c",
+        "cmake": "evo_parent_pair_test",
+        "autotools": "tests/evo_parent_pair_test"
       },
       {
         "id": "seed-schedule-research",
