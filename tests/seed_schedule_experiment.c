@@ -636,19 +636,20 @@ static void print_metrics(
     const long double total_component_bits =
         (long double)EVO_CORPUS_SIZE * 64.0L;
     const long double state_balance =
-        metrics->state_one_bits / total_component_bits;
+        (long double)metrics->state_one_bits / total_component_bits;
     const long double increment_balance =
-        metrics->increment_one_bits / total_component_bits;
+        (long double)metrics->increment_one_bits / total_component_bits;
     const long double avalanche_mean =
         metrics->avalanche_pairs == 0
-            ? 0
+            ? 0.0L
             : (long double)metrics->avalanche_changed_bits /
-                  metrics->avalanche_pairs;
+                  (long double)metrics->avalanche_pairs;
     const long double derivations_per_second =
         metrics->derivation_ticks == 0
-            ? 0
+            ? 0.0L
             : (long double)metrics->derivations_timed *
-                  CLOCKS_PER_SEC / metrics->derivation_ticks;
+                  (long double)CLOCKS_PER_SEC /
+                  (long double)metrics->derivation_ticks;
 
     printf("    {\n");
     printf("      \"candidate\": \"%s\",\n", candidate_name(candidate));
@@ -683,8 +684,9 @@ static void print_metrics(
             &metrics->domain_pairs[pair_index];
         const long double hamming_mean =
             pair->pairs == 0
-                ? 0
-                : (long double)pair->changed_bits / pair->pairs;
+                ? 0.0L
+                : (long double)pair->changed_bits /
+                      (long double)pair->pairs;
 
         printf(
             "        {\"pair\": \"%s\", \"mean_hamming_128\": "
