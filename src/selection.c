@@ -186,12 +186,26 @@ evo_status_t evo_population_select_tournament(
             return EVO_ERROR_STATE;
         }
 
-        if (!has_winner ||
-            population->evaluations[candidate_index].fitness.total >
-                population->evaluations[winner_index].fitness.total ||
-            (population->evaluations[candidate_index].fitness.total ==
-                 population->evaluations[winner_index].fitness.total &&
-             candidate_index < winner_index)) {
+        const bool lower_index = candidate_index < winner_index;
+        const double candidate_total =
+            population->evaluations[candidate_index].fitness.total;
+        bool candidate_wins = !has_winner;
+
+        if (has_winner) {
+            double winner_total = 0.0;
+
+            if (winner_index >= population->population_size) {
+                return EVO_ERROR_STATE;
+            }
+
+            winner_total =
+                population->evaluations[winner_index].fitness.total;
+            candidate_wins =
+                candidate_total > winner_total ||
+                (lower_index && candidate_total == winner_total);
+        }
+
+        if (candidate_wins) {
             winner_index = candidate_index;
             has_winner = true;
         }
