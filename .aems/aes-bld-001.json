@@ -136,6 +136,12 @@
         "autotools": "tests/evo_population_evaluation_test"
       },
       {
+        "id": "selection",
+        "source": "tests/selection_test.c",
+        "cmake": "evo_selection_test",
+        "autotools": "tests/evo_selection_test"
+      },
+      {
         "id": "seed-schedule-research",
         "source": "tests/seed_schedule_research_test.c",
         "cmake": "evo_seed_schedule_research_test",
