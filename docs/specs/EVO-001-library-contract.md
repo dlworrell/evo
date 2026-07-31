@@ -1,7 +1,7 @@
 # EVO-001: Evolutionary Optimization Library Contract
 
 Status: Baseline
-Version: 0.5.0
+Version: 0.6.0
 Owner: EVO
 
 ## Purpose
@@ -55,9 +55,9 @@ operator scratch space, checkpoint state, or parallel-worker storage.
 
 ### Internal population storage
 
-Version 0.3.0 adds a private, independently verified population-storage
-subsystem. It is not part of the installed public API and is not yet invoked by
-`evo_run`.
+Version 0.3.0 added a private, independently verified population-storage
+subsystem. It is not part of the installed public API. Version 0.6.0 invokes
+that subsystem as the storage boundary for public generation-zero execution.
 
 The internal lifecycle contract is:
 
@@ -110,10 +110,9 @@ The initialization lifecycle is:
 The RNG is not cryptographically secure and is not approved for secrets, keys,
 nonces, authentication, or adversarial unpredictability.
 
-Population initialization does not call `is_valid` or `evaluate`. The private
-subsystem remains disconnected from `evo_run` so the public scaffold does not
-allocate and discard a population or claim that initialization, validation,
-evaluation, or search completed.
+Population initialization does not itself call `is_valid` or `evaluate`.
+Version 0.6.0 composes it with the distinct evaluation phase; initialization
+failure prevents every later callback and result transfer.
 
 ### Generation-zero validation and evaluation
 
@@ -150,6 +149,44 @@ Callbacks receive bounded, non-owning, read-only genome views. They must not
 change storage ownership or retain a view. EVO can roll back only its private
 provisional records; side effects in consumer context remain consumer-owned.
 
+### Public generation-zero execution
+
+Version 0.6.0 composes the private storage, initialization, and evaluation
+phases inside `evo_run`. The normative decision is recorded in
+`docs/adr/ADR-0005-generation-zero-public-run-integration.md`.
+
+The public execution lifecycle is:
+
+1. A null result returns `EVO_ERROR_INVALID_ARGUMENT`.
+2. A result with a non-null `best_genome` returns
+   `EVO_ERROR_RESULT_ACTIVE` before any other input validation or callback and
+   preserves the active result unchanged.
+3. An inactive result is reset to its empty zero state. A null problem,
+   configuration, or evaluator returns `EVO_ERROR_INVALID_ARGUMENT`.
+4. EVO constructs one private population under `max_genome_bytes` and
+   `max_population_bytes`, initializes it from the recorded seed, and evaluates
+   it under `max_evaluation_bytes`.
+5. Initialization, validation, and evaluation callbacks retain their
+   deterministic ascending-order contracts. Invalid candidates are not
+   evaluated.
+6. If evaluation completes without a valid candidate, EVO releases all
+   private allocations and returns `EVO_ERROR_NO_VALID_CANDIDATE` with an empty
+   public result.
+7. Otherwise EVO allocates one independently owned result genome, copies
+   exactly `problem->genome_size` bytes from the stable best candidate, copies
+   all seven fitness fields, records the configured seed, and sets
+   `generations_completed` to zero.
+8. EVO releases the private evaluation records and population slab before
+   returning. The result allocation is the only allocation transferred to the
+   caller.
+9. Every failure other than active-result rejection releases all private
+   allocations and leaves the public result empty.
+
+Generation-zero success proves that a valid initialized candidate was
+evaluated and transferred. It does not prove that parent selection, crossover,
+mutation, a generation transition, convergence, or an optimization search
+occurred.
+
 ### Result lifecycle
 
 The caller must zero-initialize `evo_result_t` before its first use:
@@ -162,9 +199,11 @@ The lifecycle contract is:
 
 1. `evo_run` rejects a result whose `best_genome` is non-null and preserves the
    active result unchanged.
-2. Null input, invalid resource policy, and allocation failure leave a
-   non-null, inactive result in the empty zero state.
-3. On success, the result exclusively owns `best_genome`.
+2. Null input, invalid resource policy, allocation failure, evaluation
+   failure, and completion without a valid candidate leave a non-null,
+   inactive result in the empty zero state.
+3. On success, the result exclusively owns an independent copy of the best
+   valid generation-zero genome.
 4. Callers may use bounded, non-owning aliases to read or write genome bytes
    while the result remains alive. An alias may not free or reallocate the
    storage and must not survive result destruction.
@@ -183,20 +222,21 @@ reviewed erasure boundary.
 
 | Status | Meaning |
 |---|---|
-| `EVO_SUCCESS` | The scaffold completed and transferred ownership of a genome allocation. |
+| `EVO_SUCCESS` | Generation-zero evaluation produced and transferred a valid best candidate. |
 | `EVO_ERROR_INVALID_ARGUMENT` | A required pointer argument is null. |
 | `EVO_ERROR_OUT_OF_MEMORY` | The system allocator returned null. |
 | `EVO_ERROR_RESULT_ACTIVE` | The result already owns a genome and is preserved unchanged. |
 | `EVO_ERROR_RESOURCE_LIMIT` | A required size is zero, arithmetic overflows, or a caller budget is exceeded. |
 | `EVO_ERROR_STATE` | A private lifecycle operation received inactive, initialized, or inconsistent state. |
 | `EVO_ERROR_EVALUATION` | A fitness callback returned a non-finite component. |
+| `EVO_ERROR_NO_VALID_CANDIDATE` | Generation-zero evaluation completed, but every candidate was invalid. |
 
-### Fitness placeholder
+### Result fitness
 
-The public scaffold initializes all seven `evo_fitness_t` fields to zero. This
-is a deterministic "not yet evaluated" placeholder, not evidence of a valid
-zero-valued fitness or completed optimization run. A later implementation must
-introduce explicit evaluated-result semantics before returning an optimum.
+On `EVO_SUCCESS`, `best_fitness` is the complete seven-field value returned by
+the consumer evaluator for the selected candidate. A zero-valued component or
+total is therefore valid evaluated evidence. On failure, every fitness field
+is reset to zero as part of the empty result state.
 
 ## API Compatibility
 
@@ -205,20 +245,26 @@ Version 0.2.0 appended `max_genome_bytes` to `evo_config_t` and changed
 `max_population_bytes`, and version 0.4.0 appended one status enumerator.
 Version 0.5.0 appends `max_evaluation_bytes` and one additional status value.
 Existing member offsets remain preserved, but `sizeof(evo_config_t)` and its
-array stride change again. Consumers must rebuild against the 0.5.0 header.
-The current public scaffold still requires only a nonzero per-genome budget;
-population-backed execution will additionally require population-storage and
-evaluation-record budgets when it is integrated.
+array stride change again. Version 0.6.0 appends
+`EVO_ERROR_NO_VALID_CANDIDATE` without changing a public structure layout, and
+changes successful `evo_run` semantics from an allocation scaffold to a
+generation-zero evaluated result. Consumers must rebuild against the 0.6.0
+header and provide all three nonzero memory budgets.
 
-## Current 0.5.0 Conformance Boundary
+## Current 0.6.0 Conformance Boundary
 
-The current implementation remains an API and lifecycle scaffold with a
-verified private population-storage foundation:
+The current implementation exposes a complete generation-zero boundary:
 
-- validation enforces required pointers, an inactive result, nonzero size
-  policy, and the caller-provided genome bound;
-- success allocates one zero-initialized result genome and records the seed;
-- allocation failure returns a deterministic empty result;
+- validation enforces required pointers, an evaluator, an inactive result, and
+  all caller-provided memory budgets;
+- successful execution constructs, initializes, validates, and evaluates a
+  private population in deterministic order;
+- invalid candidates are never evaluated;
+- finite consumer totals select a stable winner with lower-index tie-breaking;
+- success transfers an independent genome copy and complete fitness evidence;
+- all-invalid completion has a distinct public status;
+- allocation, resource, state, and evaluation failures return an empty result
+  after complete private cleanup;
 - result destruction is null-safe, repeatable, and restores the empty state;
 - private population construction checks size arithmetic and both caller
   budgets before allocating a contiguous zero-initialized slab;
@@ -229,16 +275,13 @@ verified private population-storage foundation:
 - private population initialization is seed-reproducible and records its RNG
   algorithm version;
 - optional initializers run exactly once in ascending genome order; and
-- private validation and evaluation run in deterministic ascending passes;
-- invalid candidates are not evaluated;
-- finite consumer totals select a stable generation-zero winner;
-- all-invalid populations complete without a winner; and
-- selection, crossover, mutation, diversity, checkpointing, public population
-  integration, and generation iteration are not implemented.
+- private validation and evaluation run in deterministic ascending passes; and
+- selection, crossover, mutation, diversity, checkpointing, and generation
+  iteration are not implemented.
 
-Consumers must not treat `EVO_SUCCESS` in the current scaffold as evidence that
-an optimization search was performed. The internal storage subsystem is not
-evidence that a population has been validated, evaluated, or searched.
+Consumers may treat `EVO_SUCCESS` as evidence of a valid evaluated
+generation-zero winner. They must not treat it as evidence that an
+optimization search or generation transition was performed.
 
 ## Verification
 
@@ -250,17 +293,21 @@ cmake --build build --parallel
 ctest --test-dir build --output-on-failure
 ```
 
-The portable result-lifecycle, population-storage, RNG-vector,
-population-initialization, and population-evaluation tests run across supported
-platforms. A separate Linux-only static-link test uses the GNU-compatible
-`--wrap=calloc` linker facility to prove result, population, and evaluation
-allocation-failure states deterministically.
+The portable result-lifecycle test proves public callback order, invalid
+suppression, winner transfer, complete fitness evidence, stable ties,
+all-invalid mapping, non-finite rejection, active-result preservation, and
+reuse. Population-storage, RNG-vector, population-initialization, and
+population-evaluation tests continue to verify each private phase
+independently. A separate Linux-only static-link test uses the GNU-compatible
+`--wrap=calloc` linker facility to prove failure and cleanup at the population,
+evaluation-record, and result-transfer allocations.
 
 ## Related Records
 
 - `docs/adr/ADR-0001-library-boundary-and-build-system.md`
 - `docs/adr/ADR-0002-deterministic-rng-and-population-initialization.md`
 - `docs/adr/ADR-0004-generation-zero-validation-and-evaluation.md`
+- `docs/adr/ADR-0005-generation-zero-public-run-integration.md`
 - `docs/architecture.md`
 - `docs/algorithms.md`
 - `docs/benchmarks.md`
@@ -271,4 +318,5 @@ allocation-failure states deterministically.
 - `https://github.com/dlworrell/evo/issues/6`
 - `https://github.com/dlworrell/evo/issues/8`
 - `https://github.com/dlworrell/evo/issues/12`
+- `https://github.com/dlworrell/evo/issues/16`
 - `https://github.com/dlworrell/AEMS/issues/18`
