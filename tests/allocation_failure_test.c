@@ -102,8 +102,10 @@ int main(void)
         .max_population_bytes = 320,
         .max_evaluation_bytes =
             10 * sizeof(evo_candidate_evaluation_t),
+        .max_child_population_bytes = 320,
     };
     evo_population_t population = {0};
+    evo_population_t children = {0};
     evo_result_t result = {0};
 
     reset_allocation_injection(0);
@@ -136,6 +138,22 @@ int main(void)
     assert_population_evaluation_empty(&population);
     assert(population.genomes != NULL);
     assert(population.initialized);
+
+    reset_allocation_injection(0);
+    assert(evo_population_evaluate(
+               &problem, &config, NULL, &population) == EVO_SUCCESS);
+
+    reset_allocation_injection(1);
+    assert(evo_child_population_create(
+               &problem, &config, &population, &children) ==
+           EVO_ERROR_OUT_OF_MEMORY);
+    assert(allocation_calls == 1);
+    fail_allocation_call = 0;
+    assert_population_empty(&children);
+    assert(population.genomes != NULL);
+    assert(population.evaluations != NULL);
+    assert(population.initialized);
+    assert(population.evaluated);
 
     evo_population_destroy(&population);
     assert_population_empty(&population);
