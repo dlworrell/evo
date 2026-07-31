@@ -65,9 +65,9 @@ against each installed result. See
 
 ## Status
 
-EVO 0.8.0 retains the complete public generation-zero boundary and adds a
-private deterministic crossover-dispatch operator after the independently
-tested tournament-selection boundary. `evo_run` still constructs and
+EVO 0.9.0 retains the complete public generation-zero boundary and adds a
+private deterministic mutation-dispatch operator after the independently
+tested tournament-selection and crossover boundaries. `evo_run` still constructs and
 deterministically initializes a private population, validates every candidate,
 evaluates only valid candidates, selects the stable generation-zero winner,
 and transfers an independent genome copy plus its complete fitness evidence to
@@ -135,6 +135,20 @@ The operator remains representation-neutral and allocation-free. It is not
 called by `evo_run`, does not select parents, mutate children, own a child
 population, or advance a generation.
 
+Version 0.9.0 adds a private fixed-rate mutation dispatcher over one bounded
+writable genome. Every valid attempt consumes exactly one version-1 RNG word,
+including rates zero and one and an absent callback. A selected event invokes
+the existing consumer callback exactly once; otherwise the genome remains
+unchanged.
+
+The configured `mutation_rate` is the engine-owned per-genome event
+probability and is forwarded unchanged as the callback's
+representation-specific mutation intensity. Callback code must be
+deterministic for fixed bytes, rate, and context and may not consult
+unrecorded entropy. The in-place callback has no failure or rollback channel.
+This private operator does not allocate storage, implement representation-
+specific helpers or adaptive schedules, or advance a generation.
+
 ## Result Lifecycle
 
 Callers must zero-initialize an `evo_result_t` before first use. A successful
@@ -161,10 +175,11 @@ The status values are:
 See `docs/specs/EVO-001-library-contract.md` for the complete API, ownership,
 failure-state, alias, compatibility, and secure-erasure boundaries.
 
-The private tournament and crossover-dispatch operators are independently
-verified. Mutation, child-population ownership, stream orchestration, and the
-first generation transition remain the next execution boundaries; none is
-implied by `evo_run` success in version 0.8.0.
+The private tournament, crossover-dispatch, and mutation-dispatch operators
+are independently verified. Child-population ownership, operator stream
+orchestration, adaptive mutation, and the first generation transition remain
+the next execution boundaries; none is implied by `evo_run` success in
+version 0.9.0.
 
 ## Project Zero
 

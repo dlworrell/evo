@@ -10,7 +10,7 @@ extern "C" {
 #endif
 
 #define EVO_VERSION_MAJOR 0
-#define EVO_VERSION_MINOR 8
+#define EVO_VERSION_MINOR 9
 #define EVO_VERSION_PATCH 0
 
 typedef enum evo_status {
@@ -42,6 +42,13 @@ typedef struct evo_problem {
      * deterministic for fixed bytes and context, and may not retain the view.
      */
     void (*initialize)(void *genome, void *context);
+    /*
+     * Mutation receives one bounded writable genome after EVO selects the
+     * configured per-genome event. The callback receives mutation_rate
+     * unchanged as its representation-specific intensity, must be
+     * deterministic for fixed bytes, rate, and context, may use no unrecorded
+     * entropy, and may not change ownership or retain the view.
+     */
     void (*mutate)(void *genome, double mutation_rate, void *context);
     /*
      * Crossover receives two bounded read-only parents and two distinct,

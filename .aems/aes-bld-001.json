@@ -148,6 +148,12 @@
         "autotools": "tests/evo_crossover_test"
       },
       {
+        "id": "mutation",
+        "source": "tests/mutation_test.c",
+        "cmake": "evo_mutation_test",
+        "autotools": "tests/evo_mutation_test"
+      },
+      {
         "id": "seed-schedule-research",
         "source": "tests/seed_schedule_research_test.c",
         "cmake": "evo_seed_schedule_research_test",

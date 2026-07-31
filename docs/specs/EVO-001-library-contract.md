@@ -1,7 +1,7 @@
 # EVO-001: Evolutionary Optimization Library Contract
 
 Status: Baseline
-Version: 0.8.0
+Version: 0.9.0
 Owner: EVO
 
 ## Purpose
@@ -275,8 +275,47 @@ The crossover lifecycle is:
 
 The operator performs no allocation, does not select parents, and does not own
 child storage. It is private and is not called by `evo_run`. Version 0.8.0 does
-not implement mutation, a next-generation population, generation-level stream
+not implement a next-generation population, generation-level stream
 derivation, or a generation transition.
+
+### Private deterministic mutation dispatch
+
+Version 0.9.0 adds a private representation-neutral mutation boundary. The
+normative decision is recorded in
+`docs/adr/ADR-0008-deterministic-mutation-dispatch.md`.
+
+The mutation lifecycle is:
+
+1. The problem, configuration, seeded RNG, and writable genome view must be
+   non-null.
+2. `problem->genome_size` must be nonzero and no greater than
+   `config->max_genome_bytes`.
+3. `config->mutation_rate` must be finite and in the inclusive range
+   `[0, 1]`.
+4. Every preceding check occurs before RNG consumption or genome output. Null
+   errors return `EVO_ERROR_INVALID_ARGUMENT`; invalid genome policy or rate
+   returns `EVO_ERROR_RESOURCE_LIMIT`; unseeded state returns
+   `EVO_ERROR_STATE`.
+5. Every valid attempt consumes exactly one probability-event word, including
+   rate endpoints and missing-callback operation.
+6. When the event is selected and `problem->mutate` is non-null, EVO invokes
+   that callback exactly once with the writable genome, the configured rate,
+   and consumer context.
+7. When the event is not selected or the callback is null, EVO leaves the
+   genome unchanged.
+8. EVO owns `mutation_rate` as the per-genome event probability and forwards
+   the same value unchanged as the callback's representation-specific
+   mutation intensity.
+9. The callback must mutate only the complete supplied span, preserve
+   ownership, retain no view, use no unrecorded entropy, and remain
+   deterministic for fixed genome bytes, rate, and context. The callback
+   returns no status, so EVO cannot roll back a consumer contract violation.
+
+The operator performs no allocation and does not own genome storage. It is
+private and is not called by `evo_run`. Version 0.9.0 does not implement
+built-in representation-specific mutation helpers, adaptive mutation, a
+next-generation population, generation-level stream derivation, or a
+generation transition.
 
 ### Result lifecycle
 
@@ -350,7 +389,11 @@ Version 0.8.0 likewise changes no public layout, signature, installed symbol,
 or `evo_run` behavior. It documents the existing callback contract more
 precisely and adds private probability and crossover-dispatch behavior.
 
-## Current 0.8.0 Conformance Boundary
+Version 0.9.0 likewise changes no public layout, signature, installed symbol,
+or `evo_run` behavior. It documents the existing mutation callback contract
+more precisely and adds private mutation-dispatch behavior.
+
+## Current 0.9.0 Conformance Boundary
 
 The current implementation exposes a complete generation-zero boundary:
 
@@ -382,8 +425,11 @@ The current implementation exposes a complete generation-zero boundary:
 - private crossover dispatch consumes a fixed one-word probability decision,
   invokes the representation-aware callback or clones parents, and preserves
   child output on precondition failure; and
-- mutation, diversity, checkpointing, child-population ownership, operator
-  orchestration, and generation iteration are not implemented.
+- private mutation dispatch consumes a fixed one-word probability decision,
+  invokes the representation-aware callback or preserves the genome, and
+  preserves genome output on precondition failure; and
+- adaptive mutation, diversity, checkpointing, child-population ownership,
+  operator orchestration, and generation iteration are not implemented.
 
 Consumers may treat `EVO_SUCCESS` as evidence of a valid evaluated
 generation-zero winner. They must not treat it as evidence that an
@@ -416,6 +462,10 @@ rate endpoints, exact RNG consumption, callback and identity-clone paths,
 parent preservation, output preservation on rejection, and deterministic
 replay. RNG tests separately lock probability thresholds and vectors.
 
+The mutation test proves pointer and policy validation, rate endpoints, exact
+RNG consumption, callback and no-op paths, rate and context forwarding, genome
+preservation on rejection, and deterministic replay.
+
 ## Related Records
 
 - `docs/adr/ADR-0001-library-boundary-and-build-system.md`
@@ -424,6 +474,7 @@ replay. RNG tests separately lock probability thresholds and vectors.
 - `docs/adr/ADR-0005-generation-zero-public-run-integration.md`
 - `docs/adr/ADR-0006-deterministic-tournament-selection.md`
 - `docs/adr/ADR-0007-deterministic-crossover-dispatch.md`
+- `docs/adr/ADR-0008-deterministic-mutation-dispatch.md`
 - `docs/architecture.md`
 - `docs/algorithms.md`
 - `docs/benchmarks.md`
@@ -437,4 +488,5 @@ replay. RNG tests separately lock probability thresholds and vectors.
 - `https://github.com/dlworrell/evo/issues/16`
 - `https://github.com/dlworrell/evo/issues/18`
 - `https://github.com/dlworrell/evo/issues/20`
+- `https://github.com/dlworrell/evo/issues/22`
 - `https://github.com/dlworrell/AEMS/issues/18`

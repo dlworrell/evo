@@ -36,6 +36,7 @@ noinst_HEADERS = \
 	src/internal/rng.h \
 	src/internal/selection.h \
 	src/internal/crossover.h \
+	src/internal/mutation.h \
 	tests/research/seed_schedule_research.h
 
 noinst_LTLIBRARIES = libevo_seed_schedule_research.la
@@ -52,6 +53,7 @@ check_PROGRAMS = \
 	tests/evo_population_evaluation_test \
 	tests/evo_selection_test \
 	tests/evo_crossover_test \
+	tests/evo_mutation_test \
 	tests/evo_seed_schedule_research_test \
 	tests/evo_seed_schedule_experiment \
 	tests/evo_allocation_failure_test
@@ -83,6 +85,9 @@ tests_evo_selection_test_LDADD = libcatalyst_evo.la -lm
 
 tests_evo_crossover_test_SOURCES = tests/crossover_test.c
 tests_evo_crossover_test_LDADD = libcatalyst_evo.la -lm
+
+tests_evo_mutation_test_SOURCES = tests/mutation_test.c
+tests_evo_mutation_test_LDADD = libcatalyst_evo.la -lm
 
 tests_evo_seed_schedule_research_test_SOURCES = \
 	tests/seed_schedule_research_test.c
