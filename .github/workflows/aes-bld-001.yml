@@ -12,6 +12,7 @@ permissions:
 
 jobs:
   native-build-parity:
+    # AEMS PR #26 normalized artifact paths for root-level consumers.
     uses: dlworrell/AEMS/.github/workflows/aes-bld-001-distributed.yml@main
     with:
       repository_subpath: "."
