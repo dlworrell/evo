@@ -1,0 +1,241 @@
+{
+  "schema_version": "1.0.0",
+  "standard": "AES-BLD-001",
+  "repository": "dlworrell/evo",
+  "applicability": "active-native",
+  "profile_document": "docs/engineering/AES-BLD-001-toolchain-profile.md",
+  "waiver_log": ".aems/aes-bld-001-waivers.json",
+  "authority": {
+    "repository": "dlworrell/AES",
+    "requirement_source": "standards/AES-BLD-001-native-build-toolchain-and-distribution-parity.md"
+  },
+  "independent_frontends": true,
+  "no_hidden_build": true,
+  "tools": {
+    "required": [
+      "cmake",
+      "ctest",
+      "clang",
+      "clang-tidy",
+      "llvm-ar",
+      "llvm-ranlib",
+      "llvm-nm",
+      "llvm-objdump",
+      "llvm-cov",
+      "llvm-profdata",
+      "ld.lld",
+      "gcc",
+      "ar",
+      "ranlib",
+      "nm",
+      "objdump",
+      "ld",
+      "autoconf",
+      "automake",
+      "libtoolize",
+      "make",
+      "pkg-config"
+    ],
+    "minimum_versions": {
+      "cmake": "3.20",
+      "ctest": "matching CMake release",
+      "clang": "18",
+      "clang-tidy": "18",
+      "llvm-ar": "18",
+      "llvm-ranlib": "18",
+      "llvm-nm": "18",
+      "llvm-objdump": "18",
+      "llvm-cov": "18",
+      "llvm-profdata": "18",
+      "ld.lld": "18",
+      "gcc": "13",
+      "ar": "2.42",
+      "ranlib": "2.42",
+      "nm": "2.42",
+      "objdump": "2.42",
+      "ld": "2.42",
+      "autoconf": "2.69",
+      "automake": "1.16",
+      "libtoolize": "2.4",
+      "make": "4.0",
+      "pkg-config": "0.29"
+    },
+    "bindings": {
+      "clang": {
+        "compiler": "clang",
+        "archiver": "llvm-ar",
+        "archive_indexer": "llvm-ranlib",
+        "symbol_inspector": "llvm-nm",
+        "object_inspector": "llvm-objdump",
+        "linker": "ld.lld"
+      },
+      "gcc": {
+        "compiler": "gcc",
+        "archiver": "ar",
+        "archive_indexer": "ranlib",
+        "symbol_inspector": "nm",
+        "object_inspector": "objdump",
+        "linker": "ld"
+      }
+    }
+  },
+  "build": {
+    "kind": "c-library",
+    "language_standards": [
+      "c17"
+    ],
+    "production_sources": [
+      "src/population.c",
+      "src/population_storage.c",
+      "src/population_initialization.c",
+      "src/population_evaluation.c",
+      "src/selection.c",
+      "src/crossover.c",
+      "src/mutation.c",
+      "src/diversity.c",
+      "src/fitness.c",
+      "src/statistics.c",
+      "src/checkpoint.c",
+      "src/rng.c"
+    ],
+    "normative_tests": [
+      {
+        "id": "smoke",
+        "source": "tests/smoke_test.c",
+        "cmake": "evo_smoke_test",
+        "autotools": "tests/evo_smoke_test"
+      },
+      {
+        "id": "lifecycle",
+        "source": "tests/evo_lifecycle_test.c",
+        "cmake": "evo_lifecycle_test",
+        "autotools": "tests/evo_lifecycle_test"
+      },
+      {
+        "id": "population-storage",
+        "source": "tests/population_storage_test.c",
+        "cmake": "evo_population_storage_test",
+        "autotools": "tests/evo_population_storage_test"
+      },
+      {
+        "id": "rng",
+        "source": "tests/rng_test.c",
+        "cmake": "evo_rng_test",
+        "autotools": "tests/evo_rng_test"
+      },
+      {
+        "id": "population-initialization",
+        "source": "tests/population_initialization_test.c",
+        "cmake": "evo_population_initialization_test",
+        "autotools": "tests/evo_population_initialization_test"
+      },
+      {
+        "id": "population-evaluation",
+        "source": "tests/population_evaluation_test.c",
+        "cmake": "evo_population_evaluation_test",
+        "autotools": "tests/evo_population_evaluation_test"
+      },
+      {
+        "id": "seed-schedule-research",
+        "source": "tests/seed_schedule_research_test.c",
+        "cmake": "evo_seed_schedule_research_test",
+        "autotools": "tests/evo_seed_schedule_research_test"
+      },
+      {
+        "id": "seed-schedule-experiment",
+        "source": "tests/seed_schedule_experiment.c",
+        "cmake": "evo_seed_schedule_experiment",
+        "autotools": "tests/evo_seed_schedule_experiment"
+      },
+      {
+        "id": "allocation-failure",
+        "source": "tests/allocation_failure_test.c",
+        "cmake": "evo_allocation_failure_test",
+        "autotools": "tests/evo_allocation_failure_test"
+      }
+    ],
+    "consumer_sources": [
+      "consumer/consumer.c"
+    ],
+    "option_mappings": [
+      {
+        "id": "warnings-as-errors",
+        "cmake": "EVO_WARNINGS_AS_ERRORS",
+        "autotools": "--enable-warnings-as-errors",
+        "default": true
+      },
+      {
+        "id": "sanitizers",
+        "cmake": "EVO_ENABLE_SANITIZERS",
+        "autotools": "--enable-sanitizers",
+        "default": false
+      }
+    ],
+    "pkg_config": {
+      "name": "catalyst-evo",
+      "path": "catalyst-evo.pc.in"
+    },
+    "release_capable": true,
+    "generated_paths": [
+      "build",
+      "autom4te.cache"
+    ],
+    "offline_after_bootstrap": true
+  },
+  "cmake": {
+    "minimum_version": "3.20",
+    "binary_dirs": {
+      "clang": "build/cmake-clang",
+      "gcc": "build/cmake-gcc",
+      "sanitizers": "build/cmake-clang-sanitizers"
+    },
+    "presets": {
+      "clang": "aes-clang",
+      "gcc": "aes-gcc",
+      "sanitizers": "aes-clang-sanitizers"
+    }
+  },
+  "autotools": {
+    "bootstrap": [
+      "autoreconf",
+      "-fvi"
+    ],
+    "out_of_tree": true,
+    "compilers": [
+      "gcc",
+      "clang",
+      "make"
+    ],
+    "uninstall": true,
+    "distcheck": true
+  },
+  "parity": {
+    "expected_install_paths": [
+      "include/catalyst/evo/evo.h",
+      "lib/libcatalyst_evo.a",
+      "lib/pkgconfig/catalyst-evo.pc"
+    ],
+    "metadata_exclusions": [
+      "lib/libcatalyst_evo.la"
+    ],
+    "symbol_check": true,
+    "symbol_tools": {
+      "cmake": "llvm-nm",
+      "autotools": "nm"
+    }
+  },
+  "ci": {
+    "workflow": ".github/workflows/aes-bld-001.yml",
+    "jobs": [
+      "cmake-clang",
+      "cmake-gcc",
+      "autotools-gcc",
+      "autotools-clang",
+      "clang-tidy",
+      "clang-sanitizers",
+      "install-parity",
+      "distcheck"
+    ],
+    "evidence_output": "build/aems/aes-bld-001/evidence.json"
+  }
+}
