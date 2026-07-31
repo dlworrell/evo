@@ -6,11 +6,14 @@
 
 void *__real_calloc(size_t count, size_t size);
 
-static int inject_allocation_failure;
+static size_t allocation_calls;
+static size_t fail_allocation_call;
 
 void *__wrap_calloc(size_t count, size_t size)
 {
-    if (inject_allocation_failure != 0) {
+    ++allocation_calls;
+    if (fail_allocation_call != 0 &&
+        allocation_calls == fail_allocation_call) {
         return NULL;
     }
 
@@ -31,11 +34,29 @@ static void assert_completely_empty(const evo_result_t *result)
     assert(result->random_seed == 0);
 }
 
-static evo_fitness_t deterministic_evaluator(const void *genome, void *context)
+static evo_fitness_t deterministic_evaluator(const void *genome,
+                                             void *context)
 {
     (void)genome;
     (void)context;
     return (evo_fitness_t){.total = 1.0};
+}
+
+static void assert_population_empty(const evo_population_t *population)
+{
+    assert(population->genomes == NULL);
+    assert(population->evaluations == NULL);
+    assert(population->population_size == 0);
+    assert(population->genome_size == 0);
+    assert(population->storage_bytes == 0);
+    assert(population->evaluation_bytes == 0);
+    assert(population->valid_count == 0);
+    assert(population->best_index == 0);
+    assert(population->initialization_seed == 0);
+    assert(population->rng_algorithm_version == 0);
+    assert(!population->initialized);
+    assert(!population->has_best);
+    assert(!population->evaluated);
 }
 
 static void assert_population_evaluation_empty(
@@ -47,6 +68,26 @@ static void assert_population_evaluation_empty(
     assert(population->best_index == 0);
     assert(!population->has_best);
     assert(!population->evaluated);
+}
+
+static void reset_allocation_injection(size_t failure_call)
+{
+    allocation_calls = 0;
+    fail_allocation_call = failure_call;
+}
+
+static void assert_run_allocation_failure(const evo_problem_t *problem,
+                                          const evo_config_t *config,
+                                          size_t failure_call)
+{
+    evo_result_t result = {0};
+
+    reset_allocation_injection(failure_call);
+    assert(evo_run(problem, config, NULL, &result) ==
+           EVO_ERROR_OUT_OF_MEMORY);
+    assert(allocation_calls == failure_call);
+    fail_allocation_call = 0;
+    assert_completely_empty(&result);
 }
 
 int main(void)
@@ -65,45 +106,38 @@ int main(void)
     evo_population_t population = {0};
     evo_result_t result = {0};
 
+    reset_allocation_injection(0);
     assert(evo_run(&problem, &config, NULL, &result) == EVO_SUCCESS);
+    assert(allocation_calls == 3);
     evo_result_destroy(&result);
     assert_completely_empty(&result);
 
-    inject_allocation_failure = 1;
-    assert(evo_run(&problem, &config, NULL, &result) == EVO_ERROR_OUT_OF_MEMORY);
-    inject_allocation_failure = 0;
+    assert_run_allocation_failure(&problem, &config, 1);
+    assert_run_allocation_failure(&problem, &config, 2);
+    assert_run_allocation_failure(&problem, &config, 3);
 
-    assert_completely_empty(&result);
-
-    inject_allocation_failure = 1;
+    reset_allocation_injection(1);
     assert(evo_population_create(&problem, &config, &population) ==
            EVO_ERROR_OUT_OF_MEMORY);
-    inject_allocation_failure = 0;
+    fail_allocation_call = 0;
+    assert_population_empty(&population);
 
-    assert(population.genomes == NULL);
-    assert(population.population_size == 0);
-    assert(population.genome_size == 0);
-    assert(population.storage_bytes == 0);
-    assert(population.initialization_seed == 0);
-    assert(population.rng_algorithm_version == 0);
-    assert(!population.initialized);
-
+    reset_allocation_injection(0);
     assert(evo_population_create(&problem, &config, &population) ==
            EVO_SUCCESS);
     assert(evo_population_initialize(&problem, &config, NULL, &population) ==
            EVO_SUCCESS);
     assert_population_evaluation_empty(&population);
 
-    inject_allocation_failure = 1;
+    reset_allocation_injection(1);
     assert(evo_population_evaluate(&problem, &config, NULL, &population) ==
            EVO_ERROR_OUT_OF_MEMORY);
-    inject_allocation_failure = 0;
+    fail_allocation_call = 0;
     assert_population_evaluation_empty(&population);
     assert(population.genomes != NULL);
     assert(population.initialized);
 
     evo_population_destroy(&population);
-    assert(population.genomes == NULL);
-    assert_population_evaluation_empty(&population);
+    assert_population_empty(&population);
     return 0;
 }
