@@ -31,6 +31,11 @@ target_include_directories(evo_selection_test PRIVATE ${PROJECT_SOURCE_DIR}/src)
 target_link_libraries(evo_selection_test PRIVATE catalyst_evo)
 add_test(NAME evo_selection_test COMMAND evo_selection_test)
 
+add_executable(evo_crossover_test crossover_test.c)
+target_include_directories(evo_crossover_test PRIVATE ${PROJECT_SOURCE_DIR}/src)
+target_link_libraries(evo_crossover_test PRIVATE catalyst_evo)
+add_test(NAME evo_crossover_test COMMAND evo_crossover_test)
+
 add_library(evo_seed_schedule_research STATIC
     research/seed_schedule_research.c
 )

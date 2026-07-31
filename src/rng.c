@@ -1,7 +1,10 @@
 #include "internal/rng.h"
 
+#include <math.h>
+
 #define EVO_PCG32_MULTIPLIER UINT64_C(6364136223846793005)
 #define EVO_PCG32_INCREMENT UINT64_C(1442695040888963407)
+#define EVO_PROBABILITY_SCALE 4294967296.0
 
 static uint32_t pcg32_advance(evo_rng_t *rng)
 {
@@ -71,6 +74,29 @@ bool evo_rng_uniform_index(evo_rng_t *rng,
     } while (sample < threshold);
 
     *index = (size_t)(sample % bound);
+    return true;
+}
+
+bool evo_rng_probability_event(evo_rng_t *rng,
+                               double probability,
+                               bool *occurred)
+{
+    uint32_t sample = 0;
+    uint64_t threshold = 0;
+
+    if (rng == NULL || occurred == NULL || !rng->seeded ||
+        !isfinite(probability) || probability < 0.0 ||
+        probability > 1.0) {
+        return false;
+    }
+
+    threshold =
+        (uint64_t)(probability * EVO_PROBABILITY_SCALE);
+    if (!evo_rng_next_u32(rng, &sample)) {
+        return false;
+    }
+
+    *occurred = (uint64_t)sample < threshold;
     return true;
 }
 

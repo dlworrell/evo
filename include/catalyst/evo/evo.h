@@ -10,7 +10,7 @@ extern "C" {
 #endif
 
 #define EVO_VERSION_MAJOR 0
-#define EVO_VERSION_MINOR 7
+#define EVO_VERSION_MINOR 8
 #define EVO_VERSION_PATCH 0
 
 typedef enum evo_status {
@@ -43,6 +43,12 @@ typedef struct evo_problem {
      */
     void (*initialize)(void *genome, void *context);
     void (*mutate)(void *genome, double mutation_rate, void *context);
+    /*
+     * Crossover receives two bounded read-only parents and two distinct,
+     * non-overlapping writable children. It must initialize both children
+     * completely, preserve ownership, retain no view, and remain deterministic
+     * for fixed parents and context.
+     */
     void (*crossover)(const void *parent_a, const void *parent_b, void *child_a, void *child_b, void *context);
     evo_fitness_t (*evaluate)(const void *genome, void *context);
     bool (*is_valid)(const void *genome, void *context);
