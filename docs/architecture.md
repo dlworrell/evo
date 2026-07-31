@@ -98,6 +98,25 @@ destruction invalidates every population view. The copy covers exactly the
 caller-bounded `genome_size`. `generations_completed` remains zero because no
 selection or generation transition occurs.
 
+## Private Selection Boundary
+
+Version 0.7.0 adds a private tournament operator without changing public
+generation-zero execution. The operator accepts a completed evaluated
+population and an explicitly seeded private RNG stream. It validates storage,
+evaluation evidence, validity flags, finite fitness, counts, and stable-best
+metadata before advancing the stream.
+
+Each draw uses rejection-sampled bounded indexing and maps a valid-candidate
+ordinal to an ascending population index. Sampling is with replacement, higher
+`fitness.total` wins, and the lower index wins an exact tie. Invalid candidates
+are excluded before sampling rather than sampled and retried.
+
+Selection is read-only over population state, performs no allocation, and
+commits its output only after all draws succeed. It does not define stream
+derivation or persistence. The future generation-transition owner must make
+that sequencing decision before composing selection with crossover and
+mutation.
+
 ## Execution Flow
 
 1. Initialize a population.
@@ -108,10 +127,11 @@ selection or generation transition occurs.
 6. Record statistics and evidence.
 7. Stop on convergence, stagnation, generation limit, or an application-defined condition.
 
-Version 0.6.0 publicly implements steps 1 and 2 for generation zero and
-transfers the best valid candidate. `EVO_SUCCESS` indicates that this bounded
-generation-zero flow completed. It does not indicate that steps 3 through 7,
-a generation transition, or an optimization search completed.
+Version 0.7.0 publicly implements steps 1 and 2 for generation zero and
+transfers the best valid candidate. Step 3 now has an independently tested
+private tournament operator, but `evo_run` does not invoke it. `EVO_SUCCESS`
+therefore still does not indicate that steps 3 through 7, a generation
+transition, or an optimization search completed.
 
 ## Correctness Boundary
 
