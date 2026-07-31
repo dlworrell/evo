@@ -41,6 +41,39 @@ bool evo_rng_next_u32(evo_rng_t *rng, uint32_t *value)
     return true;
 }
 
+bool evo_rng_uniform_index(evo_rng_t *rng,
+                           size_t upper_bound,
+                           size_t *index)
+{
+    uint64_t bound = 0;
+    uint64_t threshold = 0;
+    uint64_t sample = 0;
+
+    if (rng == NULL || index == NULL || !rng->seeded ||
+        upper_bound == 0 ||
+        upper_bound > (size_t)UINT64_MAX) {
+        return false;
+    }
+
+    bound = (uint64_t)upper_bound;
+    threshold = (UINT64_C(0) - bound) % bound;
+
+    do {
+        uint32_t low = 0;
+        uint32_t high = 0;
+
+        if (!evo_rng_next_u32(rng, &low) ||
+            !evo_rng_next_u32(rng, &high)) {
+            return false;
+        }
+
+        sample = (uint64_t)low | ((uint64_t)high << 32u);
+    } while (sample < threshold);
+
+    *index = (size_t)(sample % bound);
+    return true;
+}
+
 bool evo_rng_fill_bytes(evo_rng_t *rng,
                         unsigned char *destination,
                         size_t byte_count)
