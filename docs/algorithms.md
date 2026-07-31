@@ -87,5 +87,22 @@ recorded for evidence but receive no library-defined ordering.
 
 An all-invalid population completes evaluation without a winner. Evaluation
 records are bounded by `max_evaluation_bytes`, and failures discard provisional
-records while preserving the initialized genome slab. The phase remains
-private and does not yet drive `evo_run`, selection, or generation iteration.
+records while preserving the initialized genome slab within the private phase.
+
+## Public Generation-Zero Execution
+
+Version 0.6.0 composes population construction, deterministic initialization,
+validation, evaluation, and stable winner transfer inside `evo_run`.
+
+The public result receives an independent copy of the lower-index
+highest-total valid candidate and all seven fields returned by its evaluator.
+The private population slab and evaluation records are always released before
+the call returns. If every candidate is invalid, the private phase still
+completes successfully, but the public run returns
+`EVO_ERROR_NO_VALID_CANDIDATE` with an empty result because there is no asset
+whose ownership can be transferred.
+
+This boundary performs no parent selection, crossover, mutation, elitism,
+diversity processing, or generation transition. A successful call therefore
+records `generations_completed == 0`; it is generation-zero evidence rather
+than a completed optimization search.
