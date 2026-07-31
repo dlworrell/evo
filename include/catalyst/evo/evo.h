@@ -10,7 +10,7 @@ extern "C" {
 #endif
 
 #define EVO_VERSION_MAJOR 0
-#define EVO_VERSION_MINOR 5
+#define EVO_VERSION_MINOR 6
 #define EVO_VERSION_PATCH 0
 
 typedef enum evo_status {
@@ -20,7 +20,8 @@ typedef enum evo_status {
     EVO_ERROR_RESULT_ACTIVE = -3,
     EVO_ERROR_RESOURCE_LIMIT = -4,
     EVO_ERROR_STATE = -5,
-    EVO_ERROR_EVALUATION = -6
+    EVO_ERROR_EVALUATION = -6,
+    EVO_ERROR_NO_VALID_CANDIDATE = -7
 } evo_status_t;
 
 typedef struct evo_fitness {
@@ -70,7 +71,7 @@ typedef struct evo_result {
 } evo_result_t;
 
 /**
- * Execute the bounded optimization scaffold.
+ * Execute generation-zero population initialization and evaluation.
  *
  * The result object must be zero-initialized before its first use. A successful
  * call transfers exclusive ownership of best_genome to the result object.
@@ -78,11 +79,16 @@ typedef struct evo_result {
  * result remains alive, but aliases may not free or reallocate the storage and
  * must not survive evo_result_destroy().
  *
- * An active result is rejected without modification. Other failures leave a
- * non-null, inactive result in its empty, zero-initialized state.
+ * A successful call transfers an independent copy of the highest-total valid
+ * generation-zero candidate together with its complete fitness evidence.
+ * Exact fitness-total ties preserve the lower population index.
  *
- * A zero-valued best_fitness is the deterministic "not yet evaluated" state
- * used by the current scaffold, not a valid evaluated optimum.
+ * An active result is rejected without modification. Other failures,
+ * including completion with no valid candidate, leave a non-null, inactive
+ * result in its empty, zero-initialized state.
+ *
+ * generations_completed is zero on success because this operation evaluates
+ * only the initialized population and performs no generation transition.
  */
 evo_status_t evo_run(const evo_problem_t *problem, const evo_config_t *config, void *context, evo_result_t *result);
 

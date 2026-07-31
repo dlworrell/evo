@@ -65,17 +65,17 @@ against each installed result. See
 
 ## Status
 
-EVO 0.5.0 is an API and memory-lifecycle scaffold. `evo_run` currently
-validates its required inputs and caller-provided genome budget, allocates one
-zero-initialized result genome, and records the requested seed. Population
-execution and the evolutionary operators remain future work.
+EVO 0.6.0 executes a complete generation-zero boundary. `evo_run` constructs
+and deterministically initializes a private population, validates every
+candidate, evaluates only valid candidates, selects the stable highest-total
+winner, and transfers an independent genome copy plus its complete fitness
+evidence to the public result.
 
 Version 0.3.0 added the independently tested private population-storage
 foundation: checked `population_size * genome_size` arithmetic, a
 caller-provided total slab budget, contiguous zero-initialized storage, bounded
-non-owning genome views, and fully resetting destruction. The subsystem is not
-yet invoked by `evo_run`, so the library does not allocate and discard a fake
-population or claim that a search occurred.
+non-owning genome views, and fully resetting destruction. That boundary became
+the storage foundation for public generation-zero execution in version 0.6.0.
 
 Version 0.4.0 adds private deterministic RNG algorithm version 1 and
 generation-zero population initialization. A configured seed deterministically
@@ -86,8 +86,8 @@ version; lifecycle rejection preserves existing storage unchanged.
 
 Consumer initializers must be bounded deterministic transformations of their
 prefilled genome and context. The RNG is not cryptographically secure.
-Population initialization remains private and does not validate, evaluate,
-rank, select, mutate, cross over, or iterate candidates.
+Population initialization remains private and does not itself validate,
+evaluate, select, mutate, cross over, or iterate candidates.
 
 Version 0.5.0 adds a private generation-zero validation and evaluation phase.
 An optional validator is applied to every candidate in ascending order, and
@@ -98,8 +98,17 @@ evaluation state without a winner.
 
 Evaluation records have a separate caller-provided byte budget and remain
 private. Resource, allocation, or non-finite-fitness failure preserves the
-initialized genome slab as unevaluated. The subsystem is still disconnected
-from `evo_run`.
+initialized genome slab as unevaluated within the private phase.
+
+Version 0.6.0 connects those private lifecycle stages to `evo_run`. A missing
+evaluator is rejected before allocation. Every non-active-result failure
+returns an empty result after releasing private storage. A completed
+all-invalid population returns `EVO_ERROR_NO_VALID_CANDIDATE`; it is distinct
+from an internal state, resource, allocation, or callback-output failure.
+
+`EVO_SUCCESS` now means a valid generation-zero winner was produced. It does
+not mean that selection, crossover, mutation, a generation transition, or an
+optimization search occurred. `generations_completed` therefore remains zero.
 
 ## Result Lifecycle
 
@@ -122,13 +131,13 @@ The status values are:
 - `EVO_ERROR_RESOURCE_LIMIT`
 - `EVO_ERROR_STATE`
 - `EVO_ERROR_EVALUATION`
+- `EVO_ERROR_NO_VALID_CANDIDATE`
 
 See `docs/specs/EVO-001-library-contract.md` for the complete API, ownership,
 failure-state, alias, compatibility, and secure-erasure boundaries.
 
-The next implementation boundary is connecting private population creation,
-initialization, validation, evaluation, and winner transfer to `evo_run`
-without adding selection or a generation loop.
+Selection policy, crossover, mutation, and the first generation transition
+remain the next execution boundary; none is implied by version 0.6.0 success.
 
 ## Project Zero
 
