@@ -36,7 +36,6 @@ target_include_directories(evo_seed_schedule_research
         ${PROJECT_SOURCE_DIR}/src
 )
 target_link_libraries(evo_seed_schedule_research PRIVATE catalyst_evo)
-target_compile_options(evo_seed_schedule_research PRIVATE -Wall -Wextra -Wpedantic)
 
 add_executable(evo_seed_schedule_research_test seed_schedule_research_test.c)
 target_include_directories(evo_seed_schedule_research_test PRIVATE ${PROJECT_SOURCE_DIR}/src)

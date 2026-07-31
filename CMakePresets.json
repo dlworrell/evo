@@ -1,0 +1,101 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 20,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "aes-base",
+      "hidden": true,
+      "generator": "Ninja",
+      "cacheVariables": {
+        "BUILD_TESTING": "ON",
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_INSTALL_PREFIX": "/usr",
+        "CMAKE_INSTALL_LIBDIR": "lib",
+        "EVO_WARNINGS_AS_ERRORS": "ON"
+      }
+    },
+    {
+      "name": "aes-clang",
+      "inherits": "aes-base",
+      "displayName": "AES-BLD-001 Clang 18 + LLVM + LLD",
+      "binaryDir": "${sourceDir}/build/cmake-clang",
+      "cacheVariables": {
+        "CMAKE_AR": "/usr/local/bin/llvm-ar",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_EXE_LINKER_FLAGS": "-fuse-ld=lld",
+        "CMAKE_MODULE_LINKER_FLAGS": "-fuse-ld=lld",
+        "CMAKE_NM": "/usr/local/bin/llvm-nm",
+        "CMAKE_OBJDUMP": "/usr/local/bin/llvm-objdump",
+        "CMAKE_RANLIB": "/usr/local/bin/llvm-ranlib",
+        "CMAKE_SHARED_LINKER_FLAGS": "-fuse-ld=lld"
+      }
+    },
+    {
+      "name": "aes-gcc",
+      "inherits": "aes-base",
+      "displayName": "AES-BLD-001 GCC 13 + GNU Binutils",
+      "binaryDir": "${sourceDir}/build/cmake-gcc",
+      "cacheVariables": {
+        "CMAKE_AR": "/usr/bin/ar",
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_EXE_LINKER_FLAGS": "-fuse-ld=bfd",
+        "CMAKE_MODULE_LINKER_FLAGS": "-fuse-ld=bfd",
+        "CMAKE_NM": "/usr/bin/nm",
+        "CMAKE_OBJDUMP": "/usr/bin/objdump",
+        "CMAKE_RANLIB": "/usr/bin/ranlib",
+        "CMAKE_SHARED_LINKER_FLAGS": "-fuse-ld=bfd"
+      }
+    },
+    {
+      "name": "aes-clang-sanitizers",
+      "inherits": "aes-clang",
+      "displayName": "AES-BLD-001 Clang ASan + UBSan",
+      "binaryDir": "${sourceDir}/build/cmake-clang-sanitizers",
+      "cacheVariables": {
+        "EVO_ENABLE_SANITIZERS": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "aes-clang",
+      "configurePreset": "aes-clang"
+    },
+    {
+      "name": "aes-gcc",
+      "configurePreset": "aes-gcc"
+    },
+    {
+      "name": "aes-clang-sanitizers",
+      "configurePreset": "aes-clang-sanitizers"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "aes-clang",
+      "configurePreset": "aes-clang",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "aes-gcc",
+      "configurePreset": "aes-gcc",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "aes-clang-sanitizers",
+      "configurePreset": "aes-clang-sanitizers",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}

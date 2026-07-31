@@ -1,0 +1,20 @@
+name: AES-BLD-001 Native Build Parity
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-build-parity:
+    # AEMS PR #26 normalized artifact paths for root-level consumers.
+    uses: dlworrell/AEMS/.github/workflows/aes-bld-001-distributed.yml@main
+    with:
+      repository_subpath: "."
+      profile_path: ".aems/aes-bld-001.json"
+      strict: true
