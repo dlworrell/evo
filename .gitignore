@@ -216,3 +216,22 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Native CMake and GNU Autotools outputs
+CMakeUserPresets.json
+compile_commands.json
+autom4te.cache/
+aclocal.m4
+configure
+config.log
+config.status
+libtool
+Makefile
+Makefile.in
+*.la
+*.lo
+*.o
+.deps/
+.libs/
+test-driver
+test-suite.log
