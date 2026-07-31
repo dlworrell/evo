@@ -134,9 +134,32 @@ both children without changing parent bytes, ownership, or retaining any view.
 The dispatcher performs no allocation and has no callback rollback path.
 
 This boundary does not select parents or own next-generation storage. It is not
-called by `evo_run`. Mutation, child-population ownership, operator stream
-sequencing, and the first generation transition remain future orchestration
-work.
+called by `evo_run`. Child-population ownership, operator stream sequencing,
+and the first generation transition remain future orchestration work.
+
+## Private Mutation Boundary
+
+Version 0.9.0 adds a private representation-neutral mutation dispatcher. It
+accepts one bounded writable genome, the configured mutation rate, and an
+explicitly seeded private RNG.
+
+Each valid attempt consumes exactly one 32-bit probability decision. A
+selected event invokes the consumer mutation callback exactly once when
+present; a non-selected event or absent callback leaves the genome unchanged.
+All pointer, genome-policy, rate, and RNG-state validation occurs before stream
+consumption or genome writes.
+
+The engine owns the per-genome probability decision. The callback receives the
+same configured scalar as its representation-specific mutation intensity and
+must be deterministic for fixed bytes, rate, and context. It may not consult
+unrecorded entropy, change storage ownership, or retain the view. Because the
+callback mutates in place and returns no status, the dispatcher has no rollback
+path.
+
+This boundary performs no allocation and is not called by `evo_run`. Built-in
+representation-specific mutation helpers, adaptive schedules, child-population
+ownership, operator stream sequencing, and the first generation transition
+remain future work.
 
 ## Execution Flow
 
@@ -148,12 +171,12 @@ work.
 6. Record statistics and evidence.
 7. Stop on convergence, stagnation, generation limit, or an application-defined condition.
 
-Version 0.8.0 publicly implements steps 1 and 2 for generation zero and
+Version 0.9.0 publicly implements steps 1 and 2 for generation zero and
 transfers the best valid candidate. Step 3 has an independently tested private
-tournament operator, and the crossover portion of step 4 has an independently
-tested private dispatcher. `evo_run` invokes neither operator. `EVO_SUCCESS`
-therefore still does not indicate that steps 3 through 7, a generation
-transition, or an optimization search completed.
+tournament operator, and both crossover and mutation in step 4 have
+independently tested private dispatchers. `evo_run` invokes none of these
+operators. `EVO_SUCCESS` therefore still does not indicate that steps 3
+through 7, a generation transition, or an optimization search completed.
 
 ## Correctness Boundary
 

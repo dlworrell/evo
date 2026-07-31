@@ -159,3 +159,26 @@ child views are supplied by the private caller.
 The operator does not choose parents, allocate a child population, mutate
 children, or execute a generation transition. Representation-specific
 one-point, two-point, and uniform helpers remain later algorithm-library work.
+
+## Deterministic Mutation Dispatch
+
+Version 0.9.0 implements a private representation-neutral mutation operator
+over one bounded writable genome.
+
+- `genome_size` must be nonzero and within `max_genome_bytes`.
+- `mutation_rate` must be finite and in `[0, 1]`.
+- One probability decision consumes exactly one RNG word per valid attempt,
+  including rates zero and one and an absent callback.
+- A selected event invokes the consumer mutation callback exactly once when
+  present.
+- A non-selected event or absent callback leaves the genome unchanged.
+- Precondition failures preserve the RNG and genome bytes.
+- The callback receives `mutation_rate` unchanged as its representation-
+  specific intensity and must remain deterministic for fixed genome bytes,
+  rate, and context.
+- The callback owns no storage, retains no genome view, uses no unrecorded
+  entropy, and has no failure or rollback channel.
+
+The operator does not allocate a child population, define built-in bit,
+integer, floating-point, or permutation mutations, adapt the rate, or execute
+a generation transition. Those remain later algorithm and orchestration work.
