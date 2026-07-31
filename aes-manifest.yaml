@@ -41,6 +41,7 @@ standards:
     - AES-003
     - AES-DEV-001
     - AES-SEC-001
+    - AES-BLD-001
 
 project_zero:
   state: CERTIFICATION
