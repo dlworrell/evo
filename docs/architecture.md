@@ -26,8 +26,8 @@ provided by the caller.
 
 Indexed genome pointers are bounded non-owning views. Population destruction
 invalidates every view, releases the slab, and resets the complete private
-object. The subsystem is independently tested and remains disconnected from
-`evo_run` until validity and evaluation semantics are defined.
+object. The subsystem remains independently tested; version 0.6.0 invokes it
+as the private storage boundary for `evo_run`.
 
 ## Deterministic Initialization Boundary
 
@@ -48,9 +48,9 @@ are rejected unchanged. Population destruction clears this metadata together
 with the owned slab.
 
 The random stream is reproducible rather than cryptographically secure.
-Private population initialization remains disconnected from `evo_run`; it
-does not call validity or fitness callbacks and does not represent a completed
-search.
+Private population initialization does not itself call validity or fitness
+callbacks and does not represent a completed search. Version 0.6.0 composes it
+with the separate evaluation phase inside `evo_run`.
 
 ## Validation and Evaluation Boundary
 
@@ -72,9 +72,31 @@ objectives. An all-invalid population is a completed evaluation state with no
 winner.
 
 Resource, allocation, and non-finite-fitness failures leave the initialized
-genome slab owned and unevaluated. Population destruction releases both the
-genome slab and evaluation records and resets the complete private object.
-Evaluation remains disconnected from `evo_run`.
+genome slab owned and unevaluated inside the private phase. Population
+destruction releases both the genome slab and evaluation records and resets
+the complete private object.
+
+## Public Generation-Zero Boundary
+
+Version 0.6.0 makes `evo_run` the owner of one complete private
+generation-zero lifecycle:
+
+1. reject an active public result unchanged;
+2. construct and deterministically initialize private population storage;
+3. validate every candidate and evaluate only valid candidates;
+4. identify the stable highest-total winner;
+5. transfer an independent copy and complete fitness evidence to the result;
+6. release every private allocation before returning.
+
+A missing evaluator is an invalid argument. Completion with no valid candidate
+maps to `EVO_ERROR_NO_VALID_CANDIDATE`; all other private failures preserve
+their existing status. Every non-active-result failure leaves the public
+result empty.
+
+The result copy is a distinct allocation because private population
+destruction invalidates every population view. The copy covers exactly the
+caller-bounded `genome_size`. `generations_completed` remains zero because no
+selection or generation transition occurs.
 
 ## Execution Flow
 
@@ -86,12 +108,10 @@ Evaluation remains disconnected from `evo_run`.
 6. Record statistics and evidence.
 7. Stop on convergence, stagnation, generation limit, or an application-defined condition.
 
-Version 0.5.0 implements deterministic byte initialization and the optional
-domain initializer portion of step 1, plus generation-zero validation,
-evaluation, and best-candidate identification from step 2. The private
-subsystem is not yet connected to `evo_run`; no current public success status
-indicates that the population execution flow or an optimization search
-completed.
+Version 0.6.0 publicly implements steps 1 and 2 for generation zero and
+transfers the best valid candidate. `EVO_SUCCESS` indicates that this bounded
+generation-zero flow completed. It does not indicate that steps 3 through 7,
+a generation transition, or an optimization search completed.
 
 ## Correctness Boundary
 
