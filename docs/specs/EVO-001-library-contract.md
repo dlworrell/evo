@@ -1,7 +1,7 @@
 # EVO-001: Evolutionary Optimization Library Contract
 
 Status: Baseline
-Version: 0.6.0
+Version: 0.7.0
 Owner: EVO
 
 ## Purpose
@@ -110,6 +110,14 @@ The initialization lifecycle is:
 The RNG is not cryptographically secure and is not approved for secrets, keys,
 nonces, authentication, or adversarial unpredictability.
 
+Version 0.7.0 adds a private unbiased bounded-index operation over the same
+version-1 stream. Each candidate sample consumes two 32-bit outputs, treating
+the first as the low word and the second as the high word of one explicit
+64-bit sample. Rejection sampling discards values below
+`(-bound) % bound`; accepted values are reduced modulo the nonzero bound. This
+avoids modulo bias and is independent of native byte order. Invalid input
+preserves both the RNG state and the output index.
+
 Population initialization does not itself call `is_valid` or `evaluate`.
 Version 0.6.0 composes it with the distinct evaluation phase; initialization
 failure prevents every later callback and result transfer.
@@ -187,6 +195,43 @@ evaluated and transferred. It does not prove that parent selection, crossover,
 mutation, a generation transition, convergence, or an optimization search
 occurred.
 
+### Private deterministic tournament selection
+
+Version 0.7.0 adds a private tournament-selection boundary after completed
+population evaluation. The normative decision is recorded in
+`docs/adr/ADR-0006-deterministic-tournament-selection.md`.
+
+The selection lifecycle is:
+
+1. The configuration, completed population, seeded RNG, and output pointer must
+   be non-null.
+2. `tournament_size` must be in the inclusive range
+   `1..config->population_size`; otherwise selection returns
+   `EVO_ERROR_RESOURCE_LIMIT`.
+3. Before consuming RNG state, EVO proves that population storage and
+   evaluation-record byte counts are exact and representable, configuration
+   budgets and initialization evidence match, validity and evaluation flags are
+   consistent, every valid fitness field is finite, the valid count is exact,
+   and the recorded stable best index is correct.
+4. A structurally inconsistent or unevaluated population, or an unseeded RNG,
+   returns `EVO_ERROR_STATE`.
+5. A consistent all-invalid population returns
+   `EVO_ERROR_NO_VALID_CANDIDATE` without consuming RNG state.
+6. Each tournament draw uses unbiased bounded sampling over the number of valid
+   candidates, then maps the sampled valid ordinal to its ascending population
+   index. Invalid candidates are never eligible.
+7. Sampling is with replacement. Higher `fitness.total` wins, and an exact tie
+   selects the lower population index.
+8. The operator performs no allocation and never changes population storage or
+   evaluation evidence. It assigns the output index only after every draw
+   succeeds.
+
+The caller supplies an already seeded private RNG stream. Version 0.7.0 does
+not derive a selection seed, split initialization streams, or alter RNG
+algorithm version 1. The future generation-transition boundary must define
+stream ownership, derivation, and persistence before composing this operator
+with `evo_run`.
+
 ### Result lifecycle
 
 The caller must zero-initialize `evo_result_t` before its first use:
@@ -251,7 +296,11 @@ changes successful `evo_run` semantics from an allocation scaffold to a
 generation-zero evaluated result. Consumers must rebuild against the 0.6.0
 header and provide all three nonzero memory budgets.
 
-## Current 0.6.0 Conformance Boundary
+Version 0.7.0 changes no public type, function signature, installed symbol, or
+`evo_run` behavior. It increments the version and adds independently verified
+private RNG and tournament-selection behavior.
+
+## Current 0.7.0 Conformance Boundary
 
 The current implementation exposes a complete generation-zero boundary:
 
@@ -272,12 +321,16 @@ The current implementation exposes a complete generation-zero boundary:
 - private population destruction is null-safe, repeatable, and fully
   resetting;
 - private RNG output and byte order are locked by fixed vectors;
+- private bounded-index sampling is unbiased, fixed-vector locked, and replay
+  stable;
 - private population initialization is seed-reproducible and records its RNG
   algorithm version;
 - optional initializers run exactly once in ascending genome order; and
-- private validation and evaluation run in deterministic ascending passes; and
-- selection, crossover, mutation, diversity, checkpointing, and generation
-  iteration are not implemented.
+- private validation and evaluation run in deterministic ascending passes;
+- private tournament selection samples valid evaluated candidates with
+  replacement and deterministic tie handling; and
+- crossover, mutation, diversity, checkpointing, selection orchestration, and
+  generation iteration are not implemented.
 
 Consumers may treat `EVO_SUCCESS` as evidence of a valid evaluated
 generation-zero winner. They must not treat it as evidence that an
@@ -298,9 +351,12 @@ suppression, winner transfer, complete fitness evidence, stable ties,
 all-invalid mapping, non-finite rejection, active-result preservation, and
 reuse. Population-storage, RNG-vector, population-initialization, and
 population-evaluation tests continue to verify each private phase
-independently. A separate Linux-only static-link test uses the GNU-compatible
-`--wrap=calloc` linker facility to prove failure and cleanup at the population,
-evaluation-record, and result-transfer allocations.
+independently. The selection test proves completed-state validation, tournament
+bounds, all-invalid handling, valid-only sampling, fixed replay, exact ties,
+failure preservation, and single-draw behavior. A separate Linux-only
+static-link test uses the GNU-compatible `--wrap=calloc` linker facility to
+prove failure and cleanup at the population, evaluation-record, and
+result-transfer allocations.
 
 ## Related Records
 
@@ -308,6 +364,7 @@ evaluation-record, and result-transfer allocations.
 - `docs/adr/ADR-0002-deterministic-rng-and-population-initialization.md`
 - `docs/adr/ADR-0004-generation-zero-validation-and-evaluation.md`
 - `docs/adr/ADR-0005-generation-zero-public-run-integration.md`
+- `docs/adr/ADR-0006-deterministic-tournament-selection.md`
 - `docs/architecture.md`
 - `docs/algorithms.md`
 - `docs/benchmarks.md`
@@ -319,4 +376,5 @@ evaluation-record, and result-transfer allocations.
 - `https://github.com/dlworrell/evo/issues/8`
 - `https://github.com/dlworrell/evo/issues/12`
 - `https://github.com/dlworrell/evo/issues/16`
+- `https://github.com/dlworrell/evo/issues/18`
 - `https://github.com/dlworrell/AEMS/issues/18`
