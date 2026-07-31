@@ -46,6 +46,11 @@ rejects the modulo-bias prefix, and reduces an accepted value by the bound.
 Fixed vectors cover normal and rejection paths, exact stream consumption, and
 replay.
 
+Version 0.8.0 adds deterministic probability events. A finite probability in
+`[0, 1]` is quantized to `floor(probability * 2^32)` successful 32-bit values.
+Every successful decision consumes exactly one word, including probabilities
+zero and one. Invalid input preserves the stream and output.
+
 This stream is designed for repeatable engineering search. It is not
 cryptographically secure and must not generate secrets, keys, nonces, or
 authentication material.
@@ -133,3 +138,24 @@ The caller supplies the seeded private stream. This isolates selection
 semantics from the still-undecided generation-level stream schedule. The
 operator is not called by `evo_run` and performs no crossover, mutation,
 elitism, or generation advancement.
+
+## Deterministic Crossover Dispatch
+
+Version 0.8.0 implements a private representation-neutral crossover pair
+operator. Two read-only parent genome views and two distinct, non-overlapping
+child views are supplied by the private caller.
+
+- `genome_size` must be nonzero and within `max_genome_bytes`.
+- `crossover_rate` must be finite and in `[0, 1]`.
+- One probability decision consumes exactly one RNG word per successful pair.
+- A selected event invokes the consumer callback exactly once when present.
+- A non-selected event or missing callback clones each parent to its
+  corresponding child for exactly `genome_size` bytes.
+- Precondition failures preserve the RNG and child outputs.
+- The callback must fully initialize both children, preserve parents and
+  ownership, retain no view, and remain deterministic for fixed inputs and
+  context.
+
+The operator does not choose parents, allocate a child population, mutate
+children, or execute a generation transition. Representation-specific
+one-point, two-point, and uniform helpers remain later algorithm-library work.

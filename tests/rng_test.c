@@ -1,6 +1,7 @@
 #include "internal/rng.h"
 
 #include <assert.h>
+#include <math.h>
 
 static void test_invalid_state_rejection(void)
 {
@@ -8,6 +9,7 @@ static void test_invalid_state_rejection(void)
     uint32_t value = 0;
     unsigned char byte = 0;
     size_t index = 19;
+    bool occurred = true;
 
     assert(!evo_rng_seed(NULL, 0));
     assert(!evo_rng_next_u32(NULL, &value));
@@ -15,18 +17,83 @@ static void test_invalid_state_rejection(void)
     assert(!evo_rng_next_u32(&rng, &value));
     assert(!evo_rng_uniform_index(NULL, 3, &index));
     assert(!evo_rng_uniform_index(&rng, 3, &index));
+    assert(!evo_rng_probability_event(NULL, 0.5, &occurred));
+    assert(!evo_rng_probability_event(&rng, 0.5, &occurred));
     assert(!evo_rng_fill_bytes(&rng, &byte, 1));
 
     assert(evo_rng_seed(&rng, 0));
     const evo_rng_t seeded = rng;
     assert(!evo_rng_uniform_index(&rng, 0, &index));
     assert(!evo_rng_uniform_index(&rng, 3, NULL));
+    assert(!evo_rng_probability_event(&rng, 0.5, NULL));
+    assert(!evo_rng_probability_event(&rng, -0.1, &occurred));
+    assert(!evo_rng_probability_event(&rng, 1.1, &occurred));
+    assert(!evo_rng_probability_event(&rng, NAN, &occurred));
+    assert(!evo_rng_probability_event(&rng, INFINITY, &occurred));
     assert(index == 19);
+    assert(occurred);
     assert(rng.state == seeded.state);
     assert(rng.increment == seeded.increment);
     assert(rng.seeded == seeded.seeded);
     assert(!evo_rng_fill_bytes(&rng, NULL, 1));
     assert(evo_rng_fill_bytes(&rng, NULL, 0));
+}
+
+static void test_probability_event_fixed_vector(void)
+{
+    static const double probabilities[] = {0.0, 1.0, 0.5, 0.25};
+    static const bool expected[] = {false, true, true, false};
+    evo_rng_t rng = {0};
+    uint32_t next_value = 0;
+
+    assert(evo_rng_seed(&rng, 42));
+    for (size_t index = 0;
+         index < sizeof(probabilities) / sizeof(probabilities[0]);
+         ++index) {
+        bool occurred = !expected[index];
+
+        assert(evo_rng_probability_event(
+            &rng, probabilities[index], &occurred));
+        assert(occurred == expected[index]);
+    }
+
+    assert(evo_rng_next_u32(&rng, &next_value));
+    assert(next_value == UINT32_C(0xf5af5ead));
+}
+
+static void test_probability_event_replay(void)
+{
+    static const double probabilities[] = {
+        0.125,
+        0.5,
+        0.875,
+        0.3333333333333333,
+    };
+    evo_rng_t first = {0};
+    evo_rng_t replay = {0};
+
+    assert(evo_rng_seed(&first, UINT64_C(20260731)));
+    assert(evo_rng_seed(&replay, UINT64_C(20260731)));
+
+    for (size_t cycle = 0; cycle < 8; ++cycle) {
+        for (size_t index = 0;
+             index < sizeof(probabilities) /
+                         sizeof(probabilities[0]);
+             ++index) {
+            bool first_event = false;
+            bool replay_event = true;
+
+            assert(evo_rng_probability_event(
+                &first, probabilities[index], &first_event));
+            assert(evo_rng_probability_event(
+                &replay, probabilities[index], &replay_event));
+            assert(first_event == replay_event);
+        }
+    }
+
+    assert(first.state == replay.state);
+    assert(first.increment == replay.increment);
+    assert(first.seeded == replay.seeded);
 }
 
 static void test_zero_seed_fixed_vector(void)
@@ -223,5 +290,7 @@ int main(void)
     test_uniform_index_fixed_vector();
     test_uniform_index_replay();
     test_uniform_index_rejection_path();
+    test_probability_event_fixed_vector();
+    test_probability_event_replay();
     return 0;
 }

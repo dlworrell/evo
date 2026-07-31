@@ -117,6 +117,27 @@ derivation or persistence. The future generation-transition owner must make
 that sequencing decision before composing selection with crossover and
 mutation.
 
+## Private Crossover Boundary
+
+Version 0.8.0 adds a private representation-neutral crossover dispatcher. It
+accepts two bounded read-only parent views, two distinct non-overlapping child
+views, the configured rate, and an explicitly seeded private RNG.
+
+Each successful pair consumes exactly one 32-bit probability decision. A
+selected event invokes the consumer callback exactly once; a non-selected
+event or absent callback clones each parent into its corresponding child. All
+pointer, genome-policy, rate, and RNG-state validation occurs before stream
+consumption or child writes.
+
+The callback owns genome representation semantics and must fully initialize
+both children without changing parent bytes, ownership, or retaining any view.
+The dispatcher performs no allocation and has no callback rollback path.
+
+This boundary does not select parents or own next-generation storage. It is not
+called by `evo_run`. Mutation, child-population ownership, operator stream
+sequencing, and the first generation transition remain future orchestration
+work.
+
 ## Execution Flow
 
 1. Initialize a population.
@@ -127,9 +148,10 @@ mutation.
 6. Record statistics and evidence.
 7. Stop on convergence, stagnation, generation limit, or an application-defined condition.
 
-Version 0.7.0 publicly implements steps 1 and 2 for generation zero and
-transfers the best valid candidate. Step 3 now has an independently tested
-private tournament operator, but `evo_run` does not invoke it. `EVO_SUCCESS`
+Version 0.8.0 publicly implements steps 1 and 2 for generation zero and
+transfers the best valid candidate. Step 3 has an independently tested private
+tournament operator, and the crossover portion of step 4 has an independently
+tested private dispatcher. `evo_run` invokes neither operator. `EVO_SUCCESS`
 therefore still does not indicate that steps 3 through 7, a generation
 transition, or an optimization search completed.
 

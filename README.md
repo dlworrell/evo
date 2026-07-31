@@ -65,12 +65,13 @@ against each installed result. See
 
 ## Status
 
-EVO 0.7.0 retains the complete public generation-zero boundary and adds a
-private deterministic tournament-selection operator for the next generation
-milestone. `evo_run` still constructs and deterministically initializes a
-private population, validates every candidate, evaluates only valid candidates,
-selects the stable generation-zero winner, and transfers an independent genome
-copy plus its complete fitness evidence to the public result.
+EVO 0.8.0 retains the complete public generation-zero boundary and adds a
+private deterministic crossover-dispatch operator after the independently
+tested tournament-selection boundary. `evo_run` still constructs and
+deterministically initializes a private population, validates every candidate,
+evaluates only valid candidates, selects the stable generation-zero winner,
+and transfers an independent genome copy plus its complete fitness evidence to
+the public result.
 
 Version 0.3.0 added the independently tested private population-storage
 foundation: checked `population_size * genome_size` arithmetic, a
@@ -123,6 +124,17 @@ new seed schedule, change RNG algorithm version 1, or connect selection to
 `evo_run`. Generation orchestration will define stream ownership and sequencing
 when the first transition is implemented.
 
+Version 0.8.0 adds a private probability gate and crossover pair dispatcher.
+The gate quantizes `crossover_rate` to a 32-bit threshold and consumes exactly
+one version-1 RNG word for every successful pair, including rates zero and one.
+When selected, the existing consumer callback receives two read-only parents
+and two distinct writable children. Otherwise, or when the callback is absent,
+the parents are cloned into their corresponding children.
+
+The operator remains representation-neutral and allocation-free. It is not
+called by `evo_run`, does not select parents, mutate children, own a child
+population, or advance a generation.
+
 ## Result Lifecycle
 
 Callers must zero-initialize an `evo_result_t` before first use. A successful
@@ -149,9 +161,10 @@ The status values are:
 See `docs/specs/EVO-001-library-contract.md` for the complete API, ownership,
 failure-state, alias, compatibility, and secure-erasure boundaries.
 
-The private tournament operator is independently verified. Crossover, mutation,
-stream orchestration, and the first generation transition remain the next
-execution boundary; none is implied by `evo_run` success in version 0.7.0.
+The private tournament and crossover-dispatch operators are independently
+verified. Mutation, child-population ownership, stream orchestration, and the
+first generation transition remain the next execution boundaries; none is
+implied by `evo_run` success in version 0.8.0.
 
 ## Project Zero
 

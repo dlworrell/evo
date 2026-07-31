@@ -1,7 +1,7 @@
 # EVO-001: Evolutionary Optimization Library Contract
 
 Status: Baseline
-Version: 0.7.0
+Version: 0.8.0
 Owner: EVO
 
 ## Purpose
@@ -118,6 +118,14 @@ the first as the low word and the second as the high word of one explicit
 avoids modulo bias and is independent of native byte order. Invalid input
 preserves both the RNG state and the output index.
 
+Version 0.8.0 adds a private probability-event operation over the same stream.
+A finite probability in `[0, 1]` is converted to the 64-bit threshold
+`floor(probability * 2^32)`. One 32-bit output is successful when its unsigned
+value is less than that threshold. Every successful call consumes exactly one
+word, including probability zero and probability one. Invalid input preserves
+the RNG state and output flag. Reproducible evidence must record the exact
+configured `double` rate rather than relying on an imprecise display string.
+
 Population initialization does not itself call `is_valid` or `evaluate`.
 Version 0.6.0 composes it with the distinct evaluation phase; initialization
 failure prevents every later callback and result transfer.
@@ -232,6 +240,44 @@ algorithm version 1. The future generation-transition boundary must define
 stream ownership, derivation, and persistence before composing this operator
 with `evo_run`.
 
+### Private deterministic crossover dispatch
+
+Version 0.8.0 adds a private representation-neutral crossover boundary. The
+normative decision is recorded in
+`docs/adr/ADR-0007-deterministic-crossover-dispatch.md`.
+
+The crossover lifecycle is:
+
+1. The problem, configuration, seeded RNG, two parent views, and two child
+   views must be non-null.
+2. `problem->genome_size` must be nonzero and no greater than
+   `config->max_genome_bytes`.
+3. `config->crossover_rate` must be finite and in the inclusive range
+   `[0, 1]`.
+4. The two child pointers must be distinct and may not exactly equal either
+   parent pointer. The private caller must additionally provide complete,
+   non-overlapping child spans that do not partially overlap a parent.
+5. Every preceding check occurs before RNG consumption or child output. Null
+   and exact-alias errors return `EVO_ERROR_INVALID_ARGUMENT`; invalid genome
+   policy or rate returns `EVO_ERROR_RESOURCE_LIMIT`; unseeded state returns
+   `EVO_ERROR_STATE`.
+6. Every successful pair consumes exactly one probability-event word,
+   including rate endpoints and missing-callback operation.
+7. When the event is selected and `problem->crossover` is non-null, EVO invokes
+   that callback exactly once with two read-only parents, two writable
+   children, and the consumer context.
+8. When the event is not selected or the callback is null, EVO clones parent A
+   to child A and parent B to child B for exactly `genome_size` bytes.
+9. The callback must fully initialize both children, preserve parent bytes and
+   ownership, retain no view, and remain deterministic for fixed parents and
+   context. The callback returns no status, so EVO cannot roll back a consumer
+   contract violation.
+
+The operator performs no allocation, does not select parents, and does not own
+child storage. It is private and is not called by `evo_run`. Version 0.8.0 does
+not implement mutation, a next-generation population, generation-level stream
+derivation, or a generation transition.
+
 ### Result lifecycle
 
 The caller must zero-initialize `evo_result_t` before its first use:
@@ -300,7 +346,11 @@ Version 0.7.0 changes no public type, function signature, installed symbol, or
 `evo_run` behavior. It increments the version and adds independently verified
 private RNG and tournament-selection behavior.
 
-## Current 0.7.0 Conformance Boundary
+Version 0.8.0 likewise changes no public layout, signature, installed symbol,
+or `evo_run` behavior. It documents the existing callback contract more
+precisely and adds private probability and crossover-dispatch behavior.
+
+## Current 0.8.0 Conformance Boundary
 
 The current implementation exposes a complete generation-zero boundary:
 
@@ -328,9 +378,12 @@ The current implementation exposes a complete generation-zero boundary:
 - optional initializers run exactly once in ascending genome order; and
 - private validation and evaluation run in deterministic ascending passes;
 - private tournament selection samples valid evaluated candidates with
-  replacement and deterministic tie handling; and
-- crossover, mutation, diversity, checkpointing, selection orchestration, and
-  generation iteration are not implemented.
+  replacement and deterministic tie handling;
+- private crossover dispatch consumes a fixed one-word probability decision,
+  invokes the representation-aware callback or clones parents, and preserves
+  child output on precondition failure; and
+- mutation, diversity, checkpointing, child-population ownership, operator
+  orchestration, and generation iteration are not implemented.
 
 Consumers may treat `EVO_SUCCESS` as evidence of a valid evaluated
 generation-zero winner. They must not treat it as evidence that an
@@ -358,6 +411,11 @@ static-link test uses the GNU-compatible `--wrap=calloc` linker facility to
 prove failure and cleanup at the population, evaluation-record, and
 result-transfer allocations.
 
+The crossover test proves pointer and policy validation, exact alias rejection,
+rate endpoints, exact RNG consumption, callback and identity-clone paths,
+parent preservation, output preservation on rejection, and deterministic
+replay. RNG tests separately lock probability thresholds and vectors.
+
 ## Related Records
 
 - `docs/adr/ADR-0001-library-boundary-and-build-system.md`
@@ -365,6 +423,7 @@ result-transfer allocations.
 - `docs/adr/ADR-0004-generation-zero-validation-and-evaluation.md`
 - `docs/adr/ADR-0005-generation-zero-public-run-integration.md`
 - `docs/adr/ADR-0006-deterministic-tournament-selection.md`
+- `docs/adr/ADR-0007-deterministic-crossover-dispatch.md`
 - `docs/architecture.md`
 - `docs/algorithms.md`
 - `docs/benchmarks.md`
@@ -377,4 +436,5 @@ result-transfer allocations.
 - `https://github.com/dlworrell/evo/issues/12`
 - `https://github.com/dlworrell/evo/issues/16`
 - `https://github.com/dlworrell/evo/issues/18`
+- `https://github.com/dlworrell/evo/issues/20`
 - `https://github.com/dlworrell/AEMS/issues/18`

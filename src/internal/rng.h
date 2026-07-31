@@ -33,6 +33,16 @@ bool evo_rng_uniform_index(evo_rng_t *rng,
                            size_t *index);
 
 /*
+ * Resolve one event with probability in [0, 1]. The probability is quantized
+ * to floor(probability * 2^32) successful 32-bit values. Every successful
+ * call consumes exactly one word, including endpoint probabilities. Invalid
+ * input preserves both the stream and the output object.
+ */
+bool evo_rng_probability_event(evo_rng_t *rng,
+                               double probability,
+                               bool *occurred);
+
+/*
  * Fill bytes from successive 32-bit values, least-significant byte first.
  * This defines output independently of native byte order.
  */

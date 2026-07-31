@@ -142,6 +142,12 @@
         "autotools": "tests/evo_selection_test"
       },
       {
+        "id": "crossover",
+        "source": "tests/crossover_test.c",
+        "cmake": "evo_crossover_test",
+        "autotools": "tests/evo_crossover_test"
+      },
+      {
         "id": "seed-schedule-research",
         "source": "tests/seed_schedule_research_test.c",
         "cmake": "evo_seed_schedule_research_test",
