@@ -182,3 +182,23 @@ over one bounded writable genome.
 The operator does not allocate a child population, define built-in bit,
 integer, floating-point, or permutation mutations, adapt the rate, or execute
 a generation transition. Those remain later algorithm and orchestration work.
+
+## Child-Population Storage
+
+Version 0.10.0 adds the private storage boundary required before the existing
+operators can be composed.
+
+- A source population must have structurally consistent completed evaluation
+  evidence.
+- The child population has the same population and genome dimensions.
+- Checked multiplication proves the child slab size before allocation.
+- `max_child_population_bytes` independently authorizes the child slab.
+- Child bytes are zero-initialized and child evaluation records are absent.
+- Parent genomes, evaluations, and lifecycle evidence remain unchanged.
+- Parent and child storage have independent ownership and destruction.
+- An all-invalid but structurally complete parent may still allocate storage;
+  selection policy remains a later orchestration decision.
+
+This boundary does not select or pair parents, invoke crossover or mutation,
+mark children complete, evaluate children, swap populations, derive operator
+streams, or advance a generation.

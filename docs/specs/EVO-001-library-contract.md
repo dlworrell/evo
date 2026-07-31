@@ -1,7 +1,7 @@
 # EVO-001: Evolutionary Optimization Library Contract
 
 Status: Baseline
-Version: 0.9.0
+Version: 0.10.0
 Owner: EVO
 
 ## Purpose
@@ -32,7 +32,8 @@ records an additional source of variation.
 
 `evo_config_t` records population size, generation limit, tournament size,
 crossover rate, mutation rate, random seed, `max_genome_bytes`,
-`max_population_bytes`, and `max_evaluation_bytes`.
+`max_population_bytes`, `max_evaluation_bytes`, and
+`max_child_population_bytes`.
 
 `max_genome_bytes` is trusted caller policy for the largest individual genome
 allocation accepted by `evo_run`. It avoids a platform-specific hard-coded
@@ -52,6 +53,12 @@ record array. EVO checks
 `population_size * sizeof(evo_candidate_evaluation_t)` for `size_t` overflow
 before allocation. The field does not authorize future generation buffers,
 operator scratch space, checkpoint state, or parallel-worker storage.
+
+`max_child_population_bytes` independently bounds one private child-population
+genome slab. EVO checks the same `population_size * genome_size` arithmetic
+before allocating this second slab. The field does not authorize child
+evaluation records, operator scratch space, checkpoints, or an aggregate run
+working set.
 
 ### Internal population storage
 
@@ -317,6 +324,45 @@ built-in representation-specific mutation helpers, adaptive mutation, a
 next-generation population, generation-level stream derivation, or a
 generation transition.
 
+### Private child-population ownership
+
+Version 0.10.0 adds a private child-population storage boundary. The normative
+decision is recorded in
+`docs/adr/ADR-0009-bounded-child-population-ownership.md`.
+
+The child-storage lifecycle is:
+
+1. The problem, configuration, completed parent population, and empty child
+   population must be distinct, non-null objects.
+2. An active child is rejected with `EVO_ERROR_INVALID_ARGUMENT` and preserved
+   unchanged. Parent/child object aliasing is rejected the same way.
+3. EVO validates the parent's dimensions, allocation sizes, budgets,
+   initialization seed, RNG version, evaluations, finite fitness evidence,
+   valid count, best-candidate state, and stable tie handling through the same
+   private validator used by tournament selection.
+4. An incomplete or inconsistent parent, or a parent genome size that differs
+   from the supplied problem, returns `EVO_ERROR_STATE` before allocation.
+5. EVO proves `config->population_size * problem->genome_size` is
+   representable and enforces both `max_genome_bytes` and
+   `max_child_population_bytes`.
+6. Zero or insufficient child policy returns `EVO_ERROR_RESOURCE_LIMIT`; an
+   allocator failure returns `EVO_ERROR_OUT_OF_MEMORY`. Either failure leaves
+   the child empty and parent unchanged.
+7. Success creates one distinct, zero-initialized contiguous child genome slab
+   with dimensions matching the parent.
+8. The child has no evaluation allocation, initialization seed, RNG algorithm
+   version, validity count, best-candidate evidence, or completed lifecycle
+   flag.
+9. Parent and child objects own separate allocations and may be destroyed in
+   either order. Destruction remains null-safe, repeatable, and fully
+   resetting.
+10. A structurally complete all-invalid parent may create child storage. The
+    later selection/orchestration layer owns the no-valid-candidate decision.
+
+The child operation does not select or pair parents, invoke crossover or
+mutation, mark genomes complete, evaluate children, swap populations, derive
+operator streams, increment a generation, or participate in `evo_run`.
+
 ### Result lifecycle
 
 The caller must zero-initialize `evo_result_t` before its first use:
@@ -393,12 +439,18 @@ Version 0.9.0 likewise changes no public layout, signature, installed symbol,
 or `evo_run` behavior. It documents the existing mutation callback contract
 more precisely and adds private mutation-dispatch behavior.
 
-## Current 0.9.0 Conformance Boundary
+Version 0.10.0 appends `max_child_population_bytes` to `evo_config_t` without
+changing existing member offsets. `sizeof(evo_config_t)` and its array stride
+increase, so consumers must rebuild. Generation-zero `evo_run` behavior and
+the installed public function signatures remain unchanged; the appended field
+is used only by the new private child-storage boundary.
+
+## Current 0.10.0 Conformance Boundary
 
 The current implementation exposes a complete generation-zero boundary:
 
 - validation enforces required pointers, an evaluator, an inactive result, and
-  all caller-provided memory budgets;
+  the three generation-zero memory budgets;
 - successful execution constructs, initializes, validates, and evaluates a
   private population in deterministic order;
 - invalid candidates are never evaluated;
@@ -418,18 +470,21 @@ The current implementation exposes a complete generation-zero boundary:
   stable;
 - private population initialization is seed-reproducible and records its RNG
   algorithm version;
-- optional initializers run exactly once in ascending genome order; and
+- optional initializers run exactly once in ascending genome order;
 - private validation and evaluation run in deterministic ascending passes;
 - private tournament selection samples valid evaluated candidates with
   replacement and deterministic tie handling;
 - private crossover dispatch consumes a fixed one-word probability decision,
   invokes the representation-aware callback or clones parents, and preserves
-  child output on precondition failure; and
+  child output on precondition failure;
 - private mutation dispatch consumes a fixed one-word probability decision,
   invokes the representation-aware callback or preserves the genome, and
-  preserves genome output on precondition failure; and
-- adaptive mutation, diversity, checkpointing, child-population ownership,
-  operator orchestration, and generation iteration are not implemented.
+  preserves genome output on precondition failure;
+- private child-population creation validates completed parent evidence,
+  enforces a separate checked budget, and creates independently owned empty
+  output storage; and
+- adaptive mutation, diversity, checkpointing, operator orchestration, and
+  generation iteration are not implemented.
 
 Consumers may treat `EVO_SUCCESS` as evidence of a valid evaluated
 generation-zero winner. They must not treat it as evidence that an
@@ -466,6 +521,12 @@ The mutation test proves pointer and policy validation, rate endpoints, exact
 RNG consumption, callback and no-op paths, rate and context forwarding, genome
 preservation on rejection, and deterministic replay.
 
+The child-population test proves completed-parent validation, separate budget
+enforcement, zero-initialized distinct storage, parent preservation, active-
+child rejection, all-invalid storage behavior, and independent destruction.
+The allocation-failure test separately proves empty-child cleanup while the
+completed parent remains intact.
+
 ## Related Records
 
 - `docs/adr/ADR-0001-library-boundary-and-build-system.md`
@@ -475,6 +536,7 @@ preservation on rejection, and deterministic replay.
 - `docs/adr/ADR-0006-deterministic-tournament-selection.md`
 - `docs/adr/ADR-0007-deterministic-crossover-dispatch.md`
 - `docs/adr/ADR-0008-deterministic-mutation-dispatch.md`
+- `docs/adr/ADR-0009-bounded-child-population-ownership.md`
 - `docs/architecture.md`
 - `docs/algorithms.md`
 - `docs/benchmarks.md`
@@ -489,4 +551,5 @@ preservation on rejection, and deterministic replay.
 - `https://github.com/dlworrell/evo/issues/18`
 - `https://github.com/dlworrell/evo/issues/20`
 - `https://github.com/dlworrell/evo/issues/22`
+- `https://github.com/dlworrell/evo/issues/24`
 - `https://github.com/dlworrell/AEMS/issues/18`

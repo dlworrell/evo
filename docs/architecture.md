@@ -157,9 +157,30 @@ callback mutates in place and returns no status, the dispatcher has no rollback
 path.
 
 This boundary performs no allocation and is not called by `evo_run`. Built-in
-representation-specific mutation helpers, adaptive schedules, child-population
-ownership, operator stream sequencing, and the first generation transition
-remain future work.
+representation-specific mutation helpers, adaptive schedules, operator stream
+sequencing, and the first generation transition remain future work.
+
+## Private Child-Population Ownership Boundary
+
+Version 0.10.0 adds one independently owned child-population genome slab. The
+operation accepts a completed parent population, validates its structure using
+the same internal authority as tournament selection, and allocates matching
+child dimensions under `max_child_population_bytes`.
+
+The child slab is contiguous and zero-initialized. It has no evaluation
+records, initialization seed, RNG version, validity count, or best-candidate
+evidence. These empty lifecycle fields distinguish allocated output storage
+from a completed population. Parent storage and evidence remain read-only and
+the two populations may be destroyed independently.
+
+The additional public configuration field is appended, preserving every
+existing member offset while expanding `sizeof(evo_config_t)`. It authorizes
+only one child genome slab and does not silently authorize operator scratch,
+new evaluation records, checkpoints, or a total run working set.
+
+This boundary performs no selection, pairing, crossover, mutation, elitism,
+child completion, evaluation, swapping, RNG stream derivation, or generation
+advancement. It is not called by `evo_run`.
 
 ## Execution Flow
 
@@ -171,12 +192,13 @@ remain future work.
 6. Record statistics and evidence.
 7. Stop on convergence, stagnation, generation limit, or an application-defined condition.
 
-Version 0.9.0 publicly implements steps 1 and 2 for generation zero and
+Version 0.10.0 publicly implements steps 1 and 2 for generation zero and
 transfers the best valid candidate. Step 3 has an independently tested private
 tournament operator, and both crossover and mutation in step 4 have
-independently tested private dispatchers. `evo_run` invokes none of these
-operators. `EVO_SUCCESS` therefore still does not indicate that steps 3
-through 7, a generation transition, or an optimization search completed.
+independently tested private dispatchers. A separate child slab can now own the
+future outputs. `evo_run` invokes none of these later boundaries. `EVO_SUCCESS`
+therefore still does not indicate that steps 3 through 7, a generation
+transition, or an optimization search completed.
 
 ## Correctness Boundary
 

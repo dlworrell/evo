@@ -10,7 +10,7 @@ extern "C" {
 #endif
 
 #define EVO_VERSION_MAJOR 0
-#define EVO_VERSION_MINOR 9
+#define EVO_VERSION_MINOR 10
 #define EVO_VERSION_PATCH 0
 
 typedef enum evo_status {
@@ -74,6 +74,8 @@ typedef struct evo_config {
     size_t max_population_bytes;
     /* Maximum bytes accepted for private candidate-evaluation records. */
     size_t max_evaluation_bytes;
+    /* Maximum bytes accepted for one private child-population genome slab. */
+    size_t max_child_population_bytes;
 } evo_config_t;
 
 typedef struct evo_result {

@@ -65,13 +65,13 @@ against each installed result. See
 
 ## Status
 
-EVO 0.9.0 retains the complete public generation-zero boundary and adds a
-private deterministic mutation-dispatch operator after the independently
-tested tournament-selection and crossover boundaries. `evo_run` still constructs and
-deterministically initializes a private population, validates every candidate,
-evaluates only valid candidates, selects the stable generation-zero winner,
-and transfers an independent genome copy plus its complete fitness evidence to
-the public result.
+EVO 0.10.0 retains the complete public generation-zero boundary and adds
+bounded private child-population ownership after the independently tested
+tournament-selection, crossover, and mutation boundaries. `evo_run` still
+constructs and deterministically initializes a private population, validates
+every candidate, evaluates only valid candidates, selects the stable
+generation-zero winner, and transfers an independent genome copy plus its
+complete fitness evidence to the public result.
 
 Version 0.3.0 added the independently tested private population-storage
 foundation: checked `population_size * genome_size` arithmetic, a
@@ -149,6 +149,17 @@ unrecorded entropy. The in-place callback has no failure or rollback channel.
 This private operator does not allocate storage, implement representation-
 specific helpers or adaptive schedules, or advance a generation.
 
+Version 0.10.0 adds an independently owned, zero-initialized child-population
+slab. A completed parent population is validated through the same invariant
+authority used by tournament selection before a separate child allocation is
+made. Parent genomes, evaluations, and lifecycle evidence remain read-only.
+
+The appended `max_child_population_bytes` field is a caller-controlled policy
+for exactly one child genome slab. Child storage matches the configured parent
+dimensions, begins without initialization or evaluation evidence, and may be
+destroyed independently. This boundary does not select parents, invoke genetic
+operators, mark children complete, swap populations, or advance a generation.
+
 ## Result Lifecycle
 
 Callers must zero-initialize an `evo_result_t` before first use. A successful
@@ -158,7 +169,8 @@ resets the full result to zero, and makes it immediately reusable.
 
 `max_genome_bytes` is a required caller-provided per-genome policy bound.
 `max_population_bytes` separately bounds the private population genome slab,
-and `max_evaluation_bytes` bounds private validity and fitness records. None of
+`max_evaluation_bytes` bounds private validity and fitness records, and
+`max_child_population_bytes` bounds one separately owned child slab. None of
 these fields is an arbitrary compiled-in cap.
 
 The status values are:
@@ -175,11 +187,11 @@ The status values are:
 See `docs/specs/EVO-001-library-contract.md` for the complete API, ownership,
 failure-state, alias, compatibility, and secure-erasure boundaries.
 
-The private tournament, crossover-dispatch, and mutation-dispatch operators
-are independently verified. Child-population ownership, operator stream
-orchestration, adaptive mutation, and the first generation transition remain
-the next execution boundaries; none is implied by `evo_run` success in
-version 0.9.0.
+The private tournament, crossover-dispatch, mutation-dispatch, and child-
+population ownership boundaries are independently verified. Operator stream
+orchestration, pair production, adaptive mutation, and the first generation
+transition remain the next execution boundaries; none is implied by
+`evo_run` success in version 0.10.0.
 
 ## Project Zero
 

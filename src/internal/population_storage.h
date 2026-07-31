@@ -37,6 +37,28 @@ evo_status_t evo_population_create(const evo_problem_t *problem,
                                    evo_population_t *population);
 
 /*
+ * Construct an independently owned, zero-initialized child genome slab from
+ * one structurally consistent completed parent population. The child uses its
+ * own caller-provided byte budget and begins without initialization or
+ * evaluation evidence.
+ */
+evo_status_t evo_child_population_create(
+    const evo_problem_t *problem,
+    const evo_config_t *config,
+    const evo_population_t *parents,
+    evo_population_t *children);
+
+/*
+ * Validate complete initialized/evaluated population evidence without
+ * changing the population. Selection and child allocation share this
+ * invariant authority.
+ */
+bool evo_population_validate_completed(
+    const evo_config_t *config,
+    const evo_population_t *population,
+    size_t *validated_valid_count);
+
+/*
  * Return a bounded non-owning view of one genome, or NULL when the population
  * is inactive or the index is outside the constructed population.
  */

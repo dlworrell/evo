@@ -54,6 +54,7 @@ check_PROGRAMS = \
 	tests/evo_selection_test \
 	tests/evo_crossover_test \
 	tests/evo_mutation_test \
+	tests/evo_child_population_test \
 	tests/evo_seed_schedule_research_test \
 	tests/evo_seed_schedule_experiment \
 	tests/evo_allocation_failure_test
@@ -88,6 +89,10 @@ tests_evo_crossover_test_LDADD = libcatalyst_evo.la -lm
 
 tests_evo_mutation_test_SOURCES = tests/mutation_test.c
 tests_evo_mutation_test_LDADD = libcatalyst_evo.la -lm
+
+tests_evo_child_population_test_SOURCES = \
+	tests/child_population_test.c
+tests_evo_child_population_test_LDADD = libcatalyst_evo.la -lm
 
 tests_evo_seed_schedule_research_test_SOURCES = \
 	tests/seed_schedule_research_test.c
