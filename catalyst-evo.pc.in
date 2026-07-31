@@ -1,0 +1,10 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: catalyst-evo
+Description: Deterministic C17 evolutionary optimization library
+Version: @PACKAGE_VERSION@
+Libs: -L${libdir} -lcatalyst_evo -lm
+Cflags: -I${includedir}
