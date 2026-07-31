@@ -24,6 +24,15 @@ bool evo_rng_seed(evo_rng_t *rng, uint64_t seed);
 bool evo_rng_next_u32(evo_rng_t *rng, uint32_t *value);
 
 /*
+ * Draw an unbiased index in [0, upper_bound) from two-word 64-bit samples.
+ * Rejection sampling avoids modulo bias. Invalid input preserves both the
+ * stream and the output object.
+ */
+bool evo_rng_uniform_index(evo_rng_t *rng,
+                           size_t upper_bound,
+                           size_t *index);
+
+/*
  * Fill bytes from successive 32-bit values, least-significant byte first.
  * This defines output independently of native byte order.
  */
