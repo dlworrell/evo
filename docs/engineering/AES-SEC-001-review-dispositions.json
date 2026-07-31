@@ -93,20 +93,88 @@
       "resolution_commit": null
     },
     {
+      "finding_id": "aes-sec-001:151d877a3d5cb0bb822b20975923299852ee6fe8d367b4939142520118f854bf",
+      "source_fingerprint": "sha256:7a235884999d8902a23a363c2823faab6e1649d5cf90b6f36ceba1d4cd3375a0",
+      "path": "src/population_evaluation.c",
+      "line": 62,
+      "symbol": "free",
+      "classification": "approved-invariant",
+      "rationale": "The evaluation function owns its provisional record array until the complete phase succeeds. Every internal rollback path is centralized in discard_provisional_evaluations, which releases that still-local owner before returning the requested error status. The pointer is never attached to the population or exposed through an accessor on failure.",
+      "invariant": "discard_provisional_evaluations receives the sole provisional owner, calls free exactly once, and returns immediately. Resource and callback-output failures leave population->evaluations null, preserve the initialized genome slab, and permit a corrected retry.",
+      "evidence": [
+        "src/population_evaluation.c",
+        "tests/population_evaluation_test.c::test_non_finite_fitness_rolls_back_and_allows_retry",
+        "https://github.com/dlworrell/evo/issues/12"
+      ],
+      "owner": "dlworrell",
+      "reviewer": "dlworrell",
+      "reviewed_at": "2026-07-30",
+      "reassess_after": "2027-07-30",
+      "resolution_commit": null
+    },
+    {
+      "finding_id": "aes-sec-001:16146840e7239ed90870170a5d15faf6aa6921e4567208340c87eac082f1a4ca",
+      "source_fingerprint": "sha256:fd5540e4619eafc3173d3f5eca4cc95cc969c9420cfe6d20d1e07f1db1cc9644",
+      "path": "src/population_evaluation.c",
+      "line": 93,
+      "symbol": "calloc",
+      "classification": "approved-invariant",
+      "rationale": "Evaluation proves population_size is nonzero, checks multiplication by sizeof(evo_candidate_evaluation_t) against SIZE_MAX, and enforces config->max_evaluation_bytes before allocation. The allocator receives one element of that already checked byte count, and allocation failure preserves the initialized population as unevaluated.",
+      "invariant": "calloc(1, evaluation_bytes) executes only after evaluation_bytes is proven equal to the complete candidate-record array without overflow and no greater than the caller's evaluation budget. Successful records are zero-initialized; allocation failure leaves evaluation ownership and metadata empty.",
+      "evidence": [
+        "include/catalyst/evo/evo.h",
+        "src/internal/population_storage.h",
+        "src/population_evaluation.c",
+        "tests/population_evaluation_test.c::test_evaluation_budget_boundary",
+        "tests/population_evaluation_test.c::test_evaluation_size_overflow_rejection",
+        "tests/allocation_failure_test.c",
+        "https://github.com/dlworrell/evo/issues/12"
+      ],
+      "owner": "dlworrell",
+      "reviewer": "dlworrell",
+      "reviewed_at": "2026-07-30",
+      "reassess_after": "2027-07-30",
+      "resolution_commit": null
+    },
+    {
       "finding_id": "aes-sec-001:9efc28f4f8386f209d08a1ea3991cc23fb3a84a6352fb3bcbda0ec6a93ab1f79",
-      "source_fingerprint": "sha256:6bab52bad9d98e48c526670e1bf78f6aaea122336c9fd1e8259da3a146d3bd10",
+      "source_fingerprint": "sha256:25eb3e9b43f6074bd99424db53ea9824a035f9a3eb6b6f72972f910e58592220",
       "path": "src/population_storage.c",
       "line": 118,
       "symbol": "free",
       "classification": "approved-invariant",
-      "rationale": "The private population object is the sole owner of the contiguous genome slab. Indexed genome pointers are bounds-checked non-owning views, active construction is rejected without losing the owner, and destruction releases storage only through the owning field.",
-      "invariant": "evo_population_destroy is null-safe for initialized objects, calls free through the sole owning population field, and immediately zeros every population field. The first destruction invalidates all non-owning genome views, and repeated destruction is safe through the reset owner field.",
+      "rationale": "After successful evaluation, the private population object is the sole owner of its candidate-record array. Evaluation accessors return read-only non-owning views, repeated evaluation cannot replace the owner, and destruction releases the records only through the owning field.",
+      "invariant": "evo_population_destroy calls free through population->evaluations and then zeros the complete population object. The first destruction invalidates all non-owning evaluation views, and repeated destruction is safe through the reset owner field.",
+      "evidence": [
+        "src/internal/population_storage.h",
+        "src/population_evaluation.c",
+        "src/population_storage.c",
+        "tests/population_evaluation_test.c::test_repeated_evaluation_rejection_preserves_state",
+        "https://github.com/dlworrell/evo/issues/12"
+      ],
+      "owner": "dlworrell",
+      "reviewer": "dlworrell",
+      "reviewed_at": "2026-07-30",
+      "reassess_after": "2027-07-30",
+      "resolution_commit": null
+    },
+    {
+      "finding_id": "aes-sec-001:8abe335b21f530bcfbf235cb1e5b220065fd22200f945541429903f5df8cce5c",
+      "source_fingerprint": "sha256:6bab52bad9d98e48c526670e1bf78f6aaea122336c9fd1e8259da3a146d3bd10",
+      "path": "src/population_storage.c",
+      "line": 119,
+      "symbol": "free",
+      "classification": "approved-invariant",
+      "rationale": "The private population object is the sole owner of the contiguous genome slab. Indexed genome pointers are bounds-checked non-owning views, active construction is rejected without losing either population owner, and destruction releases the slab only through its owning field.",
+      "invariant": "evo_population_destroy calls free through population->genomes after releasing evaluation records and then zeros every population field. The first destruction invalidates all non-owning genome views, and repeated destruction is safe through the reset owner fields.",
       "evidence": [
         "src/internal/population_storage.h",
         "src/population_storage.c",
         "tests/population_storage_test.c::test_contiguous_zero_initialized_storage_and_access",
         "tests/population_storage_test.c::test_active_rejection_and_destruction_idempotency",
-        "https://github.com/dlworrell/evo/issues/6"
+        "tests/population_evaluation_test.c::test_repeated_evaluation_rejection_preserves_state",
+        "https://github.com/dlworrell/evo/issues/6",
+        "https://github.com/dlworrell/evo/issues/12"
       ],
       "owner": "dlworrell",
       "reviewer": "dlworrell",

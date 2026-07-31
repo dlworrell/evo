@@ -51,7 +51,7 @@ evo_status_t evo_population_create(const evo_problem_t *problem,
         return EVO_ERROR_INVALID_ARGUMENT;
     }
 
-    if (population->genomes != NULL) {
+    if (population->genomes != NULL || population->evaluations != NULL) {
         return EVO_ERROR_INVALID_ARGUMENT;
     }
 
@@ -115,6 +115,7 @@ void evo_population_destroy(evo_population_t *population)
         return;
     }
 
+    free(population->evaluations);
     free(population->genomes);
     *population = (evo_population_t){0};
 }

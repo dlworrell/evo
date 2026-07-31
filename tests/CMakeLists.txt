@@ -21,6 +21,11 @@ target_include_directories(evo_population_initialization_test PRIVATE ${PROJECT_
 target_link_libraries(evo_population_initialization_test PRIVATE catalyst_evo)
 add_test(NAME evo_population_initialization_test COMMAND evo_population_initialization_test)
 
+add_executable(evo_population_evaluation_test population_evaluation_test.c)
+target_include_directories(evo_population_evaluation_test PRIVATE ${PROJECT_SOURCE_DIR}/src)
+target_link_libraries(evo_population_evaluation_test PRIVATE catalyst_evo)
+add_test(NAME evo_population_evaluation_test COMMAND evo_population_evaluation_test)
+
 add_library(evo_seed_schedule_research STATIC
     research/seed_schedule_research.c
 )

@@ -6,12 +6,18 @@
 static void assert_population_empty(const evo_population_t *population)
 {
     assert(population->genomes == NULL);
+    assert(population->evaluations == NULL);
     assert(population->population_size == 0);
     assert(population->genome_size == 0);
     assert(population->storage_bytes == 0);
+    assert(population->evaluation_bytes == 0);
+    assert(population->valid_count == 0);
+    assert(population->best_index == 0);
     assert(population->initialization_seed == 0);
     assert(population->rng_algorithm_version == 0);
     assert(!population->initialized);
+    assert(!population->has_best);
+    assert(!population->evaluated);
 }
 
 static evo_problem_t test_problem(size_t genome_size)

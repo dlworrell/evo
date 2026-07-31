@@ -35,7 +35,7 @@ EVO may optimize bounded configurations and design choices, but evolved candidat
 
 ## Status
 
-EVO 0.4.0 is an API and memory-lifecycle scaffold. `evo_run` currently
+EVO 0.5.0 is an API and memory-lifecycle scaffold. `evo_run` currently
 validates its required inputs and caller-provided genome budget, allocates one
 zero-initialized result genome, and records the requested seed. Population
 execution and the evolutionary operators remain future work.
@@ -59,6 +59,18 @@ prefilled genome and context. The RNG is not cryptographically secure.
 Population initialization remains private and does not validate, evaluate,
 rank, select, mutate, cross over, or iterate candidates.
 
+Version 0.5.0 adds a private generation-zero validation and evaluation phase.
+An optional validator is applied to every candidate in ascending order, and
+only valid candidates are evaluated. Every returned fitness field must be
+finite. Higher consumer-computed `fitness.total` wins, with the lower
+population index breaking exact ties. An all-invalid population is a completed
+evaluation state without a winner.
+
+Evaluation records have a separate caller-provided byte budget and remain
+private. Resource, allocation, or non-finite-fitness failure preserves the
+initialized genome slab as unevaluated. The subsystem is still disconnected
+from `evo_run`.
+
 ## Result Lifecycle
 
 Callers must zero-initialize an `evo_result_t` before first use. A successful
@@ -66,9 +78,10 @@ run transfers exclusive ownership of `best_genome` to that result. Reusing an
 active result is rejected; `evo_result_destroy` releases the allocation,
 resets the full result to zero, and makes it immediately reusable.
 
-`max_genome_bytes` is a required caller-provided per-genome policy bound. It is
-not a total population budget. `max_population_bytes` separately bounds the
-private population genome slab. Neither field is an arbitrary compiled-in cap.
+`max_genome_bytes` is a required caller-provided per-genome policy bound.
+`max_population_bytes` separately bounds the private population genome slab,
+and `max_evaluation_bytes` bounds private validity and fitness records. None of
+these fields is an arbitrary compiled-in cap.
 
 The status values are:
 
@@ -78,12 +91,14 @@ The status values are:
 - `EVO_ERROR_RESULT_ACTIVE`
 - `EVO_ERROR_RESOURCE_LIMIT`
 - `EVO_ERROR_STATE`
+- `EVO_ERROR_EVALUATION`
 
 See `docs/specs/EVO-001-library-contract.md` for the complete API, ownership,
 failure-state, alias, compatibility, and secure-erasure boundaries.
 
-The next implementation boundary is generation-zero validation and evaluation,
-including explicit failure, invalid-candidate, and best-candidate semantics.
+The next implementation boundary is connecting private population creation,
+initialization, validation, evaluation, and winner transfer to `evo_run`
+without adding selection or a generation loop.
 
 ## Project Zero
 

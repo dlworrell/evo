@@ -10,7 +10,7 @@ extern "C" {
 #endif
 
 #define EVO_VERSION_MAJOR 0
-#define EVO_VERSION_MINOR 4
+#define EVO_VERSION_MINOR 5
 #define EVO_VERSION_PATCH 0
 
 typedef enum evo_status {
@@ -19,7 +19,8 @@ typedef enum evo_status {
     EVO_ERROR_OUT_OF_MEMORY = -2,
     EVO_ERROR_RESULT_ACTIVE = -3,
     EVO_ERROR_RESOURCE_LIMIT = -4,
-    EVO_ERROR_STATE = -5
+    EVO_ERROR_STATE = -5,
+    EVO_ERROR_EVALUATION = -6
 } evo_status_t;
 
 typedef struct evo_fitness {
@@ -57,6 +58,8 @@ typedef struct evo_config {
     size_t max_genome_bytes;
     /* Maximum bytes accepted for the contiguous population genome slab. */
     size_t max_population_bytes;
+    /* Maximum bytes accepted for private candidate-evaluation records. */
+    size_t max_evaluation_bytes;
 } evo_config_t;
 
 typedef struct evo_result {
