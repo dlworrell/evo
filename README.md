@@ -65,11 +65,12 @@ against each installed result. See
 
 ## Status
 
-EVO 0.6.0 executes a complete generation-zero boundary. `evo_run` constructs
-and deterministically initializes a private population, validates every
-candidate, evaluates only valid candidates, selects the stable highest-total
-winner, and transfers an independent genome copy plus its complete fitness
-evidence to the public result.
+EVO 0.7.0 retains the complete public generation-zero boundary and adds a
+private deterministic tournament-selection operator for the next generation
+milestone. `evo_run` still constructs and deterministically initializes a
+private population, validates every candidate, evaluates only valid candidates,
+selects the stable generation-zero winner, and transfers an independent genome
+copy plus its complete fitness evidence to the public result.
 
 Version 0.3.0 added the independently tested private population-storage
 foundation: checked `population_size * genome_size` arithmetic, a
@@ -110,6 +111,18 @@ from an internal state, resource, allocation, or callback-output failure.
 not mean that selection, crossover, mutation, a generation transition, or an
 optimization search occurred. `generations_completed` therefore remains zero.
 
+Version 0.7.0 adds unbiased bounded-index sampling over the existing private
+PCG stream and tournament selection with replacement from valid evaluated
+candidates. Higher `fitness.total` wins each tournament, and exact ties select
+the lower population index. The operator validates the completed population
+before consuming RNG state, performs no allocation, and preserves its output
+on failure.
+
+Selection accepts an explicitly seeded private RNG stream. It does not define a
+new seed schedule, change RNG algorithm version 1, or connect selection to
+`evo_run`. Generation orchestration will define stream ownership and sequencing
+when the first transition is implemented.
+
 ## Result Lifecycle
 
 Callers must zero-initialize an `evo_result_t` before first use. A successful
@@ -136,8 +149,9 @@ The status values are:
 See `docs/specs/EVO-001-library-contract.md` for the complete API, ownership,
 failure-state, alias, compatibility, and secure-erasure boundaries.
 
-Selection policy, crossover, mutation, and the first generation transition
-remain the next execution boundary; none is implied by version 0.6.0 success.
+The private tournament operator is independently verified. Crossover, mutation,
+stream orchestration, and the first generation transition remain the next
+execution boundary; none is implied by `evo_run` success in version 0.7.0.
 
 ## Project Zero
 
