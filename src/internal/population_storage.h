@@ -23,6 +23,7 @@ typedef struct evo_population {
     uint64_t source_generation;
     uint32_t rng_algorithm_version;
     uint32_t operator_seed_schedule_version;
+    uint32_t odd_child_policy_version;
     bool initialized;
     bool has_best;
     bool evaluated;

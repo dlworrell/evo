@@ -56,6 +56,11 @@ target_include_directories(evo_child_pair_test PRIVATE ${PROJECT_SOURCE_DIR}/src
 target_link_libraries(evo_child_pair_test PRIVATE catalyst_evo)
 add_test(NAME evo_child_pair_test COMMAND evo_child_pair_test)
 
+add_executable(evo_child_tail_test child_tail_test.c)
+target_include_directories(evo_child_tail_test PRIVATE ${PROJECT_SOURCE_DIR}/src)
+target_link_libraries(evo_child_tail_test PRIVATE catalyst_evo)
+add_test(NAME evo_child_tail_test COMMAND evo_child_tail_test)
+
 add_library(evo_seed_schedule_research STATIC
     research/seed_schedule_research.c
 )

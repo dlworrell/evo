@@ -59,6 +59,7 @@ static bool child_progress_is_valid(
         children->valid_count != 0 || children->best_index != 0 ||
         children->initialization_seed != 0 ||
         children->rng_algorithm_version != 0 ||
+        children->odd_child_policy_version != 0 ||
         children->initialized || children->has_best ||
         children->evaluated ||
         !checked_size_multiply(children->population_size,

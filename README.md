@@ -65,9 +65,9 @@ against each installed result. See
 
 ## Status
 
-EVO 0.12.0 retains the complete public generation-zero boundary and adds
-deterministic complete-pair child production over the versioned operator
-streams and parent plans introduced in 0.11.0. `evo_run` still constructs and
+EVO 0.13.0 retains the complete public generation-zero boundary, deterministic
+complete-pair production, and adds a private versioned odd-tail elite-clone
+policy for odd child populations. `evo_run` still constructs and
 deterministically initializes a private population, validates every candidate,
 evaluates only valid candidates, selects the stable generation-zero winner,
 and transfers an independent genome copy plus its complete fitness evidence to
@@ -186,6 +186,18 @@ Parents remain read-only, child evaluation evidence remains absent, and an odd
 trailing child remains untouched. Consumer callbacks still have no failure or
 rollback channel.
 
+Version 0.13.0 completes the trailing slot of an odd child slab by cloning the
+completed parent's stable best valid genome byte-for-byte. Policy version 1
+requires every complete pair first, consumes no RNG state, invokes no consumer
+callback, and records full production count, source generation, operator
+schedule version, and odd-tail policy version. A one-member population is
+completed directly from its sole valid parent.
+
+Full production is not completed-population evidence: the child remains
+uninitialized, unevaluated, and without validity, fitness, or best-candidate
+records. Generalized elitism, child evaluation, swapping, generation
+advancement, and public `evo_run` integration remain separate milestones.
+
 ## Result Lifecycle
 
 Callers must zero-initialize an `evo_result_t` before first use. A successful
@@ -214,11 +226,11 @@ See `docs/specs/EVO-001-library-contract.md` for the complete API, ownership,
 failure-state, alias, compatibility, and secure-erasure boundaries.
 
 The private tournament, crossover-dispatch, mutation-dispatch, child-population
-ownership, operator-stream, complete-pair-planning, and sequential complete-
-pair-production boundaries are independently verified. Odd-slot policy, child
-evaluation, population swapping, adaptive mutation, and the first generation
-transition remain later execution boundaries; none is implied by `evo_run`
-success in version 0.12.0.
+ownership, operator-stream, complete-pair-planning, sequential complete-pair
+production, and odd-tail elite-clone boundaries are independently verified.
+Child evaluation, population swapping, generalized elitism, adaptive mutation,
+and the first generation transition remain later execution boundaries; none
+is implied by `evo_run` success in version 0.13.0.
 
 ## Project Zero
 

@@ -178,6 +178,8 @@ static void assert_population_metadata_equal(
     assert(left->rng_algorithm_version == right->rng_algorithm_version);
     assert(left->operator_seed_schedule_version ==
            right->operator_seed_schedule_version);
+    assert(left->odd_child_policy_version ==
+           right->odd_child_policy_version);
     assert(left->initialized == right->initialized);
     assert(left->has_best == right->has_best);
     assert(left->evaluated == right->evaluated);
@@ -278,6 +280,7 @@ static void assert_child_progress(const evo_population_t *children,
     assert(children->rng_algorithm_version == 0);
     assert(children->operator_seed_schedule_version ==
            EVO_OPERATOR_SEED_SCHEDULE_VERSION);
+    assert(children->odd_child_policy_version == 0);
     assert(!children->initialized);
     assert(!children->has_best);
     assert(!children->evaluated);
@@ -399,6 +402,17 @@ static void test_invalid_preflight_preserves_every_object(void)
                                   &children,
                                   &evidence) == EVO_ERROR_STATE);
     children.evaluation_bytes = 0;
+
+    children.odd_child_policy_version = 1;
+    assert(evo_child_pair_produce(&fixture.problem,
+                                  &fixture.config,
+                                  &callbacks,
+                                  &fixture.parents,
+                                  7,
+                                  0,
+                                  &children,
+                                  &evidence) == EVO_ERROR_STATE);
+    children.odd_child_policy_version = 0;
 
     children.source_generation = 1;
     assert(evo_child_pair_produce(&fixture.problem,

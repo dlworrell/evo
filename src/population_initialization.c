@@ -15,6 +15,7 @@ static bool population_matches_inputs(const evo_problem_t *problem,
         population->produced_count != 0 ||
         population->source_generation != 0 ||
         population->operator_seed_schedule_version != 0 ||
+        population->odd_child_policy_version != 0 ||
         population->population_size == 0 || population->genome_size == 0 ||
         population->storage_bytes == 0 ||
         population->population_size != config->population_size ||

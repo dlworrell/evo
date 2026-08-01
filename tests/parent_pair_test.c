@@ -162,6 +162,8 @@ static void assert_parent_unchanged(const pair_fixture_t *fixture,
            before->rng_algorithm_version);
     assert(fixture->population.operator_seed_schedule_version ==
            before->operator_seed_schedule_version);
+    assert(fixture->population.odd_child_policy_version ==
+           before->odd_child_policy_version);
     assert(fixture->population.initialized == before->initialized);
     assert(fixture->population.has_best == before->has_best);
     assert(fixture->population.evaluated == before->evaluated);

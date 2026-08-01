@@ -1,7 +1,7 @@
 # EVO-001: Evolutionary Optimization Library Contract
 
 Status: Baseline
-Version: 0.12.0
+Version: 0.13.0
 Owner: EVO
 
 ## Purpose
@@ -480,6 +480,41 @@ uninitialized, unevaluated, and ineligible for selection. Odd-slot policy,
 child evaluation, population swapping, generation advancement, and public
 `evo_run` integration are not implemented by this boundary.
 
+### Private deterministic odd-tail elite cloning
+
+Version 0.13.0 adds a private odd-population completion boundary. The
+normative decision is recorded in
+`docs/adr/ADR-0012-deterministic-odd-tail-elite-cloning.md`.
+
+The odd-tail lifecycle is:
+
+1. Problem, configuration, completed parents, active child storage, and output
+   evidence must be non-null and separately owned.
+2. The configured population must be odd and nonzero, dimensions must match,
+   and the genome and child-slab budgets must authorize the existing storage.
+3. Parent evaluation evidence must be structurally complete and contain a
+   stable best valid candidate.
+4. Child initialization, evaluation, validity, fitness, and best-candidate
+   evidence must remain empty.
+5. For populations larger than one, `produced_count` must equal
+   `population_size - 1` and the pair prefix must match the supplied source
+   generation and operator seed-schedule version 1. A one-member population
+   accepts the corresponding zero-pair empty metadata.
+6. EVO resolves bounded distinct views of the recorded best parent and final
+   child before writing any byte.
+7. Policy version 1 copies exactly `genome_size` bytes from the stable best
+   parent into child index `population_size - 1`.
+8. The operation consumes no RNG word and invokes no consumer callback.
+9. Success records `produced_count == population_size`, source generation,
+   operator schedule version 1, odd-tail policy version 1, and output evidence.
+10. Every rejection preserves parent state, child bytes and metadata, and
+    output evidence. Repeated completion and later pair production reject.
+
+The one elite clone is the complete odd-tail policy, not a generalized elitism
+contract. Full production metadata still does not make the child initialized,
+evaluated, or selectable. Child evaluation, swapping, generation advancement,
+and public `evo_run` integration remain unimplemented.
+
 ### Result lifecycle
 
 The caller must zero-initialize `evo_result_t` before its first use:
@@ -572,7 +607,12 @@ installed symbol, memory policy, or `evo_run` behavior. It adds private child-
 production progress metadata and deterministic complete-pair composition.
 Consumers rebuilding from 0.11.0 require no source change.
 
-## Current 0.12.0 Conformance Boundary
+Version 0.13.0 likewise changes no public layout, function signature,
+installed symbol, memory policy, or `evo_run` behavior. It adds private
+odd-tail policy metadata and deterministic stable-elite completion. Consumers
+rebuilding from 0.12.0 require no source change.
+
+## Current 0.13.0 Conformance Boundary
 
 The current implementation exposes a complete generation-zero boundary:
 
@@ -619,8 +659,10 @@ The current implementation exposes a complete generation-zero boundary:
 - private complete-pair production preflights the combined boundary, derives
   pair- and child-indexed operator streams, dispatches crossover and both
   mutations, records a contiguous child prefix, and preserves parent evidence;
-  and
-- odd-slot policy, child evaluation, population swapping, adaptive mutation,
+- private odd-tail completion requires the complete pair prefix, clones the
+  stable best valid parent without RNG or callbacks, records policy version 1,
+  and preserves every object on rejection; and
+- child evaluation, population swapping, generalized elitism, adaptive mutation,
   diversity, checkpointing, and generation iteration are not implemented.
 
 Consumers may treat `EVO_SUCCESS` as evidence of a valid evaluated
@@ -676,6 +718,11 @@ handling, fixed parent and child-byte vectors, replay, sequential progress,
 source-generation separation, callback and identity-clone paths, odd-tail
 preservation, parent immutability, and rejection of repeated or skipped pairs.
 
+The child-tail test proves complete-prefix enforcement, stable-best and tie
+behavior, one-member completion, byte-and-evidence replay, absence of extra RNG
+or callbacks, parent and prefix preservation, all-invalid and alias rejection,
+and terminal policy metadata.
+
 ## Related Records
 
 - `docs/adr/ADR-0001-library-boundary-and-build-system.md`
@@ -688,6 +735,7 @@ preservation, parent immutability, and rejection of repeated or skipped pairs.
 - `docs/adr/ADR-0009-bounded-child-population-ownership.md`
 - `docs/adr/ADR-0010-versioned-operator-substreams-and-parent-pair-planning.md`
 - `docs/adr/ADR-0011-deterministic-complete-pair-child-production.md`
+- `docs/adr/ADR-0012-deterministic-odd-tail-elite-cloning.md`
 - `docs/architecture.md`
 - `docs/algorithms.md`
 - `docs/benchmarks.md`
@@ -705,4 +753,5 @@ preservation, parent immutability, and rejection of repeated or skipped pairs.
 - `https://github.com/dlworrell/evo/issues/24`
 - `https://github.com/dlworrell/evo/issues/26`
 - `https://github.com/dlworrell/evo/issues/28`
+- `https://github.com/dlworrell/evo/issues/30`
 - `https://github.com/dlworrell/AEMS/issues/18`

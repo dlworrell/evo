@@ -271,3 +271,28 @@ and callback contract violations cannot be rolled back.
 For an odd population, complete-pair production stops before the final child.
 The child remains unevaluated and is not a completed population. Odd-slot
 policy, evaluation, swapping, and generation advancement remain separate.
+
+## Deterministic Odd-Tail Elite Cloning
+
+Version 0.13.0 completes the single trailing slot of an odd child population
+after every complete pair has been committed.
+
+- Policy version 1 clones the completed parent's stable best valid genome into
+  child index `population_size - 1`.
+- The accepted pair prefix is exactly `population_size - 1` children and must
+  match the supplied source generation and operator schedule version 1.
+- A one-member population has no pair prefix and is completed directly from
+  parent index zero when that candidate is valid.
+- Exact parent-fitness ties retain the existing lower-index stable-best rule.
+- Every lifecycle, ownership, budget, and bounded-view check completes before
+  the copy.
+- No selection, crossover, mutation, or other consumer callback runs, and no
+  RNG word is consumed.
+- Success records the full produced count and odd-tail policy version 1.
+- Repeated, even-population, all-invalid, aliased, incomplete-prefix, and
+  mismatched-generation requests preserve all inputs and output evidence.
+
+Full child production does not imply initialization or evaluation. The child
+still has no validity, fitness, or best-candidate evidence and cannot be used
+for selection until a separate child-evaluation boundary is implemented.
+General elite counts, swapping, and generation advancement remain separate.

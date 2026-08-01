@@ -229,6 +229,25 @@ operation does not allocate child evaluations, mark the child as initialized
 or evaluated, handle an odd trailing slot, swap populations, increment a
 generation, or participate in `evo_run`.
 
+## Private Odd-Tail Completion Boundary
+
+Version 0.13.0 adds one private completion rule for odd child populations.
+After the complete-pair prefix reaches `population_size - 1`, EVO validates the
+completed parent and clones its stable best valid genome into the final child.
+The operation is representation-neutral, consumes no RNG state, and invokes no
+consumer callback.
+
+The child records odd-tail policy version 1 alongside the source generation,
+operator schedule version, and full produced count. A one-member population is
+the defined zero-pair case. Every other request requires the complete pair
+prefix and matching metadata. Rejection preserves parent, child, and output
+evidence.
+
+The resulting slab is fully produced but not initialized or evaluated. It has
+no child validity, fitness, or best-candidate evidence and is not yet eligible
+for selection or population swap. Generalized elitism, child evaluation,
+generation accounting, and `evo_run` integration remain later boundaries.
+
 ## Execution Flow
 
 1. Initialize a population.
@@ -239,15 +258,15 @@ generation, or participate in `evo_run`.
 6. Record statistics and evidence.
 7. Stop on convergence, stagnation, generation limit, or an application-defined condition.
 
-Version 0.12.0 publicly implements steps 1 and 2 for generation zero and
+Version 0.13.0 publicly implements steps 1 and 2 for generation zero and
 transfers the best valid candidate. Step 3 has an independently tested private
 tournament operator, and both crossover and mutation in step 4 have
 independently tested private dispatchers. A separate child slab now accepts
-deterministic, sequential complete-pair output, but the odd slot, evaluation,
-swap, and generation-completion policies remain absent. `evo_run` invokes none
-of these later boundaries. `EVO_SUCCESS` therefore still does not indicate
-that steps 3 through 7, a generation transition, or an optimization search
-completed.
+deterministic sequential pair output and versioned odd-tail elite completion,
+but child evaluation, swap, and generation-completion policies remain absent.
+`evo_run` invokes none of these later boundaries. `EVO_SUCCESS` therefore
+still does not indicate that steps 3 through 7, a generation transition, or an
+optimization search completed.
 
 ## Correctness Boundary
 
