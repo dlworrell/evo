@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(catalyst_evo VERSION 0.12.0 LANGUAGES C)
+project(catalyst_evo VERSION 0.13.0 LANGUAGES C)
 
 include(CTest)
 include(GNUInstallDirs)
@@ -43,6 +43,7 @@ add_library(catalyst_evo STATIC
     src/mutation.c
     src/parent_pair.c
     src/child_pair.c
+    src/child_tail.c
     src/diversity.c
     src/fitness.c
     src/statistics.c

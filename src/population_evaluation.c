@@ -35,6 +35,7 @@ static bool population_ready_for_evaluation(const evo_problem_t *problem,
         population->produced_count != 0 ||
         population->source_generation != 0 ||
         population->operator_seed_schedule_version != 0 ||
+        population->odd_child_policy_version != 0 ||
         config->max_genome_bytes < population->genome_size ||
         config->max_population_bytes < population->storage_bytes ||
         population->population_size >

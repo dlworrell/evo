@@ -65,6 +65,7 @@ bool evo_population_validate_completed(
         population->produced_count != 0 ||
         population->source_generation != 0 ||
         population->operator_seed_schedule_version != 0 ||
+        population->odd_child_policy_version != 0 ||
         !checked_size_multiply(population->population_size,
                                population->genome_size,
                                &expected_storage_bytes) ||

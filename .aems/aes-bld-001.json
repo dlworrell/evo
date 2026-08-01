@@ -94,6 +94,7 @@
       "src/mutation.c",
       "src/parent_pair.c",
       "src/child_pair.c",
+      "src/child_tail.c",
       "src/diversity.c",
       "src/fitness.c",
       "src/statistics.c",
@@ -172,6 +173,12 @@
         "source": "tests/child_pair_test.c",
         "cmake": "evo_child_pair_test",
         "autotools": "tests/evo_child_pair_test"
+      },
+      {
+        "id": "child-tail",
+        "source": "tests/child_tail_test.c",
+        "cmake": "evo_child_tail_test",
+        "autotools": "tests/evo_child_tail_test"
       },
       {
         "id": "seed-schedule-research",
