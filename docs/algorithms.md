@@ -175,7 +175,8 @@ child views are supplied by the private caller.
   context.
 
 The operator does not choose parents, allocate a child population, mutate
-children, or execute a generation transition. Representation-specific
+children, or execute a generation transition. Version 0.12.0 composes it with
+those separate private boundaries for complete pairs. Representation-specific
 one-point, two-point, and uniform helpers remain later algorithm-library work.
 
 ## Deterministic Mutation Dispatch
@@ -199,7 +200,8 @@ over one bounded writable genome.
 
 The operator does not allocate a child population, define built-in bit,
 integer, floating-point, or permutation mutations, adapt the rate, or execute
-a generation transition. Those remain later algorithm and orchestration work.
+a generation transition. Version 0.12.0 composes the dispatcher for complete
+child pairs; the other capabilities remain later work.
 
 ## Child-Population Storage
 
@@ -239,3 +241,33 @@ Version 0.11.0 adds a read-only private planner over completed parent evidence.
 
 The planner does not accept child pointers, write genome bytes, invoke
 crossover or mutation, mark child storage complete, or advance a generation.
+
+## Deterministic Complete-Pair Child Production
+
+Version 0.12.0 produces one complete child pair from the accepted private
+boundaries.
+
+- Pairs are accepted in ascending order; pair `i` requires a committed child
+  prefix of exactly `2i` genomes.
+- The parent plan supplies two valid parent indexes and child indexes `2i` and
+  `2i + 1`.
+- Crossover derives its stream from the pair ordinal and crossover domain.
+- Mutation derives one independent stream from each child index and the
+  mutation domain.
+- Every lifecycle, rate, budget, stream, and bounded-view check completes
+  before callback dispatch or child output.
+- Crossover executes once, followed by one mutation decision for child A and
+  one for child B.
+- Success records produced count, source generation, schedule version, and
+  pair evidence.
+- Repeated, skipped, mismatched-generation, and invalid requests preserve
+  child bytes and output evidence before callback dispatch.
+- Parent genomes and completed fitness evidence remain unchanged.
+
+Consumer callbacks return no status. After complete preflight, the valid
+dispatch suffix has no expected library rejection, but callback side effects
+and callback contract violations cannot be rolled back.
+
+For an odd population, complete-pair production stops before the final child.
+The child remains unevaluated and is not a completed population. Odd-slot
+policy, evaluation, swapping, and generation advancement remain separate.

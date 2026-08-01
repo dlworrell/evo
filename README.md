@@ -65,13 +65,13 @@ against each installed result. See
 
 ## Status
 
-EVO 0.11.0 retains the complete public generation-zero boundary and adds
-versioned, independently addressable operator streams plus deterministic
-complete-parent-pair planning. `evo_run` still constructs and deterministically
-initializes a private population, validates every candidate, evaluates only
-valid candidates, selects the stable generation-zero winner, and transfers an
-independent genome copy plus its complete fitness evidence to the public
-result.
+EVO 0.12.0 retains the complete public generation-zero boundary and adds
+deterministic complete-pair child production over the versioned operator
+streams and parent plans introduced in 0.11.0. `evo_run` still constructs and
+deterministically initializes a private population, validates every candidate,
+evaluates only valid candidates, selects the stable generation-zero winner,
+and transfers an independent genome copy plus its complete fitness evidence to
+the public result.
 
 Version 0.3.0 added the independently tested private population-storage
 foundation: checked `population_size * genome_size` arithmetic, a
@@ -173,6 +173,19 @@ are selected, leaves the completed parent read-only, and writes no child bytes.
 Only `population_size / 2` complete pairs are planned; an odd trailing slot is
 reserved for a later singleton or elitism policy.
 
+Version 0.12.0 composes the accepted private boundaries for the next complete
+pair. It requires ascending pair order, derives a pair-indexed crossover stream
+and one mutation stream per child index, preflights every expected library
+rejection, then dispatches crossover and both mutations into the separately
+owned child slab.
+
+Successful production records the contiguous child count, source generation,
+operator seed-schedule version, and pair evidence. Repeated, skipped, or
+mismatched-generation pairs reject before callbacks and preserve child state.
+Parents remain read-only, child evaluation evidence remains absent, and an odd
+trailing child remains untouched. Consumer callbacks still have no failure or
+rollback channel.
+
 ## Result Lifecycle
 
 Callers must zero-initialize an `evo_result_t` before first use. A successful
@@ -201,10 +214,11 @@ See `docs/specs/EVO-001-library-contract.md` for the complete API, ownership,
 failure-state, alias, compatibility, and secure-erasure boundaries.
 
 The private tournament, crossover-dispatch, mutation-dispatch, child-population
-ownership, operator-stream, and complete-pair-planning boundaries are
-independently verified. Child production, odd-slot policy, adaptive mutation,
-and the first generation transition remain later execution boundaries; none
-is implied by `evo_run` success in version 0.11.0.
+ownership, operator-stream, complete-pair-planning, and sequential complete-
+pair-production boundaries are independently verified. Odd-slot policy, child
+evaluation, population swapping, adaptive mutation, and the first generation
+transition remain later execution boundaries; none is implied by `evo_run`
+success in version 0.12.0.
 
 ## Project Zero
 

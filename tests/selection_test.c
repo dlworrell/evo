@@ -136,10 +136,15 @@ static void assert_fixture_core_unchanged(
            before->evaluation_bytes);
     assert(fixture->population.valid_count == before->valid_count);
     assert(fixture->population.best_index == before->best_index);
+    assert(fixture->population.produced_count == before->produced_count);
     assert(fixture->population.initialization_seed ==
            before->initialization_seed);
+    assert(fixture->population.source_generation ==
+           before->source_generation);
     assert(fixture->population.rng_algorithm_version ==
            before->rng_algorithm_version);
+    assert(fixture->population.operator_seed_schedule_version ==
+           before->operator_seed_schedule_version);
     assert(fixture->population.initialized == before->initialized);
     assert(fixture->population.has_best == before->has_best);
     assert(fixture->population.evaluated == before->evaluated);

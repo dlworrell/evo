@@ -77,8 +77,11 @@ static void assert_population_empty(const evo_population_t *population)
     assert(population->evaluation_bytes == 0);
     assert(population->valid_count == 0);
     assert(population->best_index == 0);
+    assert(population->produced_count == 0);
     assert(population->initialization_seed == 0);
+    assert(population->source_generation == 0);
     assert(population->rng_algorithm_version == 0);
+    assert(population->operator_seed_schedule_version == 0);
     assert(!population->initialized);
     assert(!population->has_best);
     assert(!population->evaluated);
@@ -94,8 +97,11 @@ static void assert_child_storage(const evo_population_t *children)
     assert(children->evaluation_bytes == 0);
     assert(children->valid_count == 0);
     assert(children->best_index == 0);
+    assert(children->produced_count == 0);
     assert(children->initialization_seed == 0);
+    assert(children->source_generation == 0);
     assert(children->rng_algorithm_version == 0);
+    assert(children->operator_seed_schedule_version == 0);
     assert(!children->initialized);
     assert(!children->has_best);
     assert(!children->evaluated);
@@ -138,8 +144,12 @@ static void assert_parent_unchanged(const evo_population_t *parents,
     assert(parents->evaluation_bytes == before->evaluation_bytes);
     assert(parents->valid_count == before->valid_count);
     assert(parents->best_index == before->best_index);
+    assert(parents->produced_count == before->produced_count);
     assert(parents->initialization_seed == before->initialization_seed);
+    assert(parents->source_generation == before->source_generation);
     assert(parents->rng_algorithm_version == before->rng_algorithm_version);
+    assert(parents->operator_seed_schedule_version ==
+           before->operator_seed_schedule_version);
     assert(parents->initialized == before->initialized);
     assert(parents->has_best == before->has_best);
     assert(parents->evaluated == before->evaluated);

@@ -1,7 +1,7 @@
 # EVO-001: Evolutionary Optimization Library Contract
 
 Status: Baseline
-Version: 0.11.0
+Version: 0.12.0
 Owner: EVO
 
 ## Purpose
@@ -384,7 +384,8 @@ The child-storage lifecycle is:
 7. Success creates one distinct, zero-initialized contiguous child genome slab
    with dimensions matching the parent.
 8. The child has no evaluation allocation, initialization seed, RNG algorithm
-   version, validity count, best-candidate evidence, or completed lifecycle
+   version, validity count, best-candidate evidence, committed production
+   count, source generation, operator schedule version, or completed lifecycle
    flag.
 9. Parent and child objects own separate allocations and may be destroyed in
    either order. Destruction remains null-safe, repeatable, and fully
@@ -433,6 +434,51 @@ The planning lifecycle is:
 The planner receives no child pointer, writes no genome, invokes no crossover
 or mutation callback, marks no lifecycle state, and does not participate in
 `evo_run`.
+
+### Private deterministic complete-pair child production
+
+Version 0.12.0 adds a private composition boundary. The normative decision is
+recorded in
+`docs/adr/ADR-0011-deterministic-complete-pair-child-production.md`.
+
+The production lifecycle is:
+
+1. Problem, configuration, completed parents, active child storage, and output
+   evidence must be non-null. Parent and child objects and genome slabs must be
+   distinct.
+2. Genome dimensions, child allocation size, child budget, tournament policy,
+   crossover rate, and mutation rate must be internally consistent.
+3. Child evaluation, generation-zero initialization, validity, fitness, and
+   best-candidate evidence must remain empty.
+4. The child records a contiguous `produced_count`. Pair `i` is accepted only
+   when `produced_count == 2i`; repeated or skipped pairs return
+   `EVO_ERROR_STATE` unchanged.
+5. The first successful pair records the supplied source generation and
+   operator seed-schedule version 1. Every later pair must match both values.
+6. EVO invokes the complete parent-pair planner and preserves its valid-only,
+   tournament-with-replacement semantics.
+7. EVO derives the crossover-domain stream from the pair ordinal and derives
+   one mutation-domain stream from each child index.
+8. EVO resolves the two parent and two child views and completes every
+   expected fallible library check before callback dispatch or child output.
+9. The valid suffix invokes the crossover dispatcher once, then the mutation
+   dispatcher once for each child. Given the completed preflight and seeded
+   streams, this suffix contains no expected library rejection.
+10. Success commits both child genomes, advances `produced_count` by exactly
+    two, records source generation and schedule version, and commits output
+    evidence with RNG algorithm version 1.
+11. Rejection before callback dispatch preserves the child bytes, child
+    metadata, output evidence, and complete parent population.
+12. Consumer callbacks retain their existing bounded deterministic contract
+    and no failure channel. EVO cannot roll back consumer-context side effects
+    or recover from a callback contract violation.
+13. For an odd population, production stops after the last complete pair and
+    leaves the trailing child untouched.
+
+Production metadata is not completed-population evidence. The child remains
+uninitialized, unevaluated, and ineligible for selection. Odd-slot policy,
+child evaluation, population swapping, generation advancement, and public
+`evo_run` integration are not implemented by this boundary.
 
 ### Result lifecycle
 
@@ -521,7 +567,12 @@ memory policy, or `evo_run` behavior. It adds private operator-stream derivation
 and complete parent-pair planning. Consumers rebuilding from 0.10.0 require no
 source change.
 
-## Current 0.11.0 Conformance Boundary
+Version 0.12.0 likewise changes no public layout, function signature,
+installed symbol, memory policy, or `evo_run` behavior. It adds private child-
+production progress metadata and deterministic complete-pair composition.
+Consumers rebuilding from 0.11.0 require no source change.
+
+## Current 0.12.0 Conformance Boundary
 
 The current implementation exposes a complete generation-zero boundary:
 
@@ -564,9 +615,13 @@ The current implementation exposes a complete generation-zero boundary:
   output storage;
 - private complete-pair planning derives a pair-local selection stream, runs
   two tournaments with replacement, maps consecutive child slots, and
-  preserves output and parent evidence on rejection; and
-- child production, odd-slot policy, adaptive mutation, diversity,
-  checkpointing, and generation iteration are not implemented.
+  preserves output and parent evidence on rejection;
+- private complete-pair production preflights the combined boundary, derives
+  pair- and child-indexed operator streams, dispatches crossover and both
+  mutations, records a contiguous child prefix, and preserves parent evidence;
+  and
+- odd-slot policy, child evaluation, population swapping, adaptive mutation,
+  diversity, checkpointing, and generation iteration are not implemented.
 
 Consumers may treat `EVO_SUCCESS` as evidence of a valid evaluated
 generation-zero winner. They must not treat it as evidence that an
@@ -616,6 +671,11 @@ preservation. RNG tests lock the production operator schedule, and the seed-
 schedule research test proves byte-for-byte stream agreement with the accepted
 plain mixed control.
 
+The child-pair test proves combined preflight preservation, all-invalid parent
+handling, fixed parent and child-byte vectors, replay, sequential progress,
+source-generation separation, callback and identity-clone paths, odd-tail
+preservation, parent immutability, and rejection of repeated or skipped pairs.
+
 ## Related Records
 
 - `docs/adr/ADR-0001-library-boundary-and-build-system.md`
@@ -627,6 +687,7 @@ plain mixed control.
 - `docs/adr/ADR-0008-deterministic-mutation-dispatch.md`
 - `docs/adr/ADR-0009-bounded-child-population-ownership.md`
 - `docs/adr/ADR-0010-versioned-operator-substreams-and-parent-pair-planning.md`
+- `docs/adr/ADR-0011-deterministic-complete-pair-child-production.md`
 - `docs/architecture.md`
 - `docs/algorithms.md`
 - `docs/benchmarks.md`
@@ -642,4 +703,6 @@ plain mixed control.
 - `https://github.com/dlworrell/evo/issues/20`
 - `https://github.com/dlworrell/evo/issues/22`
 - `https://github.com/dlworrell/evo/issues/24`
+- `https://github.com/dlworrell/evo/issues/26`
+- `https://github.com/dlworrell/evo/issues/28`
 - `https://github.com/dlworrell/AEMS/issues/18`

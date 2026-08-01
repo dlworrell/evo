@@ -134,8 +134,8 @@ The dispatcher performs no allocation and has no callback rollback path.
 
 This boundary does not select parents or own next-generation storage. It is not
 called by `evo_run`. Child-population ownership and operator stream derivation
-are separate private boundaries; child production and the first generation
-transition remain future orchestration work.
+remain separate private boundaries; version 0.12.0 composes them for complete-
+pair production without implementing a generation transition.
 
 ## Private Mutation Boundary
 
@@ -156,9 +156,10 @@ unrecorded entropy, change storage ownership, or retain the view. Because the
 callback mutates in place and returns no status, the dispatcher has no rollback
 path.
 
-This boundary performs no allocation and is not called by `evo_run`. Built-in
-representation-specific mutation helpers, adaptive schedules, child
-production, and the first generation transition remain future work.
+This boundary performs no allocation and is not called by `evo_run`. Version
+0.12.0 composes it for complete child pairs. Built-in representation-specific
+mutation helpers, adaptive schedules, and the first generation transition
+remain future work.
 
 ## Private Child-Population Ownership Boundary
 
@@ -204,6 +205,30 @@ policy is selected. Future crossover streams use pair ordinals and future
 mutation streams use child indexes, but this milestone invokes neither
 operator.
 
+## Private Complete-Pair Production Boundary
+
+Version 0.12.0 composes parent planning, operator-stream derivation, crossover,
+mutation, and child ownership for one complete pair at a time. The private
+child object records a contiguous produced count, source generation, and
+operator seed-schedule version.
+
+Pair `i` is accepted only when `2i` children have already been committed. EVO
+validates child ownership and lifecycle state, plans the parents, derives one
+pair-indexed crossover stream and two child-indexed mutation streams, and
+resolves every bounded view before any callback or child write. It then
+dispatches crossover followed by mutation for child A and child B.
+
+After the no-expected-failure dispatch suffix returns, EVO commits production
+metadata and pair evidence. Repeated, skipped, mismatched-generation, or
+inconsistent requests reject before callbacks and preserve the child and
+output. Parent genomes and completed evaluation evidence remain read-only.
+
+Callbacks return no status, so their effects cannot be rolled back; violating
+the bounded deterministic callback contract remains a consumer error. The
+operation does not allocate child evaluations, mark the child as initialized
+or evaluated, handle an odd trailing slot, swap populations, increment a
+generation, or participate in `evo_run`.
+
 ## Execution Flow
 
 1. Initialize a population.
@@ -214,14 +239,15 @@ operator.
 6. Record statistics and evidence.
 7. Stop on convergence, stagnation, generation limit, or an application-defined condition.
 
-Version 0.11.0 publicly implements steps 1 and 2 for generation zero and
+Version 0.12.0 publicly implements steps 1 and 2 for generation zero and
 transfers the best valid candidate. Step 3 has an independently tested private
 tournament operator, and both crossover and mutation in step 4 have
-independently tested private dispatchers. A separate child slab can own future
-outputs, and complete parent pairs now have deterministic domain-separated
-plans. `evo_run` invokes none of these later boundaries. `EVO_SUCCESS`
-therefore still does not indicate that steps 3 through 7, a generation
-transition, or an optimization search completed.
+independently tested private dispatchers. A separate child slab now accepts
+deterministic, sequential complete-pair output, but the odd slot, evaluation,
+swap, and generation-completion policies remain absent. `evo_run` invokes none
+of these later boundaries. `EVO_SUCCESS` therefore still does not indicate
+that steps 3 through 7, a generation transition, or an optimization search
+completed.
 
 ## Correctness Boundary
 

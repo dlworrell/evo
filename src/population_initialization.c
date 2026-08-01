@@ -12,6 +12,9 @@ static bool population_matches_inputs(const evo_problem_t *problem,
     if (population->genomes == NULL || population->initialized ||
         population->initialization_seed != 0 ||
         population->rng_algorithm_version != 0 ||
+        population->produced_count != 0 ||
+        population->source_generation != 0 ||
+        population->operator_seed_schedule_version != 0 ||
         population->population_size == 0 || population->genome_size == 0 ||
         population->storage_bytes == 0 ||
         population->population_size != config->population_size ||

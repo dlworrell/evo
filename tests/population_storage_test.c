@@ -13,8 +13,11 @@ static void assert_population_empty(const evo_population_t *population)
     assert(population->evaluation_bytes == 0);
     assert(population->valid_count == 0);
     assert(population->best_index == 0);
+    assert(population->produced_count == 0);
     assert(population->initialization_seed == 0);
+    assert(population->source_generation == 0);
     assert(population->rng_algorithm_version == 0);
+    assert(population->operator_seed_schedule_version == 0);
     assert(!population->initialized);
     assert(!population->has_best);
     assert(!population->evaluated);
@@ -185,7 +188,11 @@ static void test_active_rejection_and_destruction_idempotency(void)
     assert(population.genome_size == active.genome_size);
     assert(population.storage_bytes == active.storage_bytes);
     assert(population.initialization_seed == active.initialization_seed);
+    assert(population.source_generation == active.source_generation);
     assert(population.rng_algorithm_version == active.rng_algorithm_version);
+    assert(population.operator_seed_schedule_version ==
+           active.operator_seed_schedule_version);
+    assert(population.produced_count == active.produced_count);
     assert(population.initialized == active.initialized);
 
     evo_population_destroy(&population);

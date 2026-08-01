@@ -32,6 +32,9 @@ static bool population_ready_for_evaluation(const evo_problem_t *problem,
         population->genome_size != problem->genome_size ||
         population->initialization_seed != config->random_seed ||
         population->rng_algorithm_version != EVO_RNG_ALGORITHM_VERSION ||
+        population->produced_count != 0 ||
+        population->source_generation != 0 ||
+        population->operator_seed_schedule_version != 0 ||
         config->max_genome_bytes < population->genome_size ||
         config->max_population_bytes < population->storage_bytes ||
         population->population_size >
