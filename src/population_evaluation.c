@@ -1,4 +1,4 @@
-#include "internal/population_storage.h"
+#include "internal/population_evaluation.h"
 #include "internal/rng.h"
 
 #include <math.h>
@@ -16,9 +16,10 @@ static bool evaluation_storage_size(size_t population_size, size_t *bytes)
     return true;
 }
 
-static bool population_ready_for_evaluation(const evo_problem_t *problem,
-                                            const evo_config_t *config,
-                                            const evo_population_t *population)
+static bool initialized_population_ready_for_evaluation(
+    const evo_problem_t *problem,
+    const evo_config_t *config,
+    const evo_population_t *population)
 {
     size_t expected_storage_bytes = 0;
 
@@ -67,10 +68,11 @@ static evo_status_t discard_provisional_evaluations(
     return status;
 }
 
-evo_status_t evo_population_evaluate(const evo_problem_t *problem,
-                                     const evo_config_t *config,
-                                     void *context,
-                                     evo_population_t *population)
+evo_status_t evo_population_evaluate_ready(
+    const evo_problem_t *problem,
+    const evo_config_t *config,
+    void *context,
+    evo_population_t *population)
 {
     evo_candidate_evaluation_t *evaluations = NULL;
     size_t evaluation_bytes = 0;
@@ -81,10 +83,6 @@ evo_status_t evo_population_evaluate(const evo_problem_t *problem,
     if (problem == NULL || config == NULL || population == NULL ||
         problem->evaluate == NULL) {
         return EVO_ERROR_INVALID_ARGUMENT;
-    }
-
-    if (!population_ready_for_evaluation(problem, config, population)) {
-        return EVO_ERROR_STATE;
     }
 
     if (config->max_evaluation_bytes == 0 ||
@@ -151,6 +149,28 @@ evo_status_t evo_population_evaluate(const evo_problem_t *problem,
     population->has_best = has_best;
     population->evaluated = true;
     return EVO_SUCCESS;
+}
+
+evo_status_t evo_population_evaluate(const evo_problem_t *problem,
+                                     const evo_config_t *config,
+                                     void *context,
+                                     evo_population_t *population)
+{
+    if (problem == NULL || config == NULL || population == NULL ||
+        problem->evaluate == NULL) {
+        return EVO_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (!initialized_population_ready_for_evaluation(problem,
+                                                     config,
+                                                     population)) {
+        return EVO_ERROR_STATE;
+    }
+
+    return evo_population_evaluate_ready(problem,
+                                         config,
+                                         context,
+                                         population);
 }
 
 const evo_candidate_evaluation_t *

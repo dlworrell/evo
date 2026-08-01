@@ -95,6 +95,7 @@
       "src/parent_pair.c",
       "src/child_pair.c",
       "src/child_tail.c",
+      "src/child_evaluation.c",
       "src/diversity.c",
       "src/fitness.c",
       "src/statistics.c",
@@ -179,6 +180,12 @@
         "source": "tests/child_tail_test.c",
         "cmake": "evo_child_tail_test",
         "autotools": "tests/evo_child_tail_test"
+      },
+      {
+        "id": "child-evaluation",
+        "source": "tests/child_evaluation_test.c",
+        "cmake": "evo_child_evaluation_test",
+        "autotools": "tests/evo_child_evaluation_test"
       },
       {
         "id": "seed-schedule-research",

@@ -1,4 +1,5 @@
 #include "internal/population_storage.h"
+#include "internal/child_tail.h"
 #include "internal/rng.h"
 
 #include <math.h>
@@ -41,6 +42,40 @@ static bool fitness_is_zero(const evo_fitness_t *fitness)
            fitness->total == 0.0;
 }
 
+static bool completed_population_provenance_is_valid(
+    const evo_config_t *config,
+    const evo_population_t *population)
+{
+    uint32_t expected_odd_child_policy_version = 0;
+
+    if (population->initialized) {
+        return population->initialization_seed == config->random_seed &&
+               population->rng_algorithm_version ==
+                   EVO_RNG_ALGORITHM_VERSION &&
+               population->produced_count == 0 &&
+               population->source_generation == 0 &&
+               population->operator_seed_schedule_version == 0 &&
+               population->odd_child_policy_version == 0 &&
+               population->storage_bytes <=
+                   config->max_population_bytes;
+    }
+
+    if (population->population_size % 2 != 0) {
+        expected_odd_child_policy_version =
+            EVO_ODD_CHILD_POLICY_VERSION;
+    }
+
+    return population->initialization_seed == 0 &&
+           population->rng_algorithm_version == 0 &&
+           population->produced_count == population->population_size &&
+           population->operator_seed_schedule_version ==
+               EVO_OPERATOR_SEED_SCHEDULE_VERSION &&
+           population->odd_child_policy_version ==
+               expected_odd_child_policy_version &&
+           population->storage_bytes <=
+               config->max_child_population_bytes;
+}
+
 bool evo_population_validate_completed(
     const evo_config_t *config,
     const evo_population_t *population,
@@ -57,21 +92,14 @@ bool evo_population_validate_completed(
         population->genomes == NULL ||
         population->evaluations == NULL ||
         population->population_size == 0 ||
-        population->genome_size == 0 ||
-        !population->initialized || !population->evaluated ||
+        population->genome_size == 0 || !population->evaluated ||
         population->population_size != config->population_size ||
-        population->initialization_seed != config->random_seed ||
-        population->rng_algorithm_version != EVO_RNG_ALGORITHM_VERSION ||
-        population->produced_count != 0 ||
-        population->source_generation != 0 ||
-        population->operator_seed_schedule_version != 0 ||
-        population->odd_child_policy_version != 0 ||
+        !completed_population_provenance_is_valid(config, population) ||
         !checked_size_multiply(population->population_size,
                                population->genome_size,
                                &expected_storage_bytes) ||
         expected_storage_bytes != population->storage_bytes ||
         population->genome_size > config->max_genome_bytes ||
-        population->storage_bytes > config->max_population_bytes ||
         !checked_size_multiply(
             population->population_size,
             sizeof(evo_candidate_evaluation_t),

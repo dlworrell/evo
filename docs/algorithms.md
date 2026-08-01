@@ -294,5 +294,34 @@ after every complete pair has been committed.
 
 Full child production does not imply initialization or evaluation. The child
 still has no validity, fitness, or best-candidate evidence and cannot be used
-for selection until a separate child-evaluation boundary is implemented.
+for selection until evaluation succeeds.
 General elite counts, swapping, and generation advancement remain separate.
+
+## Deterministic Produced-Child Evaluation
+
+Version 0.14.0 evaluates a fully produced child population without consuming
+RNG state or changing any genome byte.
+
+- The child must contain exactly `population_size` produced genomes with
+  source-generation and operator-schedule provenance from production.
+- Odd populations require odd-tail policy version 1; even populations require
+  no odd-tail policy marker.
+- Evaluation records are allocated provisionally under
+  `max_evaluation_bytes`.
+- Validation visits every candidate in ascending index order.
+- Only valid candidates are evaluated, also in ascending index order.
+- All seven fitness fields must be finite before the record set is committed.
+- Higher `fitness.total` wins, with the lower index retained on exact ties.
+- Invalid candidates retain zero fitness and are never evaluated.
+- An all-invalid child completes without a best candidate.
+- Success preserves production metadata and commits evaluation records,
+  valid count, stable best, and policy evidence exactly once.
+- Preflight, resource, allocation, and non-finite-fitness failures preserve
+  child-owned bytes and metadata plus caller-owned evidence. Consumer callback
+  side effects after dispatch begins cannot be rolled back.
+
+The shared completed-population validator accepts both generation-zero and
+evaluated-child provenance. This makes the evaluated child eligible for
+selection and for authorizing the next independent child allocation. It does
+not swap population ownership, increment a generation, recycle the prior
+parent, or alter public `evo_run`.

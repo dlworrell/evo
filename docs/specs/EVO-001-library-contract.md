@@ -1,7 +1,7 @@
 # EVO-001: Evolutionary Optimization Library Contract
 
 Status: Baseline
-Version: 0.13.0
+Version: 0.14.0
 Owner: EVO
 
 ## Purpose
@@ -511,9 +511,59 @@ The odd-tail lifecycle is:
     output evidence. Repeated completion and later pair production reject.
 
 The one elite clone is the complete odd-tail policy, not a generalized elitism
-contract. Full production metadata still does not make the child initialized,
-evaluated, or selectable. Child evaluation, swapping, generation advancement,
-and public `evo_run` integration remain unimplemented.
+contract. Full production metadata alone does not make the child initialized,
+evaluated, or selectable. Version 0.14.0 adds evaluation as the next distinct
+boundary; swapping, generation advancement, and public `evo_run` integration
+remain unimplemented.
+
+### Private deterministic produced-child evaluation
+
+Version 0.14.0 adds a private child-evaluation boundary. The normative
+decision is recorded in
+`docs/adr/ADR-0013-deterministic-produced-child-evaluation.md`.
+
+The child-evaluation lifecycle is:
+
+1. Problem, configuration, fully produced child storage, and caller-owned
+   output evidence must be non-null, and an evaluator must be present.
+2. Genome and population dimensions, per-genome policy, child-slab budget,
+   exact checked storage size, and evaluation budget must be consistent.
+3. The child must record `produced_count == population_size`, the supplied
+   source generation, and operator seed-schedule version 1.
+4. Odd populations must record odd-tail policy version 1. Even populations
+   must record no odd-tail policy. This includes the defined one-member case.
+5. Generation-zero initialization evidence, RNG initialization evidence,
+   evaluation records, valid count, and best-candidate evidence must remain
+   empty before evaluation.
+6. EVO allocates zero-initialized provisional candidate records within
+   `max_evaluation_bytes`. Allocation failure leaves the child unchanged.
+7. The optional validator visits every candidate in ascending index order. A
+   missing validator means every candidate is valid.
+8. Only valid candidates are passed to the evaluator, also in ascending index
+   order. Invalid candidates retain zero fitness and an unevaluated record.
+9. All seven returned fitness fields must be finite. A non-finite value
+   releases every provisional record and preserves the child object and output
+   evidence, although callback-context side effects cannot be rolled back.
+10. Higher `fitness.total` wins. Exact ties retain the lower candidate index.
+11. Success commits the complete record allocation, valid count, stable best
+    evidence, and evaluated state while preserving every genome byte and all
+    production provenance. An all-invalid child completes with no best.
+12. Output evidence records population and evaluation sizes, valid count,
+    stable best, source generation, production-policy versions, child-
+    evaluation policy version 1, and completion.
+13. Repeated evaluation and every malformed, incomplete, mismatched, resource,
+    allocation, or detectable callback-output failure preserve caller-owned
+    evidence and library-owned child state.
+
+The operation consumes no RNG word and invokes no initialization, selection,
+crossover, or mutation callback. The shared completed-population validator
+accepts either generation-zero or evaluated-child provenance. An evaluated
+child can therefore authorize tournament selection and the next independently
+owned child allocation without first changing object ownership.
+
+This boundary does not swap parent and child objects, increment a generation,
+destroy or recycle the prior parent, implement termination policy, or
+participate in public `evo_run`.
 
 ### Result lifecycle
 
@@ -612,7 +662,13 @@ installed symbol, memory policy, or `evo_run` behavior. It adds private
 odd-tail policy metadata and deterministic stable-elite completion. Consumers
 rebuilding from 0.12.0 require no source change.
 
-## Current 0.13.0 Conformance Boundary
+Version 0.14.0 likewise changes no public layout, function signature,
+installed symbol, memory policy, or `evo_run` behavior. It adds private child-
+evaluation policy evidence, shares the existing provisional evaluation engine,
+and recognizes evaluated-child provenance as completed-population authority.
+Consumers rebuilding from 0.13.0 require no source change.
+
+## Current 0.14.0 Conformance Boundary
 
 The current implementation exposes a complete generation-zero boundary:
 
@@ -661,9 +717,12 @@ The current implementation exposes a complete generation-zero boundary:
   mutations, records a contiguous child prefix, and preserves parent evidence;
 - private odd-tail completion requires the complete pair prefix, clones the
   stable best valid parent without RNG or callbacks, records policy version 1,
-  and preserves every object on rejection; and
-- child evaluation, population swapping, generalized elitism, adaptive mutation,
-  diversity, checkpointing, and generation iteration are not implemented.
+  and preserves every object on rejection;
+- private produced-child evaluation accepts complete even and odd production
+  provenance, commits deterministic valid-only finite-fitness evidence, and
+  promotes the child to shared completed-population authority; and
+- population swapping, generalized elitism, adaptive mutation, diversity,
+  checkpointing, and generation iteration are not implemented.
 
 Consumers may treat `EVO_SUCCESS` as evidence of a valid evaluated
 generation-zero winner. They must not treat it as evidence that an
@@ -723,6 +782,14 @@ behavior, one-member completion, byte-and-evidence replay, absence of extra RNG
 or callbacks, parent and prefix preservation, all-invalid and alias rejection,
 and terminal policy metadata.
 
+The child-evaluation test proves even, odd, and one-member production
+provenance; deterministic validation-before-evaluation ordering; invalid-
+candidate suppression; stable ties; all-invalid completion; byte, record, and
+evidence replay; budget and non-finite-fitness rollback; repeated-evaluation
+rejection; completed-population validation; and next-child authorization. The
+allocation-failure test separately proves that a failed child-evaluation record
+allocation preserves the fully produced child unchanged.
+
 ## Related Records
 
 - `docs/adr/ADR-0001-library-boundary-and-build-system.md`
@@ -736,6 +803,7 @@ and terminal policy metadata.
 - `docs/adr/ADR-0010-versioned-operator-substreams-and-parent-pair-planning.md`
 - `docs/adr/ADR-0011-deterministic-complete-pair-child-production.md`
 - `docs/adr/ADR-0012-deterministic-odd-tail-elite-cloning.md`
+- `docs/adr/ADR-0013-deterministic-produced-child-evaluation.md`
 - `docs/architecture.md`
 - `docs/algorithms.md`
 - `docs/benchmarks.md`
@@ -754,4 +822,5 @@ and terminal policy metadata.
 - `https://github.com/dlworrell/evo/issues/26`
 - `https://github.com/dlworrell/evo/issues/28`
 - `https://github.com/dlworrell/evo/issues/30`
+- `https://github.com/dlworrell/evo/issues/32`
 - `https://github.com/dlworrell/AEMS/issues/18`
