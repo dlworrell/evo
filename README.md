@@ -65,9 +65,9 @@ against each installed result. See
 
 ## Status
 
-EVO 0.13.0 retains the complete public generation-zero boundary, deterministic
-complete-pair production, and adds a private versioned odd-tail elite-clone
-policy for odd child populations. `evo_run` still constructs and
+EVO 0.14.0 retains the complete public generation-zero boundary and adds a
+private deterministic evaluation phase for fully produced child populations.
+`evo_run` still constructs and
 deterministically initializes a private population, validates every candidate,
 evaluates only valid candidates, selects the stable generation-zero winner,
 and transfers an independent genome copy plus its complete fitness evidence to
@@ -193,10 +193,24 @@ callback, and records full production count, source generation, operator
 schedule version, and odd-tail policy version. A one-member population is
 completed directly from its sole valid parent.
 
-Full production is not completed-population evidence: the child remains
-uninitialized, unevaluated, and without validity, fitness, or best-candidate
-records. Generalized elitism, child evaluation, swapping, generation
-advancement, and public `evo_run` integration remain separate milestones.
+In version 0.13.0, full production remained distinct from completed-population
+evidence: the child was still unevaluated and without validity, fitness, or
+best-candidate records.
+
+Version 0.14.0 evaluates a fully produced even or odd child slab through the
+same provisional-record engine used for generation zero. Policy version 1
+validates every candidate in ascending order, evaluates only valid candidates
+in ascending order, rejects every non-finite fitness field, and retains the
+lower index on exact total-fitness ties. Evaluation consumes no RNG state and
+does not modify genome bytes.
+
+Success preserves child production provenance while committing validity,
+fitness, valid-count, and stable-best evidence. All-invalid children are
+completed evaluated populations without a best candidate. The shared
+completed-population validator accepts either generation-zero or evaluated-
+child provenance, so an evaluated child can authorize the next independent
+child slab. Swapping, generation advancement, and public `evo_run` integration
+remain separate milestones.
 
 ## Result Lifecycle
 
@@ -227,10 +241,10 @@ failure-state, alias, compatibility, and secure-erasure boundaries.
 
 The private tournament, crossover-dispatch, mutation-dispatch, child-population
 ownership, operator-stream, complete-pair-planning, sequential complete-pair
-production, and odd-tail elite-clone boundaries are independently verified.
-Child evaluation, population swapping, generalized elitism, adaptive mutation,
-and the first generation transition remain later execution boundaries; none
-is implied by `evo_run` success in version 0.13.0.
+production, odd-tail elite-clone, and produced-child evaluation boundaries are
+independently verified. Population swapping, generalized elitism, adaptive
+mutation, and the first generation transition remain later execution
+boundaries; none is implied by `evo_run` success in version 0.14.0.
 
 ## Project Zero
 

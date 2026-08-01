@@ -245,8 +245,34 @@ evidence.
 
 The resulting slab is fully produced but not initialized or evaluated. It has
 no child validity, fitness, or best-candidate evidence and is not yet eligible
-for selection or population swap. Generalized elitism, child evaluation,
-generation accounting, and `evo_run` integration remain later boundaries.
+for selection or population swap until evaluation succeeds. Generalized
+elitism, generation accounting, and `evo_run` integration remain later
+boundaries.
+
+## Private Produced-Child Evaluation Boundary
+
+Version 0.14.0 adds a private evaluation operation for a fully produced child
+slab. The operation accepts even populations completed entirely by pairs and
+odd populations completed by the version-1 stable-best tail policy. It
+requires matching source-generation and operator-schedule provenance before
+allocating provisional evaluation records.
+
+The existing evaluation engine is now shared by generation-zero and produced-
+child lifecycle preflights. It validates all candidates first, evaluates only
+valid candidates second, requires finite values in all fitness fields, and
+commits the record set only after the complete pass succeeds. Stable best-
+candidate selection retains the lower index on exact total-fitness ties.
+
+Success leaves child genomes and all production metadata unchanged while
+recording validity, fitness, valid count, best index, and completed evaluation
+state. An all-invalid child is completed without a best. The common completed-
+population validator recognizes both generation-zero and evaluated-child
+provenance, allowing the evaluated child to become the read-only authority for
+later selection and next-child allocation.
+
+The operation consumes no RNG state and invokes no initialization, selection,
+crossover, or mutation callback. It does not swap ownership, advance a
+generation, recycle the prior parent, or participate in `evo_run`.
 
 ## Execution Flow
 
@@ -258,15 +284,15 @@ generation accounting, and `evo_run` integration remain later boundaries.
 6. Record statistics and evidence.
 7. Stop on convergence, stagnation, generation limit, or an application-defined condition.
 
-Version 0.13.0 publicly implements steps 1 and 2 for generation zero and
+Version 0.14.0 publicly implements steps 1 and 2 for generation zero and
 transfers the best valid candidate. Step 3 has an independently tested private
 tournament operator, and both crossover and mutation in step 4 have
 independently tested private dispatchers. A separate child slab now accepts
-deterministic sequential pair output and versioned odd-tail elite completion,
-but child evaluation, swap, and generation-completion policies remain absent.
-`evo_run` invokes none of these later boundaries. `EVO_SUCCESS` therefore
-still does not indicate that steps 3 through 7, a generation transition, or an
-optimization search completed.
+deterministic sequential pair output, versioned odd-tail elite completion, and
+deterministic child evaluation. Population swap and generation-completion
+policies remain absent. `evo_run` invokes none of these later boundaries.
+`EVO_SUCCESS` therefore still does not indicate that steps 3 through 7, a
+generation transition, or an optimization search completed.
 
 ## Correctness Boundary
 

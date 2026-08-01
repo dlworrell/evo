@@ -1,4 +1,6 @@
 #include "catalyst/evo/evo.h"
+#include "internal/child_evaluation.h"
+#include "internal/child_pair.h"
 #include "internal/population_storage.h"
 
 #include <assert.h>
@@ -78,6 +80,27 @@ static void assert_population_evaluation_empty(
     assert(!population->evaluated);
 }
 
+static void assert_child_evaluation_empty(
+    const evo_population_t *population,
+    uint64_t source_generation)
+{
+    assert(population->genomes != NULL);
+    assert(population->evaluations == NULL);
+    assert(population->evaluation_bytes == 0);
+    assert(population->valid_count == 0);
+    assert(population->best_index == 0);
+    assert(population->produced_count == population->population_size);
+    assert(population->initialization_seed == 0);
+    assert(population->source_generation == source_generation);
+    assert(population->rng_algorithm_version == 0);
+    assert(population->operator_seed_schedule_version ==
+           EVO_OPERATOR_SEED_SCHEDULE_VERSION);
+    assert(population->odd_child_policy_version == 0);
+    assert(!population->initialized);
+    assert(!population->has_best);
+    assert(!population->evaluated);
+}
+
 static void reset_allocation_injection(size_t failure_call)
 {
     allocation_calls = 0;
@@ -114,6 +137,8 @@ int main(void)
     };
     evo_population_t population = {0};
     evo_population_t children = {0};
+    evo_child_pair_evidence_t pair = {0};
+    evo_child_evaluation_evidence_t child_evaluation = {0};
     evo_result_t result = {0};
 
     reset_allocation_injection(0);
@@ -163,6 +188,41 @@ int main(void)
     assert(population.initialized);
     assert(population.evaluated);
 
+    config.tournament_size = 2;
+    reset_allocation_injection(0);
+    assert(evo_child_population_create(
+               &problem, &config, &population, &children) == EVO_SUCCESS);
+    assert(allocation_calls == 1);
+    for (size_t pair_index = 0;
+         pair_index < config.population_size / 2;
+         ++pair_index) {
+        assert(evo_child_pair_produce(&problem,
+                                      &config,
+                                      NULL,
+                                      &population,
+                                      5,
+                                      pair_index,
+                                      &children,
+                                      &pair) == EVO_SUCCESS);
+    }
+    assert_child_evaluation_empty(&children, 5);
+
+    reset_allocation_injection(1);
+    assert(evo_child_population_evaluate(&problem,
+                                         &config,
+                                         NULL,
+                                         5,
+                                         &children,
+                                         &child_evaluation) ==
+           EVO_ERROR_OUT_OF_MEMORY);
+    assert(allocation_calls == 1);
+    fail_allocation_call = 0;
+    assert_child_evaluation_empty(&children, 5);
+    assert(child_evaluation.population_size == 0);
+    assert(!child_evaluation.complete);
+
+    evo_population_destroy(&children);
+    assert_population_empty(&children);
     evo_population_destroy(&population);
     assert_population_empty(&population);
     return 0;

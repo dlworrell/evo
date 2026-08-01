@@ -53,9 +53,10 @@ evo_status_t evo_child_population_create(
     evo_population_t *children);
 
 /*
- * Validate complete initialized/evaluated population evidence without
- * changing the population. Selection and child allocation share this
- * invariant authority.
+ * Validate structurally complete evaluated population evidence without
+ * changing the population. Generation-zero and produced-child provenance are
+ * accepted through distinct invariant sets. Selection and child allocation
+ * share this authority.
  */
 bool evo_population_validate_completed(
     const evo_config_t *config,
