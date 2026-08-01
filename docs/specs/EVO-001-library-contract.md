@@ -1,7 +1,7 @@
 # EVO-001: Evolutionary Optimization Library Contract
 
 Status: Baseline
-Version: 0.14.0
+Version: 0.15.0
 Owner: EVO
 
 ## Purpose
@@ -565,6 +565,58 @@ This boundary does not swap parent and child objects, increment a generation,
 destroy or recycle the prior parent, implement termination policy, or
 participate in public `evo_run`.
 
+### Private atomic generation advancement
+
+Version 0.15.0 adds a private generation-advancement boundary. The normative
+decision is recorded in
+`docs/adr/ADR-0014-atomic-generation-advancement.md`.
+
+The generation-advancement lifecycle is:
+
+1. Problem, configuration, current parent, evaluated child, and caller-owned
+   output evidence must be non-null, distinct typed objects.
+2. Evidence storage must not overlap either population object or any genome or
+   evaluation allocation owned by either population.
+3. `current_generation == UINT64_MAX` returns
+   `EVO_ERROR_RESOURCE_LIMIT`; no wrapped or saturated generation is emitted.
+4. Problem and configured dimensions must be nonzero and within the caller's
+   per-genome policy.
+5. Both population objects must pass the shared completed-population validator
+   and match the supplied problem genome size.
+6. Genome and evaluation allocations within and across the two populations
+   must be pairwise disjoint. An overlap is malformed ownership and returns
+   `EVO_ERROR_STATE` before destruction can occur.
+7. An initialized generation-zero parent is accepted only when
+   `current_generation == 0`.
+8. A parent that originated as a produced child is accepted only when the
+   current generation is nonzero and its source generation equals
+   `current_generation - 1`.
+9. The incoming population must be a produced, evaluated child whose source
+   generation equals `current_generation`.
+10. Output evidence is prepared with population size, valid count, stable-best
+    state, previous generation, completed generation, production-policy
+    versions, and generation-advancement policy version 1.
+11. After all fallible checks, EVO moves the child structure into the parent
+    handle, resets the child handle to the complete zero state, releases the
+    former parent allocations, and commits evidence.
+
+The commit suffix performs no allocation and copies no genome or evaluation
+bytes. It consumes no RNG state and invokes no callback. Rejection preserves
+both populations and output evidence. Success preserves the incoming child's
+allocation identities, complete bytes, validity, fitness, stable best, and
+production provenance while transferring exclusive ownership to the parent
+handle.
+
+An all-invalid evaluated child is a structurally completed population and is
+therefore promotable. A later termination boundary decides whether the run
+stops. Generation-limit enforcement, convergence and stagnation, old-parent
+recycling, generalized elitism, checkpoint persistence, and public `evo_run`
+iteration are not part of this operation.
+
+Atomicity here is a library-state contract: every rejection precedes mutation,
+and the remaining commit suffix has no expected failure. It does not make the
+population handles safe for concurrent unsynchronized access.
+
 ### Result lifecycle
 
 The caller must zero-initialize `evo_result_t` before its first use:
@@ -668,7 +720,13 @@ evaluation policy evidence, shares the existing provisional evaluation engine,
 and recognizes evaluated-child provenance as completed-population authority.
 Consumers rebuilding from 0.13.0 require no source change.
 
-## Current 0.14.0 Conformance Boundary
+Version 0.15.0 likewise changes no public layout, function signature,
+installed symbol, memory policy, or `evo_run` behavior. It adds a private,
+allocation-free generation-advancement operation that transfers evaluated-
+child ownership, releases the former parent, and records versioned transition
+evidence. Consumers rebuilding from 0.14.0 require no source change.
+
+## Current 0.15.0 Conformance Boundary
 
 The current implementation exposes a complete generation-zero boundary:
 
@@ -720,9 +778,14 @@ The current implementation exposes a complete generation-zero boundary:
   and preserves every object on rejection;
 - private produced-child evaluation accepts complete even and odd production
   provenance, commits deterministic valid-only finite-fitness evidence, and
-  promotes the child to shared completed-population authority; and
-- population swapping, generalized elitism, adaptive mutation, diversity,
-  checkpointing, and generation iteration are not implemented.
+  promotes the child to shared completed-population authority;
+- private generation advancement validates current/child lineage and all
+  ownership ranges, moves the evaluated child into the parent handle, empties
+  the child handle, releases the former parent, and records the next generation
+  without allocation, copying, RNG, or callbacks; and
+- generalized elitism, adaptive mutation, diversity, stopping policy,
+  checkpointing, buffer recycling, and public generation iteration are not
+  implemented.
 
 Consumers may treat `EVO_SUCCESS` as evidence of a valid evaluated
 generation-zero winner. They must not treat it as evidence that an
@@ -790,6 +853,14 @@ rejection; completed-population validation; and next-child authorization. The
 allocation-failure test separately proves that a failed child-evaluation record
 allocation preserves the fully produced child unchanged.
 
+The generation-advancement test proves generation-zero and later-generation
+lineage, allocation-identity and byte preservation, all-invalid promotion,
+empty-child reuse, overflow, object and owned-range alias rejection, malformed
+state preservation, and repeated-call rejection. The wrapped-allocation and
+release test also proves that advancement succeeds while the next allocator
+call is forced to fail and releases exactly the two former-parent allocations,
+confirming the transition's allocation-free single-owner contract.
+
 ## Related Records
 
 - `docs/adr/ADR-0001-library-boundary-and-build-system.md`
@@ -804,6 +875,7 @@ allocation preserves the fully produced child unchanged.
 - `docs/adr/ADR-0011-deterministic-complete-pair-child-production.md`
 - `docs/adr/ADR-0012-deterministic-odd-tail-elite-cloning.md`
 - `docs/adr/ADR-0013-deterministic-produced-child-evaluation.md`
+- `docs/adr/ADR-0014-atomic-generation-advancement.md`
 - `docs/architecture.md`
 - `docs/algorithms.md`
 - `docs/benchmarks.md`
@@ -823,4 +895,5 @@ allocation preserves the fully produced child unchanged.
 - `https://github.com/dlworrell/evo/issues/28`
 - `https://github.com/dlworrell/evo/issues/30`
 - `https://github.com/dlworrell/evo/issues/32`
+- `https://github.com/dlworrell/evo/issues/34`
 - `https://github.com/dlworrell/AEMS/issues/18`

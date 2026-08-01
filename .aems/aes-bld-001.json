@@ -96,6 +96,7 @@
       "src/child_pair.c",
       "src/child_tail.c",
       "src/child_evaluation.c",
+      "src/generation_advancement.c",
       "src/diversity.c",
       "src/fitness.c",
       "src/statistics.c",
@@ -186,6 +187,12 @@
         "source": "tests/child_evaluation_test.c",
         "cmake": "evo_child_evaluation_test",
         "autotools": "tests/evo_child_evaluation_test"
+      },
+      {
+        "id": "generation-advancement",
+        "source": "tests/generation_advancement_test.c",
+        "cmake": "evo_generation_advancement_test",
+        "autotools": "tests/evo_generation_advancement_test"
       },
       {
         "id": "seed-schedule-research",

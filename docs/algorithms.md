@@ -325,3 +325,33 @@ evaluated-child provenance. This makes the evaluated child eligible for
 selection and for authorizing the next independent child allocation. It does
 not swap population ownership, increment a generation, recycle the prior
 parent, or alter public `evo_run`.
+
+## Atomic Generation Advancement
+
+Version 0.15.0 promotes one evaluated child to the next completed generation
+through generation-advancement policy version 1:
+
+1. Require non-null problem, configuration, parent, child, and evidence
+   objects with non-overlapping object storage.
+2. Reject `current_generation == UINT64_MAX` before any state change.
+3. Validate problem dimensions and both populations through the common
+   completed-population authority.
+4. Require all genome and evaluation ownership ranges to be pairwise
+   disjoint, and require evidence storage to be outside every owned range.
+5. For generation zero, require generation-zero parent provenance. For every
+   later generation `g`, require parent source provenance `g - 1`.
+6. Require evaluated-child source provenance equal to `g`; the child therefore
+   represents completed generation `g + 1`.
+7. Construct versioned output evidence before changing ownership.
+8. Move the child structure into the parent handle, reset the child handle to
+   zero, release the former parent, and commit evidence.
+
+Steps 1 through 7 are fallible and read-only. Step 8 is a no-fail suffix with
+no allocation, genome copying, evaluation copying, RNG consumption, or
+callback dispatch. Thus a rejected transition preserves both population
+objects and evidence exactly. Success preserves the incoming child's owner
+identities and every byte while releasing the former owners exactly once.
+
+All-invalid completed children use the same move. Termination, generation-
+limit enforcement, old-slab recycling, and public loop integration remain
+separate policies.

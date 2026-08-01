@@ -1,15 +1,18 @@
 #include "catalyst/evo/evo.h"
 #include "internal/child_evaluation.h"
 #include "internal/child_pair.h"
+#include "internal/generation_advancement.h"
 #include "internal/population_storage.h"
 
 #include <assert.h>
 #include <stddef.h>
 
 void *__real_calloc(size_t count, size_t size);
+void __real_free(void *allocation);
 
 static size_t allocation_calls;
 static size_t fail_allocation_call;
+static size_t release_calls;
 
 void *__wrap_calloc(size_t count, size_t size)
 {
@@ -20,6 +23,14 @@ void *__wrap_calloc(size_t count, size_t size)
     }
 
     return __real_calloc(count, size);
+}
+
+void __wrap_free(void *allocation)
+{
+    if (allocation != NULL) {
+        ++release_calls;
+    }
+    __real_free(allocation);
 }
 
 static void assert_completely_empty(const evo_result_t *result)
@@ -139,6 +150,7 @@ int main(void)
     evo_population_t children = {0};
     evo_child_pair_evidence_t pair = {0};
     evo_child_evaluation_evidence_t child_evaluation = {0};
+    evo_generation_advancement_evidence_t advancement = {0};
     evo_result_t result = {0};
 
     reset_allocation_injection(0);
@@ -200,26 +212,53 @@ int main(void)
                                       &config,
                                       NULL,
                                       &population,
-                                      5,
+                                      0,
                                       pair_index,
                                       &children,
                                       &pair) == EVO_SUCCESS);
     }
-    assert_child_evaluation_empty(&children, 5);
+    assert_child_evaluation_empty(&children, 0);
 
     reset_allocation_injection(1);
     assert(evo_child_population_evaluate(&problem,
                                          &config,
                                          NULL,
-                                         5,
+                                         0,
                                          &children,
                                          &child_evaluation) ==
            EVO_ERROR_OUT_OF_MEMORY);
     assert(allocation_calls == 1);
     fail_allocation_call = 0;
-    assert_child_evaluation_empty(&children, 5);
+    assert_child_evaluation_empty(&children, 0);
     assert(child_evaluation.population_size == 0);
     assert(!child_evaluation.complete);
+
+    reset_allocation_injection(0);
+    assert(evo_child_population_evaluate(&problem,
+                                         &config,
+                                         NULL,
+                                         0,
+                                         &children,
+                                         &child_evaluation) == EVO_SUCCESS);
+
+    reset_allocation_injection(1);
+    {
+        const size_t releases_before_advancement = release_calls;
+
+        assert(evo_population_advance_generation(&problem,
+                                                 &config,
+                                                 0,
+                                                 &population,
+                                                 &children,
+                                                 &advancement) ==
+               EVO_SUCCESS);
+        assert(allocation_calls == 0);
+        assert(release_calls == releases_before_advancement + 2);
+    }
+    fail_allocation_call = 0;
+    assert_population_empty(&children);
+    assert(advancement.completed_generation == 1);
+    assert(advancement.complete);
 
     evo_population_destroy(&children);
     assert_population_empty(&children);
