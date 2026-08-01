@@ -41,8 +41,11 @@ static void assert_population_empty(const evo_population_t *population)
     assert(population->evaluation_bytes == 0);
     assert(population->valid_count == 0);
     assert(population->best_index == 0);
+    assert(population->produced_count == 0);
     assert(population->initialization_seed == 0);
+    assert(population->source_generation == 0);
     assert(population->rng_algorithm_version == 0);
+    assert(population->operator_seed_schedule_version == 0);
     assert(!population->initialized);
     assert(!population->has_best);
     assert(!population->evaluated);
@@ -92,8 +95,12 @@ static void assert_populations_equal(const evo_population_t *left,
     assert(left->evaluation_bytes == right->evaluation_bytes);
     assert(left->valid_count == right->valid_count);
     assert(left->best_index == right->best_index);
+    assert(left->produced_count == right->produced_count);
     assert(left->initialization_seed == right->initialization_seed);
+    assert(left->source_generation == right->source_generation);
     assert(left->rng_algorithm_version == right->rng_algorithm_version);
+    assert(left->operator_seed_schedule_version ==
+           right->operator_seed_schedule_version);
     assert(left->initialized == right->initialized);
     assert(left->has_best == right->has_best);
     assert(left->evaluated == right->evaluated);

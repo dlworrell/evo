@@ -18,8 +18,11 @@ typedef struct evo_population {
     size_t evaluation_bytes;
     size_t valid_count;
     size_t best_index;
+    size_t produced_count;
     uint64_t initialization_seed;
+    uint64_t source_generation;
     uint32_t rng_algorithm_version;
+    uint32_t operator_seed_schedule_version;
     bool initialized;
     bool has_best;
     bool evaluated;
@@ -40,7 +43,7 @@ evo_status_t evo_population_create(const evo_problem_t *problem,
  * Construct an independently owned, zero-initialized child genome slab from
  * one structurally consistent completed parent population. The child uses its
  * own caller-provided byte budget and begins without initialization or
- * evaluation evidence.
+ * evaluation evidence or committed child-production progress.
  */
 evo_status_t evo_child_population_create(
     const evo_problem_t *problem,
