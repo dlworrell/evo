@@ -1,6 +1,7 @@
 # ADR-0001: Reusable C17 Library with CMake
 
-Status: Accepted
+Status: Accepted for the `catalyst_evo` core; superseded as the repository-wide
+product boundary by ADR-0016
 Date: 2026-07-12
 Owner: EVO
 

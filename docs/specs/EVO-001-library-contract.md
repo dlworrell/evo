@@ -4,6 +4,19 @@ Status: Baseline
 Version: 0.16.0
 Owner: EVO
 
+## Scope Boundary
+
+This specification governs the reusable deterministic C17 evolutionary-search
+core implemented through version 0.16.0. It does not define C-project
+ingestion, Clang/LLVM analysis, structured source transformations, isolated
+candidate builds, baseline-versus-candidate measurement, optimized patches, or
+product-level replay artifacts.
+
+Those source-to-source product responsibilities are defined separately by the
+draft 1.0 target in `EVO-002-source-optimizer-contract.md`. An EVO-001
+conforming run or compiler-option adapter alone must not be described as an
+optimized C codebase.
+
 ## Purpose
 
 EVO provides a reusable C17 interface for deterministic, bounded evolutionary

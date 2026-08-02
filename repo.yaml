@@ -2,7 +2,9 @@ repository:
   id: EVO
   name: Catalyst EVO
   class: reusable-library
-  purpose: Deterministic evolutionary optimization for bounded Catalyst engineering problems.
+  proposed_class: source-optimization-toolchain
+  classification_status: pending-catylist-review
+  purpose: Source-to-source evolutionary analysis and optimization of C codebases over a deterministic C17 search core.
   owner: dlworrell
   lifecycle: project-zero
   authority_chain:
@@ -17,7 +19,17 @@ repository:
     - AES-003
     - AES-DEV-001
     - AES-SEC-001
+  components:
+    - id: catalyst_evo
+      class: reusable-library
+      status: implemented-0.16.0
+      contract: docs/specs/EVO-001-library-contract.md
+    - id: evo-source-optimizer
+      class: engineering-application
+      status: planned-for-1.0
+      contract: docs/specs/EVO-002-source-optimizer-contract.md
   outputs:
-    - C17 evolutionary-optimization library
-    - deterministic optimization evidence
-    - bounded optimization experiment interface
+    - deterministic C17 evolutionary-search library
+    - C source analysis and structured transformation evidence
+    - highest-ranked verified candidate source patch
+    - baseline comparison and deterministic replay bundle

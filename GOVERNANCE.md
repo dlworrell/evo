@@ -1,7 +1,9 @@
 # Governance
 
-Catalyst EVO is the reusable evolutionary-optimization library in the Catalyst
-ecosystem.
+Catalyst EVO is the source-to-source C optimization product in the Catalyst
+ecosystem. It contains a reusable deterministic evolutionary-search core and
+will add separately bounded source-analysis, transformation, candidate-
+evaluation, orchestration, and artifact components on the path to 1.0.
 
 ## Authority
 
@@ -16,11 +18,28 @@ Catylist -> AES -> AEMS -> Project Zero -> repo_templates -> EVO
 - AEMS evaluates repository state and preserves enforcement evidence.
 - Project Zero governs repository preparation and Engineering Ready review.
 - `repo_templates` supplies the canonical lifecycle scaffold.
-- EVO owns its library architecture, specifications, implementation, tests,
-  benchmarks, and experiment interfaces within those constraints.
+- EVO owns its core-library architecture and its source-analysis,
+  transformation, candidate-evaluation, optimization, evidence, and artifact
+  contracts within those constraints.
 
-EVO does not supersede its upstream authorities. Downstream consumers own their
-problem-specific genomes, fitness functions, and acceptance decisions.
+EVO does not supersede its upstream authorities. Target-project maintainers
+remain authoritative for their source, tests, workloads, acceptance criteria,
+and decision to apply an EVO patch. EVO owns only the isolated optimization
+experiment and its evidence; it may not silently mutate or publish to the
+target repository.
+
+## Component Boundaries
+
+- `catalyst_evo` owns deterministic bounded evolutionary-search mechanics and
+  the stable public C ABI defined by EVO-001.
+- The source optimizer owns the product contract defined by EVO-002, including
+  project ingestion, analysis, structured transformation recipes, candidate
+  isolation, validation, measurement, replay, and artifact emission.
+- Raw textual mutation or crossover of C source is prohibited. Source genomes
+  encode versioned structured transformation recipes.
+- An optimized patch is a proposal. Applying, committing, pushing, merging,
+  releasing, or deploying it requires an explicit downstream action outside
+  EVO.
 
 ## Change Control
 
@@ -29,13 +48,24 @@ Changes shall:
 1. be proposed through a focused branch and pull request;
 2. identify the governing specification or ADR;
 3. include reproducible validation evidence;
-4. preserve the public C ABI unless a versioned migration is approved;
+4. preserve the public C ABI and versioned product schemas unless an approved
+   migration is provided;
 5. preserve correctness and safety constraints as hard gates;
-6. avoid direct mutation of downstream repositories or production systems; and
-7. address all unresolved review findings before merge.
+6. derive candidate workspaces from a recorded immutable baseline;
+7. isolate and resource-bound every compiler, test, benchmark, and candidate
+   process;
+8. avoid direct mutation of downstream repositories or production systems;
+9. describe optimization results as bounded measured findings rather than
+   global-optimality or universal-correctness proofs; and
+10. address all unresolved review findings before merge.
 
 ## Project Zero Certification
 
 The repository may propose a certification candidate, but it may not approve
 its own transition to `ENGINEERING_READY`. Approval requires a separate,
 traceable review of the candidate commit and its retained evidence.
+
+The source-optimizer scope materially expands the repository's execution and
+security boundary. Issue #57 and the additive EVO-SCOPE-001 reconciliation
+record require renewed Project Zero/AEMS assessment before the expanded
+product can claim `ENGINEERING_READY` or 1.0 readiness.

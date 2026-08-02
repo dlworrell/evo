@@ -1,14 +1,53 @@
 # Catalyst EVO
 
-Catalyst evolutionary optimization library for engineering search, tuning, and design-space exploration.
+Catalyst EVO is a source-to-source evolutionary optimization system for C
+codebases, built on a deterministic, reusable C17 evolutionary-search core.
 
-EVO provides deterministic, reproducible evolutionary optimization algorithms for engineering applications such as repository assessment, compiler optimization, operating-system policy tuning, FPGA design-space exploration, and automated software engineering.
+The completed core provides bounded, reproducible candidate search. The EVO
+1.0 product will ingest an existing buildable C project, analyze source and
+runtime evidence, evolve structured source-transformation recipes, compile and
+validate isolated candidates, and return the highest-ranked verified C source
+candidate found within a declared search contract.
 
 ## Mission
 
-Develop a reusable, evidence-driven optimization framework for Catalyst that replaces ad hoc parameter tuning with reproducible evolutionary search.
+Evolve existing C source toward better measured implementations while
+preserving declared correctness, security, ABI, portability, build, and
+maintainability constraints. The winning result must be emitted as a
+human-reviewable source patch with complete baseline comparison and replay
+evidence.
 
-## Initial Scope
+"Best" means the highest-ranked verified candidate EVO discovered within the
+recorded baseline, target platforms, workloads, transformation catalogue,
+objective, constraints, and search budget. EVO does not claim to prove a
+globally optimal equivalent program.
+
+The governing product records are:
+
+- `docs/adr/ADR-0016-layered-source-to-source-c-optimizer.md`
+- `docs/specs/EVO-001-library-contract.md`
+- `docs/specs/EVO-002-source-optimizer-contract.md`
+- `docs/roadmap.md`
+
+## Product Boundary
+
+EVO has two deliberate layers:
+
+- `catalyst_evo` — the reusable C17 core that owns deterministic population,
+  selection, mutation, crossover, evaluation, stopping, checkpoint, and
+  evidence mechanics;
+- the EVO source optimizer — the planned Clang/LLVM-backed analysis,
+  structured transformation, isolated build/test/benchmark, orchestration,
+  and artifact pipeline defined by `docs/specs/EVO-002-source-optimizer-contract.md`.
+
+Opaque byte genomes remain valid for the generic core. C source is never
+evolved by splicing raw text or crossing over arbitrary source bytes. One
+source-optimization genome represents a versioned structured transformation
+recipe whose application produces an actual reviewable C source candidate.
+
+## Roadmap Scope
+
+The core track includes:
 
 - Genetic algorithms
 - Tournament and rank-based selection
@@ -20,9 +59,25 @@ Develop a reusable, evidence-driven optimization framework for Catalyst that rep
 - Parallel fitness evaluation
 - Benchmarking and engineering evidence
 
+The source-optimizer track adds:
+
+- C project ingestion and immutable baseline capture
+- Clang AST, LLVM IR, compiler-evidence, and runtime-hotspot analysis
+- Versioned structured source-transformation recipes
+- AST-aware C source transformations and isolated candidate materialization
+- CMake/Clang/LLVM build and correctness gates with independent
+  Autotools/GNU validation
+- Reproducible baseline-versus-candidate performance measurement
+- Bounded parallel compilation, checkpoint/resume, and deterministic replay
+- Reviewable optimized patches and machine-readable evidence bundles
+
 ## Safety Boundary
 
-EVO may optimize bounded configurations and design choices, but evolved candidates must not bypass correctness tests, safety constraints, or validation gates.
+Evolved candidates must not bypass correctness tests, safety constraints, or
+validation gates. Candidate work occurs only in isolated workspaces derived
+from an immutable baseline. EVO may emit a proposed patch, but it must never
+silently modify, commit, push, merge, deploy, or publish into the input
+repository.
 
 ## Repository Layout
 
@@ -32,6 +87,10 @@ EVO may optimize bounded configurations and design choices, but evolved candidat
 - `examples/` — application examples
 - `benchmarks/` — performance and algorithm benchmarks
 - `docs/` — architecture, theory, algorithms, and evidence guidance
+
+The source-optimizer implementation directories will be introduced only by
+their dependency-ordered roadmap issues. Their absence in version 0.16.0 is an
+explicit current boundary, not an implicit feature claim.
 
 ## Authoritative Native Builds
 
@@ -63,7 +122,19 @@ manifests, public symbols, package metadata, and a downstream consumer built
 against each installed result. See
 `docs/engineering/AES-BLD-001-toolchain-profile.md`.
 
+These profiles currently build and validate the C17 core. The source-optimizer
+roadmap separately requires isolated target-project analysis and compilation,
+plus independent validation of a selected source candidate through the
+declared Clang/LLVM and GNU profiles.
+
 ## Status
+
+**Current implementation boundary:** EVO 0.16.0 implements the deterministic
+evolutionary-search core. It does not yet ingest a C project, build a Clang AST
+or LLVM IR model, transform source, compile evolved candidates, or emit an
+optimized source patch. Those product boundaries are tracked in the 1.0
+roadmap beginning with issues #58 through #69. Issue #57 governs the mission
+reconciliation, and issue #56 remains the final 1.0 stabilization gate.
 
 EVO 0.16.0 composes the complete deterministic generation pipeline into a
 bounded public `evo_run`. Generation zero is constructed, initialized,
