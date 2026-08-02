@@ -141,6 +141,7 @@ static bool initial_run_state_is_valid(
         best_result->best_genome == NULL ||
         best_result->generations_completed != 0 ||
         best_result->random_seed != config->random_seed ||
+        best_result->termination_reason != EVO_TERMINATION_NONE ||
         byte_ranges_overlap(parents,
                             sizeof(*parents),
                             best_result,

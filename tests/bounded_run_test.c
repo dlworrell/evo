@@ -48,6 +48,7 @@ static void assert_result_empty(const evo_result_t *result)
     assert(result->best_fitness.total == 0.0);
     assert(result->generations_completed == 0);
     assert(result->random_seed == 0);
+    assert(result->termination_reason == EVO_TERMINATION_NONE);
 }
 
 static void record_event(run_context_t *context,
@@ -180,6 +181,7 @@ static void assert_result(const evo_result_t *result,
                           unsigned char expected_value,
                           double expected_total,
                           size_t expected_generations,
+                          evo_termination_reason_t expected_reason,
                           uint64_t expected_seed)
 {
     assert(result->best_genome != NULL);
@@ -196,6 +198,7 @@ static void assert_result(const evo_result_t *result,
     assert(result->best_fitness.total == expected_total);
     assert(result->generations_completed == expected_generations);
     assert(result->random_seed == expected_seed);
+    assert(result->termination_reason == expected_reason);
 }
 
 static void test_zero_limit_preserves_generation_zero(void)
@@ -211,7 +214,12 @@ static void test_zero_limit_preserves_generation_zero(void)
     config.max_child_population_bytes = 0;
 
     assert(evo_run(&problem, &config, &context, &result) == EVO_SUCCESS);
-    assert_result(&result, 4, 4.0, 0, 101);
+    assert_result(&result,
+                  4,
+                  4.0,
+                  0,
+                  EVO_TERMINATION_GENERATION_LIMIT,
+                  101);
     assert(context.initialization_calls == 4);
     assert(context.mutation_calls == 0);
     assert(context.validation_calls == 4);
@@ -228,7 +236,12 @@ static void test_even_one_transition_improves_best(void)
 
     context.mutation_values[0] = 20;
     assert(evo_run(&problem, &config, &context, &result) == EVO_SUCCESS);
-    assert_result(&result, 20, 20.0, 1, 102);
+    assert_result(&result,
+                  20,
+                  20.0,
+                  1,
+                  EVO_TERMINATION_GENERATION_LIMIT,
+                  102);
     assert(context.initialization_calls == 4);
     assert(context.mutation_calls == 4);
     assert(context.validation_calls == 8);
@@ -256,8 +269,18 @@ static void test_multiple_transitions_replay(void)
            EVO_SUCCESS);
     assert(evo_run(&problem, &config, &second_context, &second) ==
            EVO_SUCCESS);
-    assert_result(&first, 30, 30.0, 3, 103);
-    assert_result(&second, 30, 30.0, 3, 103);
+    assert_result(&first,
+                  30,
+                  30.0,
+                  3,
+                  EVO_TERMINATION_GENERATION_LIMIT,
+                  103);
+    assert_result(&second,
+                  30,
+                  30.0,
+                  3,
+                  EVO_TERMINATION_GENERATION_LIMIT,
+                  103);
     assert(first.best_genome != second.best_genome);
     assert(first_context.initialization_calls ==
            second_context.initialization_calls);
@@ -286,7 +309,12 @@ static void test_cross_generation_tie_preserves_earlier_winner(void)
     context.constant_fitness = true;
     context.mutation_values[0] = 99;
     assert(evo_run(&problem, &config, &context, &result) == EVO_SUCCESS);
-    assert_result(&result, 1, 10.0, 1, 104);
+    assert_result(&result,
+                  1,
+                  10.0,
+                  1,
+                  EVO_TERMINATION_GENERATION_LIMIT,
+                  104);
     evo_result_destroy(&result);
 }
 
@@ -306,7 +334,12 @@ static void test_odd_and_single_member_populations(void)
                    &odd_config,
                    &odd_context,
                    &odd_result) == EVO_SUCCESS);
-    assert_result(&odd_result, 20, 20.0, 1, 105);
+    assert_result(&odd_result,
+                  20,
+                  20.0,
+                  1,
+                  EVO_TERMINATION_GENERATION_LIMIT,
+                  105);
     assert(odd_context.mutation_calls == 2);
 
     single_context.initial_values[0] = 7;
@@ -317,7 +350,12 @@ static void test_odd_and_single_member_populations(void)
                    &single_config,
                    &single_context,
                    &single_result) == EVO_SUCCESS);
-    assert_result(&single_result, 7, 7.0, 2, 106);
+    assert_result(&single_result,
+                  7,
+                  7.0,
+                  2,
+                  EVO_TERMINATION_GENERATION_LIMIT,
+                  106);
     assert(single_context.mutation_calls == 0);
     assert(single_context.validation_calls == 3);
     assert(single_context.evaluation_calls == 3);
@@ -337,7 +375,12 @@ static void test_later_all_invalid_stops_with_earlier_best(void)
     context.rejected_value = 0xee;
     context.mutation_values[0] = 0xee;
     assert(evo_run(&problem, &config, &context, &result) == EVO_SUCCESS);
-    assert_result(&result, 4, 4.0, 1, 107);
+    assert_result(&result,
+                  4,
+                  4.0,
+                  1,
+                  EVO_TERMINATION_ALL_INVALID,
+                  107);
     assert(context.mutation_calls == 4);
     assert(context.validation_calls == 8);
     assert(context.evaluation_calls == 4);
@@ -373,6 +416,7 @@ static void test_transition_preflight_and_active_result(void)
         .best_fitness = {.total = 9.0},
         .generations_completed = 7,
         .random_seed = 55,
+        .termination_reason = EVO_TERMINATION_ALL_INVALID,
     };
 
     config.tournament_size = 0;
@@ -395,6 +439,7 @@ static void test_transition_preflight_and_active_result(void)
     assert(active.best_fitness.total == 9.0);
     assert(active.generations_completed == 7);
     assert(active.random_seed == 55);
+    assert(active.termination_reason == EVO_TERMINATION_ALL_INVALID);
     assert(context.initialization_calls == 0);
 }
 
@@ -450,6 +495,21 @@ static void test_private_bounded_run_evidence(void)
                              best_storage,
                              &best);
 
+    best.termination_reason = EVO_TERMINATION_GENERATION_LIMIT;
+    evidence.population_size = 99;
+    assert(evo_bounded_run_advance(&problem,
+                                   &config,
+                                   &context,
+                                   &population,
+                                   &best,
+                                   &evidence) == EVO_ERROR_STATE);
+    assert(best.termination_reason == EVO_TERMINATION_GENERATION_LIMIT);
+    assert(best.generations_completed == 0);
+    assert(population.source_generation == 0);
+    assert(evidence.population_size == 99);
+    best.termination_reason = EVO_TERMINATION_NONE;
+    evidence = (evo_bounded_run_evidence_t){0};
+
     assert(evo_bounded_run_advance(&problem,
                                    &config,
                                    &context,
@@ -472,7 +532,12 @@ static void test_private_bounded_run_evidence(void)
            EVO_GENERATION_ADVANCEMENT_POLICY_VERSION);
     assert(evidence.policy_version == EVO_BOUNDED_RUN_POLICY_VERSION);
     assert(evidence.complete);
-    assert_result(&best, 20, 20.0, 2, 110);
+    assert_result(&best,
+                  20,
+                  20.0,
+                  2,
+                  EVO_TERMINATION_NONE,
+                  110);
 
     best = (evo_result_t){0};
     evo_population_destroy(&population);

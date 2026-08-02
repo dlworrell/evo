@@ -10,7 +10,7 @@ extern "C" {
 #endif
 
 #define EVO_VERSION_MAJOR 0
-#define EVO_VERSION_MINOR 16
+#define EVO_VERSION_MINOR 17
 #define EVO_VERSION_PATCH 0
 
 typedef enum evo_status {
@@ -23,6 +23,12 @@ typedef enum evo_status {
     EVO_ERROR_EVALUATION = -6,
     EVO_ERROR_NO_VALID_CANDIDATE = -7
 } evo_status_t;
+
+typedef enum evo_termination_reason {
+    EVO_TERMINATION_NONE = 0,
+    EVO_TERMINATION_GENERATION_LIMIT = 1,
+    EVO_TERMINATION_ALL_INVALID = 2
+} evo_termination_reason_t;
 
 typedef struct evo_fitness {
     double correctness;
@@ -83,6 +89,7 @@ typedef struct evo_result {
     evo_fitness_t best_fitness;
     size_t generations_completed;
     uint64_t random_seed;
+    evo_termination_reason_t termination_reason;
 } evo_result_t;
 
 /**
@@ -108,8 +115,10 @@ typedef struct evo_result {
  *
  * A later all-invalid child is promoted and terminates the run successfully
  * while retaining an earlier valid winner. generations_completed records the
- * number of child generations promoted; completion below generation_limit
- * therefore identifies this early all-invalid termination in version 0.16.0.
+ * number of child generations promoted. Every successful call records either
+ * EVO_TERMINATION_GENERATION_LIMIT or EVO_TERMINATION_ALL_INVALID. The
+ * zero-valued EVO_TERMINATION_NONE is reserved for an unstarted, failed, or
+ * destroyed result and is never a successful termination reason.
  */
 evo_status_t evo_run(const evo_problem_t *problem, const evo_config_t *config, void *context, evo_result_t *result);
 

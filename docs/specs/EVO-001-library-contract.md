@@ -1,13 +1,13 @@
 # EVO-001: Evolutionary Optimization Library Contract
 
 Status: Baseline
-Version: 0.16.0
+Version: 0.17.0
 Owner: EVO
 
 ## Scope Boundary
 
 This specification governs the reusable deterministic C17 evolutionary-search
-core implemented through version 0.16.0. It does not define C-project
+core implemented through version 0.17.0. It does not define C-project
 ingestion, Clang/LLVM analysis, structured source transformations, isolated
 candidate builds, baseline-versus-candidate measurement, optimized patches, or
 product-level replay artifacts.
@@ -663,10 +663,10 @@ The bounded-run lifecycle is:
    partial public progress is retained.
 
 The result allocation is created once and is not reallocated during a run.
-Bounded-run policy evidence is private. Version 0.16.0 does not define
-convergence, stagnation, application stop or observer callbacks, generalized
-elitism, adaptive mutation, old-slab recycling, checkpointing, parallelism,
-secure erasure, or a public termination-reason field.
+Bounded-run policy evidence is private. Version 0.17.0 publishes only its
+successful stop classification; it does not define convergence, stagnation,
+application stop or observer callbacks, generalized elitism, adaptive
+mutation, old-slab recycling, checkpointing, parallelism, or secure erasure.
 
 ### Result lifecycle
 
@@ -685,13 +685,17 @@ The lifecycle contract is:
    inactive result in the empty zero state.
 3. On success, the result exclusively owns an independent copy of the highest-
    total valid genome observed through all completed transitions.
-4. Callers may use bounded, non-owning aliases to read or write genome bytes
+4. On success, `termination_reason` is
+   `EVO_TERMINATION_GENERATION_LIMIT` when the configured transition bound
+   completed or `EVO_TERMINATION_ALL_INVALID` when a promoted later child had
+   no valid candidate. `EVO_TERMINATION_NONE` is never a successful reason.
+5. Callers may use bounded, non-owning aliases to read or write genome bytes
    while the result remains alive. An alias may not free or reallocate the
    storage and must not survive result destruction.
-5. `evo_result_destroy` releases the owned allocation and resets every result
+6. `evo_result_destroy` releases the owned allocation and resets every result
    field to zero. Destruction is null-safe and repeatable for initialized
    result objects.
-6. A destroyed result may be passed to `evo_run` again immediately.
+7. A destroyed result may be passed to `evo_run` again immediately.
 
 `evo_result_destroy` does not securely erase genome bytes. Consumers must not
 place secret or cryptographic material in genomes without a separately
@@ -711,6 +715,21 @@ reviewed erasure boundary.
 | `EVO_ERROR_STATE` | A private lifecycle operation received inactive, initialized, or inconsistent state. |
 | `EVO_ERROR_EVALUATION` | A fitness callback returned a non-finite component. |
 | `EVO_ERROR_NO_VALID_CANDIDATE` | Generation-zero evaluation completed, but every candidate was invalid, so no public winner exists. |
+
+### Termination reasons
+
+`evo_termination_reason_t` defines successful outcome evidence separately
+from `evo_status_t`:
+
+| Reason | Meaning |
+|---|---|
+| `EVO_TERMINATION_NONE` | No successful run outcome exists. This is the zero-initialized, failed, and destroyed state. |
+| `EVO_TERMINATION_GENERATION_LIMIT` | Generation zero completed with a zero limit, or every requested child transition completed. |
+| `EVO_TERMINATION_ALL_INVALID` | A later all-invalid child was evaluated, promoted, counted, and ended the run while the earlier global winner was retained. |
+
+The reason is assigned only after all fallible public run work succeeds. It
+does not replace `generations_completed`, which remains the exact quantitative
+transition count.
 
 ### Result fitness
 
@@ -783,7 +802,15 @@ or memory-policy field. It changes `evo_run` behavior for positive
 retains the established generation-zero behavior. Consumers using positive
 limits must provide valid transition policy and `max_child_population_bytes`.
 
-## Current 0.16.0 Conformance Boundary
+Version 0.17.0 adds `evo_termination_reason_t` and appends
+`termination_reason` to `evo_result_t`. Every existing result member retains
+its offset, but `sizeof(evo_result_t)` and array stride change, so consumers
+must rebuild. No public function signature or installed symbol changes. The
+new field classifies the two existing successful stop conditions without
+changing callback order, RNG replay, ownership, selection, generation count,
+or failure behavior.
+
+## Current 0.17.0 Conformance Boundary
 
 The current implementation exposes generation-zero compatibility plus bounded
 multi-generation execution:
@@ -845,15 +872,17 @@ multi-generation execution:
 - public bounded execution validates transition-only policy before callbacks,
   runs ascending transitions, allocates the result once, retains earlier exact
   ties, counts completed promotions, and stops successfully after promoting a
-  later all-invalid child; and
+  later all-invalid child;
+- public success records generation-limit or later-all-invalid termination,
+  while every failure and destruction restores the zero reason; and
 - generalized elitism, adaptive mutation, diversity, convergence, stagnation,
   application stopping and observation, checkpointing, buffer recycling,
-  parallelism, and public termination-reason evidence are not implemented.
+  and parallelism are not implemented.
 
 Consumers may treat `EVO_SUCCESS` as evidence of a valid global winner and
-exactly `generations_completed` promoted child generations. A value below a
-positive configured limit identifies later all-invalid termination in version
-0.16.0; no other public early-stop reason exists.
+exactly `generations_completed` promoted child generations. They must inspect
+`termination_reason` for the successful outcome rather than infer it from the
+count. Version 0.17.0 defines no other public early-stop reason.
 
 ## Verification
 
@@ -929,7 +958,9 @@ The bounded-run test proves zero-limit compatibility; positive-limit policy
 validation before callbacks; even, odd, and one-member execution; deterministic
 multi-transition replay; strict global improvement; earlier-winner exact ties;
 later all-invalid promotion and successful stop; generation-zero all-invalid
-mapping; active-result preservation; and versioned private run evidence. The
+mapping; explicit generation-limit and all-invalid termination reasons;
+active-result preservation; appended result layout; destruction reset; and
+versioned private run evidence. The
 wrapped-allocation test additionally proves the five-allocation bounded path,
 exact successful cleanup, and empty public failure after child-slab or child-
 evaluation allocation failure.
@@ -950,6 +981,8 @@ evaluation allocation failure.
 - `docs/adr/ADR-0013-deterministic-produced-child-evaluation.md`
 - `docs/adr/ADR-0014-atomic-generation-advancement.md`
 - `docs/adr/ADR-0015-bounded-public-multigeneration-run.md`
+- `docs/adr/ADR-0016-layered-source-to-source-c-optimizer.md`
+- `docs/adr/ADR-0017-explicit-public-termination-reason.md`
 - `docs/architecture.md`
 - `docs/algorithms.md`
 - `docs/benchmarks.md`
@@ -971,4 +1004,5 @@ evaluation allocation failure.
 - `https://github.com/dlworrell/evo/issues/32`
 - `https://github.com/dlworrell/evo/issues/34`
 - `https://github.com/dlworrell/evo/issues/36`
+- `https://github.com/dlworrell/evo/issues/39`
 - `https://github.com/dlworrell/AEMS/issues/18`
