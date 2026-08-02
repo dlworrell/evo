@@ -4,6 +4,12 @@
 #include <math.h>
 #include <stdint.h>
 
+_Static_assert(EVO_TERMINATION_NONE == 0,
+               "the termination zero value must remain the empty state");
+_Static_assert(offsetof(evo_result_t, termination_reason) >=
+                   offsetof(evo_result_t, random_seed) + sizeof(uint64_t),
+               "termination evidence must remain appended to evo_result_t");
+
 enum {
     TEST_POPULATION_CAPACITY = 8,
     TEST_EVENT_CAPACITY = 24
@@ -37,6 +43,7 @@ static void assert_completely_empty(const evo_result_t *result)
     assert(result->best_fitness.total == 0.0);
     assert(result->generations_completed == 0);
     assert(result->random_seed == 0);
+    assert(result->termination_reason == EVO_TERMINATION_NONE);
 }
 
 static void assert_results_equal(const evo_result_t *actual,
@@ -58,6 +65,7 @@ static void assert_results_equal(const evo_result_t *actual,
     assert(actual->best_fitness.total == expected->best_fitness.total);
     assert(actual->generations_completed == expected->generations_completed);
     assert(actual->random_seed == expected->random_seed);
+    assert(actual->termination_reason == expected->termination_reason);
 }
 
 static void record_event(lifecycle_context_t *context,
@@ -283,6 +291,7 @@ static void test_generation_zero_execution_and_winner_transfer(void)
     assert(result.best_fitness.total == 8.0);
     assert(result.generations_completed == 0);
     assert(result.random_seed == 42);
+    assert(result.termination_reason == EVO_TERMINATION_GENERATION_LIMIT);
 
     const unsigned char *winner = result.best_genome;
     assert(winner[0] == 2);
@@ -328,6 +337,7 @@ static void test_exact_tie_preserves_lower_index(void)
     assert(result.best_genome != NULL);
     assert(((const unsigned char *)result.best_genome)[0] == 0);
     assert(result.best_fitness.total == 5.0);
+    assert(result.termination_reason == EVO_TERMINATION_GENERATION_LIMIT);
 
     evo_result_destroy(&result);
 }
@@ -386,6 +396,7 @@ static void test_destruction_idempotency(void)
     assert_completely_empty(&result);
 
     assert(evo_run(&problem, &config, NULL, &result) == EVO_SUCCESS);
+    assert(result.termination_reason == EVO_TERMINATION_GENERATION_LIMIT);
     evo_result_destroy(&result);
     assert_completely_empty(&result);
 
@@ -429,6 +440,7 @@ static void test_active_result_rejection_and_reuse(void)
     context.fitness[1] = fitness_with_total(2.0);
     assert(evo_run(&problem, &config, &context, &result) == EVO_SUCCESS);
     assert(result.best_genome != NULL);
+    assert(result.termination_reason == EVO_TERMINATION_GENERATION_LIMIT);
 
     evo_result_destroy(&result);
     assert_completely_empty(&result);

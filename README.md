@@ -89,7 +89,7 @@ repository.
 - `docs/` — architecture, theory, algorithms, and evidence guidance
 
 The source-optimizer implementation directories will be introduced only by
-their dependency-ordered roadmap issues. Their absence in version 0.16.0 is an
+their dependency-ordered roadmap issues. Their absence in version 0.17.0 is an
 explicit current boundary, not an implicit feature claim.
 
 ## Authoritative Native Builds
@@ -129,7 +129,7 @@ declared Clang/LLVM and GNU profiles.
 
 ## Status
 
-**Current implementation boundary:** EVO 0.16.0 implements the deterministic
+**Current implementation boundary:** EVO 0.17.0 implements the deterministic
 evolutionary-search core. It does not yet ingest a C project, build a Clang AST
 or LLVM IR model, transform source, compile evolved candidates, or emit an
 optimized source patch. Those product boundaries are tracked in the 1.0
@@ -147,6 +147,13 @@ A zero limit preserves the established generation-zero-only behavior. Exact
 cross-generation total-fitness ties retain the earlier winner. If a later
 child is all-invalid, that completed child is promoted, the run stops
 successfully, and the earlier valid global winner remains in the result.
+
+EVO 0.17.0 appends `termination_reason` to `evo_result_t`. Every successful
+run now records `EVO_TERMINATION_GENERATION_LIMIT` or
+`EVO_TERMINATION_ALL_INVALID`; `EVO_TERMINATION_NONE` remains the exact
+zero-initialized, failed, and destroyed state. This is explicit outcome
+evidence only: callback order, RNG replay, ownership, winner selection,
+generation counts, and the two existing stopping decisions are unchanged.
 
 Version 0.3.0 added the independently tested private population-storage
 foundation: checked `population_size * genome_size` arithmetic, a
@@ -323,6 +330,11 @@ run transfers exclusive ownership of `best_genome` to that result. Reusing an
 active result is rejected; `evo_result_destroy` releases the allocation,
 resets the full result to zero, and makes it immediately reusable.
 
+`termination_reason` is nonzero only after `EVO_SUCCESS`. It reports whether
+the configured generation limit completed or a later all-invalid generation
+ended the run. Generation-zero all-invalid remains an error and leaves the
+reason as `EVO_TERMINATION_NONE`.
+
 `max_genome_bytes` is a required caller-provided per-genome policy bound.
 `max_population_bytes` separately bounds the private population genome slab,
 `max_evaluation_bytes` bounds private validity and fitness records, and
@@ -349,7 +361,7 @@ operator-stream, pair-production, odd-tail, child-evaluation, and atomic-
 advancement boundaries remain independently verified beneath the bounded
 public loop. Convergence, stagnation, application stop or observer callbacks,
 generalized elitism, adaptive mutation, population recycling, checkpointing,
-parallelism, and a public termination-reason field remain later boundaries.
+and parallelism remain later boundaries.
 
 ## Project Zero
 

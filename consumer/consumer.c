@@ -30,11 +30,15 @@ int main(void)
 
     if (result.best_genome == NULL ||
         result.best_fitness.correctness != 1.0 ||
-        result.best_fitness.total != 1.0) {
+        result.best_fitness.total != 1.0 ||
+        result.termination_reason != EVO_TERMINATION_GENERATION_LIMIT) {
         evo_result_destroy(&result);
         return 1;
     }
 
     evo_result_destroy(&result);
-    return result.best_genome == NULL ? 0 : 1;
+    return result.best_genome == NULL &&
+                   result.termination_reason == EVO_TERMINATION_NONE
+               ? 0
+               : 1;
 }

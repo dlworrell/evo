@@ -116,6 +116,10 @@ evo_status_t evo_run(const evo_problem_t *problem, const evo_config_t *config, v
         return status;
     }
 
+    result->termination_reason = run_evidence.stopped_all_invalid
+                                     ? EVO_TERMINATION_ALL_INVALID
+                                     : EVO_TERMINATION_GENERATION_LIMIT;
+
     return EVO_SUCCESS;
 }
 

@@ -2,7 +2,7 @@
 
 This document distinguishes algorithms implemented by the reusable
 `catalyst_evo` core from the structured program transformations and evaluation
-algorithm required by the EVO 1.0 source optimizer. Version 0.16.0 implements
+algorithm required by the EVO 1.0 source optimizer. Version 0.17.0 implements
 only the core boundary described below.
 
 ## EVO Core Initial Release
@@ -396,7 +396,14 @@ This algorithm has a bounded sequential working set of one current population,
 one child population, one result genome, and the current population's
 evaluation records plus provisional child evaluation records during child
 evaluation. It does not recycle slabs, run callbacks concurrently, infer
-convergence, or expose a public termination reason.
+convergence, or infer any stop beyond the two existing conditions.
+
+Version 0.17.0 maps successful completion to explicit result evidence after
+all fallible run work succeeds. Exhausting the configured transition bound
+records `EVO_TERMINATION_GENERATION_LIMIT`; promoting a later all-invalid
+child records `EVO_TERMINATION_ALL_INVALID`. Failure and destruction retain
+the zero-valued `EVO_TERMINATION_NONE`. This mapping consumes no RNG, invokes
+no callback, and changes no generation transition or winner.
 
 ## Structured C Source Evolution
 

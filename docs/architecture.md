@@ -22,7 +22,7 @@ patch/evidence artifacts.
 `catalyst_evo` owns deterministic population storage, random streams,
 selection, crossover, mutation dispatch, validation/evaluation ordering,
 generation advancement, stopping, and core result ownership. EVO-001 is its
-normative contract. Version 0.16.0 implements a bounded multi-generation
+normative contract. Version 0.17.0 implements a bounded multi-generation
 subset of this layer.
 
 ### Source analysis and transformation
@@ -63,7 +63,7 @@ project patch automatically.
 
 ## Current Conformance Boundary
 
-Only the evolutionary-search core exists in version 0.16.0. Source ingestion,
+Only the evolutionary-search core exists in version 0.17.0. Source ingestion,
 analysis, transformation, candidate materialization, external-process
 isolation, target-code measurement, product commands, and optimized-patch
 artifacts are planned by issues #58 through #69. Documentation of those
@@ -399,10 +399,17 @@ the earlier valid global winner remains. Any other failure destroys the child,
 current parent, and public result allocation before returning an empty public
 result. Partial progress is never exposed through `evo_run`.
 
+Version 0.17.0 appends explicit public termination evidence after the existing
+result fields. Successful limit completion records
+`EVO_TERMINATION_GENERATION_LIMIT`; successful termination after a promoted
+all-invalid child records `EVO_TERMINATION_ALL_INVALID`. The zero-valued
+`EVO_TERMINATION_NONE` identifies an unstarted, failed, or destroyed result.
+The reason is assigned only after the bounded operation and cleanup succeed.
+
 Bounded-run policy evidence remains private. Convergence, stagnation,
-application stop and observer callbacks, a public termination-reason field,
-generalized elitism, adaptive mutation, recycling, checkpointing, and
-parallelism remain separate decisions.
+application stop and observer callbacks, generalized elitism, adaptive
+mutation, recycling, checkpointing, and parallelism remain separate
+decisions.
 
 ## EVO Core Execution Flow
 
@@ -414,11 +421,12 @@ parallelism remain separate decisions.
 6. Record statistics and evidence.
 7. Stop on convergence, stagnation, generation limit, or an application-defined condition.
 
-Version 0.16.0 publicly implements steps 1 through 4 for exactly
+Version 0.17.0 publicly implements steps 1 through 4 for exactly
 `generation_limit` bounded transitions, with the version-1 odd-tail policy as
 the current elite-preservation rule in step 5. It records the global winner and
-completed transition count as result evidence. The configured limit and later
-all-invalid extinction are the only public stop conditions. Diversity,
+completed transition count as result evidence and explicitly identifies limit
+completion or later all-invalid extinction. Those remain the only public stop
+conditions. Diversity,
 convergence, stagnation, application-defined stopping, statistics observers,
 checkpointing, and parallel evaluation remain absent.
 

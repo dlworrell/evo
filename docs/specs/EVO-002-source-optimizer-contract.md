@@ -15,7 +15,7 @@ search as a reviewable patch and reproducibility package.
 
 This specification defines the product layer above the reusable C17
 evolutionary-search core governed by EVO-001. Nothing in this draft claims that
-the source optimizer is implemented in version 0.16.0.
+the source optimizer is implemented in version 0.17.0.
 
 ## Claim Boundary
 
@@ -276,4 +276,3 @@ that proof passes and all non-deferred roadmap requirements are reconciled.
 - `docs/benchmarks.md`
 - `docs/roadmap.md`
 - GitHub issues #38 and #56 through #69
-

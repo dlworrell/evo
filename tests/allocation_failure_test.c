@@ -45,6 +45,7 @@ static void assert_completely_empty(const evo_result_t *result)
     assert(result->best_fitness.total == 0.0);
     assert(result->generations_completed == 0);
     assert(result->random_seed == 0);
+    assert(result->termination_reason == EVO_TERMINATION_NONE);
 }
 
 static evo_fitness_t deterministic_evaluator(const void *genome,
@@ -157,6 +158,7 @@ int main(void)
     reset_allocation_injection(0);
     assert(evo_run(&problem, &config, NULL, &result) == EVO_SUCCESS);
     assert(allocation_calls == 3);
+    assert(result.termination_reason == EVO_TERMINATION_GENERATION_LIMIT);
     evo_result_destroy(&result);
     assert_completely_empty(&result);
 
@@ -180,6 +182,8 @@ int main(void)
         assert(release_calls == releases_before_run + 4);
         assert(result.best_genome != NULL);
         assert(result.generations_completed == 1);
+        assert(result.termination_reason ==
+               EVO_TERMINATION_GENERATION_LIMIT);
         evo_result_destroy(&result);
         assert(release_calls == releases_before_run + 5);
         assert_completely_empty(&result);
