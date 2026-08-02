@@ -3,6 +3,7 @@
 #include "internal/child_evaluation.h"
 #include "internal/child_pair.h"
 #include "internal/population_storage.h"
+#include "internal/statistics.h"
 
 #include <assert.h>
 #include <math.h>
@@ -49,6 +50,15 @@ static void assert_result_empty(const evo_result_t *result)
     assert(result->generations_completed == 0);
     assert(result->random_seed == 0);
     assert(result->termination_reason == EVO_TERMINATION_NONE);
+    assert(result->generation_statistics.version == 0);
+    assert(result->generation_statistics.generation_index == 0);
+    assert(result->generation_statistics.population_size == 0);
+    assert(result->generation_statistics.valid_count == 0);
+    assert(result->generation_statistics.invalid_count == 0);
+    assert(result->generation_statistics.best_index == 0);
+    assert(result->generation_statistics.best_fitness.total == 0.0);
+    assert(result->generation_statistics.fitness_sums.total == 0.0);
+    assert(!result->generation_statistics.has_best);
 }
 
 static void record_event(run_context_t *context,
@@ -201,6 +211,48 @@ static void assert_result(const evo_result_t *result,
     assert(result->termination_reason == expected_reason);
 }
 
+static void assert_generation_statistics(
+    const evo_result_t *result,
+    size_t population_size,
+    size_t valid_count,
+    size_t best_index,
+    double best_total,
+    double total_sum)
+{
+    const evo_generation_statistics_t *statistics =
+        &result->generation_statistics;
+    const double valid = (double)valid_count;
+
+    assert(statistics->version == EVO_GENERATION_STATISTICS_VERSION);
+    assert(statistics->generation_index == result->generations_completed);
+    assert(statistics->population_size == population_size);
+    assert(statistics->valid_count == valid_count);
+    assert(statistics->invalid_count == population_size - valid_count);
+    assert(statistics->has_best == (valid_count != 0));
+    assert(statistics->best_index == best_index);
+    assert(statistics->fitness_sums.correctness == total_sum + valid);
+    assert(statistics->fitness_sums.performance == total_sum + 2.0 * valid);
+    assert(statistics->fitness_sums.memory_use == total_sum + 3.0 * valid);
+    assert(statistics->fitness_sums.reliability == total_sum + 4.0 * valid);
+    assert(statistics->fitness_sums.maintainability == total_sum + 5.0 * valid);
+    assert(statistics->fitness_sums.constraint_penalty ==
+           total_sum + 6.0 * valid);
+    assert(statistics->fitness_sums.total == total_sum);
+
+    if (valid_count == 0) {
+        assert(statistics->best_fitness.total == 0.0);
+    } else {
+        assert(statistics->best_fitness.correctness == best_total + 1.0);
+        assert(statistics->best_fitness.performance == best_total + 2.0);
+        assert(statistics->best_fitness.memory_use == best_total + 3.0);
+        assert(statistics->best_fitness.reliability == best_total + 4.0);
+        assert(statistics->best_fitness.maintainability == best_total + 5.0);
+        assert(statistics->best_fitness.constraint_penalty ==
+               best_total + 6.0);
+        assert(statistics->best_fitness.total == best_total);
+    }
+}
+
 static void test_zero_limit_preserves_generation_zero(void)
 {
     evo_problem_t problem = make_problem(4);
@@ -220,6 +272,7 @@ static void test_zero_limit_preserves_generation_zero(void)
                   0,
                   EVO_TERMINATION_GENERATION_LIMIT,
                   101);
+    assert_generation_statistics(&result, 4, 4, 3, 4.0, 10.0);
     assert(context.initialization_calls == 4);
     assert(context.mutation_calls == 0);
     assert(context.validation_calls == 4);
@@ -242,6 +295,7 @@ static void test_even_one_transition_improves_best(void)
                   1,
                   EVO_TERMINATION_GENERATION_LIMIT,
                   102);
+    assert_generation_statistics(&result, 4, 4, 0, 20.0, 80.0);
     assert(context.initialization_calls == 4);
     assert(context.mutation_calls == 4);
     assert(context.validation_calls == 8);
@@ -281,6 +335,8 @@ static void test_multiple_transitions_replay(void)
                   3,
                   EVO_TERMINATION_GENERATION_LIMIT,
                   103);
+    assert_generation_statistics(&first, 4, 4, 0, 30.0, 120.0);
+    assert_generation_statistics(&second, 4, 4, 0, 30.0, 120.0);
     assert(first.best_genome != second.best_genome);
     assert(first_context.initialization_calls ==
            second_context.initialization_calls);
@@ -315,6 +371,7 @@ static void test_cross_generation_tie_preserves_earlier_winner(void)
                   1,
                   EVO_TERMINATION_GENERATION_LIMIT,
                   104);
+    assert_generation_statistics(&result, 4, 4, 0, 10.0, 40.0);
     evo_result_destroy(&result);
 }
 
@@ -340,6 +397,7 @@ static void test_odd_and_single_member_populations(void)
                   1,
                   EVO_TERMINATION_GENERATION_LIMIT,
                   105);
+    assert_generation_statistics(&odd_result, 3, 3, 0, 20.0, 43.0);
     assert(odd_context.mutation_calls == 2);
 
     single_context.initial_values[0] = 7;
@@ -356,6 +414,7 @@ static void test_odd_and_single_member_populations(void)
                   2,
                   EVO_TERMINATION_GENERATION_LIMIT,
                   106);
+    assert_generation_statistics(&single_result, 1, 1, 0, 7.0, 7.0);
     assert(single_context.mutation_calls == 0);
     assert(single_context.validation_calls == 3);
     assert(single_context.evaluation_calls == 3);
@@ -381,6 +440,7 @@ static void test_later_all_invalid_stops_with_earlier_best(void)
                   1,
                   EVO_TERMINATION_ALL_INVALID,
                   107);
+    assert_generation_statistics(&result, 4, 0, 0, 0.0, 0.0);
     assert(context.mutation_calls == 4);
     assert(context.validation_calls == 8);
     assert(context.evaluation_calls == 4);
@@ -417,6 +477,7 @@ static void test_transition_preflight_and_active_result(void)
         .generations_completed = 7,
         .random_seed = 55,
         .termination_reason = EVO_TERMINATION_ALL_INVALID,
+        .generation_statistics = {.version = UINT32_C(77)},
     };
 
     config.tournament_size = 0;
@@ -440,6 +501,7 @@ static void test_transition_preflight_and_active_result(void)
     assert(active.generations_completed == 7);
     assert(active.random_seed == 55);
     assert(active.termination_reason == EVO_TERMINATION_ALL_INVALID);
+    assert(active.generation_statistics.version == UINT32_C(77));
     assert(context.initialization_calls == 0);
 }
 
@@ -465,6 +527,10 @@ static void snapshot_generation_zero(
     result->best_genome = storage;
     result->best_fitness = evaluation->fitness;
     result->random_seed = config->random_seed;
+    assert(evo_generation_statistics_record(population,
+                                            UINT64_C(0),
+                                            &result->generation_statistics) ==
+           EVO_SUCCESS);
 }
 
 static void test_private_bounded_run_evidence(void)
@@ -508,6 +574,20 @@ static void test_private_bounded_run_evidence(void)
     assert(population.source_generation == 0);
     assert(evidence.population_size == 99);
     best.termination_reason = EVO_TERMINATION_NONE;
+    best.generation_statistics.version = UINT32_C(99);
+    evidence.population_size = 98;
+    assert(evo_bounded_run_advance(&problem,
+                                   &config,
+                                   &context,
+                                   &population,
+                                   &best,
+                                   &evidence) == EVO_ERROR_STATE);
+    assert(best.generation_statistics.version == UINT32_C(99));
+    assert(best.generations_completed == 0);
+    assert(population.source_generation == 0);
+    assert(evidence.population_size == 98);
+    best.generation_statistics.version =
+        EVO_GENERATION_STATISTICS_VERSION;
     evidence = (evo_bounded_run_evidence_t){0};
 
     assert(evo_bounded_run_advance(&problem,
@@ -538,6 +618,7 @@ static void test_private_bounded_run_evidence(void)
                   2,
                   EVO_TERMINATION_NONE,
                   110);
+    assert_generation_statistics(&best, 2, 2, 0, 20.0, 40.0);
 
     best = (evo_result_t){0};
     evo_population_destroy(&population);

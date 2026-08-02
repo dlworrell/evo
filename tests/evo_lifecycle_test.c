@@ -9,6 +9,10 @@ _Static_assert(EVO_TERMINATION_NONE == 0,
 _Static_assert(offsetof(evo_result_t, termination_reason) >=
                    offsetof(evo_result_t, random_seed) + sizeof(uint64_t),
                "termination evidence must remain appended to evo_result_t");
+_Static_assert(offsetof(evo_result_t, generation_statistics) >=
+                   offsetof(evo_result_t, termination_reason) +
+                       sizeof(evo_termination_reason_t),
+               "generation statistics must remain appended to evo_result_t");
 
 enum {
     TEST_POPULATION_CAPACITY = 8,
@@ -44,6 +48,17 @@ static void assert_completely_empty(const evo_result_t *result)
     assert(result->generations_completed == 0);
     assert(result->random_seed == 0);
     assert(result->termination_reason == EVO_TERMINATION_NONE);
+    assert(result->generation_statistics.version == 0);
+    assert(result->generation_statistics.generation_index == 0);
+    assert(result->generation_statistics.population_size == 0);
+    assert(result->generation_statistics.valid_count == 0);
+    assert(result->generation_statistics.invalid_count == 0);
+    assert(result->generation_statistics.best_index == 0);
+    assert(result->generation_statistics.best_fitness.correctness == 0.0);
+    assert(result->generation_statistics.best_fitness.total == 0.0);
+    assert(result->generation_statistics.fitness_sums.correctness == 0.0);
+    assert(result->generation_statistics.fitness_sums.total == 0.0);
+    assert(!result->generation_statistics.has_best);
 }
 
 static void assert_results_equal(const evo_result_t *actual,
@@ -66,6 +81,24 @@ static void assert_results_equal(const evo_result_t *actual,
     assert(actual->generations_completed == expected->generations_completed);
     assert(actual->random_seed == expected->random_seed);
     assert(actual->termination_reason == expected->termination_reason);
+    assert(actual->generation_statistics.version ==
+           expected->generation_statistics.version);
+    assert(actual->generation_statistics.generation_index ==
+           expected->generation_statistics.generation_index);
+    assert(actual->generation_statistics.population_size ==
+           expected->generation_statistics.population_size);
+    assert(actual->generation_statistics.valid_count ==
+           expected->generation_statistics.valid_count);
+    assert(actual->generation_statistics.invalid_count ==
+           expected->generation_statistics.invalid_count);
+    assert(actual->generation_statistics.best_index ==
+           expected->generation_statistics.best_index);
+    assert(actual->generation_statistics.best_fitness.total ==
+           expected->generation_statistics.best_fitness.total);
+    assert(actual->generation_statistics.fitness_sums.total ==
+           expected->generation_statistics.fitness_sums.total);
+    assert(actual->generation_statistics.has_best ==
+           expected->generation_statistics.has_best);
 }
 
 static void record_event(lifecycle_context_t *context,
@@ -292,6 +325,23 @@ static void test_generation_zero_execution_and_winner_transfer(void)
     assert(result.generations_completed == 0);
     assert(result.random_seed == 42);
     assert(result.termination_reason == EVO_TERMINATION_GENERATION_LIMIT);
+    assert(result.generation_statistics.version ==
+           EVO_GENERATION_STATISTICS_VERSION);
+    assert(result.generation_statistics.generation_index == 0);
+    assert(result.generation_statistics.population_size == 4);
+    assert(result.generation_statistics.valid_count == 3);
+    assert(result.generation_statistics.invalid_count == 1);
+    assert(result.generation_statistics.best_index == 2);
+    assert(result.generation_statistics.best_fitness.total == 8.0);
+    assert(result.generation_statistics.fitness_sums.correctness == 20.0);
+    assert(result.generation_statistics.fitness_sums.performance == 23.0);
+    assert(result.generation_statistics.fitness_sums.memory_use == 26.0);
+    assert(result.generation_statistics.fitness_sums.reliability == 29.0);
+    assert(result.generation_statistics.fitness_sums.maintainability == 32.0);
+    assert(result.generation_statistics.fitness_sums.constraint_penalty ==
+           35.0);
+    assert(result.generation_statistics.fitness_sums.total == 17.0);
+    assert(result.generation_statistics.has_best);
 
     const unsigned char *winner = result.best_genome;
     assert(winner[0] == 2);
@@ -338,6 +388,11 @@ static void test_exact_tie_preserves_lower_index(void)
     assert(((const unsigned char *)result.best_genome)[0] == 0);
     assert(result.best_fitness.total == 5.0);
     assert(result.termination_reason == EVO_TERMINATION_GENERATION_LIMIT);
+    assert(result.generation_statistics.population_size == 3);
+    assert(result.generation_statistics.valid_count == 3);
+    assert(result.generation_statistics.best_index == 0);
+    assert(result.generation_statistics.best_fitness.total == 5.0);
+    assert(result.generation_statistics.fitness_sums.total == 15.0);
 
     evo_result_destroy(&result);
 }

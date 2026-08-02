@@ -1,13 +1,13 @@
 # EVO-001: Evolutionary Optimization Library Contract
 
 Status: Baseline
-Version: 0.17.0
+Version: 0.18.0
 Owner: EVO
 
 ## Scope Boundary
 
 This specification governs the reusable deterministic C17 evolutionary-search
-core implemented through version 0.17.0. It does not define C-project
+core implemented through version 0.18.0. It does not define C-project
 ingestion, Clang/LLVM analysis, structured source transformations, isolated
 candidate builds, baseline-versus-candidate measurement, optimized patches, or
 product-level replay artifacts.
@@ -664,9 +664,11 @@ The bounded-run lifecycle is:
 
 The result allocation is created once and is not reallocated during a run.
 Bounded-run policy evidence is private. Version 0.17.0 publishes only its
-successful stop classification; it does not define convergence, stagnation,
-application stop or observer callbacks, generalized elitism, adaptive
-mutation, old-slab recycling, checkpointing, parallelism, or secure erasure.
+successful stop classification. Version 0.18.0 additionally retains one
+constant-space statistics record for the most recently committed generation;
+it does not retain history or define convergence, stagnation, application stop
+or observer callbacks, generalized elitism, adaptive mutation, old-slab
+recycling, checkpointing, parallelism, or secure erasure.
 
 ### Result lifecycle
 
@@ -689,13 +691,16 @@ The lifecycle contract is:
    `EVO_TERMINATION_GENERATION_LIMIT` when the configured transition bound
    completed or `EVO_TERMINATION_ALL_INVALID` when a promoted later child had
    no valid candidate. `EVO_TERMINATION_NONE` is never a successful reason.
-5. Callers may use bounded, non-owning aliases to read or write genome bytes
+5. On success, `generation_statistics` describes the most recently committed
+   population. Generation zero and every promoted child replace the record in
+   constant space; no history allocation scales with `generation_limit`.
+6. Callers may use bounded, non-owning aliases to read or write genome bytes
    while the result remains alive. An alias may not free or reallocate the
    storage and must not survive result destruction.
-6. `evo_result_destroy` releases the owned allocation and resets every result
+7. `evo_result_destroy` releases the owned allocation and resets every result
    field to zero. Destruction is null-safe and repeatable for initialized
    result objects.
-7. A destroyed result may be passed to `evo_run` again immediately.
+8. A destroyed result may be passed to `evo_run` again immediately.
 
 `evo_result_destroy` does not securely erase genome bytes. Consumers must not
 place secret or cryptographic material in genomes without a separately
@@ -713,7 +718,7 @@ reviewed erasure boundary.
 | `EVO_ERROR_RESULT_ACTIVE` | The result already owns a genome and is preserved unchanged. |
 | `EVO_ERROR_RESOURCE_LIMIT` | A required size is zero, arithmetic overflows, or a caller budget is exceeded. |
 | `EVO_ERROR_STATE` | A private lifecycle operation received inactive, initialized, or inconsistent state. |
-| `EVO_ERROR_EVALUATION` | A fitness callback returned a non-finite component. |
+| `EVO_ERROR_EVALUATION` | A fitness callback returned a non-finite component, or a fixed-order statistics component sum became non-finite. |
 | `EVO_ERROR_NO_VALID_CANDIDATE` | Generation-zero evaluation completed, but every candidate was invalid, so no public winner exists. |
 
 ### Termination reasons
@@ -730,6 +735,39 @@ from `evo_status_t`:
 The reason is assigned only after all fallible public run work succeeds. It
 does not replace `generations_completed`, which remains the exact quantitative
 transition count.
+
+### Generation statistics
+
+`EVO_GENERATION_STATISTICS_VERSION` is `1`. A successful active result retains
+one `evo_generation_statistics_t` for the most recently committed generation:
+
+| Field | Meaning |
+|---|---|
+| `version` | Statistics schema and aggregation-policy version. Zero exists only in an empty result. |
+| `generation_index` | Zero for the initialized baseline; otherwise the promoted child generation. |
+| `population_size` | Exact number of candidates in the committed population. |
+| `valid_count` | Candidates admitted by `is_valid` and evaluated. |
+| `invalid_count` | `population_size - valid_count`. |
+| `best_index` | Stable generation-local best index, or zero when no valid candidate exists. |
+| `best_fitness` | Complete generation-local stable-best fitness, or all zeros when no best exists. |
+| `fitness_sums` | Component-wise sums over valid evaluated candidates only. |
+| `has_best` | Whether the generation contains a valid evaluated candidate. |
+
+Aggregation policy version 1 traverses candidates in ascending index. Invalid
+records contribute only to `invalid_count`; their fitness payloads are never
+read. Each valid finite component is added to a `double` accumulator beginning
+at positive zero. No reassociation, compensation, weighting, averaging,
+normalization, or parallel reduction is permitted. A non-finite valid component
+or intermediate sum returns `EVO_ERROR_EVALUATION` and the public result follows
+the complete empty-failure contract.
+
+Statistics copy the stable generation-local best already established by
+population evaluation and never rank or mutate candidates. A child record is
+computed before promotion but replaces the result record only after promotion
+succeeds. A terminal all-invalid child therefore has zero sums and no local
+best while the separate result allocation retains the earlier global winner.
+Only the latest record is retained; version 0.18.0 defines no history ownership
+or observer callback.
 
 ### Result fitness
 
@@ -810,7 +848,15 @@ new field classifies the two existing successful stop conditions without
 changing callback order, RNG replay, ownership, selection, generation count,
 or failure behavior.
 
-## Current 0.17.0 Conformance Boundary
+Version 0.18.0 adds `evo_generation_statistics_t` and appends
+`generation_statistics` after `termination_reason` in `evo_result_t`. Every
+pre-0.18.0 result member retains its offset, but `sizeof(evo_result_t)` and
+array stride change again, so consumers must rebuild. No public function
+signature, installed symbol, configuration field, or allocation budget changes.
+The appended value retains only the latest committed generation and therefore
+does not add history ownership proportional to `generation_limit`.
+
+## Current 0.18.0 Conformance Boundary
 
 The current implementation exposes generation-zero compatibility plus bounded
 multi-generation execution:
@@ -874,7 +920,13 @@ multi-generation execution:
   ties, counts completed promotions, and stops successfully after promoting a
   later all-invalid child;
 - public success records generation-limit or later-all-invalid termination,
-  while every failure and destruction restores the zero reason; and
+  while every failure and destruction restores the zero reason;
+- generation zero and each promoted child receive versioned fixed-order
+  statistics over valid records, with the terminal record retained in constant
+  result space;
+- invalid fitness payloads are excluded from statistics, finite component sums
+  are checked, and statistics never change stable-best or global-winner
+  selection; and
 - generalized elitism, adaptive mutation, diversity, convergence, stagnation,
   application stopping and observation, checkpointing, buffer recycling,
   and parallelism are not implemented.
@@ -882,7 +934,10 @@ multi-generation execution:
 Consumers may treat `EVO_SUCCESS` as evidence of a valid global winner and
 exactly `generations_completed` promoted child generations. They must inspect
 `termination_reason` for the successful outcome rather than infer it from the
-count. Version 0.17.0 defines no other public early-stop reason.
+count. They may inspect `generation_statistics` for the final committed
+population, which is distinct from the global winner on all-invalid
+termination. Version 0.18.0 defines no other public early-stop reason and no
+statistics history or observer callback.
 
 ## Verification
 
@@ -954,13 +1009,22 @@ release test also proves that advancement succeeds while the next allocator
 call is forced to fail and releases exactly the two former-parent allocations,
 confirming the transition's allocation-free single-owner contract.
 
+The generation-statistics test locks schema version 1 and golden vectors for
+even, odd, one-member, tied, mixed-validity, and all-invalid populations. It
+poisons invalid fitness payloads with non-finite values to prove they are not
+read, verifies fixed-order component sums and stable generation-local best
+evidence, and proves malformed state, non-finite valid fitness, and aggregate
+overflow reject without modifying caller output.
+
 The bounded-run test proves zero-limit compatibility; positive-limit policy
 validation before callbacks; even, odd, and one-member execution; deterministic
 multi-transition replay; strict global improvement; earlier-winner exact ties;
 later all-invalid promotion and successful stop; generation-zero all-invalid
 mapping; explicit generation-limit and all-invalid termination reasons;
 active-result preservation; appended result layout; destruction reset; and
-versioned private run evidence. The
+versioned private run evidence. It also proves generation-zero, promoted,
+replay, odd-tail, one-member, tied, and terminal all-invalid statistics, plus
+private rejection of mismatched generation-zero statistics. The
 wrapped-allocation test additionally proves the five-allocation bounded path,
 exact successful cleanup, and empty public failure after child-slab or child-
 evaluation allocation failure.
@@ -983,6 +1047,7 @@ evaluation allocation failure.
 - `docs/adr/ADR-0015-bounded-public-multigeneration-run.md`
 - `docs/adr/ADR-0016-layered-source-to-source-c-optimizer.md`
 - `docs/adr/ADR-0017-explicit-public-termination-reason.md`
+- `docs/adr/ADR-0018-bounded-generation-statistics.md`
 - `docs/architecture.md`
 - `docs/algorithms.md`
 - `docs/benchmarks.md`
@@ -1005,4 +1070,5 @@ evaluation allocation failure.
 - `https://github.com/dlworrell/evo/issues/34`
 - `https://github.com/dlworrell/evo/issues/36`
 - `https://github.com/dlworrell/evo/issues/39`
+- `https://github.com/dlworrell/evo/issues/40`
 - `https://github.com/dlworrell/AEMS/issues/18`

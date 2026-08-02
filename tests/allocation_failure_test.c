@@ -46,6 +46,15 @@ static void assert_completely_empty(const evo_result_t *result)
     assert(result->generations_completed == 0);
     assert(result->random_seed == 0);
     assert(result->termination_reason == EVO_TERMINATION_NONE);
+    assert(result->generation_statistics.version == 0);
+    assert(result->generation_statistics.generation_index == 0);
+    assert(result->generation_statistics.population_size == 0);
+    assert(result->generation_statistics.valid_count == 0);
+    assert(result->generation_statistics.invalid_count == 0);
+    assert(result->generation_statistics.best_index == 0);
+    assert(result->generation_statistics.best_fitness.total == 0.0);
+    assert(result->generation_statistics.fitness_sums.total == 0.0);
+    assert(!result->generation_statistics.has_best);
 }
 
 static evo_fitness_t deterministic_evaluator(const void *genome,
@@ -159,6 +168,15 @@ int main(void)
     assert(evo_run(&problem, &config, NULL, &result) == EVO_SUCCESS);
     assert(allocation_calls == 3);
     assert(result.termination_reason == EVO_TERMINATION_GENERATION_LIMIT);
+    assert(result.generation_statistics.version ==
+           EVO_GENERATION_STATISTICS_VERSION);
+    assert(result.generation_statistics.generation_index == 0);
+    assert(result.generation_statistics.population_size == 10);
+    assert(result.generation_statistics.valid_count == 10);
+    assert(result.generation_statistics.invalid_count == 0);
+    assert(result.generation_statistics.best_index == 0);
+    assert(result.generation_statistics.fitness_sums.total == 10.0);
+    assert(result.generation_statistics.has_best);
     evo_result_destroy(&result);
     assert_completely_empty(&result);
 
@@ -184,6 +202,10 @@ int main(void)
         assert(result.generations_completed == 1);
         assert(result.termination_reason ==
                EVO_TERMINATION_GENERATION_LIMIT);
+        assert(result.generation_statistics.generation_index == 1);
+        assert(result.generation_statistics.population_size == 10);
+        assert(result.generation_statistics.valid_count == 10);
+        assert(result.generation_statistics.fitness_sums.total == 10.0);
         evo_result_destroy(&result);
         assert(release_calls == releases_before_run + 5);
         assert_completely_empty(&result);

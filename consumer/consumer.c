@@ -31,14 +31,25 @@ int main(void)
     if (result.best_genome == NULL ||
         result.best_fitness.correctness != 1.0 ||
         result.best_fitness.total != 1.0 ||
-        result.termination_reason != EVO_TERMINATION_GENERATION_LIMIT) {
+        result.termination_reason != EVO_TERMINATION_GENERATION_LIMIT ||
+        result.generation_statistics.version !=
+            EVO_GENERATION_STATISTICS_VERSION ||
+        result.generation_statistics.generation_index != 0 ||
+        result.generation_statistics.population_size != 1 ||
+        result.generation_statistics.valid_count != 1 ||
+        result.generation_statistics.invalid_count != 0 ||
+        result.generation_statistics.best_index != 0 ||
+        result.generation_statistics.best_fitness.total != 1.0 ||
+        result.generation_statistics.fitness_sums.total != 1.0 ||
+        !result.generation_statistics.has_best) {
         evo_result_destroy(&result);
         return 1;
     }
 
     evo_result_destroy(&result);
     return result.best_genome == NULL &&
-                   result.termination_reason == EVO_TERMINATION_NONE
+                   result.termination_reason == EVO_TERMINATION_NONE &&
+                   result.generation_statistics.version == 0
                ? 0
                : 1;
 }

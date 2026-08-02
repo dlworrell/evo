@@ -10,7 +10,7 @@ extern "C" {
 #endif
 
 #define EVO_VERSION_MAJOR 0
-#define EVO_VERSION_MINOR 17
+#define EVO_VERSION_MINOR 18
 #define EVO_VERSION_PATCH 0
 
 typedef enum evo_status {
@@ -39,6 +39,26 @@ typedef struct evo_fitness {
     double constraint_penalty;
     double total;
 } evo_fitness_t;
+
+#define EVO_GENERATION_STATISTICS_VERSION UINT32_C(1)
+
+/*
+ * Constant-space evidence for one committed generation. fitness_sums is the
+ * component-wise sum of valid evaluated candidates in ascending population
+ * index. Invalid fitness payloads are excluded. has_best is false, best_index
+ * is zero, and best_fitness is zero when valid_count is zero.
+ */
+typedef struct evo_generation_statistics {
+    uint32_t version;
+    uint64_t generation_index;
+    size_t population_size;
+    size_t valid_count;
+    size_t invalid_count;
+    size_t best_index;
+    evo_fitness_t best_fitness;
+    evo_fitness_t fitness_sums;
+    bool has_best;
+} evo_generation_statistics_t;
 
 typedef struct evo_problem {
     size_t genome_size;
@@ -90,6 +110,7 @@ typedef struct evo_result {
     size_t generations_completed;
     uint64_t random_seed;
     evo_termination_reason_t termination_reason;
+    evo_generation_statistics_t generation_statistics;
 } evo_result_t;
 
 /**
@@ -118,7 +139,9 @@ typedef struct evo_result {
  * number of child generations promoted. Every successful call records either
  * EVO_TERMINATION_GENERATION_LIMIT or EVO_TERMINATION_ALL_INVALID. The
  * zero-valued EVO_TERMINATION_NONE is reserved for an unstarted, failed, or
- * destroyed result and is never a successful termination reason.
+ * destroyed result and is never a successful termination reason. The result
+ * also retains one versioned, constant-space statistics record for the most
+ * recently committed generation. It does not allocate generation history.
  */
 evo_status_t evo_run(const evo_problem_t *problem, const evo_config_t *config, void *context, evo_result_t *result);
 
