@@ -1,13 +1,13 @@
 # EVO-001: Evolutionary Optimization Library Contract
 
 Status: Baseline
-Version: 0.18.0
+Version: 0.19.0
 Owner: EVO
 
 ## Scope Boundary
 
 This specification governs the reusable deterministic C17 evolutionary-search
-core implemented through version 0.18.0. It does not define C-project
+core implemented through version 0.19.0. It does not define C-project
 ingestion, Clang/LLVM analysis, structured source transformations, isolated
 candidate builds, baseline-versus-candidate measurement, optimized patches, or
 product-level replay artifacts.
@@ -46,7 +46,9 @@ records an additional source of variation.
 `evo_config_t` records population size, generation limit, tournament size,
 crossover rate, mutation rate, random seed, `max_genome_bytes`,
 `max_population_bytes`, `max_evaluation_bytes`, and
-`max_child_population_bytes`.
+`max_child_population_bytes`, followed by the optional
+`generation_observer` and its caller-owned
+`generation_observer_context`.
 
 `max_genome_bytes` is trusted caller policy for the largest individual genome
 allocation accepted by `evo_run`. It avoids a platform-specific hard-coded
@@ -73,6 +75,11 @@ before allocating this second slab. It is required when `generation_limit` is
 positive and is unused when the limit is zero. The field does not authorize
 child evaluation records, operator scratch space, checkpoints, or an aggregate
 run working set.
+
+`generation_observer` is a synchronous, non-stopping callback for committed-
+generation evidence. A null callback disables observation. Its context is
+independent caller-owned state; EVO never inspects, allocates, releases, or
+retains that pointer. Observer delivery adds no memory-budget requirement.
 
 ### Internal population storage
 
@@ -663,12 +670,13 @@ The bounded-run lifecycle is:
    partial public progress is retained.
 
 The result allocation is created once and is not reallocated during a run.
-Bounded-run policy evidence is private. Version 0.17.0 publishes only its
-successful stop classification. Version 0.18.0 additionally retains one
-constant-space statistics record for the most recently committed generation;
-it does not retain history or define convergence, stagnation, application stop
-or observer callbacks, generalized elitism, adaptive mutation, old-slab
-recycling, checkpointing, parallelism, or secure erasure.
+Bounded-run policy evidence is private. Version 0.17.0 publishes its successful
+stop classification, version 0.18.0 retains one constant-space statistics
+record for the most recently committed generation, and version 0.19.0 can
+deliver each committed record synchronously without retaining history. The
+bounded run does not define convergence, stagnation, application stopping,
+generalized elitism, adaptive mutation, old-slab recycling, checkpointing,
+parallelism, or secure erasure.
 
 ### Result lifecycle
 
@@ -694,13 +702,16 @@ The lifecycle contract is:
 5. On success, `generation_statistics` describes the most recently committed
    population. Generation zero and every promoted child replace the record in
    constant space; no history allocation scales with `generation_limit`.
-6. Callers may use bounded, non-owning aliases to read or write genome bytes
+6. An optional observer receives a read-only snapshot after generation zero
+   and after every successfully promoted child. Failed and provisional
+   generations do not produce events.
+7. Callers may use bounded, non-owning aliases to read or write genome bytes
    while the result remains alive. An alias may not free or reallocate the
    storage and must not survive result destruction.
-7. `evo_result_destroy` releases the owned allocation and resets every result
+8. `evo_result_destroy` releases the owned allocation and resets every result
    field to zero. Destruction is null-safe and repeatable for initialized
    result objects.
-8. A destroyed result may be passed to `evo_run` again immediately.
+9. A destroyed result may be passed to `evo_run` again immediately.
 
 `evo_result_destroy` does not securely erase genome bytes. Consumers must not
 place secret or cryptographic material in genomes without a separately
@@ -766,8 +777,57 @@ population evaluation and never rank or mutate candidates. A child record is
 computed before promotion but replaces the result record only after promotion
 succeeds. A terminal all-invalid child therefore has zero sums and no local
 best while the separate result allocation retains the earlier global winner.
-Only the latest record is retained; version 0.18.0 defines no history ownership
-or observer callback.
+Only the latest record is retained. Version 0.19.0 may deliver every committed
+record to the synchronous observer but defines no history ownership.
+
+### Generation observer
+
+`EVO_GENERATION_RESULT_VIEW_VERSION` is `1`.
+`evo_generation_observer_fn` receives a
+`const evo_generation_result_view_t *`, a
+`const evo_generation_statistics_t *`, and the configured observer context.
+The callback returns `void` and cannot stop, reject, retry, or otherwise alter
+the run.
+
+The result view contains:
+
+| Field | Meaning |
+|---|---|
+| `version` | Result-view schema version. |
+| `best_genome` | Non-owning `const` view of the committed global winner. |
+| `best_genome_size` | Exact readable byte bound for `best_genome`. |
+| `best_fitness` | Complete global-best fitness after this commit. |
+| `generations_completed` | Exact promoted-child count after this commit. |
+| `random_seed` | Configured run seed. |
+| `termination_reason` | `NONE` while execution continues, otherwise the stop decision for this final event. |
+
+EVO constructs the result and statistics view objects as independent stack
+snapshots. The view pointers and bounded genome alias remain valid only until
+the callback returns. An observer must not retain their addresses, cast away
+`const`, write through the genome view, free or reallocate it, or use it after
+return. It may copy values or genome bytes into caller-owned bounded storage.
+
+Generation-zero observation follows successful evaluation, statistics
+construction, and global-winner transfer. A zero-limit event carries
+`EVO_TERMINATION_GENERATION_LIMIT`; otherwise generation zero carries
+`EVO_TERMINATION_NONE`.
+
+Child observation follows successful statistics construction, atomic
+promotion, completion-count update, strict global-winner update, and stop
+classification. Each invocation completes before the next child begins. The
+last requested child carries `EVO_TERMINATION_GENERATION_LIMIT`; a promoted
+all-invalid child carries `EVO_TERMINATION_ALL_INVALID` while retaining the
+earlier global winner in the result view.
+
+No event is emitted for invalid configuration, failed generation zero, failed
+winner transfer, provisional child, failed child evaluation or statistics, or
+failed promotion. If a later operation fails, already delivered committed-
+generation observations remain valid while the final owning public result
+still follows its complete empty-failure contract.
+
+Observation is synchronous, serial, allocation-free, RNG-neutral, and non-
+stopping. It does not define cancellation, asynchronous delivery, concurrent
+callbacks, or retained event history.
 
 ### Result fitness
 
@@ -856,7 +916,15 @@ signature, installed symbol, configuration field, or allocation budget changes.
 The appended value retains only the latest committed generation and therefore
 does not add history ownership proportional to `generation_limit`.
 
-## Current 0.18.0 Conformance Boundary
+Version 0.19.0 adds `evo_generation_result_view_t` and
+`evo_generation_observer_fn`, then appends `generation_observer` and
+`generation_observer_context` to `evo_config_t`. Every pre-0.19.0 config member
+retains its offset, but `sizeof(evo_config_t)` and array stride change, so
+consumers must rebuild. No installed function signature, result layout,
+symbol, allocation class, or resource budget changes. A null callback preserves
+the prior execution surface.
+
+## Current 0.19.0 Conformance Boundary
 
 The current implementation exposes generation-zero compatibility plus bounded
 multi-generation execution:
@@ -926,18 +994,25 @@ multi-generation execution:
   result space;
 - invalid fitness payloads are excluded from statistics, finite component sums
   are checked, and statistics never change stable-best or global-winner
-  selection; and
+  selection;
+- an optional synchronous observer receives independent read-only result and
+  statistics snapshots after generation zero and every promoted child;
+- observer delivery follows winner update and stop classification, precedes
+  the next generation, allocates no history, and emits nothing for provisional
+  or failed generations; and
 - generalized elitism, adaptive mutation, diversity, convergence, stagnation,
-  application stopping and observation, checkpointing, buffer recycling,
-  and parallelism are not implemented.
+  application stopping, checkpointing, buffer recycling, asynchronous or
+  concurrent observation, and parallelism are not implemented.
 
 Consumers may treat `EVO_SUCCESS` as evidence of a valid global winner and
 exactly `generations_completed` promoted child generations. They must inspect
 `termination_reason` for the successful outcome rather than infer it from the
 count. They may inspect `generation_statistics` for the final committed
 population, which is distinct from the global winner on all-invalid
-termination. Version 0.18.0 defines no other public early-stop reason and no
-statistics history or observer callback.
+termination. When configured, they may copy each callback-lifetime observation
+into their own bounded storage. Version 0.19.0 defines no other public early-
+stop reason, statistics history, observer cancellation, or asynchronous
+delivery.
 
 ## Verification
 
@@ -1016,6 +1091,15 @@ read, verifies fixed-order component sums and stable generation-local best
 evidence, and proves malformed state, non-finite valid fitness, and aggregate
 overflow reject without modifying caller output.
 
+The generation-observer test proves one event for a zero-limit run, N+1 events
+for N completed transitions, synchronous ordering before the next generation,
+updated global-winner and generation-statistics evidence, terminal reason
+visibility, all-invalid global/local separation, independent snapshot
+addresses, fixed-seed replay, and absence of events for failed or provisional
+generations. The installed consumer exercises the public callback and view
+types. Wrapped allocation tests prove observation adds no allocation or release
+and reports only earlier committed generations before a later injected failure.
+
 The bounded-run test proves zero-limit compatibility; positive-limit policy
 validation before callbacks; even, odd, and one-member execution; deterministic
 multi-transition replay; strict global improvement; earlier-winner exact ties;
@@ -1048,6 +1132,7 @@ evaluation allocation failure.
 - `docs/adr/ADR-0016-layered-source-to-source-c-optimizer.md`
 - `docs/adr/ADR-0017-explicit-public-termination-reason.md`
 - `docs/adr/ADR-0018-bounded-generation-statistics.md`
+- `docs/adr/ADR-0019-read-only-generation-observer.md`
 - `docs/architecture.md`
 - `docs/algorithms.md`
 - `docs/benchmarks.md`
@@ -1071,4 +1156,5 @@ evaluation allocation failure.
 - `https://github.com/dlworrell/evo/issues/36`
 - `https://github.com/dlworrell/evo/issues/39`
 - `https://github.com/dlworrell/evo/issues/40`
+- `https://github.com/dlworrell/evo/issues/41`
 - `https://github.com/dlworrell/AEMS/issues/18`

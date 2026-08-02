@@ -12,6 +12,7 @@ void __real_free(void *allocation);
 
 static size_t allocation_calls;
 static size_t fail_allocation_call;
+static size_t observation_calls;
 static size_t release_calls;
 
 void *__wrap_calloc(size_t count, size_t size)
@@ -63,6 +64,21 @@ static evo_fitness_t deterministic_evaluator(const void *genome,
     (void)genome;
     (void)context;
     return (evo_fitness_t){.total = 1.0};
+}
+
+static void count_observation(
+    const evo_generation_result_view_t *result,
+    const evo_generation_statistics_t *statistics,
+    void *context)
+{
+    size_t *count = context;
+
+    assert(result != NULL);
+    assert(statistics != NULL);
+    assert(count == &observation_calls);
+    assert(result->version == EVO_GENERATION_RESULT_VIEW_VERSION);
+    assert(statistics->version == EVO_GENERATION_STATISTICS_VERSION);
+    ++*count;
 }
 
 static void assert_population_empty(const evo_population_t *population)
@@ -126,6 +142,7 @@ static void reset_allocation_injection(size_t failure_call)
 {
     allocation_calls = 0;
     fail_allocation_call = failure_call;
+    observation_calls = 0;
 }
 
 static void assert_run_allocation_failure(const evo_problem_t *problem,
@@ -138,6 +155,7 @@ static void assert_run_allocation_failure(const evo_problem_t *problem,
     assert(evo_run(problem, config, NULL, &result) ==
            EVO_ERROR_OUT_OF_MEMORY);
     assert(allocation_calls == failure_call);
+    assert(observation_calls == 0);
     fail_allocation_call = 0;
     assert_completely_empty(&result);
 }
@@ -155,6 +173,8 @@ int main(void)
         .max_evaluation_bytes =
             10 * sizeof(evo_candidate_evaluation_t),
         .max_child_population_bytes = 320,
+        .generation_observer = count_observation,
+        .generation_observer_context = &observation_calls,
     };
     evo_population_t population = {0};
     evo_population_t children = {0};
@@ -167,6 +187,7 @@ int main(void)
     reset_allocation_injection(0);
     assert(evo_run(&problem, &config, NULL, &result) == EVO_SUCCESS);
     assert(allocation_calls == 3);
+    assert(observation_calls == 1);
     assert(result.termination_reason == EVO_TERMINATION_GENERATION_LIMIT);
     assert(result.generation_statistics.version ==
            EVO_GENERATION_STATISTICS_VERSION);
@@ -197,6 +218,7 @@ int main(void)
         assert(evo_run(&problem, &run_config, NULL, &result) ==
                EVO_SUCCESS);
         assert(allocation_calls == 5);
+        assert(observation_calls == 2);
         assert(release_calls == releases_before_run + 4);
         assert(result.best_genome != NULL);
         assert(result.generations_completed == 1);
@@ -218,6 +240,7 @@ int main(void)
         assert(evo_run(&problem, &run_config, NULL, &result) ==
                EVO_ERROR_OUT_OF_MEMORY);
         assert(allocation_calls == 4);
+        assert(observation_calls == 1);
         assert(release_calls == releases_before_run + 3);
         assert_completely_empty(&result);
     }
@@ -229,6 +252,7 @@ int main(void)
         assert(evo_run(&problem, &run_config, NULL, &result) ==
                EVO_ERROR_OUT_OF_MEMORY);
         assert(allocation_calls == 5);
+        assert(observation_calls == 1);
         assert(release_calls == releases_before_run + 4);
         assert_completely_empty(&result);
     }
@@ -241,6 +265,7 @@ int main(void)
         assert(evo_run(&problem, &run_config, NULL, &result) ==
                EVO_ERROR_OUT_OF_MEMORY);
         assert(allocation_calls == 6);
+        assert(observation_calls == 2);
         assert(release_calls == releases_before_run + 5);
         assert_completely_empty(&result);
     }
@@ -252,6 +277,7 @@ int main(void)
         assert(evo_run(&problem, &run_config, NULL, &result) ==
                EVO_ERROR_OUT_OF_MEMORY);
         assert(allocation_calls == 7);
+        assert(observation_calls == 2);
         assert(release_calls == releases_before_run + 6);
         assert_completely_empty(&result);
     }

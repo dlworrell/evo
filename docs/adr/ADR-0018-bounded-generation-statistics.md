@@ -12,7 +12,7 @@ population that produced the current run state. Consumers therefore cannot
 distinguish a uniformly strong population from one strong candidate among many
 weak or invalid candidates without reimplementing private evaluation policy.
 
-The observer planned by issue #41 requires one deterministic read-only record
+The observer later delivered by issue #41 requires one deterministic read-only record
 after generation zero and after each promoted child. Retaining an array sized
 from `generation_limit` would make result memory grow with the run bound and
 would introduce allocation, ownership, and failure behavior that observation
@@ -44,8 +44,8 @@ global winner.
 
 The implementation owns no statistics history and performs no statistics
 allocation. Result storage is constant with respect to `generation_limit`.
-Issue #41 may deliver each committed record synchronously through a bounded
-read-only observer view; it will not require a retained history array.
+EVO 0.19.0 now delivers each committed record synchronously through the
+bounded read-only view governed by ADR-0019 without retaining a history array.
 
 ## Aggregation Policy Version 1
 

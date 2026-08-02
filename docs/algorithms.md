@@ -2,7 +2,7 @@
 
 This document distinguishes algorithms implemented by the reusable
 `catalyst_evo` core from the structured program transformations and evaluation
-algorithm required by the EVO 1.0 source optimizer. Version 0.18.0 implements
+algorithm required by the EVO 1.0 source optimizer. Version 0.19.0 implements
 only the core boundary described below.
 
 ## EVO Core Initial Release
@@ -425,8 +425,27 @@ zero best fitness, and zero component sums.
 Only the most recently committed record is retained in `evo_result_t`. A child
 record is computed before promotion but replaces the prior record only after
 promotion succeeds. This constant-space rule records terminal population state
-without allocating history proportional to `generation_limit`; issue #41 may
-deliver each record through a separate read-only observer boundary.
+without allocating history proportional to `generation_limit`.
+
+## Synchronous Generation Observation
+
+Version 0.19.0 delivers the committed statistics stream without changing that
+working-set bound. If configured, the observer receives generation zero and
+then each promoted child in strictly ascending generation order. EVO constructs
+fresh stack snapshots for the result view and statistics, invokes the callback
+synchronously, and discards those snapshots when it returns.
+
+For generation `g`, delivery occurs only after `g` is committed, its statistics
+replace the previous record, and any strict global winner improvement is
+copied. The observer therefore sees the global best-so-far together with the
+generation-local record. Delivery also follows stop classification: continuing
+events use `EVO_TERMINATION_NONE`, while the final event identifies generation-
+limit or all-invalid termination.
+
+The observer has no return value. Its invocation cannot add a stop decision,
+retry a failed generation, or change winner selection. A provisional child
+that fails evaluation, statistics, or promotion emits no event. No observer
+delivery allocates, consumes RNG state, runs concurrently, or retains history.
 
 ## Structured C Source Evolution
 

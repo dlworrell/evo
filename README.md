@@ -89,7 +89,7 @@ repository.
 - `docs/` — architecture, theory, algorithms, and evidence guidance
 
 The source-optimizer implementation directories will be introduced only by
-their dependency-ordered roadmap issues. Their absence in version 0.18.0 is an
+their dependency-ordered roadmap issues. Their absence in version 0.19.0 is an
 explicit current boundary, not an implicit feature claim.
 
 ## Authoritative Native Builds
@@ -129,7 +129,7 @@ declared Clang/LLVM and GNU profiles.
 
 ## Status
 
-**Current implementation boundary:** EVO 0.18.0 implements the deterministic
+**Current implementation boundary:** EVO 0.19.0 implements the deterministic
 evolutionary-search core. It does not yet ingest a C project, build a Clang AST
 or LLVM IR model, transform source, compile evolved candidates, or emit an
 optimized source patch. Those product boundaries are tracked in the 1.0
@@ -162,6 +162,13 @@ Generation zero and every promoted child are summarized in deterministic
 ascending candidate order, but only the latest record is retained. Statistics
 therefore allocate no history and remain constant-space with respect to
 `generation_limit`.
+
+EVO 0.19.0 appends an optional synchronous generation observer to
+`evo_config_t`. It receives independent read-only result and statistics
+snapshots after generation zero and every successfully promoted child. A
+zero-limit run emits one event and an N-transition run emits N+1 events. The
+observer returns no control decision, owns no view, allocates no history, and
+never receives provisional or failed-generation evidence.
 
 Version 0.3.0 added the independently tested private population-storage
 foundation: checked `population_size * genome_size` arithmetic, a
@@ -349,6 +356,12 @@ terminal child even while `best_genome` retains an earlier valid global winner.
 The component sums include only valid evaluated candidates. Result destruction
 resets the complete record to zero.
 
+`generation_observer` is optional. When present, it receives the updated
+global winner, latest generation statistics, and the stop reason applicable at
+that commit. Snapshot objects and the bounded `const` genome view remain valid
+only until the callback returns. Observer state is supplied separately through
+`generation_observer_context`; EVO does not inspect or retain it.
+
 `max_genome_bytes` is a required caller-provided per-genome policy bound.
 `max_population_bytes` separately bounds the private population genome slab,
 `max_evaluation_bytes` bounds private validity and fitness records, and
@@ -373,9 +386,9 @@ failure-state, alias, compatibility, and secure-erasure boundaries.
 The tournament, crossover-dispatch, mutation-dispatch, child-population,
 operator-stream, pair-production, odd-tail, child-evaluation, and atomic-
 advancement boundaries remain independently verified beneath the bounded
-public loop. Convergence, stagnation, application stop or observer callbacks,
-generalized elitism, adaptive mutation, population recycling, checkpointing,
-and parallelism remain later boundaries.
+public loop. Convergence, stagnation, application stopping, generalized
+elitism, adaptive mutation, population recycling, checkpointing, and
+parallelism remain later boundaries.
 
 ## Project Zero
 

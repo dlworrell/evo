@@ -101,6 +101,7 @@
       "src/diversity.c",
       "src/fitness.c",
       "src/statistics.c",
+      "src/observer.c",
       "src/checkpoint.c",
       "src/rng.c"
     ],
@@ -206,6 +207,12 @@
         "source": "tests/statistics_test.c",
         "cmake": "evo_statistics_test",
         "autotools": "tests/evo_statistics_test"
+      },
+      {
+        "id": "observer",
+        "source": "tests/observer_test.c",
+        "cmake": "evo_observer_test",
+        "autotools": "tests/evo_observer_test"
       },
       {
         "id": "seed-schedule-research",
