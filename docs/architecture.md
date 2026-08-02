@@ -2,7 +2,72 @@
 
 ## Design Goals
 
-EVO is a reusable C library for bounded engineering optimization. The engine remains independent of repository scoring, operating-system policy, compiler tuning, and FPGA placement; consumers provide problem-specific genome, fitness, validation, mutation, and crossover callbacks.
+EVO is a source-to-source evolutionary optimization system for C codebases,
+built on a reusable C17 library for bounded engineering search. The core
+engine remains independent of repository scoring, operating-system policy,
+compiler tuning, FPGA placement, and C source semantics; consumers provide
+problem-specific genome, fitness, validation, mutation, and crossover
+callbacks.
+
+The source-optimizer product is a separate layer over that generic core. It
+owns C-project ingestion, Clang/LLVM analysis, structured transformation
+recipes, isolated candidate source trees, build and correctness gates,
+baseline-versus-candidate measurement, whole-run orchestration, and optimized
+patch/evidence artifacts.
+
+## Product Component Model
+
+### Evolutionary-search core
+
+`catalyst_evo` owns deterministic population storage, random streams,
+selection, crossover, mutation dispatch, validation/evaluation ordering,
+generation advancement, stopping, and core result ownership. EVO-001 is its
+normative contract. Version 0.16.0 implements a bounded multi-generation
+subset of this layer.
+
+### Source analysis and transformation
+
+The planned source layer captures an immutable C-project baseline and declared
+build graph, then uses a versioned Clang/LLVM provider to produce stable source
+identities, structural evidence, compiler optimization records, and configured
+runtime hotspot evidence. It maps analysis opportunities into versioned
+structured transformation recipes.
+
+Source genomes never contain arbitrary C text for byte-wise mutation or
+crossover. One genome represents a complete transformation recipe containing
+stable targets, transformation identifiers and versions, parameters,
+preconditions, dependencies, conflicts, and provenance.
+
+### Candidate evaluation
+
+Every recipe is applied to a fresh resource-bounded workspace derived from the
+immutable baseline. Materialization produces a candidate source identity and
+reviewable patch before compilation. Build, test, sanitizer, analyzer, ABI,
+security, benchmark, and governance commands execute only under explicit
+process, filesystem, network, environment, time, memory, and storage policy.
+
+Correctness and admissibility are hard gates. Performance evidence cannot make
+an invalid candidate valid, and a candidate cannot become the published
+champion until it passes every configured finalist gate.
+
+### Product orchestration and artifacts
+
+The product layer coordinates analyze, evolve, replay, and report operations;
+maps candidate evidence into finite EVO fitness; binds product checkpoints to
+baseline, analysis, catalogue, toolchain, workload, and schema identities; and
+emits the selected patch, recipe, lineage, validation, measurements, and
+replay evidence.
+
+EVO never applies, commits, pushes, merges, deploys, or publishes a target-
+project patch automatically.
+
+## Current Conformance Boundary
+
+Only the evolutionary-search core exists in version 0.16.0. Source ingestion,
+analysis, transformation, candidate materialization, external-process
+isolation, target-code measurement, product commands, and optimized-patch
+artifacts are planned by issues #58 through #69. Documentation of those
+planned boundaries is not an implementation claim.
 
 ## Core Modules
 
@@ -339,7 +404,7 @@ application stop and observer callbacks, a public termination-reason field,
 generalized elitism, adaptive mutation, recycling, checkpointing, and
 parallelism remain separate decisions.
 
-## Execution Flow
+## EVO Core Execution Flow
 
 1. Initialize a population.
 2. Validate and evaluate each genome.
@@ -357,8 +422,52 @@ all-invalid extinction are the only public stop conditions. Diversity,
 convergence, stagnation, application-defined stopping, statistics observers,
 checkpointing, and parallel evaluation remain absent.
 
+## Source-Optimizer Execution Flow
+
+The 1.0 product flow is:
+
+1. Parse and validate an explicit optimization manifest.
+2. Capture the source, dependency, toolchain, target, workload, correctness,
+   and resource-policy identities in an immutable baseline.
+3. Build declared baseline profiles and establish benchmark eligibility.
+4. Analyze the project with the declared Clang/LLVM provider and optional
+   recorded runtime profiles.
+5. Map supported opportunities into versioned structured transformation
+   recipes.
+6. Let the core evolve compatible recipes under deterministic seed and bounded
+   population, generation, memory, storage, process, and time policy.
+7. Materialize each admissible recipe into an isolated source candidate and
+   reviewable patch.
+8. Compile and run the declared fast correctness gates. Invalid candidates do
+   not receive performance fitness.
+9. Measure eligible candidates against the baseline under the recorded
+   workload and measurement policy.
+10. Select provisional finalists through the core, then require complete
+    correctness, sanitizer, analyzer, ABI, security, toolchain, and governance
+    gates before publication.
+11. Emit the highest-ranked fully verified candidate found within the bounded
+    search as a checksummed patch and evidence bundle.
+12. Replay by verifying every recorded identity, rematerializing the same
+    source candidate, and rerunning the declared validation and comparison.
+
+Parallel source optimization schedules isolated external processes and commits
+logical evidence in stable candidate order. It is distinct from the core's
+planned in-process callback parallelism.
+
 ## Correctness Boundary
 
 Candidate correctness is a hard gate. Invalid candidates are not evaluated and
 cannot win. Fitness callbacks must return finite evidence, and consumer policy
 is responsible for producing the scalar `total` used for comparison.
+
+For source optimization, "correct" means that the candidate satisfied the
+explicit obligations recorded in the optimization manifest and required by
+EVO/AES governance. EVO does not infer missing specifications or claim
+universal semantic equivalence. The final artifact reports the exact tests,
+analysis, toolchains, workloads, limitations, and tolerances supporting the
+result.
+
+"Best" means the highest-ranked verified candidate discovered within the
+recorded baseline, target platforms, workloads, transformation catalogue,
+fitness definition, constraints, and search budget. It is not a global-
+optimality claim.

@@ -1,6 +1,11 @@
-# Algorithm Roadmap
+# EVO Algorithms and Source-Evolution Roadmap
 
-## Initial Release
+This document distinguishes algorithms implemented by the reusable
+`catalyst_evo` core from the structured program transformations and evaluation
+algorithm required by the EVO 1.0 source optimizer. Version 0.16.0 implements
+only the core boundary described below.
+
+## EVO Core Initial Release
 
 - Tournament selection
 - Rank-based selection
@@ -14,7 +19,7 @@
 - Stagnation detection
 - Constraint penalties
 
-## Later Releases
+## Later EVO Core Releases
 
 - Evolution strategies
 - Differential evolution
@@ -392,3 +397,83 @@ one child population, one result genome, and the current population's
 evaluation records plus provisional child evaluation records during child
 evaluation. It does not recycle slabs, run callbacks concurrently, infer
 convergence, or expose a public termination reason.
+
+## Structured C Source Evolution
+
+The source optimizer does not treat source text as a byte genome. Raw textual
+mutation and crossover cannot preserve token, declaration, macro, type,
+control-flow, ownership, or semantic boundaries reliably and are prohibited.
+
+One source-optimization genome is a canonical transformation recipe. Each
+record contains:
+
+- baseline and analysis identity;
+- stable source target;
+- transformation identifier and implementation version;
+- bounded parameters;
+- structural and semantic preconditions;
+- dependencies and conflicts; and
+- provenance sufficient to explain and replay the emitted source range.
+
+The recipe has a versioned canonical serialization and hash. Unknown, stale,
+cyclic, conflicting, or over-budget recipes reject before a candidate
+workspace is written.
+
+## Source-Recipe Initialization
+
+Generation-zero recipes are derived only from opportunities supported by the
+recorded Clang/LLVM analysis and the active transformation catalogue. The
+initializer may select no-op, single-transformation, and compatible multi-
+transformation recipes according to a versioned deterministic policy. It may
+not invent an unregistered transformation or consult unrecorded analysis.
+
+## Source-Recipe Mutation
+
+Mutation operates on transformation records, not C characters or arbitrary
+tokens. Versioned mutation operations may add, remove, replace, parameterize,
+or reorder a transformation when its dependencies and conflicts permit.
+
+After mutation, canonical validation either produces one complete admissible
+recipe, applies a specifically versioned deterministic repair, or rejects the
+candidate. Hidden heuristic repair is prohibited because it prevents replay
+and obscures lineage.
+
+## Source-Recipe Crossover
+
+Crossover combines complete transformation records and their dependency
+closure from two parent recipes. It performs canonical deduplication and
+conflict handling before materialization. It never copies partial source
+spans, fragments tokens, or combines raw source bytes.
+
+Fixed vectors must lock parent-record selection, conflict resolution, repair
+or rejection, canonical child order, RNG consumption, and replay.
+
+## Source-Candidate Evaluation
+
+Evaluation is a staged product operation:
+
+1. validate the recipe against the exact baseline, analysis, and catalogue;
+2. materialize a fresh isolated candidate source tree and patch;
+3. build through the declared profile;
+4. execute fast correctness and admissibility gates;
+5. measure eligible candidates against the immutable baseline;
+6. convert recorded finite measurements into the declared fitness; and
+7. require complete finalist gates before a candidate can become the emitted
+   champion.
+
+Candidate compilation and execution occur in resource-bounded external
+processes. Completion order may vary under parallel execution, but results are
+committed to the evolutionary core in stable candidate order.
+
+## Source-Optimization Result
+
+The winning core genome is not itself the product artifact. The product maps
+it to the exact transformation recipe, source candidate, reviewable patch,
+validation evidence, measurements, fitness derivation, lineage, and replay
+instructions.
+
+The report calls this result the highest-ranked verified candidate discovered
+within the recorded bounded search contract. It does not claim a globally
+optimal equivalent program. Issues #58 through #69 implement this algorithmic
+boundary in dependency order; issue #56 stabilizes it for 1.0 only after the
+end-to-end source proof succeeds.
