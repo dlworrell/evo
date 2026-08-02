@@ -89,7 +89,7 @@ repository.
 - `docs/` — architecture, theory, algorithms, and evidence guidance
 
 The source-optimizer implementation directories will be introduced only by
-their dependency-ordered roadmap issues. Their absence in version 0.17.0 is an
+their dependency-ordered roadmap issues. Their absence in version 0.18.0 is an
 explicit current boundary, not an implicit feature claim.
 
 ## Authoritative Native Builds
@@ -129,7 +129,7 @@ declared Clang/LLVM and GNU profiles.
 
 ## Status
 
-**Current implementation boundary:** EVO 0.17.0 implements the deterministic
+**Current implementation boundary:** EVO 0.18.0 implements the deterministic
 evolutionary-search core. It does not yet ingest a C project, build a Clang AST
 or LLVM IR model, transform source, compile evolved candidates, or emit an
 optimized source patch. Those product boundaries are tracked in the 1.0
@@ -154,6 +154,14 @@ run now records `EVO_TERMINATION_GENERATION_LIMIT` or
 zero-initialized, failed, and destroyed state. This is explicit outcome
 evidence only: callback order, RNG replay, ownership, winner selection,
 generation counts, and the two existing stopping decisions are unchanged.
+
+EVO 0.18.0 appends one versioned `generation_statistics` record to the result.
+It reports the most recently committed generation's index, valid and invalid
+counts, stable generation-local best, and component-wise valid-fitness sums.
+Generation zero and every promoted child are summarized in deterministic
+ascending candidate order, but only the latest record is retained. Statistics
+therefore allocate no history and remain constant-space with respect to
+`generation_limit`.
 
 Version 0.3.0 added the independently tested private population-storage
 foundation: checked `population_size * genome_size` arithmetic, a
@@ -334,6 +342,12 @@ resets the full result to zero, and makes it immediately reusable.
 the configured generation limit completed or a later all-invalid generation
 ended the run. Generation-zero all-invalid remains an error and leaves the
 reason as `EVO_TERMINATION_NONE`.
+
+`generation_statistics` is versioned and nonzero only in a successful active
+result. It describes the last committed population, which may be an all-invalid
+terminal child even while `best_genome` retains an earlier valid global winner.
+The component sums include only valid evaluated candidates. Result destruction
+resets the complete record to zero.
 
 `max_genome_bytes` is a required caller-provided per-genome policy bound.
 `max_population_bytes` separately bounds the private population genome slab,

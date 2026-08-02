@@ -1,6 +1,7 @@
 #include "catalyst/evo/evo.h"
 #include "internal/bounded_run.h"
 #include "internal/population_storage.h"
+#include "internal/statistics.h"
 
 #include <stdlib.h>
 
@@ -56,6 +57,7 @@ static evo_status_t transfer_best_candidate(
 
 evo_status_t evo_run(const evo_problem_t *problem, const evo_config_t *config, void *context, evo_result_t *result)
 {
+    evo_generation_statistics_t generation_statistics = {0};
     evo_bounded_run_evidence_t run_evidence = {0};
     evo_population_t population = {0};
     evo_status_t status = EVO_SUCCESS;
@@ -94,12 +96,20 @@ evo_status_t evo_run(const evo_problem_t *problem, const evo_config_t *config, v
         return destroy_population_with_status(&population, status);
     }
 
+    status = evo_generation_statistics_record(&population,
+                                              UINT64_C(0),
+                                              &generation_statistics);
+    if (status != EVO_SUCCESS) {
+        return destroy_population_with_status(&population, status);
+    }
+
     status = transfer_best_candidate(problem, config, &population, result);
     if (status != EVO_SUCCESS) {
         evo_population_destroy(&population);
         *result = (evo_result_t){0};
         return status;
     }
+    result->generation_statistics = generation_statistics;
 
     if (config->generation_limit != 0) {
         status = evo_bounded_run_advance(problem,

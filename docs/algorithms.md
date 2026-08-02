@@ -2,7 +2,7 @@
 
 This document distinguishes algorithms implemented by the reusable
 `catalyst_evo` core from the structured program transformations and evaluation
-algorithm required by the EVO 1.0 source optimizer. Version 0.17.0 implements
+algorithm required by the EVO 1.0 source optimizer. Version 0.18.0 implements
 only the core boundary described below.
 
 ## EVO Core Initial Release
@@ -404,6 +404,29 @@ records `EVO_TERMINATION_GENERATION_LIMIT`; promoting a later all-invalid
 child records `EVO_TERMINATION_ALL_INVALID`. Failure and destruction retain
 the zero-valued `EVO_TERMINATION_NONE`. This mapping consumes no RNG, invokes
 no callback, and changes no generation transition or winner.
+
+## Deterministic Generation Statistics
+
+Version 0.18.0 computes schema-version-1 statistics for generation zero and
+every successfully promoted child. The engine visits candidate records once in
+ascending index and completely skips invalid fitness payloads. For each valid
+candidate it adds the seven finite `evo_fitness_t` components to seven `double`
+accumulators in that exact order. No reassociation, compensation, weighting,
+averaging, normalization, or parallel reduction is permitted by policy version
+1. A non-finite valid component or intermediate sum rejects with
+`EVO_ERROR_EVALUATION`.
+
+The record copies the stable generation-local best already established by
+evaluation; it never reranks candidates or changes the global result winner.
+It also records the generation index and exact population, valid, and invalid
+counts. An all-invalid generation has `has_best == false`, best index zero,
+zero best fitness, and zero component sums.
+
+Only the most recently committed record is retained in `evo_result_t`. A child
+record is computed before promotion but replaces the prior record only after
+promotion succeeds. This constant-space rule records terminal population state
+without allocating history proportional to `generation_limit`; issue #41 may
+deliver each record through a separate read-only observer boundary.
 
 ## Structured C Source Evolution
 

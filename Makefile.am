@@ -50,6 +50,7 @@ noinst_HEADERS = \
 	src/internal/child_evaluation.h \
 	src/internal/generation_advancement.h \
 	src/internal/bounded_run.h \
+	src/internal/statistics.h \
 	tests/research/seed_schedule_research.h
 
 noinst_LTLIBRARIES = libevo_seed_schedule_research.la
@@ -74,6 +75,7 @@ check_PROGRAMS = \
 	tests/evo_child_evaluation_test \
 	tests/evo_generation_advancement_test \
 	tests/evo_bounded_run_test \
+	tests/evo_statistics_test \
 	tests/evo_seed_schedule_research_test \
 	tests/evo_seed_schedule_experiment \
 	tests/evo_allocation_failure_test
@@ -132,6 +134,9 @@ tests_evo_generation_advancement_test_LDADD = libcatalyst_evo.la -lm
 
 tests_evo_bounded_run_test_SOURCES = tests/bounded_run_test.c
 tests_evo_bounded_run_test_LDADD = libcatalyst_evo.la -lm
+
+tests_evo_statistics_test_SOURCES = tests/statistics_test.c
+tests_evo_statistics_test_LDADD = libcatalyst_evo.la -lm
 
 tests_evo_seed_schedule_research_test_SOURCES = \
 	tests/seed_schedule_research_test.c

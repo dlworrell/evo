@@ -3,6 +3,7 @@
 #include "internal/child_evaluation.h"
 #include "internal/child_pair.h"
 #include "internal/child_tail.h"
+#include "internal/statistics.h"
 
 #include <math.h>
 #include <stdint.h>
@@ -109,6 +110,21 @@ static bool fitness_equal(const evo_fitness_t *left,
            left->total == right->total;
 }
 
+static bool generation_statistics_equal(
+    const evo_generation_statistics_t *left,
+    const evo_generation_statistics_t *right)
+{
+    return left->version == right->version &&
+           left->generation_index == right->generation_index &&
+           left->population_size == right->population_size &&
+           left->valid_count == right->valid_count &&
+           left->invalid_count == right->invalid_count &&
+           left->best_index == right->best_index &&
+           fitness_equal(&left->best_fitness, &right->best_fitness) &&
+           fitness_equal(&left->fitness_sums, &right->fitness_sums) &&
+           left->has_best == right->has_best;
+}
+
 static bool bytes_equal(const void *left,
                         const void *right,
                         size_t size)
@@ -132,6 +148,7 @@ static bool initial_run_state_is_valid(
     const evo_result_t *best_result,
     const evo_bounded_run_evidence_t *evidence)
 {
+    evo_generation_statistics_t expected_statistics = {0};
     const evo_candidate_evaluation_t *evaluation = NULL;
     const void *parent_best = NULL;
     size_t best_index = 0;
@@ -209,6 +226,16 @@ static bool initial_run_state_is_valid(
                                            &valid_count) ||
         valid_count == 0 || !parents->has_best ||
         !evo_population_best_index(parents, &best_index)) {
+        return false;
+    }
+
+    if (evo_generation_statistics_record(parents,
+                                         UINT64_C(0),
+                                         &expected_statistics) !=
+            EVO_SUCCESS ||
+        !generation_statistics_equal(
+            &best_result->generation_statistics,
+            &expected_statistics)) {
         return false;
     }
 
@@ -345,6 +372,7 @@ evo_status_t evo_bounded_run_advance(
          ++transition) {
         evo_child_evaluation_evidence_t evaluation_evidence = {0};
         evo_generation_advancement_evidence_t advancement_evidence = {0};
+        evo_generation_statistics_t generation_statistics = {0};
         const evo_candidate_evaluation_t *improved_evaluation = NULL;
         const void *improved_genome = NULL;
         const uint64_t source_generation = (uint64_t)transition;
@@ -378,6 +406,14 @@ evo_status_t evo_bounded_run_advance(
             break;
         }
 
+        status = evo_generation_statistics_record(
+            &children,
+            source_generation + UINT64_C(1),
+            &generation_statistics);
+        if (status != EVO_SUCCESS) {
+            break;
+        }
+
         has_improvement = resolve_strict_improvement(
             &children,
             best_result,
@@ -404,6 +440,7 @@ evo_status_t evo_bounded_run_advance(
             advancement_evidence.odd_child_policy_version;
         best_result->generations_completed =
             candidate.completed_transitions;
+        best_result->generation_statistics = generation_statistics;
 
         if (has_improvement) {
             copy_genome(improved_genome,
