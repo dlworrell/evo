@@ -66,6 +66,11 @@ target_include_directories(evo_child_evaluation_test PRIVATE ${PROJECT_SOURCE_DI
 target_link_libraries(evo_child_evaluation_test PRIVATE catalyst_evo)
 add_test(NAME evo_child_evaluation_test COMMAND evo_child_evaluation_test)
 
+add_executable(evo_generation_advancement_test generation_advancement_test.c)
+target_include_directories(evo_generation_advancement_test PRIVATE ${PROJECT_SOURCE_DIR}/src)
+target_link_libraries(evo_generation_advancement_test PRIVATE catalyst_evo)
+add_test(NAME evo_generation_advancement_test COMMAND evo_generation_advancement_test)
+
 add_library(evo_seed_schedule_research STATIC
     research/seed_schedule_research.c
 )
@@ -102,6 +107,11 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux"
     add_executable(evo_allocation_failure_test allocation_failure_test.c)
     target_include_directories(evo_allocation_failure_test PRIVATE ${PROJECT_SOURCE_DIR}/src)
     target_link_libraries(evo_allocation_failure_test PRIVATE catalyst_evo)
-    target_link_options(evo_allocation_failure_test PRIVATE "-Wl,--wrap=calloc")
+    target_link_options(
+        evo_allocation_failure_test
+        PRIVATE
+            "-Wl,--wrap=calloc"
+            "-Wl,--wrap=free"
+    )
     add_test(NAME evo_allocation_failure_test COMMAND evo_allocation_failure_test)
 endif()

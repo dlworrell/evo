@@ -274,6 +274,37 @@ The operation consumes no RNG state and invokes no initialization, selection,
 crossover, or mutation callback. It does not swap ownership, advance a
 generation, recycle the prior parent, or participate in `evo_run`.
 
+## Private Atomic Generation Advancement
+
+Version 0.15.0 adds one private ownership transition after produced-child
+evaluation. The operation receives the current completed parent, a distinct
+completed evaluated child, and the caller's current generation number.
+
+The transition first validates both populations through the common completed-
+population authority. A generation-zero parent is valid only for current
+generation zero. A parent originating from an earlier child is valid only when
+its recorded source generation is exactly one less than the current
+generation. The incoming child's recorded source generation must equal the
+current generation. Increment at `UINT64_MAX` is rejected.
+
+All genome and evaluation allocations must be internally distinct and must
+not overlap either population's owned ranges. Caller-owned evidence must also
+be independent of both population objects and all owned allocations. These
+checks make the old-parent release safe and preserve the single-owner model.
+
+After every fallible check succeeds, the child structure is moved into the
+parent handle, the child handle is reset to zero, the former parent is
+destroyed, and versioned completion evidence is committed. This suffix
+allocates no memory, copies no genome or evaluation byte, consumes no RNG word,
+and invokes no callback. Here, atomic means rejection-before-mutation followed
+by a no-fail library-state commit; it does not imply concurrent or lock-free
+access to the population handles.
+
+An all-invalid evaluated child may be promoted. Whether that state terminates
+an optimization run is deliberately left to a later stopping-policy boundary.
+The old parent is released rather than recycled into the child handle; buffer
+recycling remains a separate ownership decision.
+
 ## Execution Flow
 
 1. Initialize a population.
@@ -284,12 +315,13 @@ generation, recycle the prior parent, or participate in `evo_run`.
 6. Record statistics and evidence.
 7. Stop on convergence, stagnation, generation limit, or an application-defined condition.
 
-Version 0.14.0 publicly implements steps 1 and 2 for generation zero and
+Version 0.15.0 publicly implements steps 1 and 2 for generation zero and
 transfers the best valid candidate. Step 3 has an independently tested private
 tournament operator, and both crossover and mutation in step 4 have
 independently tested private dispatchers. A separate child slab now accepts
 deterministic sequential pair output, versioned odd-tail elite completion, and
-deterministic child evaluation. Population swap and generation-completion
+deterministic child evaluation. A private ownership boundary can promote that
+completed child as the next generation. Generation-limit and other stopping
 policies remain absent. `evo_run` invokes none of these later boundaries.
 `EVO_SUCCESS` therefore still does not indicate that steps 3 through 7, a
 generation transition, or an optimization search completed.

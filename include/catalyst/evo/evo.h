@@ -10,7 +10,7 @@ extern "C" {
 #endif
 
 #define EVO_VERSION_MAJOR 0
-#define EVO_VERSION_MINOR 14
+#define EVO_VERSION_MINOR 15
 #define EVO_VERSION_PATCH 0
 
 typedef enum evo_status {

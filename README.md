@@ -65,8 +65,9 @@ against each installed result. See
 
 ## Status
 
-EVO 0.14.0 retains the complete public generation-zero boundary and adds a
-private deterministic evaluation phase for fully produced child populations.
+EVO 0.15.0 retains the complete public generation-zero boundary and adds a
+private atomic ownership transition from an evaluated child population to the
+next completed generation.
 `evo_run` still constructs and
 deterministically initializes a private population, validates every candidate,
 evaluates only valid candidates, selects the stable generation-zero winner,
@@ -209,8 +210,21 @@ fitness, valid-count, and stable-best evidence. All-invalid children are
 completed evaluated populations without a best candidate. The shared
 completed-population validator accepts either generation-zero or evaluated-
 child provenance, so an evaluated child can authorize the next independent
-child slab. Swapping, generation advancement, and public `evo_run` integration
-remain separate milestones.
+child slab.
+
+Version 0.15.0 adds generation-advancement policy version 1. After validating
+both completed populations, their generation lineage, every owned byte range,
+and `uint64_t` increment safety, the operation moves the evaluated child into
+the parent handle without allocation or copying. The child handle is reset to
+zero, and the former parent is released only after ownership transfer.
+
+Every fallible check precedes that no-fail commit suffix. Rejection preserves
+both populations and caller evidence; success preserves child genome bytes,
+evaluation records, stable-best evidence, and production provenance exactly.
+The boundary consumes no RNG state and invokes no callback. Completed all-
+invalid children remain promotable because extinction and stopping policy are
+separate decisions. Public `evo_run`, generation-limit handling, population
+recycling, and multi-generation iteration remain later milestones.
 
 ## Result Lifecycle
 
@@ -242,9 +256,10 @@ failure-state, alias, compatibility, and secure-erasure boundaries.
 The private tournament, crossover-dispatch, mutation-dispatch, child-population
 ownership, operator-stream, complete-pair-planning, sequential complete-pair
 production, odd-tail elite-clone, and produced-child evaluation boundaries are
-independently verified. Population swapping, generalized elitism, adaptive
-mutation, and the first generation transition remain later execution
-boundaries; none is implied by `evo_run` success in version 0.14.0.
+independently verified. The first private generation ownership transition is
+also verified. Generalized elitism, adaptive mutation, stopping policy,
+population recycling, and public multi-generation execution remain later
+boundaries; none is implied by `evo_run` success in version 0.15.0.
 
 ## Project Zero
 
