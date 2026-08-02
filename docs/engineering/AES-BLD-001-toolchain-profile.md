@@ -28,8 +28,8 @@ records their versions as evidence.
 
 ## Frontend parity
 
-`CMakeLists.txt` and `Makefile.am` enumerate every production source and the
-same eighteen normative tests. Both frontends:
+`CMakeLists.txt` and `Makefile.am` enumerate all eighteen production sources
+and the same nineteen normative tests. Both frontends:
 
 - compile the project as C17 with the same warning policy;
 - default to warnings-as-errors;

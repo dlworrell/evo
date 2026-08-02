@@ -1,7 +1,7 @@
 # EVO-001: Evolutionary Optimization Library Contract
 
 Status: Baseline
-Version: 0.15.0
+Version: 0.16.0
 Owner: EVO
 
 ## Purpose
@@ -56,9 +56,10 @@ operator scratch space, checkpoint state, or parallel-worker storage.
 
 `max_child_population_bytes` independently bounds one private child-population
 genome slab. EVO checks the same `population_size * genome_size` arithmetic
-before allocating this second slab. The field does not authorize child
-evaluation records, operator scratch space, checkpoints, or an aggregate run
-working set.
+before allocating this second slab. It is required when `generation_limit` is
+positive and is unused when the limit is zero. The field does not authorize
+child evaluation records, operator scratch space, checkpoints, or an aggregate
+run working set.
 
 ### Internal population storage
 
@@ -237,10 +238,9 @@ The public execution lifecycle is:
 9. Every failure other than active-result rejection releases all private
    allocations and leaves the public result empty.
 
-Generation-zero success proves that a valid initialized candidate was
-evaluated and transferred. It does not prove that parent selection, crossover,
-mutation, a generation transition, convergence, or an optimization search
-occurred.
+This version 0.6.0 boundary proves that a valid initialized candidate was
+evaluated and transferred. A zero-limit version 0.16.0 call retains that exact
+meaning; positive limits invoke the separately specified bounded loop.
 
 ### Private deterministic tournament selection
 
@@ -276,7 +276,7 @@ The selection lifecycle is:
 The caller supplies an already seeded private RNG stream. Version 0.7.0 does
 not derive a selection seed, split initialization streams, or alter RNG
 algorithm version 1. Version 0.11.0 separately defines pair-local selection-
-stream ownership without composing this operator with `evo_run`.
+stream ownership, and version 0.16.0 invokes that composition from `evo_run`.
 
 ### Private deterministic crossover dispatch
 
@@ -312,10 +312,9 @@ The crossover lifecycle is:
    contract violation.
 
 The operator performs no allocation, does not select parents, and does not own
-child storage. It is private and is not called by `evo_run`. Version 0.8.0 does
-not implement a next-generation population or a generation transition.
-Version 0.11.0 later defines pair-local crossover stream derivation without
-invoking this dispatcher.
+child storage. Version 0.8.0 does not implement a next-generation population or
+a generation transition. Version 0.11.0 defines pair-local crossover stream
+derivation, and version 0.16.0 invokes the complete composition from `evo_run`.
 
 ### Private deterministic mutation dispatch
 
@@ -350,12 +349,11 @@ The mutation lifecycle is:
    deterministic for fixed genome bytes, rate, and context. The callback
    returns no status, so EVO cannot roll back a consumer contract violation.
 
-The operator performs no allocation and does not own genome storage. It is
-private and is not called by `evo_run`. Version 0.9.0 does not implement
-built-in representation-specific mutation helpers, adaptive mutation, a
-next-generation population, or a generation transition. Version 0.11.0 later
-defines child-indexed mutation stream derivation without invoking this
-dispatcher.
+The operator performs no allocation and does not own genome storage. Version
+0.9.0 does not implement built-in representation-specific mutation helpers,
+adaptive mutation, a next-generation population, or a generation transition.
+Version 0.11.0 defines child-indexed mutation stream derivation, and version
+0.16.0 invokes the complete composition from `evo_run`.
 
 ### Private child-population ownership
 
@@ -393,9 +391,10 @@ The child-storage lifecycle is:
 10. A structurally complete all-invalid parent may create child storage. The
     later selection/orchestration layer owns the no-valid-candidate decision.
 
-The child operation does not select or pair parents, invoke crossover or
-mutation, mark genomes complete, evaluate children, swap populations, derive
-operator streams, increment a generation, or participate in `evo_run`.
+The child operation does not itself select or pair parents, invoke crossover
+or mutation, mark genomes complete, evaluate children, swap populations,
+derive operator streams, or increment a generation. Version 0.16.0 invokes it
+from the bounded `evo_run` composition.
 
 ### Private complete-parent-pair planning
 
@@ -432,8 +431,8 @@ The planning lifecycle is:
     pair. A later singleton or elitism policy owns it.
 
 The planner receives no child pointer, writes no genome, invokes no crossover
-or mutation callback, marks no lifecycle state, and does not participate in
-`evo_run`.
+or mutation callback, and marks no lifecycle state. Version 0.16.0 invokes it
+through complete-pair production from `evo_run`.
 
 ### Private deterministic complete-pair child production
 
@@ -561,9 +560,9 @@ accepts either generation-zero or evaluated-child provenance. An evaluated
 child can therefore authorize tournament selection and the next independently
 owned child allocation without first changing object ownership.
 
-This boundary does not swap parent and child objects, increment a generation,
-destroy or recycle the prior parent, implement termination policy, or
-participate in public `evo_run`.
+This boundary does not itself swap parent and child objects, increment a
+generation, destroy or recycle the prior parent, or implement termination
+policy. Version 0.16.0 invokes it from public `evo_run`.
 
 ### Private atomic generation advancement
 
@@ -617,6 +616,45 @@ Atomicity here is a library-state contract: every rejection precedes mutation,
 and the remaining commit suffix has no expected failure. It does not make the
 population handles safe for concurrent unsynchronized access.
 
+### Public bounded multi-generation execution
+
+Version 0.16.0 composes the private generation pipeline in `evo_run`. The
+normative decision is recorded in
+`docs/adr/ADR-0015-bounded-public-multigeneration-run.md`.
+
+The bounded-run lifecycle is:
+
+1. `generation_limit` is the number of completed child transitions after
+   generation zero. Zero retains the version 0.6.0 generation-zero behavior.
+2. For a positive limit, EVO validates the child slab budget and every
+   transition policy before allocation or callback dispatch. Populations above
+   one require valid tournament size and finite crossover and mutation rates in
+   `[0, 1]`. A one-member population uses odd-tail cloning directly and does not
+   require unused pair policy.
+3. EVO constructs, initializes, and evaluates generation zero and transfers its
+   stable valid winner into one independent result allocation.
+4. For each source generation in ascending order, EVO creates one child slab,
+   produces all complete pairs, completes an odd tail when required, evaluates
+   the complete child, and resolves strict global-best improvement.
+5. EVO atomically promotes the evaluated child before changing the result.
+   Promotion increments the completed-transition count and releases the former
+   parent.
+6. A later candidate replaces the existing result bytes and complete fitness
+   only when its `fitness.total` is strictly greater. Exact cross-generation
+   ties retain the earlier winner.
+7. A promoted all-invalid child terminates the loop successfully and retains
+   the earlier valid winner. Its promotion is included in
+   `generations_completed`.
+8. Any other failure destroys every current internal owner and the result
+   allocation, returning the inactive result to its complete zero state. No
+   partial public progress is retained.
+
+The result allocation is created once and is not reallocated during a run.
+Bounded-run policy evidence is private. Version 0.16.0 does not define
+convergence, stagnation, application stop or observer callbacks, generalized
+elitism, adaptive mutation, old-slab recycling, checkpointing, parallelism,
+secure erasure, or a public termination-reason field.
+
 ### Result lifecycle
 
 The caller must zero-initialize `evo_result_t` before its first use:
@@ -632,8 +670,8 @@ The lifecycle contract is:
 2. Null input, invalid resource policy, allocation failure, evaluation
    failure, and completion without a valid candidate leave a non-null,
    inactive result in the empty zero state.
-3. On success, the result exclusively owns an independent copy of the best
-   valid generation-zero genome.
+3. On success, the result exclusively owns an independent copy of the highest-
+   total valid genome observed through all completed transitions.
 4. Callers may use bounded, non-owning aliases to read or write genome bytes
    while the result remains alive. An alias may not free or reallocate the
    storage and must not survive result destruction.
@@ -652,14 +690,14 @@ reviewed erasure boundary.
 
 | Status | Meaning |
 |---|---|
-| `EVO_SUCCESS` | Generation-zero evaluation produced and transferred a valid best candidate. |
+| `EVO_SUCCESS` | Generation zero produced a valid winner and every requested transition completed, or a promoted later all-invalid child ended the run early. |
 | `EVO_ERROR_INVALID_ARGUMENT` | A required pointer argument is null. |
 | `EVO_ERROR_OUT_OF_MEMORY` | The system allocator returned null. |
 | `EVO_ERROR_RESULT_ACTIVE` | The result already owns a genome and is preserved unchanged. |
 | `EVO_ERROR_RESOURCE_LIMIT` | A required size is zero, arithmetic overflows, or a caller budget is exceeded. |
 | `EVO_ERROR_STATE` | A private lifecycle operation received inactive, initialized, or inconsistent state. |
 | `EVO_ERROR_EVALUATION` | A fitness callback returned a non-finite component. |
-| `EVO_ERROR_NO_VALID_CANDIDATE` | Generation-zero evaluation completed, but every candidate was invalid. |
+| `EVO_ERROR_NO_VALID_CANDIDATE` | Generation-zero evaluation completed, but every candidate was invalid, so no public winner exists. |
 
 ### Result fitness
 
@@ -726,9 +764,16 @@ allocation-free generation-advancement operation that transfers evaluated-
 child ownership, releases the former parent, and records versioned transition
 evidence. Consumers rebuilding from 0.14.0 require no source change.
 
-## Current 0.15.0 Conformance Boundary
+Version 0.16.0 changes no public layout, function signature, installed symbol,
+or memory-policy field. It changes `evo_run` behavior for positive
+`generation_limit` values by composing bounded child transitions. A zero limit
+retains the established generation-zero behavior. Consumers using positive
+limits must provide valid transition policy and `max_child_population_bytes`.
 
-The current implementation exposes a complete generation-zero boundary:
+## Current 0.16.0 Conformance Boundary
+
+The current implementation exposes generation-zero compatibility plus bounded
+multi-generation execution:
 
 - validation enforces required pointers, an evaluator, an inactive result, and
   the three generation-zero memory budgets;
@@ -736,7 +781,8 @@ The current implementation exposes a complete generation-zero boundary:
   private population in deterministic order;
 - invalid candidates are never evaluated;
 - finite consumer totals select a stable winner with lower-index tie-breaking;
-- success transfers an independent genome copy and complete fitness evidence;
+- success transfers one independent global-best genome copy and complete
+  fitness evidence;
 - all-invalid completion has a distinct public status;
 - allocation, resource, state, and evaluation failures return an empty result
   after complete private cleanup;
@@ -782,14 +828,19 @@ The current implementation exposes a complete generation-zero boundary:
 - private generation advancement validates current/child lineage and all
   ownership ranges, moves the evaluated child into the parent handle, empties
   the child handle, releases the former parent, and records the next generation
-  without allocation, copying, RNG, or callbacks; and
-- generalized elitism, adaptive mutation, diversity, stopping policy,
-  checkpointing, buffer recycling, and public generation iteration are not
-  implemented.
+  without allocation, copying, RNG, or callbacks;
+- public bounded execution validates transition-only policy before callbacks,
+  runs ascending transitions, allocates the result once, retains earlier exact
+  ties, counts completed promotions, and stops successfully after promoting a
+  later all-invalid child; and
+- generalized elitism, adaptive mutation, diversity, convergence, stagnation,
+  application stopping and observation, checkpointing, buffer recycling,
+  parallelism, and public termination-reason evidence are not implemented.
 
-Consumers may treat `EVO_SUCCESS` as evidence of a valid evaluated
-generation-zero winner. They must not treat it as evidence that an
-optimization search or generation transition was performed.
+Consumers may treat `EVO_SUCCESS` as evidence of a valid global winner and
+exactly `generations_completed` promoted child generations. A value below a
+positive configured limit identifies later all-invalid termination in version
+0.16.0; no other public early-stop reason exists.
 
 ## Verification
 
@@ -861,6 +912,15 @@ release test also proves that advancement succeeds while the next allocator
 call is forced to fail and releases exactly the two former-parent allocations,
 confirming the transition's allocation-free single-owner contract.
 
+The bounded-run test proves zero-limit compatibility; positive-limit policy
+validation before callbacks; even, odd, and one-member execution; deterministic
+multi-transition replay; strict global improvement; earlier-winner exact ties;
+later all-invalid promotion and successful stop; generation-zero all-invalid
+mapping; active-result preservation; and versioned private run evidence. The
+wrapped-allocation test additionally proves the five-allocation bounded path,
+exact successful cleanup, and empty public failure after child-slab or child-
+evaluation allocation failure.
+
 ## Related Records
 
 - `docs/adr/ADR-0001-library-boundary-and-build-system.md`
@@ -876,6 +936,7 @@ confirming the transition's allocation-free single-owner contract.
 - `docs/adr/ADR-0012-deterministic-odd-tail-elite-cloning.md`
 - `docs/adr/ADR-0013-deterministic-produced-child-evaluation.md`
 - `docs/adr/ADR-0014-atomic-generation-advancement.md`
+- `docs/adr/ADR-0015-bounded-public-multigeneration-run.md`
 - `docs/architecture.md`
 - `docs/algorithms.md`
 - `docs/benchmarks.md`
@@ -896,4 +957,5 @@ confirming the transition's allocation-free single-owner contract.
 - `https://github.com/dlworrell/evo/issues/30`
 - `https://github.com/dlworrell/evo/issues/32`
 - `https://github.com/dlworrell/evo/issues/34`
+- `https://github.com/dlworrell/evo/issues/36`
 - `https://github.com/dlworrell/AEMS/issues/18`

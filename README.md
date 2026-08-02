@@ -65,14 +65,17 @@ against each installed result. See
 
 ## Status
 
-EVO 0.15.0 retains the complete public generation-zero boundary and adds a
-private atomic ownership transition from an evaluated child population to the
-next completed generation.
-`evo_run` still constructs and
-deterministically initializes a private population, validates every candidate,
-evaluates only valid candidates, selects the stable generation-zero winner,
-and transfers an independent genome copy plus its complete fitness evidence to
-the public result.
+EVO 0.16.0 composes the complete deterministic generation pipeline into a
+bounded public `evo_run`. Generation zero is constructed, initialized,
+validated, and evaluated first. Each configured transition then produces a
+complete child population, evaluates it, atomically promotes it, and retains
+the strict global best-so-far in one independently owned result buffer.
+
+`generation_limit` counts completed child transitions after generation zero.
+A zero limit preserves the established generation-zero-only behavior. Exact
+cross-generation total-fitness ties retain the earlier winner. If a later
+child is all-invalid, that completed child is promoted, the run stops
+successfully, and the earlier valid global winner remains in the result.
 
 Version 0.3.0 added the independently tested private population-storage
 foundation: checked `population_size * genome_size` arithmetic, a
@@ -109,9 +112,10 @@ returns an empty result after releasing private storage. A completed
 all-invalid population returns `EVO_ERROR_NO_VALID_CANDIDATE`; it is distinct
 from an internal state, resource, allocation, or callback-output failure.
 
-`EVO_SUCCESS` now means a valid generation-zero winner was produced. It does
-not mean that selection, crossover, mutation, a generation transition, or an
-optimization search occurred. `generations_completed` therefore remains zero.
+In version 0.6.0, `EVO_SUCCESS` meant that a valid generation-zero winner was
+produced, and `generations_completed` therefore remained zero. Version 0.16.0
+retains that exact result when `generation_limit` is zero and extends success
+to the requested bounded transition sequence when the limit is positive.
 
 Version 0.7.0 adds unbiased bounded-index sampling over the existing private
 PCG stream and tournament selection with replacement from valid evaluated
@@ -122,7 +126,8 @@ on failure.
 
 Selection accepts an explicitly seeded private RNG stream. Version 0.11.0 adds
 the separate owner that derives a selection stream for each complete pair; the
-selection operator itself remains unchanged and disconnected from `evo_run`.
+selection operator itself remains unchanged. Version 0.16.0 invokes that
+composition from the bounded public loop.
 
 Version 0.8.0 adds a private probability gate and crossover pair dispatcher.
 The gate quantizes `crossover_rate` to a 32-bit threshold and consumes exactly
@@ -131,9 +136,9 @@ When selected, the existing consumer callback receives two read-only parents
 and two distinct writable children. Otherwise, or when the callback is absent,
 the parents are cloned into their corresponding children.
 
-The operator remains representation-neutral and allocation-free. It is not
-called by `evo_run`, does not select parents, mutate children, own a child
-population, or advance a generation.
+The operator remains representation-neutral and allocation-free. It does not
+itself select parents, mutate children, own a child population, or advance a
+generation; version 0.16.0 invokes it through complete-pair composition.
 
 Version 0.9.0 adds a private fixed-rate mutation dispatcher over one bounded
 writable genome. Every valid attempt consumes exactly one version-1 RNG word,
@@ -223,8 +228,22 @@ both populations and caller evidence; success preserves child genome bytes,
 evaluation records, stable-best evidence, and production provenance exactly.
 The boundary consumes no RNG state and invokes no callback. Completed all-
 invalid children remain promotable because extinction and stopping policy are
-separate decisions. Public `evo_run`, generation-limit handling, population
-recycling, and multi-generation iteration remain later milestones.
+separate decisions. Public composition and generation-limit handling remained
+separate from this private ownership operation until version 0.16.0.
+
+Version 0.16.0 adds bounded-run policy version 1. Positive limits validate all
+transition-only configuration before any consumer callback. For each source
+generation in ascending order, EVO allocates one child slab, produces complete
+pairs and an odd stable-best tail when required, evaluates the complete child,
+and uses generation-advancement policy version 1 to transfer ownership. The
+former parent is released at each successful promotion.
+
+The public result genome is allocated once after generation-zero evaluation.
+Only a strictly higher `fitness.total` overwrites that buffer and its complete
+fitness evidence; an exact tie preserves the earlier generation. Result
+updates occur only after child promotion succeeds. Every public failure
+releases all private owners and the result allocation and returns an empty
+result. No partial run result is exposed.
 
 ## Result Lifecycle
 
@@ -236,8 +255,9 @@ resets the full result to zero, and makes it immediately reusable.
 `max_genome_bytes` is a required caller-provided per-genome policy bound.
 `max_population_bytes` separately bounds the private population genome slab,
 `max_evaluation_bytes` bounds private validity and fitness records, and
-`max_child_population_bytes` bounds one separately owned child slab. None of
-these fields is an arbitrary compiled-in cap.
+`max_child_population_bytes` bounds one separately owned child slab and is
+required only when `generation_limit` is positive. None of these fields is an
+arbitrary compiled-in cap.
 
 The status values are:
 
@@ -253,13 +273,12 @@ The status values are:
 See `docs/specs/EVO-001-library-contract.md` for the complete API, ownership,
 failure-state, alias, compatibility, and secure-erasure boundaries.
 
-The private tournament, crossover-dispatch, mutation-dispatch, child-population
-ownership, operator-stream, complete-pair-planning, sequential complete-pair
-production, odd-tail elite-clone, and produced-child evaluation boundaries are
-independently verified. The first private generation ownership transition is
-also verified. Generalized elitism, adaptive mutation, stopping policy,
-population recycling, and public multi-generation execution remain later
-boundaries; none is implied by `evo_run` success in version 0.15.0.
+The tournament, crossover-dispatch, mutation-dispatch, child-population,
+operator-stream, pair-production, odd-tail, child-evaluation, and atomic-
+advancement boundaries remain independently verified beneath the bounded
+public loop. Convergence, stagnation, application stop or observer callbacks,
+generalized elitism, adaptive mutation, population recycling, checkpointing,
+parallelism, and a public termination-reason field remain later boundaries.
 
 ## Project Zero
 

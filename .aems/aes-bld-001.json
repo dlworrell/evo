@@ -97,6 +97,7 @@
       "src/child_tail.c",
       "src/child_evaluation.c",
       "src/generation_advancement.c",
+      "src/bounded_run.c",
       "src/diversity.c",
       "src/fitness.c",
       "src/statistics.c",
@@ -193,6 +194,12 @@
         "source": "tests/generation_advancement_test.c",
         "cmake": "evo_generation_advancement_test",
         "autotools": "tests/evo_generation_advancement_test"
+      },
+      {
+        "id": "bounded-run",
+        "source": "tests/bounded_run_test.c",
+        "cmake": "evo_bounded_run_test",
+        "autotools": "tests/evo_bounded_run_test"
       },
       {
         "id": "seed-schedule-research",

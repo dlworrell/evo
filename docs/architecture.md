@@ -93,10 +93,10 @@ maps to `EVO_ERROR_NO_VALID_CANDIDATE`; all other private failures preserve
 their existing status. Every non-active-result failure leaves the public
 result empty.
 
-The result copy is a distinct allocation because private population
-destruction invalidates every population view. The copy covers exactly the
-caller-bounded `genome_size`. `generations_completed` remains zero because no
-selection or generation transition occurs.
+In the version 0.6.0 boundary, the result copy is a distinct allocation because
+private population destruction invalidates every population view. The copy
+covers exactly the caller-bounded `genome_size`. `generations_completed`
+remains zero because no selection or generation transition occurs.
 
 ## Private Selection Boundary
 
@@ -132,10 +132,10 @@ The callback owns genome representation semantics and must fully initialize
 both children without changing parent bytes, ownership, or retaining any view.
 The dispatcher performs no allocation and has no callback rollback path.
 
-This boundary does not select parents or own next-generation storage. It is not
-called by `evo_run`. Child-population ownership and operator stream derivation
-remain separate private boundaries; version 0.12.0 composes them for complete-
-pair production without implementing a generation transition.
+This boundary does not itself select parents or own next-generation storage.
+Child-population ownership and operator stream derivation remain separate
+private boundaries; version 0.12.0 composes them for complete-pair production,
+and version 0.16.0 invokes that composition from the bounded public loop.
 
 ## Private Mutation Boundary
 
@@ -156,10 +156,10 @@ unrecorded entropy, change storage ownership, or retain the view. Because the
 callback mutates in place and returns no status, the dispatcher has no rollback
 path.
 
-This boundary performs no allocation and is not called by `evo_run`. Version
-0.12.0 composes it for complete child pairs. Built-in representation-specific
-mutation helpers, adaptive schedules, and the first generation transition
-remain future work.
+This boundary performs no allocation. Version 0.12.0 composes it for complete
+child pairs, and version 0.16.0 invokes that composition from the bounded
+public loop. Built-in representation-specific mutation helpers and adaptive
+schedules remain future work.
 
 ## Private Child-Population Ownership Boundary
 
@@ -181,7 +181,7 @@ new evaluation records, checkpoints, or a total run working set.
 
 This boundary performs no selection, pairing, crossover, mutation, elitism,
 child completion, evaluation, swapping, RNG stream derivation, or generation
-advancement. It is not called by `evo_run`.
+advancement by itself. Version 0.16.0 invokes it from the bounded public loop.
 
 ## Private Operator-Stream and Pair-Planning Boundary
 
@@ -271,8 +271,9 @@ provenance, allowing the evaluated child to become the read-only authority for
 later selection and next-child allocation.
 
 The operation consumes no RNG state and invokes no initialization, selection,
-crossover, or mutation callback. It does not swap ownership, advance a
-generation, recycle the prior parent, or participate in `evo_run`.
+crossover, or mutation callback. It does not itself swap ownership, advance a
+generation, or recycle the prior parent. Version 0.16.0 invokes it from the
+bounded public loop.
 
 ## Private Atomic Generation Advancement
 
@@ -305,6 +306,39 @@ an optimization run is deliberately left to a later stopping-policy boundary.
 The old parent is released rather than recycled into the child handle; buffer
 recycling remains a separate ownership decision.
 
+## Public Bounded Multi-Generation Run
+
+Version 0.16.0 composes the accepted private generation boundaries inside
+`evo_run`. `generation_limit` is the number of completed child transitions
+after generation zero, so a zero limit retains the complete version 0.6.0
+generation-zero behavior.
+
+Transition-only configuration is validated before generation-zero allocation
+or any consumer callback. For every source generation in ascending order, a
+private bounded-run owner constructs one child slab, produces all complete
+pairs, completes an odd tail through stable-best cloning when necessary,
+evaluates the full child, and atomically promotes it. A one-member population
+uses the odd-tail rule directly and does not require tournament, crossover, or
+mutation policy that cannot be exercised.
+
+The independent result genome is allocated once after generation zero. It is
+a global best-so-far snapshot, not a view into either working population. A
+later candidate replaces its bytes and fitness only when its total fitness is
+strictly greater; exact cross-generation ties retain the earlier winner. The
+copy occurs only after successful child promotion, so a failed transition
+cannot publish uncommitted child evidence.
+
+An evaluated all-invalid child is promoted, increments
+`generations_completed`, and terminates the bounded loop successfully while
+the earlier valid global winner remains. Any other failure destroys the child,
+current parent, and public result allocation before returning an empty public
+result. Partial progress is never exposed through `evo_run`.
+
+Bounded-run policy evidence remains private. Convergence, stagnation,
+application stop and observer callbacks, a public termination-reason field,
+generalized elitism, adaptive mutation, recycling, checkpointing, and
+parallelism remain separate decisions.
+
 ## Execution Flow
 
 1. Initialize a population.
@@ -315,16 +349,13 @@ recycling remains a separate ownership decision.
 6. Record statistics and evidence.
 7. Stop on convergence, stagnation, generation limit, or an application-defined condition.
 
-Version 0.15.0 publicly implements steps 1 and 2 for generation zero and
-transfers the best valid candidate. Step 3 has an independently tested private
-tournament operator, and both crossover and mutation in step 4 have
-independently tested private dispatchers. A separate child slab now accepts
-deterministic sequential pair output, versioned odd-tail elite completion, and
-deterministic child evaluation. A private ownership boundary can promote that
-completed child as the next generation. Generation-limit and other stopping
-policies remain absent. `evo_run` invokes none of these later boundaries.
-`EVO_SUCCESS` therefore still does not indicate that steps 3 through 7, a
-generation transition, or an optimization search completed.
+Version 0.16.0 publicly implements steps 1 through 4 for exactly
+`generation_limit` bounded transitions, with the version-1 odd-tail policy as
+the current elite-preservation rule in step 5. It records the global winner and
+completed transition count as result evidence. The configured limit and later
+all-invalid extinction are the only public stop conditions. Diversity,
+convergence, stagnation, application-defined stopping, statistics observers,
+checkpointing, and parallel evaluation remain absent.
 
 ## Correctness Boundary
 
