@@ -1,0 +1,429 @@
+#include "internal/bounded_run.h"
+
+#include "internal/child_evaluation.h"
+#include "internal/child_pair.h"
+#include "internal/child_tail.h"
+
+#include <math.h>
+#include <stdint.h>
+
+static bool checked_size_multiply(size_t left,
+                                  size_t right,
+                                  size_t *product)
+{
+    if (product == NULL || (left != 0 && right > SIZE_MAX / left)) {
+        return false;
+    }
+
+    *product = left * right;
+    return true;
+}
+
+static bool byte_ranges_overlap(const void *left,
+                                size_t left_size,
+                                const void *right,
+                                size_t right_size)
+{
+    const uintmax_t left_start = (uintmax_t)(uintptr_t)left;
+    const uintmax_t right_start = (uintmax_t)(uintptr_t)right;
+    uintmax_t left_end = 0;
+    uintmax_t right_end = 0;
+
+    if (left == NULL || right == NULL || left_size == 0 || right_size == 0 ||
+        (uintmax_t)left_size > UINTMAX_MAX - left_start ||
+        (uintmax_t)right_size > UINTMAX_MAX - right_start) {
+        return true;
+    }
+
+    left_end = left_start + (uintmax_t)left_size;
+    right_end = right_start + (uintmax_t)right_size;
+    return left_start < right_end && right_start < left_end;
+}
+
+static bool transition_configuration_is_valid(
+    const evo_problem_t *problem,
+    const evo_config_t *config)
+{
+    size_t child_storage_bytes = 0;
+
+    if (problem->genome_size == 0 || config->population_size == 0 ||
+        config->max_genome_bytes == 0 ||
+        problem->genome_size > config->max_genome_bytes ||
+        config->max_child_population_bytes == 0 ||
+        !checked_size_multiply(config->population_size,
+                               problem->genome_size,
+                               &child_storage_bytes) ||
+        child_storage_bytes > config->max_child_population_bytes) {
+        return false;
+    }
+
+#if SIZE_MAX > UINT64_MAX
+    if (config->generation_limit > (size_t)UINT64_MAX ||
+        config->population_size - 1 > (size_t)UINT64_MAX) {
+        return false;
+    }
+#endif
+
+    if (config->population_size == 1) {
+        return true;
+    }
+
+    return config->tournament_size != 0 &&
+           config->tournament_size <= config->population_size &&
+           isfinite(config->crossover_rate) &&
+           config->crossover_rate >= 0.0 &&
+           config->crossover_rate <= 1.0 &&
+           isfinite(config->mutation_rate) &&
+           config->mutation_rate >= 0.0 &&
+           config->mutation_rate <= 1.0;
+}
+
+evo_status_t evo_bounded_run_validate_config(
+    const evo_problem_t *problem,
+    const evo_config_t *config)
+{
+    if (problem == NULL || config == NULL) {
+        return EVO_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (config->generation_limit == 0) {
+        return EVO_SUCCESS;
+    }
+
+    if (!transition_configuration_is_valid(problem, config)) {
+        return EVO_ERROR_RESOURCE_LIMIT;
+    }
+
+    return EVO_SUCCESS;
+}
+
+static bool fitness_equal(const evo_fitness_t *left,
+                          const evo_fitness_t *right)
+{
+    return left->correctness == right->correctness &&
+           left->performance == right->performance &&
+           left->memory_use == right->memory_use &&
+           left->reliability == right->reliability &&
+           left->maintainability == right->maintainability &&
+           left->constraint_penalty == right->constraint_penalty &&
+           left->total == right->total;
+}
+
+static bool bytes_equal(const void *left,
+                        const void *right,
+                        size_t size)
+{
+    const unsigned char *left_bytes = left;
+    const unsigned char *right_bytes = right;
+
+    for (size_t offset = 0; offset < size; ++offset) {
+        if (left_bytes[offset] != right_bytes[offset]) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+static bool initial_run_state_is_valid(
+    const evo_problem_t *problem,
+    const evo_config_t *config,
+    const evo_population_t *parents,
+    const evo_result_t *best_result,
+    const evo_bounded_run_evidence_t *evidence)
+{
+    const evo_candidate_evaluation_t *evaluation = NULL;
+    const void *parent_best = NULL;
+    size_t best_index = 0;
+    size_t valid_count = 0;
+
+    if (config->generation_limit == 0 ||
+        best_result->best_genome == NULL ||
+        best_result->generations_completed != 0 ||
+        best_result->random_seed != config->random_seed ||
+        byte_ranges_overlap(parents,
+                            sizeof(*parents),
+                            best_result,
+                            sizeof(*best_result)) ||
+        byte_ranges_overlap(parents,
+                            sizeof(*parents),
+                            evidence,
+                            sizeof(*evidence)) ||
+        byte_ranges_overlap(best_result,
+                            sizeof(*best_result),
+                            evidence,
+                            sizeof(*evidence)) ||
+        byte_ranges_overlap(parents,
+                            sizeof(*parents),
+                            best_result->best_genome,
+                            problem->genome_size) ||
+        byte_ranges_overlap(best_result,
+                            sizeof(*best_result),
+                            best_result->best_genome,
+                            problem->genome_size) ||
+        byte_ranges_overlap(evidence,
+                            sizeof(*evidence),
+                            best_result->best_genome,
+                            problem->genome_size) ||
+        byte_ranges_overlap(parents,
+                            sizeof(*parents),
+                            parents->genomes,
+                            parents->storage_bytes) ||
+        byte_ranges_overlap(parents,
+                            sizeof(*parents),
+                            parents->evaluations,
+                            parents->evaluation_bytes) ||
+        byte_ranges_overlap(parents->genomes,
+                            parents->storage_bytes,
+                            parents->evaluations,
+                            parents->evaluation_bytes) ||
+        byte_ranges_overlap(best_result,
+                            sizeof(*best_result),
+                            parents->genomes,
+                            parents->storage_bytes) ||
+        byte_ranges_overlap(best_result,
+                            sizeof(*best_result),
+                            parents->evaluations,
+                            parents->evaluation_bytes) ||
+        byte_ranges_overlap(best_result->best_genome,
+                            problem->genome_size,
+                            parents->genomes,
+                            parents->storage_bytes) ||
+        byte_ranges_overlap(best_result->best_genome,
+                            problem->genome_size,
+                            parents->evaluations,
+                            parents->evaluation_bytes) ||
+        byte_ranges_overlap(evidence,
+                            sizeof(*evidence),
+                            parents->genomes,
+                            parents->storage_bytes) ||
+        byte_ranges_overlap(evidence,
+                            sizeof(*evidence),
+                            parents->evaluations,
+                            parents->evaluation_bytes) ||
+        !parents->initialized || parents->source_generation != 0 ||
+        parents->genome_size != problem->genome_size ||
+        !evo_population_validate_completed(config,
+                                           parents,
+                                           &valid_count) ||
+        valid_count == 0 || !parents->has_best ||
+        !evo_population_best_index(parents, &best_index)) {
+        return false;
+    }
+
+    parent_best = evo_population_genome_const(parents, best_index);
+    evaluation = evo_population_evaluation_const(parents, best_index);
+    return parent_best != NULL && evaluation != NULL &&
+           evaluation->valid && evaluation->evaluated &&
+           fitness_equal(&best_result->best_fitness,
+                         &evaluation->fitness) &&
+           bytes_equal(best_result->best_genome,
+                       parent_best,
+                       problem->genome_size);
+}
+
+static void copy_genome(const void *source,
+                        void *destination,
+                        size_t genome_size)
+{
+    const unsigned char *source_bytes = source;
+    unsigned char *destination_bytes = destination;
+
+    for (size_t offset = 0; offset < genome_size; ++offset) {
+        destination_bytes[offset] = source_bytes[offset];
+    }
+}
+
+static evo_status_t produce_child_population(
+    const evo_problem_t *problem,
+    const evo_config_t *config,
+    void *context,
+    const evo_population_t *parents,
+    uint64_t source_generation,
+    evo_population_t *children)
+{
+    evo_child_pair_evidence_t pair_evidence = {0};
+    evo_child_tail_evidence_t tail_evidence = {0};
+    const size_t complete_pair_count = config->population_size / 2;
+    evo_status_t status = EVO_SUCCESS;
+
+    for (size_t pair_index = 0;
+         pair_index < complete_pair_count;
+         ++pair_index) {
+        status = evo_child_pair_produce(problem,
+                                        config,
+                                        context,
+                                        parents,
+                                        source_generation,
+                                        pair_index,
+                                        children,
+                                        &pair_evidence);
+        if (status != EVO_SUCCESS) {
+            return status;
+        }
+    }
+
+    if (config->population_size % 2 != 0) {
+        status = evo_child_tail_produce(problem,
+                                        config,
+                                        parents,
+                                        source_generation,
+                                        children,
+                                        &tail_evidence);
+    }
+
+    return status;
+}
+
+static bool resolve_strict_improvement(
+    const evo_population_t *children,
+    const evo_result_t *best_result,
+    const void **genome,
+    const evo_candidate_evaluation_t **evaluation)
+{
+    size_t best_index = 0;
+
+    if (!children->has_best || children->valid_count == 0) {
+        return false;
+    }
+
+    if (!evo_population_best_index(children, &best_index)) {
+        return false;
+    }
+
+    *genome = evo_population_genome_const(children, best_index);
+    *evaluation = evo_population_evaluation_const(children, best_index);
+    return *genome != NULL && *evaluation != NULL &&
+           (*evaluation)->valid && (*evaluation)->evaluated &&
+           (*evaluation)->fitness.total > best_result->best_fitness.total;
+}
+
+evo_status_t evo_bounded_run_advance(
+    const evo_problem_t *problem,
+    const evo_config_t *config,
+    void *context,
+    evo_population_t *parents,
+    evo_result_t *best_result,
+    evo_bounded_run_evidence_t *evidence)
+{
+    evo_bounded_run_evidence_t candidate = {0};
+    evo_population_t children = {0};
+    evo_status_t status = EVO_SUCCESS;
+
+    if (problem == NULL || config == NULL || parents == NULL ||
+        best_result == NULL || evidence == NULL) {
+        return EVO_ERROR_INVALID_ARGUMENT;
+    }
+
+    status = evo_bounded_run_validate_config(problem, config);
+    if (status != EVO_SUCCESS) {
+        return status;
+    }
+
+    if (!initial_run_state_is_valid(problem,
+                                    config,
+                                    parents,
+                                    best_result,
+                                    evidence)) {
+        return EVO_ERROR_STATE;
+    }
+
+    candidate.population_size = config->population_size;
+    candidate.requested_transitions = config->generation_limit;
+    candidate.best_generation = 0;
+    candidate.operator_seed_schedule_version =
+        EVO_OPERATOR_SEED_SCHEDULE_VERSION;
+    candidate.child_evaluation_policy_version =
+        EVO_CHILD_EVALUATION_POLICY_VERSION;
+    candidate.generation_advancement_policy_version =
+        EVO_GENERATION_ADVANCEMENT_POLICY_VERSION;
+    candidate.policy_version = EVO_BOUNDED_RUN_POLICY_VERSION;
+
+    for (size_t transition = 0;
+         transition < config->generation_limit;
+         ++transition) {
+        evo_child_evaluation_evidence_t evaluation_evidence = {0};
+        evo_generation_advancement_evidence_t advancement_evidence = {0};
+        const evo_candidate_evaluation_t *improved_evaluation = NULL;
+        const void *improved_genome = NULL;
+        const uint64_t source_generation = (uint64_t)transition;
+        bool has_improvement = false;
+
+        status = evo_child_population_create(problem,
+                                             config,
+                                             parents,
+                                             &children);
+        if (status != EVO_SUCCESS) {
+            break;
+        }
+
+        status = produce_child_population(problem,
+                                          config,
+                                          context,
+                                          parents,
+                                          source_generation,
+                                          &children);
+        if (status != EVO_SUCCESS) {
+            break;
+        }
+
+        status = evo_child_population_evaluate(problem,
+                                               config,
+                                               context,
+                                               source_generation,
+                                               &children,
+                                               &evaluation_evidence);
+        if (status != EVO_SUCCESS) {
+            break;
+        }
+
+        has_improvement = resolve_strict_improvement(
+            &children,
+            best_result,
+            &improved_genome,
+            &improved_evaluation);
+
+        status = evo_population_advance_generation(problem,
+                                                   config,
+                                                   source_generation,
+                                                   parents,
+                                                   &children,
+                                                   &advancement_evidence);
+        if (status != EVO_SUCCESS) {
+            break;
+        }
+
+        candidate.completed_transitions = transition + 1;
+        candidate.final_generation =
+            advancement_evidence.completed_generation;
+        candidate.final_valid_count = advancement_evidence.valid_count;
+        candidate.final_best_index = advancement_evidence.best_index;
+        candidate.final_has_best = advancement_evidence.has_best;
+        candidate.odd_child_policy_version =
+            advancement_evidence.odd_child_policy_version;
+        best_result->generations_completed =
+            candidate.completed_transitions;
+
+        if (has_improvement) {
+            copy_genome(improved_genome,
+                        best_result->best_genome,
+                        problem->genome_size);
+            best_result->best_fitness = improved_evaluation->fitness;
+            candidate.best_generation = candidate.final_generation;
+        }
+
+        if (!candidate.final_has_best) {
+            candidate.stopped_all_invalid = true;
+            break;
+        }
+    }
+
+    evo_population_destroy(&children);
+    if (status != EVO_SUCCESS) {
+        return status;
+    }
+
+    candidate.complete = true;
+    *evidence = candidate;
+    return EVO_SUCCESS;
+}

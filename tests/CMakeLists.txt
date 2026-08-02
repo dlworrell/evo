@@ -71,6 +71,11 @@ target_include_directories(evo_generation_advancement_test PRIVATE ${PROJECT_SOU
 target_link_libraries(evo_generation_advancement_test PRIVATE catalyst_evo)
 add_test(NAME evo_generation_advancement_test COMMAND evo_generation_advancement_test)
 
+add_executable(evo_bounded_run_test bounded_run_test.c)
+target_include_directories(evo_bounded_run_test PRIVATE ${PROJECT_SOURCE_DIR}/src)
+target_link_libraries(evo_bounded_run_test PRIVATE catalyst_evo)
+add_test(NAME evo_bounded_run_test COMMAND evo_bounded_run_test)
+
 add_library(evo_seed_schedule_research STATIC
     research/seed_schedule_research.c
 )

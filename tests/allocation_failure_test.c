@@ -152,6 +152,7 @@ int main(void)
     evo_child_evaluation_evidence_t child_evaluation = {0};
     evo_generation_advancement_evidence_t advancement = {0};
     evo_result_t result = {0};
+    evo_config_t run_config = {0};
 
     reset_allocation_injection(0);
     assert(evo_run(&problem, &config, NULL, &result) == EVO_SUCCESS);
@@ -162,6 +163,73 @@ int main(void)
     assert_run_allocation_failure(&problem, &config, 1);
     assert_run_allocation_failure(&problem, &config, 2);
     assert_run_allocation_failure(&problem, &config, 3);
+
+    run_config = config;
+    run_config.generation_limit = 1;
+    run_config.tournament_size = 2;
+    run_config.crossover_rate = 0.0;
+    run_config.mutation_rate = 0.0;
+
+    reset_allocation_injection(0);
+    {
+        const size_t releases_before_run = release_calls;
+
+        assert(evo_run(&problem, &run_config, NULL, &result) ==
+               EVO_SUCCESS);
+        assert(allocation_calls == 5);
+        assert(release_calls == releases_before_run + 4);
+        assert(result.best_genome != NULL);
+        assert(result.generations_completed == 1);
+        evo_result_destroy(&result);
+        assert(release_calls == releases_before_run + 5);
+        assert_completely_empty(&result);
+    }
+
+    reset_allocation_injection(4);
+    {
+        const size_t releases_before_run = release_calls;
+
+        assert(evo_run(&problem, &run_config, NULL, &result) ==
+               EVO_ERROR_OUT_OF_MEMORY);
+        assert(allocation_calls == 4);
+        assert(release_calls == releases_before_run + 3);
+        assert_completely_empty(&result);
+    }
+
+    reset_allocation_injection(5);
+    {
+        const size_t releases_before_run = release_calls;
+
+        assert(evo_run(&problem, &run_config, NULL, &result) ==
+               EVO_ERROR_OUT_OF_MEMORY);
+        assert(allocation_calls == 5);
+        assert(release_calls == releases_before_run + 4);
+        assert_completely_empty(&result);
+    }
+
+    run_config.generation_limit = 2;
+    reset_allocation_injection(6);
+    {
+        const size_t releases_before_run = release_calls;
+
+        assert(evo_run(&problem, &run_config, NULL, &result) ==
+               EVO_ERROR_OUT_OF_MEMORY);
+        assert(allocation_calls == 6);
+        assert(release_calls == releases_before_run + 5);
+        assert_completely_empty(&result);
+    }
+
+    reset_allocation_injection(7);
+    {
+        const size_t releases_before_run = release_calls;
+
+        assert(evo_run(&problem, &run_config, NULL, &result) ==
+               EVO_ERROR_OUT_OF_MEMORY);
+        assert(allocation_calls == 7);
+        assert(release_calls == releases_before_run + 6);
+        assert_completely_empty(&result);
+    }
+    fail_allocation_call = 0;
 
     reset_allocation_injection(1);
     assert(evo_population_create(&problem, &config, &population) ==

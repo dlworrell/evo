@@ -131,10 +131,10 @@ completes successfully, but the public run returns
 `EVO_ERROR_NO_VALID_CANDIDATE` with an empty result because there is no asset
 whose ownership can be transferred.
 
-This boundary performs no parent selection, crossover, mutation, elitism,
-diversity processing, or generation transition. A successful call therefore
-records `generations_completed == 0`; it is generation-zero evidence rather
-than a completed optimization search.
+In version 0.6.0 this boundary performed no parent selection, crossover,
+mutation, elitism, diversity processing, or generation transition. A
+successful zero-limit call still records `generations_completed == 0`;
+version 0.16.0 composes later private boundaries when the limit is positive.
 
 ## Deterministic Tournament Selection
 
@@ -154,8 +154,9 @@ completed evaluation population.
 
 The caller supplies the seeded private stream. Version 0.11.0 derives that
 stream for complete parent pairs while keeping selection semantics independent.
-The operator is not called by `evo_run` and performs no crossover, mutation,
-elitism, or generation advancement.
+The operator performs no crossover, mutation, elitism, or generation
+advancement itself. Version 0.16.0 invokes it through complete-pair production
+from `evo_run`.
 
 ## Deterministic Crossover Dispatch
 
@@ -355,3 +356,39 @@ identities and every byte while releasing the former owners exactly once.
 All-invalid completed children use the same move. Termination, generation-
 limit enforcement, old-slab recycling, and public loop integration remain
 separate policies.
+
+## Bounded Multi-Generation Execution
+
+Version 0.16.0 adds bounded-run policy version 1 and composes the complete
+generation pipeline through public `evo_run`:
+
+1. Interpret `generation_limit` as the requested number of child transitions
+   after generation zero. A zero limit executes no transition and ignores
+   transition-only configuration.
+2. For a positive limit, validate the child slab budget and all operator
+   policy before constructing generation zero or invoking a consumer callback.
+3. Construct, initialize, validate, and evaluate generation zero. Transfer its
+   stable valid winner into one independently owned result allocation.
+4. For source generations `g = 0..generation_limit - 1`, allocate one child
+   slab and produce complete pairs in ascending pair order.
+5. If the population size is odd, complete the trailing child using odd-tail
+   policy version 1. A one-member population takes this path directly.
+6. Evaluate the complete child and resolve whether its stable best has a
+   strictly greater total fitness than the retained global winner.
+7. Atomically promote the evaluated child to completed generation `g + 1`.
+   Only after promotion may a strict improvement overwrite the existing result
+   buffer and fitness evidence.
+8. Record the completed transition. If the promoted population is all-invalid,
+   stop successfully; otherwise continue until the requested limit is met.
+
+The result buffer is never reallocated during a run. Exact total-fitness ties
+across generations retain the earlier winner, so deterministic replay is not
+affected by allocation addresses or later equal candidates. Failure at any
+transition destroys all internal owners and the result allocation; no partial
+winner or completion count escapes the public call.
+
+This algorithm has a bounded sequential working set of one current population,
+one child population, one result genome, and the current population's
+evaluation records plus provisional child evaluation records during child
+evaluation. It does not recycle slabs, run callbacks concurrently, infer
+convergence, or expose a public termination reason.
