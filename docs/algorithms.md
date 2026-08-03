@@ -2,7 +2,7 @@
 
 This document distinguishes algorithms implemented by the reusable
 `catalyst_evo` core from the structured program transformations and evaluation
-algorithm required by the EVO 1.0 source optimizer. Version 0.21.0 implements
+algorithm required by the EVO 1.0 source optimizer. Version 0.22.0 implements
 only the core boundary described below.
 
 ## EVO Core Initial Release
@@ -347,8 +347,8 @@ RNG state or changing any genome byte.
 - Invalid candidates retain zero fitness and are never evaluated.
 - An all-invalid child completes without a best candidate.
 - Success preserves production metadata and commits evaluation records,
-  valid count, stable best, comparison policy, and child-evaluation policy
-  version 2 evidence exactly once.
+  valid count, stable best, comparison and diversity policy, and child-
+  evaluation policy version 3 evidence exactly once.
 - Preflight, resource, allocation, and malformed-fitness failures preserve
   child-owned bytes and metadata plus caller-owned evidence. Consumer callback
   side effects after dispatch begins cannot be rolled back.
@@ -389,9 +389,10 @@ All-invalid completed children use the same move. Termination, generation-
 limit enforcement, old-slab recycling, and public loop integration remain
 separate policies.
 
-Version 0.21.0 advances generation-advancement policy to version 2 so its
-evidence carries fitness-comparison policy version 1 from the promoted child.
-Ownership transfer and generation numbering remain unchanged.
+Version 0.22.0 advances generation-advancement policy to version 3 so its
+evidence carries both fitness-comparison policy version 1 and the child's
+diversity policy and metric versions. Ownership transfer and generation
+numbering remain unchanged.
 
 ## Bounded Multi-Generation Execution
 
@@ -465,6 +466,40 @@ fitness-comparison policy version 1. Aggregation order and arithmetic remain
 schema-version-1 compatible; the new field identifies the authority that
 established the copied generation-local best.
 
+## Bounded Deterministic Diversity
+
+Version 0.22.0 defines diversity policy version 1 and advances public
+generation-statistics schema to version 3. Measurement occurs once after all
+validity and fitness callbacks for a population succeed. Hard-invalid
+candidates are excluded. For valid candidate indices, EVO visits every
+unordered pair in the exact order `(0,1), (0,2), ...`, skipping invalid
+members while retaining lexicographic index order. It performs no random
+sampling and consumes no operator RNG.
+
+The built-in byte metric has version 1. For a pair it counts byte positions
+whose values differ, divides by `genome_size`, and reports generation
+diversity as total differing bytes divided by `pair_count * genome_size`.
+Thus the result is normalized to `[0, 1]` with one final division. A consumer
+may instead provide `genome_distance` plus a nonzero metric version. Each
+callback result must be finite and in `[0, 1]`; EVO adds results in traversal
+order and divides by the pair count. A malformed value rejects the evaluation
+with `EVO_ERROR_EVALUATION` and discards provisional evaluation and diversity
+records.
+
+For `v` valid candidates, `pair_count = v * (v - 1) / 2`, computed with
+divide-first checked arithmetic. Zero or one valid candidate has zero pair
+count, work, and diversity and invokes no distance callback. Before any run
+callback, EVO computes the all-valid worst case from configured population
+size. Built-in work is `pair_count * genome_size` byte comparisons; domain
+work is `pair_count` callback invocations. Overflow or a value above
+`max_diversity_work` returns `EVO_ERROR_RESOURCE_LIMIT` before dispatch.
+
+Successful population evidence stores policy version, metric version, metric
+kind, pair count, work units, and normalized value. Statistics copy this
+evidence without recomputation, so validation, observation, stopping, and
+promotion cannot repeat a domain callback. Diversity does not participate in
+fitness comparison or selection in version 0.22.0.
+
 ## Synchronous Generation Observation
 
 Version 0.19.0 delivers the committed statistics stream without changing that
@@ -513,6 +548,10 @@ Version 0.21.0 advances bounded-run policy to version 3. Its evidence records
 fitness-comparison policy version 1 plus the winning generation and population
 index used by the shared comparator. Candidate work, RNG schedules, callback
 ordering, and the three 0.20.0 termination conditions remain unchanged.
+
+Version 0.22.0 advances bounded-run policy to version 4 and records diversity
+policy and metric provenance. It does not change operator stream derivation,
+selection draws, global-best comparison, or termination classification.
 
 ## Structured C Source Evolution
 

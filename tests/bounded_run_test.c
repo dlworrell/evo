@@ -172,6 +172,7 @@ static evo_config_t make_config(size_t population_size,
         .max_evaluation_bytes =
             population_size * sizeof(evo_candidate_evaluation_t),
         .max_child_population_bytes = population_size * genome_size,
+        .max_diversity_work = SIZE_MAX,
     };
 }
 
@@ -228,6 +229,10 @@ static void assert_generation_statistics(
     assert(statistics->version == EVO_GENERATION_STATISTICS_VERSION);
     assert(statistics->fitness_comparison_policy_version ==
            EVO_FITNESS_COMPARISON_POLICY_VERSION);
+    assert(statistics->diversity_policy_version ==
+           EVO_DIVERSITY_POLICY_VERSION);
+    assert(statistics->diversity_metric_version ==
+           EVO_BYTE_DIVERSITY_METRIC_VERSION);
     assert(statistics->generation_index == result->generations_completed);
     assert(statistics->population_size == population_size);
     assert(statistics->valid_count == valid_count);
@@ -531,7 +536,8 @@ static void snapshot_generation_zero(
     result->best_genome = storage;
     result->best_fitness = evaluation->fitness;
     result->random_seed = config->random_seed;
-    assert(evo_generation_statistics_record(population,
+    assert(evo_generation_statistics_record(config,
+                                            population,
                                             UINT64_C(0),
                                             &result->generation_statistics) ==
            EVO_SUCCESS);
@@ -620,6 +626,10 @@ static void test_private_bounded_run_evidence(void)
            EVO_CHILD_EVALUATION_POLICY_VERSION);
     assert(evidence.generation_advancement_policy_version ==
            EVO_GENERATION_ADVANCEMENT_POLICY_VERSION);
+    assert(evidence.diversity_policy_version ==
+           EVO_DIVERSITY_POLICY_VERSION);
+    assert(evidence.diversity_metric_version ==
+           EVO_BYTE_DIVERSITY_METRIC_VERSION);
     assert(evidence.policy_version == EVO_BOUNDED_RUN_POLICY_VERSION);
     assert(evidence.complete);
     assert_result(&best,

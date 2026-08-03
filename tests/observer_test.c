@@ -72,7 +72,16 @@ static bool statistics_equal(
            fitness_equal(&left->fitness_sums, &right->fitness_sums) &&
            left->has_best == right->has_best &&
            left->fitness_comparison_policy_version ==
-               right->fitness_comparison_policy_version;
+               right->fitness_comparison_policy_version &&
+           left->diversity_policy_version ==
+               right->diversity_policy_version &&
+           left->diversity_metric_version ==
+               right->diversity_metric_version &&
+           left->diversity_pair_count == right->diversity_pair_count &&
+           left->diversity_work_units == right->diversity_work_units &&
+           left->diversity == right->diversity &&
+           left->diversity_uses_domain_distance ==
+               right->diversity_uses_domain_distance;
 }
 
 static evo_fitness_t fitness_from_value(unsigned char value)
@@ -155,6 +164,10 @@ static void observe_generation(
     assert(statistics->version == EVO_GENERATION_STATISTICS_VERSION);
     assert(statistics->fitness_comparison_policy_version ==
            EVO_FITNESS_COMPARISON_POLICY_VERSION);
+    assert(statistics->diversity_policy_version ==
+           EVO_DIVERSITY_POLICY_VERSION);
+    assert(statistics->diversity_metric_version ==
+           EVO_BYTE_DIVERSITY_METRIC_VERSION);
     assert(statistics->generation_index == result->generations_completed);
     assert(log->evolution_context->initialization_calls ==
            TEST_POPULATION_CAPACITY);
@@ -210,6 +223,7 @@ static evo_config_t make_config(size_t generation_limit,
             TEST_POPULATION_CAPACITY *
             sizeof(evo_candidate_evaluation_t),
         .max_child_population_bytes = TEST_POPULATION_CAPACITY,
+        .max_diversity_work = SIZE_MAX,
         .generation_observer = observe_generation,
         .generation_observer_context = observer,
     };

@@ -3,6 +3,7 @@
 #include "internal/child_evaluation.h"
 #include "internal/child_pair.h"
 #include "internal/child_tail.h"
+#include "internal/diversity.h"
 #include "internal/fitness.h"
 #include "internal/observer.h"
 #include "internal/statistics.h"
@@ -89,6 +90,15 @@ evo_status_t evo_bounded_run_validate_config(
         return EVO_ERROR_INVALID_ARGUMENT;
     }
 
+    {
+        const evo_status_t diversity_status =
+            evo_diversity_validate_config(problem, config);
+
+        if (diversity_status != EVO_SUCCESS) {
+            return diversity_status;
+        }
+    }
+
     if (config->generation_limit == 0) {
         return EVO_SUCCESS;
     }
@@ -126,7 +136,16 @@ static bool generation_statistics_equal(
            fitness_equal(&left->fitness_sums, &right->fitness_sums) &&
            left->has_best == right->has_best &&
            left->fitness_comparison_policy_version ==
-               right->fitness_comparison_policy_version;
+               right->fitness_comparison_policy_version &&
+           left->diversity_policy_version ==
+               right->diversity_policy_version &&
+           left->diversity_metric_version ==
+               right->diversity_metric_version &&
+           left->diversity_pair_count == right->diversity_pair_count &&
+           left->diversity_work_units == right->diversity_work_units &&
+           left->diversity == right->diversity &&
+           left->diversity_uses_domain_distance ==
+               right->diversity_uses_domain_distance;
 }
 
 static bool bytes_equal(const void *left,
@@ -233,7 +252,8 @@ static bool initial_run_state_is_valid(
         return false;
     }
 
-    if (evo_generation_statistics_record(parents,
+    if (evo_generation_statistics_record(config,
+                                         parents,
                                          UINT64_C(0),
                                          &expected_statistics) !=
             EVO_SUCCESS ||
@@ -411,6 +431,9 @@ evo_status_t evo_bounded_run_advance(
         EVO_CHILD_EVALUATION_POLICY_VERSION;
     candidate.generation_advancement_policy_version =
         EVO_GENERATION_ADVANCEMENT_POLICY_VERSION;
+    candidate.diversity_policy_version = EVO_DIVERSITY_POLICY_VERSION;
+    candidate.diversity_metric_version =
+        parents->diversity_metric_version;
     candidate.policy_version = EVO_BOUNDED_RUN_POLICY_VERSION;
 
     for (size_t transition = 0;
@@ -457,6 +480,7 @@ evo_status_t evo_bounded_run_advance(
         }
 
         status = evo_generation_statistics_record(
+            config,
             &children,
             source_generation + UINT64_C(1),
             &generation_statistics);

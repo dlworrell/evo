@@ -86,6 +86,11 @@ target_include_directories(evo_statistics_test PRIVATE ${PROJECT_SOURCE_DIR}/src
 target_link_libraries(evo_statistics_test PRIVATE catalyst_evo)
 add_test(NAME evo_statistics_test COMMAND evo_statistics_test)
 
+add_executable(evo_diversity_test diversity_test.c)
+target_include_directories(evo_diversity_test PRIVATE ${PROJECT_SOURCE_DIR}/src)
+target_link_libraries(evo_diversity_test PRIVATE catalyst_evo)
+add_test(NAME evo_diversity_test COMMAND evo_diversity_test)
+
 add_executable(evo_observer_test observer_test.c)
 target_include_directories(evo_observer_test PRIVATE ${PROJECT_SOURCE_DIR}/src)
 target_link_libraries(evo_observer_test PRIVATE catalyst_evo)

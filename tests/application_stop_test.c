@@ -84,7 +84,16 @@ static bool statistics_equal(
            fitness_equal(&left->fitness_sums, &right->fitness_sums) &&
            left->has_best == right->has_best &&
            left->fitness_comparison_policy_version ==
-               right->fitness_comparison_policy_version;
+               right->fitness_comparison_policy_version &&
+           left->diversity_policy_version ==
+               right->diversity_policy_version &&
+           left->diversity_metric_version ==
+               right->diversity_metric_version &&
+           left->diversity_pair_count == right->diversity_pair_count &&
+           left->diversity_work_units == right->diversity_work_units &&
+           left->diversity == right->diversity &&
+           left->diversity_uses_domain_distance ==
+               right->diversity_uses_domain_distance;
 }
 
 static void assert_callback_view(
@@ -99,6 +108,10 @@ static void assert_callback_view(
     assert(statistics->version == EVO_GENERATION_STATISTICS_VERSION);
     assert(statistics->fitness_comparison_policy_version ==
            EVO_FITNESS_COMPARISON_POLICY_VERSION);
+    assert(statistics->diversity_policy_version ==
+           EVO_DIVERSITY_POLICY_VERSION);
+    assert(statistics->diversity_metric_version ==
+           EVO_BYTE_DIVERSITY_METRIC_VERSION);
     assert((const void *)result != (const void *)public_result);
     assert(statistics != &public_result->generation_statistics);
     assert(result->best_genome == public_result->best_genome);
@@ -272,6 +285,7 @@ static evo_config_t make_config(size_t generation_limit,
         .max_population_bytes = TEST_POPULATION_SIZE,
         .max_evaluation_bytes = 4096,
         .max_child_population_bytes = TEST_POPULATION_SIZE,
+        .max_diversity_work = SIZE_MAX,
         .generation_observer = observer == NULL
                                    ? NULL
                                    : observe_generation,

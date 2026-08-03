@@ -26,7 +26,8 @@ ownership. EVO-001 is its
 normative contract. Version 0.19.0 implements a bounded multi-generation
 subset of this layer, version 0.20.0 adds application-requested stopping over
 committed state, and version 0.21.0 formalizes hard constraints and soft-
-penalty comparison evidence.
+penalty comparison evidence. Version 0.22.0 adds bounded deterministic
+population-diversity evidence.
 
 ### Source analysis and transformation
 
@@ -66,7 +67,7 @@ project patch automatically.
 
 ## Current Conformance Boundary
 
-Only the evolutionary-search core exists in version 0.21.0. Source ingestion,
+Only the evolutionary-search core exists in version 0.22.0. Source ingestion,
 analysis, transformation, candidate materialization, external-process
 isolation, target-code measurement, product commands, and optimized-patch
 artifacts are planned by issues #58 through #69. Documentation of those
@@ -78,7 +79,7 @@ planned boundaries is not an implementation claim.
 - Selection
 - Crossover
 - Mutation
-- Diversity and stagnation handling
+- Diversity evidence and planned stagnation handling
 - Fitness and constraint handling
 - Statistics and evidence
 - Checkpointing
@@ -467,6 +468,23 @@ evidence record comparison policy version 1. Public generation-statistics
 schema version 2 appends that policy identity without adding history or a new
 allocation.
 
+Version 0.22.0 measures diversity once after a population's validity and
+fitness records are complete and before that evaluation phase commits. The
+default version-1 metric is normalized byte mismatch over every unordered pair
+of hard-valid candidates. An optional consumer callback supplies a versioned
+normalized domain distance. Both use the same fixed lexicographic `(i, j)`
+schedule with `i < j`; no sampling occurs and no RNG state exists at this
+boundary.
+
+The caller declares `max_diversity_work`. EVO checks the all-valid worst case
+before any run callback and again before measurement. Default work units are
+byte comparisons (`pairs * genome_size`); domain work units are callback
+invocations (`pairs`). Invalid candidates do not form pairs. Zero or one valid
+candidate records zero pairs, work, and diversity without invoking the domain
+callback. The resulting value and provenance live with the private population
+and are copied into public generation-statistics schema version 3, so state
+validation and observation never repeat a domain callback.
+
 Bounded-run policy evidence remains private. Convergence, stagnation,
 generalized elitism, adaptive mutation, recycling, checkpointing, and
 parallelism remain separate decisions.
@@ -481,15 +499,16 @@ parallelism remain separate decisions.
 6. Record statistics and evidence.
 7. Stop on convergence, stagnation, generation limit, or an application-defined condition.
 
-Version 0.21.0 publicly implements steps 1 through 4 for at most
+Version 0.22.0 publicly implements steps 1 through 4 for at most
 `generation_limit` bounded transitions, with the version-1 odd-tail policy as
-the current elite-preservation rule in step 5. It implements the constant-space
+the current elite-preservation rule and bounded diversity measurement in step
+5. It implements the constant-space
 statistics portion of step 6 for every committed generation, records the global
 winner and completed transition count, and explicitly identifies limit
 completion, later all-invalid extinction, or an application request after a
 committed generation. Committed-generation observation completes the current
-bounded portion of step 6. Diversity, convergence, stagnation, checkpointing,
-and parallel evaluation remain absent.
+bounded portion of step 6. Convergence, stagnation, checkpointing, and parallel
+evaluation remain absent.
 
 ## Source-Optimizer Execution Flow
 

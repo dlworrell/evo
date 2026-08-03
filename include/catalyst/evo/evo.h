@@ -10,7 +10,7 @@ extern "C" {
 #endif
 
 #define EVO_VERSION_MAJOR 0
-#define EVO_VERSION_MINOR 21
+#define EVO_VERSION_MINOR 22
 #define EVO_VERSION_PATCH 0
 
 typedef enum evo_status {
@@ -32,6 +32,8 @@ typedef enum evo_termination_reason {
 } evo_termination_reason_t;
 
 #define EVO_FITNESS_COMPARISON_POLICY_VERSION UINT32_C(1)
+#define EVO_DIVERSITY_POLICY_VERSION UINT32_C(1)
+#define EVO_BYTE_DIVERSITY_METRIC_VERSION UINT32_C(1)
 
 /*
  * Fitness components are caller-owned evidence. constraint_penalty is a
@@ -52,14 +54,18 @@ typedef struct evo_fitness {
     double total;
 } evo_fitness_t;
 
-#define EVO_GENERATION_STATISTICS_VERSION UINT32_C(2)
+#define EVO_GENERATION_STATISTICS_VERSION UINT32_C(3)
 
 /*
  * Constant-space evidence for one committed generation. fitness_sums is the
  * component-wise sum of valid evaluated candidates in ascending population
  * index. Invalid fitness payloads are excluded. has_best is false, best_index
  * is zero, and best_fitness is zero when valid_count is zero. Successful
- * schema-2 records identify the comparison policy that established best_index.
+ * schema-3 records identify the comparison policy plus the deterministic
+ * diversity policy and metric. Diversity is the arithmetic mean of normalized
+ * distances over all unordered pairs of hard-valid candidates in
+ * lexicographic index order. Zero or one valid candidate has diversity zero
+ * and no pair work.
  */
 typedef struct evo_generation_statistics {
     uint32_t version;
@@ -72,6 +78,12 @@ typedef struct evo_generation_statistics {
     evo_fitness_t fitness_sums;
     bool has_best;
     uint32_t fitness_comparison_policy_version;
+    uint32_t diversity_policy_version;
+    uint32_t diversity_metric_version;
+    size_t diversity_pair_count;
+    size_t diversity_work_units;
+    double diversity;
+    bool diversity_uses_domain_distance;
 } evo_generation_statistics_t;
 
 #define EVO_GENERATION_RESULT_VIEW_VERSION UINT32_C(1)
@@ -113,6 +125,17 @@ typedef bool (*evo_generation_stop_fn)(
     const evo_generation_statistics_t *statistics,
     void *context);
 
+/*
+ * Optional deterministic domain distance for two hard-valid genomes. The
+ * callback must return a finite normalized value in [0, 1], use no
+ * unrecorded entropy, retain no genome view, and leave ownership unchanged.
+ */
+typedef double (*evo_genome_distance_fn)(
+    const void *genome_a,
+    const void *genome_b,
+    size_t genome_size,
+    void *context);
+
 typedef struct evo_problem {
     size_t genome_size;
     /*
@@ -138,6 +161,10 @@ typedef struct evo_problem {
     void (*crossover)(const void *parent_a, const void *parent_b, void *child_a, void *child_b, void *context);
     evo_fitness_t (*evaluate)(const void *genome, void *context);
     bool (*is_valid)(const void *genome, void *context);
+    /* NULL selects built-in byte mismatch metric version 1. */
+    evo_genome_distance_fn genome_distance;
+    /* Must be nonzero exactly when genome_distance is non-NULL. */
+    uint32_t genome_distance_version;
 } evo_problem_t;
 
 typedef struct evo_config {
@@ -163,6 +190,12 @@ typedef struct evo_config {
     evo_generation_stop_fn generation_stop;
     /* Caller-owned stop-decision state, never inspected or retained by EVO. */
     void *generation_stop_context;
+    /*
+     * Maximum diversity work per generation. Built-in work is byte
+     * comparisons; domain-distance work is callback invocations. EVO rejects
+     * an insufficient all-valid worst-case budget before any run callback.
+     */
+    size_t max_diversity_work;
 } evo_config_t;
 
 typedef struct evo_result {
@@ -205,6 +238,9 @@ typedef struct evo_result {
  * result and is never a successful termination reason. The result also
  * retains one versioned, constant-space statistics record for the most
  * recently committed generation. It does not allocate generation history.
+ * Before any run callback, EVO checks max_diversity_work against the
+ * all-valid population. Each completed generation records deterministic
+ * diversity evidence without consuming operator RNG or changing selection.
  *
  * If generation_stop is non-null, EVO invokes it synchronously after a
  * committed generation only when another child could otherwise be attempted.

@@ -25,9 +25,15 @@ typedef struct evo_population {
     uint32_t operator_seed_schedule_version;
     uint32_t odd_child_policy_version;
     uint32_t fitness_comparison_policy_version;
+    uint32_t diversity_policy_version;
+    uint32_t diversity_metric_version;
+    size_t diversity_pair_count;
+    size_t diversity_work_units;
+    double diversity;
     bool initialized;
     bool has_best;
     bool evaluated;
+    bool diversity_uses_domain_distance;
 } evo_population_t;
 
 /*
@@ -92,7 +98,9 @@ evo_status_t evo_population_initialize(const evo_problem_t *problem,
  * Evaluation records are private, caller-budgeted, and committed to the
  * population only after every returned fitness field is proven finite.
  * Completing the phase with no valid candidates succeeds without a best
- * candidate.
+ * candidate. Successful evaluation also commits bounded deterministic
+ * diversity evidence; a configured domain-distance callback runs only after
+ * all validity and fitness callbacks succeed.
  */
 evo_status_t evo_population_evaluate(const evo_problem_t *problem,
                                      const evo_config_t *config,

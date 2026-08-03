@@ -52,6 +52,10 @@ appending `fitness_comparison_policy_version`. Every successful record carries
 comparison policy version 1. The aggregation policy below remains version 1,
 and every pre-existing field retains its meaning and offset.
 
+ADR-0022 advances the schema to version 3 in EVO 0.22.0 by appending bounded
+diversity value, metric provenance, pair count, and work evidence. The fitness
+aggregation and comparison fields remain unchanged.
+
 ## Aggregation Policy Version 1
 
 Candidates are visited once in ascending population index. Invalid records are
@@ -99,6 +103,10 @@ statistics member offsets. Depending on ABI padding, the statistics and result
 sizes may remain unchanged or increase; binary layout compatibility is not
 assumed. Consumers must rebuild against the 0.21.0 header.
 
+The 0.22.0 schema-3 diversity suffix preserves the complete schema-2 prefix.
+Structure sizes and array strides may change, so consumers must rebuild against
+the 0.22.0 header.
+
 ## Alternatives Considered
 
 ### Retain every generation in a result-owned array
@@ -119,8 +127,9 @@ terminal population differs materially from the retained global winner.
 
 ### Include diversity now
 
-Rejected because issue #44 owns its metric, work budget, invalid-candidate
-policy, and statistics-schema extension.
+Deferred here because issue #44 owns its metric, work budget, invalid-candidate
+policy, and statistics-schema extension. ADR-0022 now implements that separate
+decision in EVO 0.22.0.
 
 ### Invoke a consumer callback now
 

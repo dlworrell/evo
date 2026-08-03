@@ -105,6 +105,7 @@ static void fixture_initialize(tail_fixture_t *fixture,
     fixture->config.max_evaluation_bytes =
         population_size * sizeof(evo_candidate_evaluation_t);
     fixture->config.max_child_population_bytes = storage_bytes;
+    fixture->config.max_diversity_work = SIZE_MAX;
 
     fixture->parents.genomes = fixture->genomes;
     fixture->parents.evaluations = fixture->evaluations;
@@ -119,6 +120,14 @@ static void fixture_initialize(tail_fixture_t *fixture,
     fixture->parents.rng_algorithm_version = EVO_RNG_ALGORITHM_VERSION;
     fixture->parents.fitness_comparison_policy_version =
         EVO_FITNESS_COMPARISON_POLICY_VERSION;
+    fixture->parents.diversity_policy_version =
+        EVO_DIVERSITY_POLICY_VERSION;
+    fixture->parents.diversity_metric_version =
+        EVO_BYTE_DIVERSITY_METRIC_VERSION;
+    fixture->parents.diversity_pair_count =
+        population_size * (population_size - 1) / 2;
+    fixture->parents.diversity_work_units =
+        fixture->parents.diversity_pair_count * TEST_GENOME_SIZE;
     fixture->parents.initialized = true;
     fixture->parents.has_best = true;
     fixture->parents.evaluated = true;
@@ -227,6 +236,15 @@ static void assert_population_metadata_equal(
            right->odd_child_policy_version);
     assert(left->fitness_comparison_policy_version ==
            right->fitness_comparison_policy_version);
+    assert(left->diversity_policy_version ==
+           right->diversity_policy_version);
+    assert(left->diversity_metric_version ==
+           right->diversity_metric_version);
+    assert(left->diversity_pair_count == right->diversity_pair_count);
+    assert(left->diversity_work_units == right->diversity_work_units);
+    assert(left->diversity == right->diversity);
+    assert(left->diversity_uses_domain_distance ==
+           right->diversity_uses_domain_distance);
     assert(left->initialized == right->initialized);
     assert(left->has_best == right->has_best);
     assert(left->evaluated == right->evaluated);

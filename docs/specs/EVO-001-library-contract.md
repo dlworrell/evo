@@ -1,13 +1,13 @@
 # EVO-001: Evolutionary Optimization Library Contract
 
 Status: Baseline
-Version: 0.21.0
+Version: 0.22.0
 Owner: EVO
 
 ## Scope Boundary
 
 This specification governs the reusable deterministic C17 evolutionary-search
-core implemented through version 0.21.0. It does not define C-project
+core implemented through version 0.22.0. It does not define C-project
 ingestion, Clang/LLVM analysis, structured source transformations, isolated
 candidate builds, baseline-versus-candidate measurement, optimized patches, or
 product-level replay artifacts.
@@ -34,7 +34,8 @@ The public API is declared in `include/catalyst/evo/evo.h`.
 
 - the byte size of one genome;
 - initialization, mutation, crossover, and evaluation callbacks;
-- an optional validity callback; and
+- an optional validity callback;
+- an optional versioned normalized genome-distance callback; and
 - an opaque consumer context passed to callbacks.
 
 The consumer owns callback code and context lifetime. Callback behavior must be
@@ -73,7 +74,8 @@ crossover rate, mutation rate, random seed, `max_genome_bytes`,
 `max_child_population_bytes`, followed by the optional
 `generation_observer` and its caller-owned
 `generation_observer_context`, then the optional `generation_stop` and its
-independent caller-owned `generation_stop_context`.
+independent caller-owned `generation_stop_context`, followed by
+`max_diversity_work`.
 
 `max_genome_bytes` is trusted caller policy for the largest individual genome
 allocation accepted by `evo_run`. It avoids a platform-specific hard-coded
@@ -111,6 +113,39 @@ generation from which another transition could otherwise be attempted. A null
 callback disables application stopping. Its context is independent caller-
 owned state; EVO never inspects, allocates, releases, or retains that pointer.
 Stop delivery adds no memory-budget requirement.
+
+`max_diversity_work` bounds one generation's diversity measurement. EVO
+checks the all-valid worst case before any run callback. Built-in byte-metric
+units are byte comparisons; domain-distance units are callback invocations.
+The budget is required even when `generation_limit` is zero because generation
+zero is measured. A population that cannot form a pair requires zero work.
+
+### Diversity policy
+
+`EVO_DIVERSITY_POLICY_VERSION` and
+`EVO_BYTE_DIVERSITY_METRIC_VERSION` are both `1`.
+
+A null `problem->genome_distance` requires
+`problem->genome_distance_version == 0` and selects the built-in byte metric.
+A non-null callback requires a nonzero caller-owned metric version. It receives
+two bounded read-only genome views, `genome_size`, and the run context. For
+fixed inputs and context it must return a finite normalized distance in
+`[0, 1]`, consume no unrecorded entropy, retain no view, and preserve
+ownership. A malformed value returns `EVO_ERROR_EVALUATION`.
+
+Only hard-valid evaluated candidates participate. EVO visits all unordered
+pairs in lexicographic index order with `left < right`; it does not sample.
+The pair count is checked using divide-first `n * (n - 1) / 2` arithmetic.
+The built-in metric counts unequal byte positions and divides total
+differences by `pair_count * genome_size`. A domain metric adds callback
+results in pair order and divides by pair count. Zero or one valid candidate
+records zero pairs, work, and diversity and invokes no distance callback.
+
+The all-valid budget check occurs before initializer, validity, fitness,
+distance, observer, or stopping callbacks. Diversity consumes no RNG state and
+does not alter comparison, selection, operator dispatch, or stopping in
+version 0.22.0. Successful evidence is stored with the evaluated population
+and copied into statistics without repeating a distance callback.
 
 ### Internal population storage
 
@@ -718,7 +753,9 @@ deliver each committed record synchronously without retaining history.
 Version 0.20.0 can stop on an application decision after a committed
 generation. Version 0.21.0 advances bounded-run policy to version 3 and records
 fitness-comparison policy version 1 plus the winning generation and population
-index. The bounded run does not define convergence, stagnation,
+index. Version 0.22.0 advances it to version 4 and records diversity policy and
+metric provenance without changing operator RNG or selection. The bounded run
+does not define convergence, stagnation,
 generalized elitism, adaptive mutation, old-slab recycling, checkpointing,
 parallelism, or secure erasure.
 
@@ -773,12 +810,12 @@ reviewed erasure boundary.
 | Status | Meaning |
 |---|---|
 | `EVO_SUCCESS` | Generation zero produced a valid winner and the run ended at the hard limit, after a promoted later all-invalid child, or after an application stop decision over committed state. |
-| `EVO_ERROR_INVALID_ARGUMENT` | A required pointer argument is null. |
+| `EVO_ERROR_INVALID_ARGUMENT` | A required pointer is null, or distance callback/version coupling is inconsistent. |
 | `EVO_ERROR_OUT_OF_MEMORY` | The system allocator returned null. |
 | `EVO_ERROR_RESULT_ACTIVE` | The result already owns a genome and is preserved unchanged. |
 | `EVO_ERROR_RESOURCE_LIMIT` | A required size is zero, arithmetic overflows, or a caller budget is exceeded. |
 | `EVO_ERROR_STATE` | A private lifecycle operation received inactive, initialized, or inconsistent state. |
-| `EVO_ERROR_EVALUATION` | A fitness callback returned a non-finite component or negative penalty, or a fixed-order statistics component sum became non-finite. |
+| `EVO_ERROR_EVALUATION` | A fitness callback returned a non-finite component or negative penalty, a domain-distance callback returned outside finite `[0, 1]`, or a fixed-order statistics component sum became non-finite. |
 | `EVO_ERROR_NO_VALID_CANDIDATE` | Generation-zero evaluation completed, but every candidate was invalid, so no public winner exists. |
 
 ### Termination reasons
@@ -799,12 +836,12 @@ transition count.
 
 ### Generation statistics
 
-`EVO_GENERATION_STATISTICS_VERSION` is `2`. A successful active result retains
+`EVO_GENERATION_STATISTICS_VERSION` is `3`. A successful active result retains
 one `evo_generation_statistics_t` for the most recently committed generation:
 
 | Field | Meaning |
 |---|---|
-| `version` | Statistics schema version. Version 2 identifies the 0.21.0 layout; zero exists only in an empty result. |
+| `version` | Statistics schema version. Version 3 identifies the 0.22.0 layout; zero exists only in an empty result. |
 | `generation_index` | Zero for the initialized baseline; otherwise the promoted child generation. |
 | `population_size` | Exact number of candidates in the committed population. |
 | `valid_count` | Candidates admitted by `is_valid` and evaluated. |
@@ -813,7 +850,13 @@ one `evo_generation_statistics_t` for the most recently committed generation:
 | `best_fitness` | Complete generation-local stable-best fitness, or all zeros when no best exists. |
 | `fitness_sums` | Component-wise sums over valid evaluated candidates only. |
 | `has_best` | Whether the generation contains a valid evaluated candidate. |
-| `fitness_comparison_policy_version` | Policy that admitted and ordered the generation's fitness evidence; version 1 for every 0.21.0 success and zero only in an empty result. |
+| `fitness_comparison_policy_version` | Policy that admitted and ordered the generation's fitness evidence; version 1 for every success since 0.21.0 and zero only in an empty result. |
+| `diversity_policy_version` | Diversity traversal and evidence policy; version 1 for every 0.22.0 success. |
+| `diversity_metric_version` | Built-in byte metric version 1, or the nonzero caller-supplied domain metric version. |
+| `diversity_pair_count` | Checked number of unordered pairs of hard-valid candidates. |
+| `diversity_work_units` | Byte comparisons for the built-in metric, or domain callback invocations. |
+| `diversity` | Fixed-order arithmetic mean normalized to `[0, 1]`; zero for fewer than two valid candidates. |
+| `diversity_uses_domain_distance` | False for built-in byte distance and true for a caller domain callback. |
 
 Aggregation policy version 1 traverses candidates in ascending index. Invalid
 records contribute only to `invalid_count`; their fitness payloads are never
@@ -835,6 +878,10 @@ synchronous stop decision. Neither callback defines history ownership.
 Schema version 2 appends only the comparison-policy identity. The fixed-order
 component aggregation remains policy version 1 and byte-for-logical-value
 compatible with schema version 1 for every pre-existing field.
+
+Schema version 3 preserves the complete schema-2 prefix and appends diversity
+evidence governed by ADR-0022. Statistics copy the metric result already
+committed by population evaluation and invoke no consumer callback.
 
 ### Generation observer
 
@@ -1038,13 +1085,24 @@ problem and config layouts, and public function signatures do not change. The
 implementation adds internal comparison-helper symbols declared only by a
 non-installed header; allocation classes and resource budgets do not change.
 
-## Current 0.21.0 Conformance Boundary
+Version 0.22.0 adds `EVO_DIVERSITY_POLICY_VERSION`,
+`EVO_BYTE_DIVERSITY_METRIC_VERSION`, and `evo_genome_distance_fn`; appends the
+distance callback and version to `evo_problem_t`; appends
+`max_diversity_work` to `evo_config_t`; and appends the schema-3 diversity
+fields to `evo_generation_statistics_t`. Every pre-0.22.0 member retains its
+offset, but structure sizes and array strides may change. Binary compatibility
+is not assumed, so consumers must rebuild. Public function signatures and
+installed symbols do not change, and diversity introduces no allocation
+class.
+
+## Current 0.22.0 Conformance Boundary
 
 The current implementation exposes generation-zero compatibility plus bounded
 multi-generation execution:
 
-- validation enforces required pointers, an evaluator, an inactive result, and
-  the three generation-zero memory budgets;
+- validation enforces required pointers, an evaluator, an inactive result, the
+  three generation-zero memory budgets, distance callback/version coupling,
+  and the all-valid diversity work bound;
 - successful execution constructs, initializes, validates, and evaluates a
   private population in deterministic order;
 - hard-invalid candidates are never evaluated, aggregated, selected, or
@@ -1111,8 +1169,14 @@ multi-generation execution:
   statistics over valid records, with the terminal record retained in constant
   result space;
 - invalid fitness payloads are excluded from statistics, finite component sums
-  are checked, schema version 2 records the comparison-policy identity, and
+  are checked, schema version 3 records comparison and bounded diversity
+  evidence, and
   statistics never change stable-best or global-winner selection;
+- every unordered hard-valid pair is measured in fixed lexicographic order by
+  built-in byte metric version 1 or a versioned normalized domain callback;
+- checked pair/work arithmetic rejects overflow or insufficient diversity
+  budget before callbacks, zero/one valid candidates require no pair work, and
+  diversity consumes no operator RNG or selection draw;
 - an optional synchronous observer receives independent read-only result and
   statistics snapshots after generation zero and every promoted child;
 - an optional synchronous application stop decision receives independent
@@ -1122,7 +1186,7 @@ multi-generation execution:
 - observer delivery follows winner update and final stop classification, precedes
   the next generation, allocates no history, and emits nothing for provisional
   or failed generations; and
-- generalized elitism, adaptive mutation, diversity, convergence, stagnation,
+- generalized elitism, adaptive mutation, convergence, stagnation,
   checkpointing, buffer recycling, asynchronous or concurrent callbacks, and
   parallelism are not implemented.
 
@@ -1133,7 +1197,7 @@ count. They may inspect `generation_statistics` for the final committed
 population, which is distinct from the global winner on all-invalid
 termination. When configured, they may copy each callback-lifetime observation
 into their own bounded storage. They may also configure deterministic stopping
-over committed snapshots. Version 0.21.0 defines no convergence or stagnation
+over committed snapshots. Version 0.22.0 defines no convergence or stagnation
 reason, statistics history, asynchronous cancellation, or retained callback
 delivery.
 
@@ -1215,12 +1279,19 @@ release test also proves that advancement succeeds while the next allocator
 call is forced to fail and releases exactly the two former-parent allocations,
 confirming the transition's allocation-free single-owner contract.
 
-The generation-statistics test locks schema version 1 and golden vectors for
+The generation-statistics test locks fixed aggregation policy and schema
+version 3 golden vectors for
 even, odd, one-member, tied, mixed-validity, and all-invalid populations. It
 poisons invalid fitness payloads with non-finite values to prove they are not
 read, verifies fixed-order component sums and stable generation-local best
 evidence, and proves malformed state, non-finite valid fitness, and aggregate
 overflow reject without modifying caller output.
+
+The diversity test locks zero-valid, one-valid, homogeneous, mixed, maximally
+separated, odd, and invalid-heavy byte-metric vectors; domain callback order
+and version propagation; replay-identical statistics; checked budget and
+arithmetic rejection before callbacks; malformed-distance rollback; invalid
+exclusion; and selection/RNG neutrality.
 
 The generation-observer test proves one event for a zero-limit run, N+1 events
 for N completed transitions, synchronous ordering before the next generation,
@@ -1279,6 +1350,7 @@ evaluation allocation failure.
 - `docs/adr/ADR-0019-read-only-generation-observer.md`
 - `docs/adr/ADR-0020-deterministic-application-requested-stopping.md`
 - `docs/adr/ADR-0021-versioned-fitness-comparison-policy.md`
+- `docs/adr/ADR-0022-bounded-deterministic-diversity.md`
 - `docs/architecture.md`
 - `docs/algorithms.md`
 - `docs/benchmarks.md`
@@ -1305,4 +1377,5 @@ evaluation allocation failure.
 - `https://github.com/dlworrell/evo/issues/41`
 - `https://github.com/dlworrell/evo/issues/42`
 - `https://github.com/dlworrell/evo/issues/43`
+- `https://github.com/dlworrell/evo/issues/44`
 - `https://github.com/dlworrell/AEMS/issues/18`

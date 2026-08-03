@@ -71,6 +71,10 @@ static void fixture_finalize(pair_fixture_t *fixture)
     fixture->population.valid_count = valid_count;
     fixture->population.best_index = best_index;
     fixture->population.has_best = has_best;
+    fixture->population.diversity_pair_count =
+        valid_count * (valid_count - (valid_count != 0 ? 1 : 0)) / 2;
+    fixture->population.diversity_work_units =
+        fixture->population.diversity_pair_count;
 }
 
 static void fixture_initialize(pair_fixture_t *fixture,
@@ -89,6 +93,7 @@ static void fixture_initialize(pair_fixture_t *fixture,
     fixture->config.max_population_bytes = population_size;
     fixture->config.max_evaluation_bytes =
         population_size * sizeof(evo_candidate_evaluation_t);
+    fixture->config.max_diversity_work = SIZE_MAX;
 
     fixture->population.genomes = fixture->genomes;
     fixture->population.evaluations = fixture->evaluations;
@@ -102,6 +107,10 @@ static void fixture_initialize(pair_fixture_t *fixture,
         EVO_RNG_ALGORITHM_VERSION;
     fixture->population.fitness_comparison_policy_version =
         EVO_FITNESS_COMPARISON_POLICY_VERSION;
+    fixture->population.diversity_policy_version =
+        EVO_DIVERSITY_POLICY_VERSION;
+    fixture->population.diversity_metric_version =
+        EVO_BYTE_DIVERSITY_METRIC_VERSION;
     fixture->population.initialized = true;
     fixture->population.evaluated = true;
 

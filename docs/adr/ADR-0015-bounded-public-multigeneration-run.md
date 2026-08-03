@@ -63,6 +63,10 @@ under fitness-comparison policy version 1, and records the best generation and
 population index. The strict-improvement and earlier-tie results remain
 logically unchanged.
 
+ADR-0022 advances bounded-run policy to version 4 in EVO 0.22.0 and records
+diversity policy and metric provenance. Pair measurement consumes no operator
+RNG and does not change strict improvement, selection, or termination.
+
 ## Consequences
 
 - Public `EVO_SUCCESS` can now represent zero or more completed transitions;

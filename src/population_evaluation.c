@@ -1,4 +1,5 @@
 #include "internal/population_evaluation.h"
+#include "internal/diversity.h"
 #include "internal/fitness.h"
 #include "internal/rng.h"
 
@@ -38,6 +39,12 @@ static bool initialized_population_ready_for_evaluation(
         population->operator_seed_schedule_version != 0 ||
         population->odd_child_policy_version != 0 ||
         population->fitness_comparison_policy_version != 0 ||
+        population->diversity_policy_version != 0 ||
+        population->diversity_metric_version != 0 ||
+        population->diversity_pair_count != 0 ||
+        population->diversity_work_units != 0 ||
+        population->diversity != 0.0 ||
+        population->diversity_uses_domain_distance ||
         config->max_genome_bytes < population->genome_size ||
         config->max_population_bytes < population->storage_bytes ||
         population->population_size >
@@ -58,6 +65,27 @@ static evo_status_t discard_provisional_evaluations(
     return status;
 }
 
+static evo_status_t rollback_population_evaluations(
+    evo_population_t *population,
+    evo_status_t status)
+{
+    free(population->evaluations);
+    population->evaluations = NULL;
+    population->evaluation_bytes = 0;
+    population->valid_count = 0;
+    population->best_index = 0;
+    population->fitness_comparison_policy_version = 0;
+    population->diversity_policy_version = 0;
+    population->diversity_metric_version = 0;
+    population->diversity_pair_count = 0;
+    population->diversity_work_units = 0;
+    population->diversity = 0.0;
+    population->has_best = false;
+    population->evaluated = false;
+    population->diversity_uses_domain_distance = false;
+    return status;
+}
+
 evo_status_t evo_population_evaluate_ready(
     const evo_problem_t *problem,
     const evo_config_t *config,
@@ -69,10 +97,16 @@ evo_status_t evo_population_evaluate_ready(
     size_t valid_count = 0;
     size_t best_index = 0;
     bool has_best = false;
+    evo_status_t status = EVO_SUCCESS;
 
     if (problem == NULL || config == NULL || population == NULL ||
         problem->evaluate == NULL) {
         return EVO_ERROR_INVALID_ARGUMENT;
+    }
+
+    status = evo_diversity_validate_config(problem, config);
+    if (status != EVO_SUCCESS) {
+        return status;
     }
 
     if (config->max_evaluation_bytes == 0 ||
@@ -166,6 +200,19 @@ evo_status_t evo_population_evaluate_ready(
         EVO_FITNESS_COMPARISON_POLICY_VERSION;
     population->has_best = has_best;
     population->evaluated = true;
+    {
+        const evo_status_t diversity_status =
+            evo_population_measure_diversity(problem,
+                                             config,
+                                             context,
+                                             population);
+
+        if (diversity_status != EVO_SUCCESS) {
+            return rollback_population_evaluations(population,
+                                                   diversity_status);
+        }
+    }
+
     return EVO_SUCCESS;
 }
 

@@ -20,6 +20,12 @@ static void assert_population_empty(const evo_population_t *population)
     assert(population->operator_seed_schedule_version == 0);
     assert(population->odd_child_policy_version == 0);
     assert(population->fitness_comparison_policy_version == 0);
+    assert(population->diversity_policy_version == 0);
+    assert(population->diversity_metric_version == 0);
+    assert(population->diversity_pair_count == 0);
+    assert(population->diversity_work_units == 0);
+    assert(population->diversity == 0.0);
+    assert(!population->diversity_uses_domain_distance);
     assert(!population->initialized);
     assert(!population->has_best);
     assert(!population->evaluated);

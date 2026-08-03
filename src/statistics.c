@@ -1,4 +1,5 @@
 #include "internal/statistics.h"
+#include "internal/diversity.h"
 #include "internal/fitness.h"
 
 #include <stdint.h>
@@ -95,6 +96,7 @@ static bool add_fitness(evo_fitness_t *sums,
 }
 
 evo_status_t evo_generation_statistics_record(
+    const evo_config_t *config,
     const evo_population_t *population,
     uint64_t generation_index,
     evo_generation_statistics_t *statistics)
@@ -103,7 +105,7 @@ evo_status_t evo_generation_statistics_record(
     size_t expected_evaluation_bytes = 0;
     size_t valid_count = 0;
 
-    if (population == NULL || statistics == NULL) {
+    if (config == NULL || population == NULL || statistics == NULL) {
         return EVO_ERROR_INVALID_ARGUMENT;
     }
 
@@ -116,6 +118,7 @@ evo_status_t evo_generation_statistics_record(
         population->valid_count > population->population_size ||
         population->fitness_comparison_policy_version !=
             EVO_FITNESS_COMPARISON_POLICY_VERSION ||
+        !evo_population_diversity_evidence_is_valid(config, population) ||
         !population_matches_generation(population, generation_index) ||
         !checked_size_multiply(population->population_size,
                                sizeof(evo_candidate_evaluation_t),
@@ -127,6 +130,15 @@ evo_status_t evo_generation_statistics_record(
     candidate.version = EVO_GENERATION_STATISTICS_VERSION;
     candidate.fitness_comparison_policy_version =
         EVO_FITNESS_COMPARISON_POLICY_VERSION;
+    candidate.diversity_policy_version =
+        population->diversity_policy_version;
+    candidate.diversity_metric_version =
+        population->diversity_metric_version;
+    candidate.diversity_pair_count = population->diversity_pair_count;
+    candidate.diversity_work_units = population->diversity_work_units;
+    candidate.diversity = population->diversity;
+    candidate.diversity_uses_domain_distance =
+        population->diversity_uses_domain_distance;
     candidate.generation_index = generation_index;
     candidate.population_size = population->population_size;
 

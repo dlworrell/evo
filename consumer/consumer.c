@@ -38,6 +38,14 @@ static void observe_generation(
         statistics->version != EVO_GENERATION_STATISTICS_VERSION ||
         statistics->fitness_comparison_policy_version !=
             EVO_FITNESS_COMPARISON_POLICY_VERSION ||
+        statistics->diversity_policy_version !=
+            EVO_DIVERSITY_POLICY_VERSION ||
+        statistics->diversity_metric_version !=
+            EVO_BYTE_DIVERSITY_METRIC_VERSION ||
+        statistics->diversity_pair_count != 0 ||
+        statistics->diversity_work_units != 0 ||
+        statistics->diversity != 0.0 ||
+        statistics->diversity_uses_domain_distance ||
         statistics->generation_index != 0 ||
         statistics->population_size != 1 ||
         statistics->valid_count != 1 ||
@@ -63,6 +71,14 @@ static bool request_stop(
         statistics->version != EVO_GENERATION_STATISTICS_VERSION ||
         statistics->fitness_comparison_policy_version !=
             EVO_FITNESS_COMPARISON_POLICY_VERSION ||
+        statistics->diversity_policy_version !=
+            EVO_DIVERSITY_POLICY_VERSION ||
+        statistics->diversity_metric_version !=
+            EVO_BYTE_DIVERSITY_METRIC_VERSION ||
+        statistics->diversity_pair_count != 0 ||
+        statistics->diversity_work_units != 0 ||
+        statistics->diversity != 0.0 ||
+        statistics->diversity_uses_domain_distance ||
         statistics->generation_index != 0 ||
         statistics->population_size != 1 ||
         statistics->valid_count != 1 ||
@@ -89,6 +105,7 @@ int main(void)
         .max_population_bytes = 8,
         .max_evaluation_bytes = 1024,
         .max_child_population_bytes = 8,
+        .max_diversity_work = 0,
         .generation_observer = observe_generation,
         .generation_observer_context = &callbacks,
         .generation_stop = request_stop,
@@ -109,6 +126,14 @@ int main(void)
             EVO_GENERATION_STATISTICS_VERSION ||
         result.generation_statistics.fitness_comparison_policy_version !=
             EVO_FITNESS_COMPARISON_POLICY_VERSION ||
+        result.generation_statistics.diversity_policy_version !=
+            EVO_DIVERSITY_POLICY_VERSION ||
+        result.generation_statistics.diversity_metric_version !=
+            EVO_BYTE_DIVERSITY_METRIC_VERSION ||
+        result.generation_statistics.diversity_pair_count != 0 ||
+        result.generation_statistics.diversity_work_units != 0 ||
+        result.generation_statistics.diversity != 0.0 ||
+        result.generation_statistics.diversity_uses_domain_distance ||
         result.generation_statistics.generation_index != 0 ||
         result.generation_statistics.population_size != 1 ||
         result.generation_statistics.valid_count != 1 ||

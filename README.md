@@ -25,6 +25,7 @@ globally optimal equivalent program.
 The governing product records are:
 
 - `docs/adr/ADR-0016-layered-source-to-source-c-optimizer.md`
+- `docs/adr/ADR-0022-bounded-deterministic-diversity.md`
 - `docs/specs/EVO-001-library-contract.md`
 - `docs/specs/EVO-002-source-optimizer-contract.md`
 - `docs/roadmap.md`
@@ -89,7 +90,7 @@ repository.
 - `docs/` — architecture, theory, algorithms, and evidence guidance
 
 The source-optimizer implementation directories will be introduced only by
-their dependency-ordered roadmap issues. Their absence in version 0.21.0 is an
+their dependency-ordered roadmap issues. Their absence in version 0.22.0 is an
 explicit current boundary, not an implicit feature claim.
 
 ## Authoritative Native Builds
@@ -129,7 +130,7 @@ declared Clang/LLVM and GNU profiles.
 
 ## Status
 
-**Current implementation boundary:** EVO 0.21.0 implements the deterministic
+**Current implementation boundary:** EVO 0.22.0 implements the deterministic
 evolutionary-search core. It does not yet ingest a C project, build a Clang AST
 or LLVM IR model, transform source, compile evolved candidates, or emit an
 optimized source patch. Those product boundaries are tracked in the 1.0
@@ -188,6 +189,17 @@ remains the caller-computed scalar that already reflects any desired penalty.
 EVO never subtracts it again. One comparison authority maximizes `total` and
 resolves exact ties by earlier generation and lower population index.
 Generation-statistics schema version 2 records that comparison-policy version.
+
+EVO 0.22.0 adds bounded deterministic population diversity. By default it
+measures the normalized byte mismatch of every unordered pair of hard-valid
+candidates in fixed lexicographic index order. Consumers may instead provide a
+versioned deterministic domain-distance callback returning a finite value in
+`[0, 1]`. `max_diversity_work` bounds the all-valid worst case before any run
+callback: built-in units are byte comparisons and domain units are callback
+invocations. Invalid candidates are excluded, zero or one valid candidate
+reports zero without pair work, and generation-statistics schema version 3
+publishes the metric identity, pair count, work, value, and metric kind. The
+measurement consumes no operator RNG and does not change selection.
 
 Version 0.3.0 added the independently tested private population-storage
 foundation: checked `population_size * genome_size` arithmetic, a

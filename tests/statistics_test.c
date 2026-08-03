@@ -9,6 +9,7 @@ enum { TEST_POPULATION_CAPACITY = 8 };
 typedef struct statistics_fixture {
     unsigned char genomes[TEST_POPULATION_CAPACITY];
     evo_candidate_evaluation_t evaluations[TEST_POPULATION_CAPACITY];
+    evo_config_t config;
     evo_population_t population;
 } statistics_fixture_t;
 
@@ -46,7 +47,13 @@ static void initialize_fixture(statistics_fixture_t *fixture,
             : generation_index - UINT64_C(1);
     fixture->population.fitness_comparison_policy_version =
         EVO_FITNESS_COMPARISON_POLICY_VERSION;
+    fixture->population.diversity_policy_version =
+        EVO_DIVERSITY_POLICY_VERSION;
+    fixture->population.diversity_metric_version =
+        EVO_BYTE_DIVERSITY_METRIC_VERSION;
     fixture->population.evaluated = true;
+    fixture->config.population_size = population_size;
+    fixture->config.max_diversity_work = SIZE_MAX;
 }
 
 static void add_valid_candidate(statistics_fixture_t *fixture,
@@ -69,6 +76,11 @@ static void add_valid_candidate(statistics_fixture_t *fixture,
         fixture->population.has_best = true;
     }
     ++fixture->population.valid_count;
+    fixture->population.diversity_pair_count =
+        fixture->population.valid_count *
+        (fixture->population.valid_count - 1) / 2;
+    fixture->population.diversity_work_units =
+        fixture->population.diversity_pair_count;
 }
 
 static void poison_invalid_candidate(statistics_fixture_t *fixture,
@@ -118,6 +130,16 @@ static void assert_statistics(
     assert(statistics->version == EVO_GENERATION_STATISTICS_VERSION);
     assert(statistics->fitness_comparison_policy_version ==
            EVO_FITNESS_COMPARISON_POLICY_VERSION);
+    assert(statistics->diversity_policy_version ==
+           EVO_DIVERSITY_POLICY_VERSION);
+    assert(statistics->diversity_metric_version ==
+           EVO_BYTE_DIVERSITY_METRIC_VERSION);
+    assert(statistics->diversity_pair_count ==
+           valid_count * (valid_count - (valid_count != 0 ? 1 : 0)) / 2);
+    assert(statistics->diversity_work_units ==
+           statistics->diversity_pair_count);
+    assert(statistics->diversity == 0.0);
+    assert(!statistics->diversity_uses_domain_distance);
     assert(statistics->generation_index == generation_index);
     assert(statistics->population_size == population_size);
     assert(statistics->valid_count == valid_count);
@@ -168,7 +190,8 @@ static void test_even_generation_zero_vector(void)
     add_valid_candidate(&fixture, 2, 3.0);
     add_valid_candidate(&fixture, 3, 2.0);
 
-    assert(evo_generation_statistics_record(&fixture.population,
+    assert(evo_generation_statistics_record(&fixture.config,
+                                            &fixture.population,
                                             UINT64_C(0),
                                             &statistics) == EVO_SUCCESS);
     assert_statistics(&statistics,
@@ -202,7 +225,8 @@ static void test_odd_generation_vector(void)
     add_valid_candidate(&fixture, 3, 0.0);
     add_valid_candidate(&fixture, 4, 3.0);
 
-    assert(evo_generation_statistics_record(&fixture.population,
+    assert(evo_generation_statistics_record(&fixture.config,
+                                            &fixture.population,
                                             UINT64_C(7),
                                             &statistics) == EVO_SUCCESS);
     assert_statistics(&statistics,
@@ -230,7 +254,8 @@ static void test_one_member_vector(void)
 
     initialize_fixture(&fixture, 1, UINT64_C(3));
     add_valid_candidate(&fixture, 0, 9.0);
-    assert(evo_generation_statistics_record(&fixture.population,
+    assert(evo_generation_statistics_record(&fixture.config,
+                                            &fixture.population,
                                             UINT64_C(3),
                                             &statistics) == EVO_SUCCESS);
     assert_statistics(&statistics,
@@ -262,7 +287,8 @@ static void test_tied_vector_preserves_stable_best(void)
     add_valid_candidate(&fixture, 2, 7.0);
 
     assert(fixture.population.best_index == 1);
-    assert(evo_generation_statistics_record(&fixture.population,
+    assert(evo_generation_statistics_record(&fixture.config,
+                                            &fixture.population,
                                             UINT64_C(2),
                                             &statistics) == EVO_SUCCESS);
     assert_statistics(&statistics,
@@ -296,7 +322,8 @@ static void test_mixed_validity_skips_invalid_fitness(void)
     poison_invalid_candidate(&fixture, 3);
     add_valid_candidate(&fixture, 4, 3.0);
 
-    assert(evo_generation_statistics_record(&fixture.population,
+    assert(evo_generation_statistics_record(&fixture.config,
+                                            &fixture.population,
                                             UINT64_C(4),
                                             &statistics) == EVO_SUCCESS);
     assert_statistics(&statistics,
@@ -319,7 +346,8 @@ static void test_all_invalid_terminal_vector(void)
         poison_invalid_candidate(&fixture, index);
     }
 
-    assert(evo_generation_statistics_record(&fixture.population,
+    assert(evo_generation_statistics_record(&fixture.config,
+                                            &fixture.population,
                                             UINT64_C(6),
                                             &statistics) == EVO_SUCCESS);
     assert_statistics(&statistics,
@@ -341,21 +369,31 @@ static void test_rejections_preserve_output(void)
     add_valid_candidate(&fixture, 1, 2.0);
 
     assert(evo_generation_statistics_record(NULL,
+                                            &fixture.population,
                                             UINT64_C(1),
                                             &statistics) ==
            EVO_ERROR_INVALID_ARGUMENT);
     assert(statistics.version == UINT32_C(99));
-    assert(evo_generation_statistics_record(&fixture.population,
+    assert(evo_generation_statistics_record(&fixture.config,
+                                            NULL,
+                                            UINT64_C(1),
+                                            &statistics) ==
+           EVO_ERROR_INVALID_ARGUMENT);
+    assert(statistics.version == UINT32_C(99));
+    assert(evo_generation_statistics_record(&fixture.config,
+                                            &fixture.population,
                                             UINT64_C(1),
                                             NULL) ==
            EVO_ERROR_INVALID_ARGUMENT);
-    assert(evo_generation_statistics_record(&fixture.population,
+    assert(evo_generation_statistics_record(&fixture.config,
+                                            &fixture.population,
                                             UINT64_C(2),
                                             &statistics) == EVO_ERROR_STATE);
     assert(statistics.version == UINT32_C(99));
 
     fixture.population.valid_count = 1;
-    assert(evo_generation_statistics_record(&fixture.population,
+    assert(evo_generation_statistics_record(&fixture.config,
+                                            &fixture.population,
                                             UINT64_C(1),
                                             &statistics) == EVO_ERROR_STATE);
     assert(statistics.version == UINT32_C(99));
@@ -369,7 +407,8 @@ static void test_non_finite_valid_or_aggregate_rejects(void)
     initialize_fixture(&fixture, 1, UINT64_C(0));
     add_valid_candidate(&fixture, 0, 1.0);
     fixture.evaluations[0].fitness.total = NAN;
-    assert(evo_generation_statistics_record(&fixture.population,
+    assert(evo_generation_statistics_record(&fixture.config,
+                                            &fixture.population,
                                             UINT64_C(0),
                                             &statistics) ==
            EVO_ERROR_EVALUATION);
@@ -377,7 +416,8 @@ static void test_non_finite_valid_or_aggregate_rejects(void)
 
     fixture.evaluations[0].fitness = make_fitness(1.0);
     fixture.evaluations[0].fitness.constraint_penalty = -1.0;
-    assert(evo_generation_statistics_record(&fixture.population,
+    assert(evo_generation_statistics_record(&fixture.config,
+                                            &fixture.population,
                                             UINT64_C(0),
                                             &statistics) ==
            EVO_ERROR_EVALUATION);
@@ -386,7 +426,8 @@ static void test_non_finite_valid_or_aggregate_rejects(void)
     initialize_fixture(&fixture, 2, UINT64_C(0));
     add_valid_candidate(&fixture, 0, DBL_MAX);
     add_valid_candidate(&fixture, 1, DBL_MAX);
-    assert(evo_generation_statistics_record(&fixture.population,
+    assert(evo_generation_statistics_record(&fixture.config,
+                                            &fixture.population,
                                             UINT64_C(0),
                                             &statistics) ==
            EVO_ERROR_EVALUATION);

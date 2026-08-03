@@ -67,6 +67,11 @@ operation now records fitness-comparison policy version 1 and rejects negative
 soft-penalty evidence in addition to non-finite evidence. Callback ordering,
 allocation, and atomic commit semantics remain unchanged.
 
+ADR-0022 advances child-evaluation policy to version 3 in EVO 0.22.0. The
+operation now commits bounded diversity evidence with evaluation and records
+its policy and metric versions. Distance measurement and rollback are governed
+by ADR-0022.
+
 ## Consequences
 
 - Generation-zero and child evaluation cannot drift in ordering, finite-

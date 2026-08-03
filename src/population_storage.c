@@ -1,5 +1,6 @@
 #include "internal/population_storage.h"
 #include "internal/child_tail.h"
+#include "internal/diversity.h"
 #include "internal/fitness.h"
 #include "internal/rng.h"
 
@@ -96,7 +97,9 @@ bool evo_population_validate_completed(
         expected_evaluation_bytes != population->evaluation_bytes ||
         population->evaluation_bytes > config->max_evaluation_bytes ||
         population->fitness_comparison_policy_version !=
-            EVO_FITNESS_COMPARISON_POLICY_VERSION) {
+            EVO_FITNESS_COMPARISON_POLICY_VERSION ||
+        !evo_population_diversity_evidence_is_valid(config,
+                                                     population)) {
         return false;
     }
 

@@ -57,6 +57,10 @@ ADR-0021 advances generation-advancement policy to version 2 in EVO 0.21.0 so
 the output evidence records fitness-comparison policy version 1 from the
 promoted population. The ownership move and lineage rules are unchanged.
 
+ADR-0022 advances generation-advancement policy to version 3 in EVO 0.22.0 so
+the output also records the promoted population's diversity policy and metric
+versions. The ownership move and lineage rules remain unchanged.
+
 ## Consequences
 
 - Rejection preserves both population structures, their allocations and

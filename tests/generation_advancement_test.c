@@ -154,6 +154,12 @@ static void assert_population_empty(const evo_population_t *population)
     assert(population->operator_seed_schedule_version == 0);
     assert(population->odd_child_policy_version == 0);
     assert(population->fitness_comparison_policy_version == 0);
+    assert(population->diversity_policy_version == 0);
+    assert(population->diversity_metric_version == 0);
+    assert(population->diversity_pair_count == 0);
+    assert(population->diversity_work_units == 0);
+    assert(population->diversity == 0.0);
+    assert(!population->diversity_uses_domain_distance);
     assert(!population->initialized);
     assert(!population->has_best);
     assert(!population->evaluated);
@@ -203,6 +209,17 @@ static void assert_population_matches_snapshot(
            before->odd_child_policy_version);
     assert(population->fitness_comparison_policy_version ==
            before->fitness_comparison_policy_version);
+    assert(population->diversity_policy_version ==
+           before->diversity_policy_version);
+    assert(population->diversity_metric_version ==
+           before->diversity_metric_version);
+    assert(population->diversity_pair_count ==
+           before->diversity_pair_count);
+    assert(population->diversity_work_units ==
+           before->diversity_work_units);
+    assert(population->diversity == before->diversity);
+    assert(population->diversity_uses_domain_distance ==
+           before->diversity_uses_domain_distance);
     assert(population->initialized == before->initialized);
     assert(population->has_best == before->has_best);
     assert(population->evaluated == before->evaluated);
@@ -257,6 +274,10 @@ static void assert_evidence_equal(
            right->odd_child_policy_version);
     assert(left->fitness_comparison_policy_version ==
            right->fitness_comparison_policy_version);
+    assert(left->diversity_policy_version ==
+           right->diversity_policy_version);
+    assert(left->diversity_metric_version ==
+           right->diversity_metric_version);
     assert(left->policy_version == right->policy_version);
     assert(left->has_best == right->has_best);
     assert(left->complete == right->complete);
@@ -337,6 +358,7 @@ static void fixture_initialize(advancement_fixture_t *fixture,
             TEST_POPULATION_SIZE *
             sizeof(evo_candidate_evaluation_t),
         .max_child_population_bytes = TEST_STORAGE_SIZE,
+        .max_diversity_work = SIZE_MAX,
     };
 
     assert(evo_population_create(&fixture->problem,
@@ -410,6 +432,10 @@ static void test_generation_zero_promotion_preserves_child_ownership(void)
            EVO_ODD_CHILD_POLICY_VERSION);
     assert(evidence.fitness_comparison_policy_version ==
            EVO_FITNESS_COMPARISON_POLICY_VERSION);
+    assert(evidence.diversity_policy_version ==
+           EVO_DIVERSITY_POLICY_VERSION);
+    assert(evidence.diversity_metric_version ==
+           EVO_BYTE_DIVERSITY_METRIC_VERSION);
     assert(evidence.policy_version ==
            EVO_GENERATION_ADVANCEMENT_POLICY_VERSION);
     assert(evidence.has_best);

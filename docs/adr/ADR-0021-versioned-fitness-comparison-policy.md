@@ -97,6 +97,11 @@ records the policy that established its generation-local best. Future policy
 changes must use a new version and cannot silently reinterpret retained replay
 evidence.
 
+ADR-0022 later advances public statistics to schema version 3 and the three
+private policies to child-evaluation version 3, generation-advancement version
+3, and bounded-run version 4. Comparison policy remains version 1; the newer
+versions add diversity provenance without changing ranking.
+
 Child-evaluation policy advances to version 2, generation-advancement policy
 to version 2, and bounded-run policy to version 3 because their evidence now
 records or depends on comparison policy version 1.

@@ -169,6 +169,7 @@ static evo_config_t make_config(void)
         .max_population_bytes = TEST_POPULATION_SIZE,
         .max_evaluation_bytes =
             TEST_POPULATION_SIZE * sizeof(evo_candidate_evaluation_t),
+        .max_diversity_work = SIZE_MAX,
     };
 }
 
