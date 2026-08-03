@@ -3,7 +3,7 @@
 
 #include "internal/generation_advancement.h"
 
-#define EVO_BOUNDED_RUN_POLICY_VERSION UINT32_C(1)
+#define EVO_BOUNDED_RUN_POLICY_VERSION UINT32_C(2)
 
 typedef struct evo_bounded_run_evidence {
     size_t population_size;
@@ -18,8 +18,10 @@ typedef struct evo_bounded_run_evidence {
     uint32_t child_evaluation_policy_version;
     uint32_t generation_advancement_policy_version;
     uint32_t policy_version;
+    evo_termination_reason_t termination_reason;
     bool final_has_best;
     bool stopped_all_invalid;
+    bool stopped_application_requested;
     bool complete;
 } evo_bounded_run_evidence_t;
 

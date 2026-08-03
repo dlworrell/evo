@@ -377,7 +377,9 @@ evo_status_t evo_bounded_run_advance(
         const evo_candidate_evaluation_t *improved_evaluation = NULL;
         const void *improved_genome = NULL;
         const uint64_t source_generation = (uint64_t)transition;
-        evo_termination_reason_t observation_reason =
+        evo_termination_reason_t natural_reason =
+            EVO_TERMINATION_NONE;
+        evo_termination_reason_t termination_reason =
             EVO_TERMINATION_NONE;
         bool has_improvement = false;
 
@@ -458,17 +460,23 @@ evo_status_t evo_bounded_run_advance(
         }
 
         if (candidate.stopped_all_invalid) {
-            observation_reason = EVO_TERMINATION_ALL_INVALID;
+            natural_reason = EVO_TERMINATION_ALL_INVALID;
         } else if (candidate.completed_transitions ==
                    candidate.requested_transitions) {
-            observation_reason = EVO_TERMINATION_GENERATION_LIMIT;
+            natural_reason = EVO_TERMINATION_GENERATION_LIMIT;
         }
-        evo_generation_observer_notify(problem,
-                                       config,
-                                       best_result,
-                                       observation_reason);
+        termination_reason = evo_generation_callbacks_notify(problem,
+                                                             config,
+                                                             best_result,
+                                                             natural_reason);
+        if (termination_reason != EVO_TERMINATION_NONE) {
+            candidate.termination_reason = termination_reason;
+            candidate.stopped_application_requested =
+                termination_reason ==
+                EVO_TERMINATION_APPLICATION_REQUESTED;
+        }
 
-        if (candidate.stopped_all_invalid) {
+        if (termination_reason != EVO_TERMINATION_NONE) {
             break;
         }
     }

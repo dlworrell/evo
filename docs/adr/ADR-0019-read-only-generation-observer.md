@@ -56,7 +56,10 @@ begins work for the next generation.
 Generation zero is observed only after evaluation, statistics construction,
 global-winner transfer, and generation-zero commitment all succeed. A
 zero-limit run reports `EVO_TERMINATION_GENERATION_LIMIT`; a positive-limit run
-reports `EVO_TERMINATION_NONE` because execution continues.
+reports `EVO_TERMINATION_NONE` under the 0.19.0 contract because execution
+continues. ADR-0020 inserts a separate application decision before observation,
+so a positive-limit generation may instead report
+`EVO_TERMINATION_APPLICATION_REQUESTED` from 0.20.0 onward.
 
 A child is observed only after its evaluation and statistics succeed, atomic
 promotion completes, `generations_completed` and the latest statistics are
@@ -66,6 +69,10 @@ child reports `EVO_TERMINATION_GENERATION_LIMIT`. A promoted all-invalid child
 reports `EVO_TERMINATION_ALL_INVALID` while its result view still exposes the
 earlier valid global winner.
 
+ADR-0020 preserves this commit boundary and gives natural limit and all-invalid
+reasons precedence. When its separate stop callback returns true, the observer
+receives a fresh snapshot with the application-requested reason.
+
 The terminal reason in the callback view is decision evidence. The owning
 public result continues to publish its final reason only after private cleanup
 succeeds, preserving the atomic public-result contract established in
@@ -74,8 +81,8 @@ ADR-0017.
 ## Failure and Control Semantics
 
 The callback returns `void`. It cannot request cancellation, change a status,
-replace a winner, or alter EVO control flow. Application stopping remains issue
-#42.
+replace a winner, or alter EVO control flow. Application stopping is a
+separate callback and ordering contract defined by ADR-0020.
 
 No event is emitted for an invalid configuration, failed generation-zero
 evaluation, failed winner transfer, provisional child, failed child evaluation,
@@ -115,7 +122,8 @@ run bound.
 ### Let the observer return a stop decision
 
 Rejected because observation and application stopping have different ordering,
-status, replay, and recovery contracts. Issue #42 owns stopping.
+status, replay, and recovery contracts. ADR-0020 owns stopping and preserves
+the observer's `void` signature.
 
 ### Deliver events asynchronously
 
@@ -133,6 +141,6 @@ concurrency are outside the deterministic sequential core.
   later injected failure.
 - `tests/evo_lifecycle_test.c` locks the append-only config layout and result-
   view schema version.
-- The installed consumer exercises the public observer signature and one
-  terminal generation-zero event.
+- The installed consumer exercises the public observer signature and receives
+  the post-decision terminal generation-zero event introduced by ADR-0020.
 - GitHub issue: `https://github.com/dlworrell/evo/issues/41`

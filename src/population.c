@@ -62,6 +62,7 @@ evo_status_t evo_run(const evo_problem_t *problem, const evo_config_t *config, v
     evo_bounded_run_evidence_t run_evidence = {0};
     evo_population_t population = {0};
     evo_status_t status = EVO_SUCCESS;
+    evo_termination_reason_t termination_reason = EVO_TERMINATION_NONE;
 
     if (result == NULL) {
         return EVO_ERROR_INVALID_ARGUMENT;
@@ -113,14 +114,15 @@ evo_status_t evo_run(const evo_problem_t *problem, const evo_config_t *config, v
     result->generation_statistics = generation_statistics;
 
     if (config->generation_limit == 0) {
-        result->termination_reason = EVO_TERMINATION_GENERATION_LIMIT;
+        termination_reason = EVO_TERMINATION_GENERATION_LIMIT;
     }
-    evo_generation_observer_notify(problem,
-                                   config,
-                                   result,
-                                   result->termination_reason);
+    termination_reason = evo_generation_callbacks_notify(problem,
+                                                         config,
+                                                         result,
+                                                         termination_reason);
 
-    if (config->generation_limit != 0) {
+    if (config->generation_limit != 0 &&
+        termination_reason == EVO_TERMINATION_NONE) {
         status = evo_bounded_run_advance(problem,
                                          config,
                                          context,
@@ -135,9 +137,10 @@ evo_status_t evo_run(const evo_problem_t *problem, const evo_config_t *config, v
         return status;
     }
 
-    result->termination_reason = run_evidence.stopped_all_invalid
-                                     ? EVO_TERMINATION_ALL_INVALID
-                                     : EVO_TERMINATION_GENERATION_LIMIT;
+    if (termination_reason == EVO_TERMINATION_NONE) {
+        termination_reason = run_evidence.termination_reason;
+    }
+    result->termination_reason = termination_reason;
 
     return EVO_SUCCESS;
 }

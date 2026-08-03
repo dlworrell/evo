@@ -23,7 +23,8 @@ patch/evidence artifacts.
 selection, crossover, mutation dispatch, validation/evaluation ordering,
 generation advancement, stopping, and core result ownership. EVO-001 is its
 normative contract. Version 0.19.0 implements a bounded multi-generation
-subset of this layer.
+subset of this layer, and version 0.20.0 adds application-requested stopping
+over committed state.
 
 ### Source analysis and transformation
 
@@ -63,7 +64,7 @@ project patch automatically.
 
 ## Current Conformance Boundary
 
-Only the evolutionary-search core exists in version 0.19.0. Source ingestion,
+Only the evolutionary-search core exists in version 0.20.0. Source ingestion,
 analysis, transformation, candidate materialization, external-process
 isolation, target-code measurement, product commands, and optimized-patch
 artifacts are planned by issues #58 through #69. Documentation of those
@@ -435,9 +436,23 @@ invalid reason. Failed and provisional generations do not emit events, and a
 later failure does not invalidate observations already delivered for earlier
 committed generations.
 
+Version 0.20.0 appends `generation_stop` and its independent caller-owned
+context after the observer fields. The synchronous decision receives fresh
+read-only result and statistics snapshots only after a generation is fully
+committed and only when another child could otherwise be attempted. Returning
+true preserves that committed state and ends successfully with
+`EVO_TERMINATION_APPLICATION_REQUESTED`; returning false continues unchanged.
+
+Natural terminal conditions take precedence. A zero-limit generation and a
+promoted all-invalid child do not invoke the stop callback. The configured
+hard generation limit remains authoritative. When both callback types exist,
+the stop decision runs first with reason `EVO_TERMINATION_NONE`; the observer
+then receives an independent snapshot with the final post-decision reason. No
+callback runs for provisional or failed child state.
+
 Bounded-run policy evidence remains private. Convergence, stagnation,
-application stopping, generalized elitism, adaptive mutation, recycling,
-checkpointing, and parallelism remain separate decisions.
+generalized elitism, adaptive mutation, recycling, checkpointing, and
+parallelism remain separate decisions.
 
 ## EVO Core Execution Flow
 
@@ -449,15 +464,15 @@ checkpointing, and parallelism remain separate decisions.
 6. Record statistics and evidence.
 7. Stop on convergence, stagnation, generation limit, or an application-defined condition.
 
-Version 0.19.0 publicly implements steps 1 through 4 for exactly
+Version 0.20.0 publicly implements steps 1 through 4 for at most
 `generation_limit` bounded transitions, with the version-1 odd-tail policy as
 the current elite-preservation rule in step 5. It implements the constant-space
 statistics portion of step 6 for every committed generation, records the global
 winner and completed transition count, and explicitly identifies limit
-completion or later all-invalid extinction. Those remain the only public stop
-conditions. Committed-generation observation completes the current bounded
-portion of step 6. Diversity, convergence, stagnation, application-defined
-stopping, checkpointing, and parallel evaluation remain absent.
+completion, later all-invalid extinction, or an application request after a
+committed generation. Committed-generation observation completes the current
+bounded portion of step 6. Diversity, convergence, stagnation, checkpointing,
+and parallel evaluation remain absent.
 
 ## Source-Optimizer Execution Flow
 

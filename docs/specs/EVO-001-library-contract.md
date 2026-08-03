@@ -1,13 +1,13 @@
 # EVO-001: Evolutionary Optimization Library Contract
 
 Status: Baseline
-Version: 0.19.0
+Version: 0.20.0
 Owner: EVO
 
 ## Scope Boundary
 
 This specification governs the reusable deterministic C17 evolutionary-search
-core implemented through version 0.19.0. It does not define C-project
+core implemented through version 0.20.0. It does not define C-project
 ingestion, Clang/LLVM analysis, structured source transformations, isolated
 candidate builds, baseline-versus-candidate measurement, optimized patches, or
 product-level replay artifacts.
@@ -48,7 +48,8 @@ crossover rate, mutation rate, random seed, `max_genome_bytes`,
 `max_population_bytes`, `max_evaluation_bytes`, and
 `max_child_population_bytes`, followed by the optional
 `generation_observer` and its caller-owned
-`generation_observer_context`.
+`generation_observer_context`, then the optional `generation_stop` and its
+independent caller-owned `generation_stop_context`.
 
 `max_genome_bytes` is trusted caller policy for the largest individual genome
 allocation accepted by `evo_run`. It avoids a platform-specific hard-coded
@@ -80,6 +81,12 @@ run working set.
 generation evidence. A null callback disables observation. Its context is
 independent caller-owned state; EVO never inspects, allocates, releases, or
 retains that pointer. Observer delivery adds no memory-budget requirement.
+
+`generation_stop` is a synchronous decision callback for a committed
+generation from which another transition could otherwise be attempted. A null
+callback disables application stopping. Its context is independent caller-
+owned state; EVO never inspects, allocates, releases, or retains that pointer.
+Stop delivery adds no memory-budget requirement.
 
 ### Internal population storage
 
@@ -665,7 +672,10 @@ The bounded-run lifecycle is:
 7. A promoted all-invalid child terminates the loop successfully and retains
    the earlier valid winner. Its promotion is included in
    `generations_completed`.
-8. Any other failure destroys every current internal owner and the result
+8. After any nonterminal committed generation, an optional application stop
+   decision may terminate successfully while preserving that exact committed
+   winner, statistics, and completed-transition count.
+9. Any other failure destroys every current internal owner and the result
    allocation, returning the inactive result to its complete zero state. No
    partial public progress is retained.
 
@@ -673,8 +683,9 @@ The result allocation is created once and is not reallocated during a run.
 Bounded-run policy evidence is private. Version 0.17.0 publishes its successful
 stop classification, version 0.18.0 retains one constant-space statistics
 record for the most recently committed generation, and version 0.19.0 can
-deliver each committed record synchronously without retaining history. The
-bounded run does not define convergence, stagnation, application stopping,
+deliver each committed record synchronously without retaining history.
+Version 0.20.0 can stop on an application decision after a committed
+generation. The bounded run does not define convergence, stagnation,
 generalized elitism, adaptive mutation, old-slab recycling, checkpointing,
 parallelism, or secure erasure.
 
@@ -698,20 +709,25 @@ The lifecycle contract is:
 4. On success, `termination_reason` is
    `EVO_TERMINATION_GENERATION_LIMIT` when the configured transition bound
    completed or `EVO_TERMINATION_ALL_INVALID` when a promoted later child had
-   no valid candidate. `EVO_TERMINATION_NONE` is never a successful reason.
+   no valid candidate, or `EVO_TERMINATION_APPLICATION_REQUESTED` when the
+   application stop callback selected a committed generation.
+   `EVO_TERMINATION_NONE` is never a successful reason.
 5. On success, `generation_statistics` describes the most recently committed
    population. Generation zero and every promoted child replace the record in
    constant space; no history allocation scales with `generation_limit`.
 6. An optional observer receives a read-only snapshot after generation zero
    and after every successfully promoted child. Failed and provisional
    generations do not produce events.
-7. Callers may use bounded, non-owning aliases to read or write genome bytes
+7. An optional application stop callback receives a read-only snapshot only
+   after a committed generation from which execution could continue. A true
+   decision stops successfully without changing that committed state.
+8. Callers may use bounded, non-owning aliases to read or write genome bytes
    while the result remains alive. An alias may not free or reallocate the
    storage and must not survive result destruction.
-8. `evo_result_destroy` releases the owned allocation and resets every result
+9. `evo_result_destroy` releases the owned allocation and resets every result
    field to zero. Destruction is null-safe and repeatable for initialized
    result objects.
-9. A destroyed result may be passed to `evo_run` again immediately.
+10. A destroyed result may be passed to `evo_run` again immediately.
 
 `evo_result_destroy` does not securely erase genome bytes. Consumers must not
 place secret or cryptographic material in genomes without a separately
@@ -723,7 +739,7 @@ reviewed erasure boundary.
 
 | Status | Meaning |
 |---|---|
-| `EVO_SUCCESS` | Generation zero produced a valid winner and every requested transition completed, or a promoted later all-invalid child ended the run early. |
+| `EVO_SUCCESS` | Generation zero produced a valid winner and the run ended at the hard limit, after a promoted later all-invalid child, or after an application stop decision over committed state. |
 | `EVO_ERROR_INVALID_ARGUMENT` | A required pointer argument is null. |
 | `EVO_ERROR_OUT_OF_MEMORY` | The system allocator returned null. |
 | `EVO_ERROR_RESULT_ACTIVE` | The result already owns a genome and is preserved unchanged. |
@@ -742,6 +758,7 @@ from `evo_status_t`:
 | `EVO_TERMINATION_NONE` | No successful run outcome exists. This is the zero-initialized, failed, and destroyed state. |
 | `EVO_TERMINATION_GENERATION_LIMIT` | Generation zero completed with a zero limit, or every requested child transition completed. |
 | `EVO_TERMINATION_ALL_INVALID` | A later all-invalid child was evaluated, promoted, counted, and ended the run while the earlier global winner was retained. |
+| `EVO_TERMINATION_APPLICATION_REQUESTED` | The application stop callback returned true after a committed generation from which execution could otherwise continue. |
 
 The reason is assigned only after all fallible public run work succeeds. It
 does not replace `generations_completed`, which remains the exact quantitative
@@ -778,7 +795,8 @@ computed before promotion but replaces the result record only after promotion
 succeeds. A terminal all-invalid child therefore has zero sums and no local
 best while the separate result allocation retains the earlier global winner.
 Only the latest record is retained. Version 0.19.0 may deliver every committed
-record to the synchronous observer but defines no history ownership.
+record to the synchronous observer, and version 0.20.0 may present it to a
+synchronous stop decision. Neither callback defines history ownership.
 
 ### Generation observer
 
@@ -813,11 +831,13 @@ construction, and global-winner transfer. A zero-limit event carries
 `EVO_TERMINATION_NONE`.
 
 Child observation follows successful statistics construction, atomic
-promotion, completion-count update, strict global-winner update, and stop
-classification. Each invocation completes before the next child begins. The
-last requested child carries `EVO_TERMINATION_GENERATION_LIMIT`; a promoted
-all-invalid child carries `EVO_TERMINATION_ALL_INVALID` while retaining the
-earlier global winner in the result view.
+promotion, completion-count update, strict global-winner update, natural-stop
+classification, and any application stop decision. Each invocation completes
+before the next child begins. The last requested child carries
+`EVO_TERMINATION_GENERATION_LIMIT`; a promoted all-invalid child carries
+`EVO_TERMINATION_ALL_INVALID` while retaining the earlier global winner in the
+result view; and an application-selected generation carries
+`EVO_TERMINATION_APPLICATION_REQUESTED`.
 
 No event is emitted for invalid configuration, failed generation zero, failed
 winner transfer, provisional child, failed child evaluation or statistics, or
@@ -828,6 +848,42 @@ still follows its complete empty-failure contract.
 Observation is synchronous, serial, allocation-free, RNG-neutral, and non-
 stopping. It does not define cancellation, asynchronous delivery, concurrent
 callbacks, or retained event history.
+
+### Application stop decision
+
+`evo_generation_stop_fn` receives the same result-view and statistics types as
+the observer plus its separately configured context. It returns `bool`: false
+preserves execution, and true selects successful
+`EVO_TERMINATION_APPLICATION_REQUESTED` termination at the current committed
+generation.
+
+EVO invokes the callback only when all of these conditions hold:
+
+1. generation zero or a child generation has committed successfully;
+2. its latest statistics and any strict global-winner improvement are visible;
+3. no generation-limit or all-invalid terminal reason is already known; and
+4. another child transition remains within `generation_limit`.
+
+The callback therefore does not run for a zero-limit generation, the final
+hard-limit generation, a promoted all-invalid child, provisional work, or any
+failed generation. A never-stopping callback is invoked for generations
+`0..generation_limit - 1`; the observer still receives the final hard-limit
+event at `generation_limit`.
+
+The stop result view always carries `EVO_TERMINATION_NONE`, because the
+callback is deciding whether execution should continue. If it returns true,
+the owning result later publishes `EVO_TERMINATION_APPLICATION_REQUESTED`
+after private cleanup succeeds. If an observer is configured, EVO constructs
+new independent stack snapshots and invokes it after the stop decision, so the
+observer sees the final reason. The two callback snapshot objects never alias
+one another or the owning public result.
+
+The stop callback is synchronous, serial, allocation-free, and RNG-neutral.
+Its views are non-owning and valid only for the call. It must not retain a view,
+cast away `const`, mutate or release the global genome, invoke lifecycle
+operations on the active public result, or depend on unrecorded state if replay
+is required. It does not provide signal handling, cross-thread cancellation,
+time limits, reentrancy, or asynchronous event-loop integration.
 
 ### Result fitness
 
@@ -924,7 +980,15 @@ consumers must rebuild. No installed function signature, result layout,
 symbol, allocation class, or resource budget changes. A null callback preserves
 the prior execution surface.
 
-## Current 0.19.0 Conformance Boundary
+Version 0.20.0 adds `evo_generation_stop_fn`, appends `generation_stop` and
+`generation_stop_context` to `evo_config_t`, and appends
+`EVO_TERMINATION_APPLICATION_REQUESTED` to `evo_termination_reason_t`. Every
+pre-0.20.0 config member retains its offset, but `sizeof(evo_config_t)` and
+array stride change, so consumers must rebuild. No installed function
+signature, result layout, symbol, allocation class, or resource budget changes.
+A null stop callback preserves the 0.19.0 execution and observation surface.
+
+## Current 0.20.0 Conformance Boundary
 
 The current implementation exposes generation-zero compatibility plus bounded
 multi-generation execution:
@@ -987,8 +1051,9 @@ multi-generation execution:
   runs ascending transitions, allocates the result once, retains earlier exact
   ties, counts completed promotions, and stops successfully after promoting a
   later all-invalid child;
-- public success records generation-limit or later-all-invalid termination,
-  while every failure and destruction restores the zero reason;
+- public success records generation-limit, later-all-invalid, or application-
+  requested termination, while every failure and destruction restores the
+  zero reason;
 - generation zero and each promoted child receive versioned fixed-order
   statistics over valid records, with the terminal record retained in constant
   result space;
@@ -997,12 +1062,16 @@ multi-generation execution:
   selection;
 - an optional synchronous observer receives independent read-only result and
   statistics snapshots after generation zero and every promoted child;
-- observer delivery follows winner update and stop classification, precedes
+- an optional synchronous application stop decision receives independent
+  read-only snapshots only after a nonterminal committed generation;
+- natural terminal reasons suppress the application decision, a true decision
+  preserves committed state, and a null callback is 0.19.0 replay-equivalent;
+- observer delivery follows winner update and final stop classification, precedes
   the next generation, allocates no history, and emits nothing for provisional
   or failed generations; and
 - generalized elitism, adaptive mutation, diversity, convergence, stagnation,
-  application stopping, checkpointing, buffer recycling, asynchronous or
-  concurrent observation, and parallelism are not implemented.
+  checkpointing, buffer recycling, asynchronous or concurrent callbacks, and
+  parallelism are not implemented.
 
 Consumers may treat `EVO_SUCCESS` as evidence of a valid global winner and
 exactly `generations_completed` promoted child generations. They must inspect
@@ -1010,8 +1079,9 @@ exactly `generations_completed` promoted child generations. They must inspect
 count. They may inspect `generation_statistics` for the final committed
 population, which is distinct from the global winner on all-invalid
 termination. When configured, they may copy each callback-lifetime observation
-into their own bounded storage. Version 0.19.0 defines no other public early-
-stop reason, statistics history, observer cancellation, or asynchronous
+into their own bounded storage. They may also configure deterministic stopping
+over committed snapshots. Version 0.20.0 defines no convergence or stagnation
+reason, statistics history, asynchronous cancellation, or retained callback
 delivery.
 
 ## Verification
@@ -1100,13 +1170,23 @@ generations. The installed consumer exercises the public callback and view
 types. Wrapped allocation tests prove observation adds no allocation or release
 and reports only earlier committed generations before a later injected failure.
 
+The application-stop test proves immediate generation-zero stopping,
+intermediate stopping after a promoted child, stop-before-observer ordering,
+independent callback snapshots, application termination evidence, exact
+committed winner and statistics retention, natural-reason precedence, absence
+of decisions for provisional or failed children, and null/never-stop replay
+equivalence with 0.19.0. The installed consumer exercises both callback types.
+Wrapped allocation tests prove immediate stopping adds no allocation, consumes
+no child transition, and releases each owner exactly once.
+
 The bounded-run test proves zero-limit compatibility; positive-limit policy
 validation before callbacks; even, odd, and one-member execution; deterministic
 multi-transition replay; strict global improvement; earlier-winner exact ties;
 later all-invalid promotion and successful stop; generation-zero all-invalid
 mapping; explicit generation-limit and all-invalid termination reasons;
 active-result preservation; appended result layout; destruction reset; and
-versioned private run evidence. It also proves generation-zero, promoted,
+versioned private run evidence including application-requested completion. It
+also proves generation-zero, promoted,
 replay, odd-tail, one-member, tied, and terminal all-invalid statistics, plus
 private rejection of mismatched generation-zero statistics. The
 wrapped-allocation test additionally proves the five-allocation bounded path,
@@ -1133,6 +1213,7 @@ evaluation allocation failure.
 - `docs/adr/ADR-0017-explicit-public-termination-reason.md`
 - `docs/adr/ADR-0018-bounded-generation-statistics.md`
 - `docs/adr/ADR-0019-read-only-generation-observer.md`
+- `docs/adr/ADR-0020-deterministic-application-requested-stopping.md`
 - `docs/architecture.md`
 - `docs/algorithms.md`
 - `docs/benchmarks.md`
@@ -1157,4 +1238,5 @@ evaluation allocation failure.
 - `https://github.com/dlworrell/evo/issues/39`
 - `https://github.com/dlworrell/evo/issues/40`
 - `https://github.com/dlworrell/evo/issues/41`
+- `https://github.com/dlworrell/evo/issues/42`
 - `https://github.com/dlworrell/AEMS/issues/18`

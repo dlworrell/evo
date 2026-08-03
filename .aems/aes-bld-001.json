@@ -215,6 +215,12 @@
         "autotools": "tests/evo_observer_test"
       },
       {
+        "id": "application-stop",
+        "source": "tests/application_stop_test.c",
+        "cmake": "evo_application_stop_test",
+        "autotools": "tests/evo_application_stop_test"
+      },
+      {
         "id": "seed-schedule-research",
         "source": "tests/seed_schedule_research_test.c",
         "cmake": "evo_seed_schedule_research_test",
