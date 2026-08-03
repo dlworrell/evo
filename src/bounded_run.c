@@ -1,5 +1,6 @@
 #include "internal/bounded_run.h"
 
+#include "internal/application_stop.h"
 #include "internal/child_evaluation.h"
 #include "internal/child_pair.h"
 #include "internal/child_tail.h"
@@ -462,13 +463,19 @@ evo_status_t evo_bounded_run_advance(
         } else if (candidate.completed_transitions ==
                    candidate.requested_transitions) {
             observation_reason = EVO_TERMINATION_GENERATION_LIMIT;
+        } else if (evo_application_stop_requested(problem,
+                                                  config,
+                                                  best_result)) {
+            candidate.stopped_application_requested = true;
+            observation_reason = EVO_TERMINATION_APPLICATION_REQUESTED;
         }
         evo_generation_observer_notify(problem,
                                        config,
                                        best_result,
                                        observation_reason);
 
-        if (candidate.stopped_all_invalid) {
+        if (candidate.stopped_all_invalid ||
+            candidate.stopped_application_requested) {
             break;
         }
     }

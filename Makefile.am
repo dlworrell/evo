@@ -30,6 +30,7 @@ libcatalyst_evo_la_SOURCES = \
 	src/diversity.c \
 	src/fitness.c \
 	src/statistics.c \
+	src/application_stop.c \
 	src/observer.c \
 	src/checkpoint.c \
 	src/rng.c
@@ -52,6 +53,7 @@ noinst_HEADERS = \
 	src/internal/generation_advancement.h \
 	src/internal/bounded_run.h \
 	src/internal/statistics.h \
+	src/internal/application_stop.h \
 	src/internal/observer.h \
 	tests/research/seed_schedule_research.h
 
@@ -79,6 +81,7 @@ check_PROGRAMS = \
 	tests/evo_bounded_run_test \
 	tests/evo_statistics_test \
 	tests/evo_observer_test \
+	tests/evo_application_stop_test \
 	tests/evo_seed_schedule_research_test \
 	tests/evo_seed_schedule_experiment \
 	tests/evo_allocation_failure_test
@@ -143,6 +146,9 @@ tests_evo_statistics_test_LDADD = libcatalyst_evo.la -lm
 
 tests_evo_observer_test_SOURCES = tests/observer_test.c
 tests_evo_observer_test_LDADD = libcatalyst_evo.la -lm
+
+tests_evo_application_stop_test_SOURCES = tests/application_stop_test.c
+tests_evo_application_stop_test_LDADD = libcatalyst_evo.la -lm
 
 tests_evo_seed_schedule_research_test_SOURCES = \
 	tests/seed_schedule_research_test.c

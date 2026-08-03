@@ -101,6 +101,7 @@
       "src/diversity.c",
       "src/fitness.c",
       "src/statistics.c",
+      "src/application_stop.c",
       "src/observer.c",
       "src/checkpoint.c",
       "src/rng.c"
@@ -213,6 +214,12 @@
         "source": "tests/observer_test.c",
         "cmake": "evo_observer_test",
         "autotools": "tests/evo_observer_test"
+      },
+      {
+        "id": "application-stop",
+        "source": "tests/application_stop_test.c",
+        "cmake": "evo_application_stop_test",
+        "autotools": "tests/evo_application_stop_test"
       },
       {
         "id": "seed-schedule-research",

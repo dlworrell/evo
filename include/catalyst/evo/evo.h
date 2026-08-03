@@ -10,7 +10,7 @@ extern "C" {
 #endif
 
 #define EVO_VERSION_MAJOR 0
-#define EVO_VERSION_MINOR 19
+#define EVO_VERSION_MINOR 20
 #define EVO_VERSION_PATCH 0
 
 typedef enum evo_status {
@@ -27,7 +27,8 @@ typedef enum evo_status {
 typedef enum evo_termination_reason {
     EVO_TERMINATION_NONE = 0,
     EVO_TERMINATION_GENERATION_LIMIT = 1,
-    EVO_TERMINATION_ALL_INVALID = 2
+    EVO_TERMINATION_ALL_INVALID = 2,
+    EVO_TERMINATION_APPLICATION_REQUESTED = 3
 } evo_termination_reason_t;
 
 typedef struct evo_fitness {
@@ -65,7 +66,7 @@ typedef struct evo_generation_statistics {
 /*
  * Read-only, callback-lifetime view of the global result after one generation
  * commits. best_genome points to exactly best_genome_size bytes and may be
- * inspected only until the observer returns. The view owns no storage.
+ * inspected only until the current callback returns. The view owns no storage.
  */
 typedef struct evo_generation_result_view {
     uint32_t version;
@@ -84,6 +85,17 @@ typedef struct evo_generation_result_view {
  * cannot cancel or otherwise change EVO control flow.
  */
 typedef void (*evo_generation_observer_fn)(
+    const evo_generation_result_view_t *result,
+    const evo_generation_statistics_t *statistics,
+    void *context);
+
+/*
+ * Synchronous decision over an otherwise-continuing committed generation.
+ * Both views and best_genome have the same non-owning callback lifetime as an
+ * observer event. The callback must not mutate EVO inputs or ownership through
+ * another alias. Return true to stop successfully at this exact generation.
+ */
+typedef bool (*evo_generation_stop_fn)(
     const evo_generation_result_view_t *result,
     const evo_generation_statistics_t *statistics,
     void *context);
@@ -134,6 +146,10 @@ typedef struct evo_config {
     evo_generation_observer_fn generation_observer;
     /* Caller-owned observer state, never inspected or retained by EVO. */
     void *generation_observer_context;
+    /* Optional committed-generation stop decision; NULL disables stopping. */
+    evo_generation_stop_fn generation_stop;
+    /* Caller-owned stop-decision state, never inspected or retained by EVO. */
+    void *generation_stop_context;
 } evo_config_t;
 
 typedef struct evo_result {
@@ -168,18 +184,26 @@ typedef struct evo_result {
  *
  * A later all-invalid child is promoted and terminates the run successfully
  * while retaining an earlier valid winner. generations_completed records the
- * number of child generations promoted. Every successful call records either
- * EVO_TERMINATION_GENERATION_LIMIT or EVO_TERMINATION_ALL_INVALID. The
- * zero-valued EVO_TERMINATION_NONE is reserved for an unstarted, failed, or
- * destroyed result and is never a successful termination reason. The result
- * also retains one versioned, constant-space statistics record for the most
+ * number of child generations promoted. Every successful call records
+ * EVO_TERMINATION_GENERATION_LIMIT, EVO_TERMINATION_ALL_INVALID, or
+ * EVO_TERMINATION_APPLICATION_REQUESTED. The zero-valued
+ * EVO_TERMINATION_NONE is reserved for an unstarted, failed, or destroyed
+ * result and is never a successful termination reason. The result also
+ * retains one versioned, constant-space statistics record for the most
  * recently committed generation. It does not allocate generation history.
+ *
+ * If generation_stop is non-null, EVO invokes it after a committed generation
+ * only while another transition is otherwise permitted. Its read-only result
+ * view carries EVO_TERMINATION_NONE. A true return stops successfully at that
+ * generation; zero-limit, generation-limit, and all-invalid decisions take
+ * precedence and do not invoke the callback. Delivery allocates no EVO history
+ * and exposes no provisional or failed generation.
  *
  * If generation_observer is non-null, EVO invokes it synchronously after
  * generation zero commits and after every successfully promoted child. The
- * callback sees the updated global winner and statistics. Its termination
- * reason is NONE while execution continues and the final reason when the run
- * stops. Failed or provisional generations never produce an event.
+ * callback runs after any eligible stop decision and sees the updated global
+ * winner, statistics, and final classification for that generation. Failed or
+ * provisional generations never produce an event.
  */
 evo_status_t evo_run(const evo_problem_t *problem, const evo_config_t *config, void *context, evo_result_t *result);
 

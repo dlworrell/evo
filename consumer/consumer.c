@@ -1,8 +1,10 @@
 #include <catalyst/evo/evo.h>
 
 typedef struct observer_state {
-    size_t calls;
-    int valid;
+    size_t observer_calls;
+    size_t stop_calls;
+    int observer_valid;
+    int stop_valid;
 } observer_state_t;
 
 static evo_fitness_t evaluate_genome(const void *genome, void *context)
@@ -22,26 +24,49 @@ static void observe_generation(
 {
     observer_state_t *state = context;
 
-    ++state->calls;
+    ++state->observer_calls;
     if (result == NULL || statistics == NULL ||
         result->version != EVO_GENERATION_RESULT_VIEW_VERSION ||
         result->best_genome == NULL || result->best_genome_size != 8 ||
         result->best_fitness.total != 1.0 ||
         result->generations_completed != 0 ||
-        result->termination_reason != EVO_TERMINATION_GENERATION_LIMIT ||
+        result->termination_reason !=
+            EVO_TERMINATION_APPLICATION_REQUESTED ||
         statistics->version != EVO_GENERATION_STATISTICS_VERSION ||
         statistics->generation_index != 0 ||
         statistics->population_size != 1 ||
         statistics->valid_count != 1 ||
         statistics->fitness_sums.total != 1.0) {
-        state->valid = 0;
+        state->observer_valid = 0;
     }
+}
+
+static bool request_stop(
+    const evo_generation_result_view_t *result,
+    const evo_generation_statistics_t *statistics,
+    void *context)
+{
+    observer_state_t *state = context;
+
+    ++state->stop_calls;
+    if (result == NULL || statistics == NULL ||
+        result->version != EVO_GENERATION_RESULT_VIEW_VERSION ||
+        result->best_genome == NULL || result->best_genome_size != 8 ||
+        result->best_fitness.total != 1.0 ||
+        result->generations_completed != 0 ||
+        result->termination_reason != EVO_TERMINATION_NONE ||
+        statistics->version != EVO_GENERATION_STATISTICS_VERSION ||
+        statistics->generation_index != 0) {
+        state->stop_valid = 0;
+    }
+    return true;
 }
 
 int main(void)
 {
     observer_state_t observer = {
-        .valid = 1,
+        .observer_valid = 1,
+        .stop_valid = 1,
     };
     const evo_problem_t problem = {
         .genome_size = 8,
@@ -49,11 +74,15 @@ int main(void)
     };
     const evo_config_t config = {
         .population_size = 1,
+        .generation_limit = 1,
         .max_genome_bytes = 8,
         .max_population_bytes = 8,
         .max_evaluation_bytes = 1024,
+        .max_child_population_bytes = 8,
         .generation_observer = observe_generation,
         .generation_observer_context = &observer,
+        .generation_stop = request_stop,
+        .generation_stop_context = &observer,
     };
     evo_result_t result = {0};
 
@@ -64,7 +93,8 @@ int main(void)
     if (result.best_genome == NULL ||
         result.best_fitness.correctness != 1.0 ||
         result.best_fitness.total != 1.0 ||
-        result.termination_reason != EVO_TERMINATION_GENERATION_LIMIT ||
+        result.termination_reason !=
+            EVO_TERMINATION_APPLICATION_REQUESTED ||
         result.generation_statistics.version !=
             EVO_GENERATION_STATISTICS_VERSION ||
         result.generation_statistics.generation_index != 0 ||
@@ -74,8 +104,9 @@ int main(void)
         result.generation_statistics.best_index != 0 ||
         result.generation_statistics.best_fitness.total != 1.0 ||
         result.generation_statistics.fitness_sums.total != 1.0 ||
-        !result.generation_statistics.has_best || observer.calls != 1 ||
-        !observer.valid) {
+        !result.generation_statistics.has_best ||
+        observer.observer_calls != 1 || observer.stop_calls != 1 ||
+        !observer.observer_valid || !observer.stop_valid) {
         evo_result_destroy(&result);
         return 1;
     }

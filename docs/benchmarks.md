@@ -16,6 +16,7 @@ Every core experiment records:
 - random seed
 - population size
 - generation limit and stopping condition
+- application stop callback identity, version, and deterministic decision inputs
 - dataset or simulator version
 - hardware and software environment
 - best genome and full fitness breakdown

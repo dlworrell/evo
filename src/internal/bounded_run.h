@@ -20,6 +20,7 @@ typedef struct evo_bounded_run_evidence {
     uint32_t policy_version;
     bool final_has_best;
     bool stopped_all_invalid;
+    bool stopped_application_requested;
     bool complete;
 } evo_bounded_run_evidence_t;
 

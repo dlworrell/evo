@@ -2,7 +2,7 @@
 
 This document distinguishes algorithms implemented by the reusable
 `catalyst_evo` core from the structured program transformations and evaluation
-algorithm required by the EVO 1.0 source optimizer. Version 0.19.0 implements
+algorithm required by the EVO 1.0 source optimizer. Version 0.20.0 implements
 only the core boundary described below.
 
 ## EVO Core Initial Release
@@ -440,12 +440,35 @@ replace the previous record, and any strict global winner improvement is
 copied. The observer therefore sees the global best-so-far together with the
 generation-local record. Delivery also follows stop classification: continuing
 events use `EVO_TERMINATION_NONE`, while the final event identifies generation-
-limit or all-invalid termination.
+limit, all-invalid, or application-requested termination.
 
 The observer has no return value. Its invocation cannot add a stop decision,
 retry a failed generation, or change winner selection. A provisional child
 that fails evaluation, statistics, or promotion emits no event. No observer
 delivery allocates, consumes RNG state, runs concurrently, or retains history.
+
+## Deterministic Application-Requested Stopping
+
+Version 0.20.0 adds one synchronous decision point to the committed-generation
+suffix:
+
+1. Commit the generation statistics, completed-transition count, and any strict
+   global-winner improvement.
+2. Classify structural termination. A zero limit, the final requested child,
+   or a promoted all-invalid child ends without an application callback.
+3. If another transition is permitted, construct independent read-only result
+   and statistics snapshots with `EVO_TERMINATION_NONE` and invoke
+   `generation_stop`.
+4. Map a true return to `EVO_TERMINATION_APPLICATION_REQUESTED`.
+5. Invoke the observer with the final classification, then continue only when
+   the reason remains `NONE`.
+
+An immediate decision after generation zero retains its valid winner and zero
+completed transitions. An intermediate decision retains every promotion
+through that generation. A false or null decision changes no candidate work,
+fitness comparison, allocation count, RNG schedule, or final structural result.
+The decision sees no provisional child, owns no view, retains no history, and
+cannot reject, retry, or roll back a commit.
 
 ## Structured C Source Evolution
 

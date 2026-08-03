@@ -74,8 +74,8 @@ ADR-0017.
 ## Failure and Control Semantics
 
 The callback returns `void`. It cannot request cancellation, change a status,
-replace a winner, or alter EVO control flow. Application stopping remains issue
-#42.
+replace a winner, or alter EVO control flow. Application stopping is delivered
+separately by EVO 0.20.0 and ADR-0020.
 
 No event is emitted for an invalid configuration, failed generation-zero
 evaluation, failed winner transfer, provisional child, failed child evaluation,
@@ -115,7 +115,7 @@ run bound.
 ### Let the observer return a stop decision
 
 Rejected because observation and application stopping have different ordering,
-status, replay, and recovery contracts. Issue #42 owns stopping.
+status, replay, and recovery contracts. ADR-0020 owns stopping.
 
 ### Deliver events asynchronously
 

@@ -94,7 +94,7 @@ signature or installed symbol changes.
 ### Retain every generation in a result-owned array
 
 Rejected because storage and allocation failure would scale with
-`generation_limit`, and the future observer can deliver each record without
+`generation_limit`, and the separate observer can deliver each record without
 retaining history.
 
 ### Publish only valid and invalid counts
