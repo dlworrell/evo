@@ -630,6 +630,12 @@ static void test_private_bounded_run_evidence(void)
            EVO_DIVERSITY_POLICY_VERSION);
     assert(evidence.diversity_metric_version ==
            EVO_BYTE_DIVERSITY_METRIC_VERSION);
+    assert(evidence.stopping_policy_version ==
+           EVO_STOPPING_POLICY_VERSION);
+    assert(evidence.significant_best_total == 2.0);
+    assert(evidence.stagnant_generations == 0);
+    assert(!evidence.stopped_converged);
+    assert(!evidence.stopped_stagnated);
     assert(evidence.policy_version == EVO_BOUNDED_RUN_POLICY_VERSION);
     assert(evidence.complete);
     assert_result(&best,

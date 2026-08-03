@@ -8,6 +8,10 @@ _Static_assert(EVO_TERMINATION_NONE == 0,
                "the termination zero value must remain the empty state");
 _Static_assert(EVO_TERMINATION_APPLICATION_REQUESTED == 3,
                "application stopping must retain its public value");
+_Static_assert(EVO_TERMINATION_CONVERGED == 4,
+               "convergence must retain its public value");
+_Static_assert(EVO_TERMINATION_STAGNATED == 5,
+               "stagnation must retain its public value");
 _Static_assert(offsetof(evo_result_t, termination_reason) >=
                    offsetof(evo_result_t, random_seed) + sizeof(uint64_t),
                "termination evidence must remain appended to evo_result_t");
@@ -23,6 +27,8 @@ _Static_assert(EVO_DIVERSITY_POLICY_VERSION == UINT32_C(1),
                "the initial diversity policy must remain stable");
 _Static_assert(EVO_BYTE_DIVERSITY_METRIC_VERSION == UINT32_C(1),
                "the initial byte-diversity metric must remain stable");
+_Static_assert(EVO_STOPPING_POLICY_VERSION == UINT32_C(1),
+               "the initial stopping policy must remain stable");
 _Static_assert(EVO_GENERATION_STATISTICS_VERSION == UINT32_C(3),
                "statistics schema 3 must carry diversity evidence");
 _Static_assert(offsetof(evo_generation_statistics_t,
@@ -64,6 +70,33 @@ _Static_assert(offsetof(evo_config_t, max_diversity_work) >=
                    offsetof(evo_config_t, generation_stop_context) +
                        sizeof(void *),
                "the diversity budget must remain appended to evo_config_t");
+_Static_assert(offsetof(evo_config_t, fitness_target_enabled) >=
+                   offsetof(evo_config_t, max_diversity_work) +
+                       sizeof(size_t),
+               "stopping controls must follow the 0.22 configuration prefix");
+_Static_assert(offsetof(evo_config_t, fitness_target) >=
+                   offsetof(evo_config_t, fitness_target_enabled) +
+                       sizeof(bool),
+               "the target value must follow its enable control");
+_Static_assert(offsetof(evo_config_t, stagnation_enabled) >=
+                   offsetof(evo_config_t, fitness_target) + sizeof(double),
+               "stagnation controls must follow the target policy");
+_Static_assert(offsetof(evo_config_t, improvement_tolerance) >=
+                   offsetof(evo_config_t, stagnation_enabled) +
+                       sizeof(bool),
+               "improvement tolerance must follow its enable control");
+_Static_assert(offsetof(evo_config_t, stagnation_patience) >=
+                   offsetof(evo_config_t, improvement_tolerance) +
+                       sizeof(double),
+               "patience must follow improvement tolerance");
+_Static_assert(offsetof(evo_config_t, diversity_floor_enabled) >=
+                   offsetof(evo_config_t, stagnation_patience) +
+                       sizeof(size_t),
+               "the diversity floor must follow patience controls");
+_Static_assert(offsetof(evo_config_t, diversity_floor) >=
+                   offsetof(evo_config_t, diversity_floor_enabled) +
+                       sizeof(bool),
+               "the diversity floor value must follow its enable control");
 
 enum {
     TEST_POPULATION_CAPACITY = 8,

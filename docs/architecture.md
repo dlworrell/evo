@@ -27,7 +27,8 @@ normative contract. Version 0.19.0 implements a bounded multi-generation
 subset of this layer, version 0.20.0 adds application-requested stopping over
 committed state, and version 0.21.0 formalizes hard constraints and soft-
 penalty comparison evidence. Version 0.22.0 adds bounded deterministic
-population-diversity evidence.
+population-diversity evidence, and version 0.23.0 adds deterministic
+convergence and stagnation classification over committed evidence.
 
 ### Source analysis and transformation
 
@@ -67,7 +68,7 @@ project patch automatically.
 
 ## Current Conformance Boundary
 
-Only the evolutionary-search core exists in version 0.22.0. Source ingestion,
+Only the evolutionary-search core exists in version 0.23.0. Source ingestion,
 analysis, transformation, candidate materialization, external-process
 isolation, target-code measurement, product commands, and optimized-patch
 artifacts are planned by issues #58 through #69. Documentation of those
@@ -79,7 +80,7 @@ planned boundaries is not an implementation claim.
 - Selection
 - Crossover
 - Mutation
-- Diversity evidence and planned stagnation handling
+- Diversity evidence and deterministic stagnation handling
 - Fitness and constraint handling
 - Statistics and evidence
 - Checkpointing
@@ -485,9 +486,22 @@ callback. The resulting value and provenance live with the private population
 and are copied into public generation-statistics schema version 3, so state
 validation and observation never repeat a domain callback.
 
-Bounded-run policy evidence remains private. Convergence, stagnation,
-generalized elitism, adaptive mutation, recycling, checkpointing, and
-parallelism remain separate decisions.
+Version 0.23.0 appends target, tolerance/patience, and diversity-floor controls
+after the complete 0.22.0 configuration prefix. Their zero values are a
+canonical disabled state. Enabled policies inspect the stable global winner
+and the latest committed schema-3 statistics only. A finite target is reached
+with global-best total `>= target`. Patience counts committed children that do
+not improve the last significant-best reference by strictly more than the
+finite non-negative tolerance; a significant improvement resets the count.
+An enabled diversity floor matches committed diversity `<= floor`.
+
+Classification is allocation-free and RNG-free. Coincident terminal evidence
+uses the fixed order all-invalid, converged, stagnated, generation limit, then
+application requested. Natural classification suppresses the application stop
+callback, and the observer sees the selected final reason. Bounded-run policy
+version 5 records constant-space stopping evidence privately. Generalized
+elitism, adaptive mutation, recycling, checkpointing, and parallelism remain
+separate decisions.
 
 ## EVO Core Execution Flow
 
@@ -499,16 +513,16 @@ parallelism remain separate decisions.
 6. Record statistics and evidence.
 7. Stop on convergence, stagnation, generation limit, or an application-defined condition.
 
-Version 0.22.0 publicly implements steps 1 through 4 for at most
+Version 0.23.0 publicly implements steps 1 through 4 for at most
 `generation_limit` bounded transitions, with the version-1 odd-tail policy as
 the current elite-preservation rule and bounded diversity measurement in step
 5. It implements the constant-space
 statistics portion of step 6 for every committed generation, records the global
 winner and completed transition count, and explicitly identifies limit
-completion, later all-invalid extinction, or an application request after a
-committed generation. Committed-generation observation completes the current
-bounded portion of step 6. Convergence, stagnation, checkpointing, and parallel
-evaluation remain absent.
+completion, later all-invalid extinction, convergence, stagnation, or an
+application request after a committed generation. Committed-generation
+observation completes the current bounded portion of step 6. Checkpointing and
+parallel evaluation remain absent.
 
 ## Source-Optimizer Execution Flow
 

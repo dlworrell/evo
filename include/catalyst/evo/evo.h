@@ -10,7 +10,7 @@ extern "C" {
 #endif
 
 #define EVO_VERSION_MAJOR 0
-#define EVO_VERSION_MINOR 22
+#define EVO_VERSION_MINOR 23
 #define EVO_VERSION_PATCH 0
 
 typedef enum evo_status {
@@ -28,12 +28,15 @@ typedef enum evo_termination_reason {
     EVO_TERMINATION_NONE = 0,
     EVO_TERMINATION_GENERATION_LIMIT = 1,
     EVO_TERMINATION_ALL_INVALID = 2,
-    EVO_TERMINATION_APPLICATION_REQUESTED = 3
+    EVO_TERMINATION_APPLICATION_REQUESTED = 3,
+    EVO_TERMINATION_CONVERGED = 4,
+    EVO_TERMINATION_STAGNATED = 5
 } evo_termination_reason_t;
 
 #define EVO_FITNESS_COMPARISON_POLICY_VERSION UINT32_C(1)
 #define EVO_DIVERSITY_POLICY_VERSION UINT32_C(1)
 #define EVO_BYTE_DIVERSITY_METRIC_VERSION UINT32_C(1)
+#define EVO_STOPPING_POLICY_VERSION UINT32_C(1)
 
 /*
  * Fitness components are caller-owned evidence. constraint_penalty is a
@@ -196,6 +199,27 @@ typedef struct evo_config {
      * an insufficient all-valid worst-case budget before any run callback.
      */
     size_t max_diversity_work;
+    /*
+     * Stop when the stable global-best total reaches fitness_target. The
+     * target must be finite when enabled and zero when disabled.
+     */
+    bool fitness_target_enabled;
+    double fitness_target;
+    /*
+     * Stop after stagnation_patience committed child generations without a
+     * global-best improvement greater than improvement_tolerance. Enabled
+     * tolerance must be finite and non-negative and patience must be positive;
+     * both payloads must be zero when disabled.
+     */
+    bool stagnation_enabled;
+    double improvement_tolerance;
+    size_t stagnation_patience;
+    /*
+     * Stop when committed generation diversity is at or below this floor.
+     * The floor must be finite in [0, 1] when enabled and zero when disabled.
+     */
+    bool diversity_floor_enabled;
+    double diversity_floor;
 } evo_config_t;
 
 typedef struct evo_result {
@@ -232,8 +256,9 @@ typedef struct evo_result {
  * A later all-invalid child is promoted and terminates the run successfully
  * while retaining an earlier valid winner. generations_completed records the
  * number of child generations promoted. Every successful call records
- * EVO_TERMINATION_GENERATION_LIMIT, EVO_TERMINATION_ALL_INVALID, or
- * EVO_TERMINATION_APPLICATION_REQUESTED. The zero-valued
+ * EVO_TERMINATION_GENERATION_LIMIT, EVO_TERMINATION_ALL_INVALID,
+ * EVO_TERMINATION_APPLICATION_REQUESTED, EVO_TERMINATION_CONVERGED, or
+ * EVO_TERMINATION_STAGNATED. The zero-valued
  * EVO_TERMINATION_NONE is reserved for an unstarted, failed, or destroyed
  * result and is never a successful termination reason. The result also
  * retains one versioned, constant-space statistics record for the most
@@ -241,6 +266,12 @@ typedef struct evo_result {
  * Before any run callback, EVO checks max_diversity_work against the
  * all-valid population. Each completed generation records deterministic
  * diversity evidence without consuming operator RNG or changing selection.
+ *
+ * Optional fitness-target, patience, and diversity-floor stopping is disabled
+ * by the zero-initialized configuration. Enabled policies inspect only the
+ * committed global winner and latest generation statistics. Natural reason
+ * precedence is all-invalid, converged, stagnated, then generation limit.
+ * The application stop callback is considered only when none applies.
  *
  * If generation_stop is non-null, EVO invokes it synchronously after a
  * committed generation only when another child could otherwise be attempted.
