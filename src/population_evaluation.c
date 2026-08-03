@@ -1,7 +1,7 @@
 #include "internal/population_evaluation.h"
+#include "internal/fitness.h"
 #include "internal/rng.h"
 
-#include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -37,6 +37,7 @@ static bool initialized_population_ready_for_evaluation(
         population->source_generation != 0 ||
         population->operator_seed_schedule_version != 0 ||
         population->odd_child_policy_version != 0 ||
+        population->fitness_comparison_policy_version != 0 ||
         config->max_genome_bytes < population->genome_size ||
         config->max_population_bytes < population->storage_bytes ||
         population->population_size >
@@ -47,17 +48,6 @@ static bool initialized_population_ready_for_evaluation(
     expected_storage_bytes =
         population->population_size * population->genome_size;
     return expected_storage_bytes == population->storage_bytes;
-}
-
-static bool fitness_is_finite(const evo_fitness_t *fitness)
-{
-    return isfinite(fitness->correctness) &&
-           isfinite(fitness->performance) &&
-           isfinite(fitness->memory_use) &&
-           isfinite(fitness->reliability) &&
-           isfinite(fitness->maintainability) &&
-           isfinite(fitness->constraint_penalty) &&
-           isfinite(fitness->total);
 }
 
 static evo_status_t discard_provisional_evaluations(
@@ -116,6 +106,9 @@ evo_status_t evo_population_evaluate_ready(
 
     for (size_t index = 0; index < population->population_size; ++index) {
         const void *genome = NULL;
+        evo_fitness_candidate_view_t candidate_view = {0};
+        evo_fitness_candidate_view_t best_view = {0};
+        evo_fitness_order_t order = EVO_FITNESS_ORDER_EQUAL;
 
         if (!evaluations[index].valid) {
             continue;
@@ -128,17 +121,40 @@ evo_status_t evo_population_evaluate_ready(
         }
 
         evaluations[index].fitness = problem->evaluate(genome, context);
-        if (!fitness_is_finite(&evaluations[index].fitness)) {
+        evaluations[index].evaluated = true;
+        candidate_view = (evo_fitness_candidate_view_t){
+            .fitness = &evaluations[index].fitness,
+            .generation = UINT64_C(0),
+            .population_index = index,
+            .hard_valid = evaluations[index].valid,
+            .evaluated = evaluations[index].evaluated,
+        };
+        if (!evo_fitness_candidate_is_rankable(&candidate_view)) {
             return discard_provisional_evaluations(
                 evaluations, EVO_ERROR_EVALUATION);
         }
-        evaluations[index].evaluated = true;
 
-        if (!has_best ||
-            evaluations[index].fitness.total >
-                evaluations[best_index].fitness.total) {
+        if (!has_best) {
             best_index = index;
             has_best = true;
+            continue;
+        }
+
+        best_view = (evo_fitness_candidate_view_t){
+            .fitness = &evaluations[best_index].fitness,
+            .generation = UINT64_C(0),
+            .population_index = best_index,
+            .hard_valid = evaluations[best_index].valid,
+            .evaluated = evaluations[best_index].evaluated,
+        };
+        if (!evo_fitness_compare_candidates(&candidate_view,
+                                            &best_view,
+                                            &order)) {
+            return discard_provisional_evaluations(
+                evaluations, EVO_ERROR_EVALUATION);
+        }
+        if (order == EVO_FITNESS_ORDER_LEFT) {
+            best_index = index;
         }
     }
 
@@ -146,6 +162,8 @@ evo_status_t evo_population_evaluate_ready(
     population->evaluation_bytes = evaluation_bytes;
     population->valid_count = valid_count;
     population->best_index = best_index;
+    population->fitness_comparison_policy_version =
+        EVO_FITNESS_COMPARISON_POLICY_VERSION;
     population->has_best = has_best;
     population->evaluated = true;
     return EVO_SUCCESS;

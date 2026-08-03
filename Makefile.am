@@ -48,6 +48,7 @@ noinst_HEADERS = \
 	src/internal/child_pair.h \
 	src/internal/child_tail.h \
 	src/internal/population_evaluation.h \
+	src/internal/fitness.h \
 	src/internal/child_evaluation.h \
 	src/internal/generation_advancement.h \
 	src/internal/bounded_run.h \
@@ -67,6 +68,7 @@ check_PROGRAMS = \
 	tests/evo_rng_test \
 	tests/evo_population_initialization_test \
 	tests/evo_population_evaluation_test \
+	tests/evo_fitness_test \
 	tests/evo_selection_test \
 	tests/evo_crossover_test \
 	tests/evo_mutation_test \
@@ -105,6 +107,9 @@ tests_evo_population_initialization_test_LDADD = libcatalyst_evo.la -lm
 tests_evo_population_evaluation_test_SOURCES = \
 	tests/population_evaluation_test.c
 tests_evo_population_evaluation_test_LDADD = libcatalyst_evo.la -lm
+
+tests_evo_fitness_test_SOURCES = tests/fitness_test.c
+tests_evo_fitness_test_LDADD = libcatalyst_evo.la -lm
 
 tests_evo_selection_test_SOURCES = tests/selection_test.c
 tests_evo_selection_test_LDADD = libcatalyst_evo.la -lm

@@ -82,7 +82,9 @@ static bool statistics_equal(
            left->best_index == right->best_index &&
            fitness_equal(&left->best_fitness, &right->best_fitness) &&
            fitness_equal(&left->fitness_sums, &right->fitness_sums) &&
-           left->has_best == right->has_best;
+           left->has_best == right->has_best &&
+           left->fitness_comparison_policy_version ==
+               right->fitness_comparison_policy_version;
 }
 
 static void assert_callback_view(
@@ -95,6 +97,8 @@ static void assert_callback_view(
     assert(public_result != NULL);
     assert(result->version == EVO_GENERATION_RESULT_VIEW_VERSION);
     assert(statistics->version == EVO_GENERATION_STATISTICS_VERSION);
+    assert(statistics->fitness_comparison_policy_version ==
+           EVO_FITNESS_COMPARISON_POLICY_VERSION);
     assert((const void *)result != (const void *)public_result);
     assert(statistics != &public_result->generation_statistics);
     assert(result->best_genome == public_result->best_genome);

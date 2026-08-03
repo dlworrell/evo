@@ -59,6 +59,8 @@ static void assert_result_empty(const evo_result_t *result)
     assert(result->generation_statistics.best_fitness.total == 0.0);
     assert(result->generation_statistics.fitness_sums.total == 0.0);
     assert(!result->generation_statistics.has_best);
+    assert(result->generation_statistics
+               .fitness_comparison_policy_version == 0);
 }
 
 static void record_event(run_context_t *context,
@@ -224,6 +226,8 @@ static void assert_generation_statistics(
     const double valid = (double)valid_count;
 
     assert(statistics->version == EVO_GENERATION_STATISTICS_VERSION);
+    assert(statistics->fitness_comparison_policy_version ==
+           EVO_FITNESS_COMPARISON_POLICY_VERSION);
     assert(statistics->generation_index == result->generations_completed);
     assert(statistics->population_size == population_size);
     assert(statistics->valid_count == valid_count);
@@ -601,6 +605,7 @@ static void test_private_bounded_run_evidence(void)
     assert(evidence.completed_transitions == 2);
     assert(evidence.final_generation == 2);
     assert(evidence.best_generation == 2);
+    assert(evidence.best_population_index == 0);
     assert(evidence.final_valid_count == 2);
     assert(evidence.final_has_best);
     assert(!evidence.stopped_all_invalid);
@@ -609,6 +614,8 @@ static void test_private_bounded_run_evidence(void)
            EVO_TERMINATION_GENERATION_LIMIT);
     assert(evidence.operator_seed_schedule_version ==
            EVO_OPERATOR_SEED_SCHEDULE_VERSION);
+    assert(evidence.fitness_comparison_policy_version ==
+           EVO_FITNESS_COMPARISON_POLICY_VERSION);
     assert(evidence.child_evaluation_policy_version ==
            EVO_CHILD_EVALUATION_POLICY_VERSION);
     assert(evidence.generation_advancement_policy_version ==

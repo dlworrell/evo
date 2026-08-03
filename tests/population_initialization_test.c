@@ -47,6 +47,7 @@ static void assert_population_empty(const evo_population_t *population)
     assert(population->rng_algorithm_version == 0);
     assert(population->operator_seed_schedule_version == 0);
     assert(population->odd_child_policy_version == 0);
+    assert(population->fitness_comparison_policy_version == 0);
     assert(!population->initialized);
     assert(!population->has_best);
     assert(!population->evaluated);
@@ -104,6 +105,8 @@ static void assert_populations_equal(const evo_population_t *left,
            right->operator_seed_schedule_version);
     assert(left->odd_child_policy_version ==
            right->odd_child_policy_version);
+    assert(left->fitness_comparison_policy_version ==
+           right->fitness_comparison_policy_version);
     assert(left->initialized == right->initialized);
     assert(left->has_best == right->has_best);
     assert(left->evaluated == right->evaluated);

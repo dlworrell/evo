@@ -1,8 +1,8 @@
 #include "internal/population_storage.h"
 #include "internal/child_tail.h"
+#include "internal/fitness.h"
 #include "internal/rng.h"
 
-#include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -18,17 +18,6 @@ static bool checked_size_multiply(size_t left, size_t right, size_t *product)
 
     *product = left * right;
     return true;
-}
-
-static bool fitness_is_finite(const evo_fitness_t *fitness)
-{
-    return isfinite(fitness->correctness) &&
-           isfinite(fitness->performance) &&
-           isfinite(fitness->memory_use) &&
-           isfinite(fitness->reliability) &&
-           isfinite(fitness->maintainability) &&
-           isfinite(fitness->constraint_penalty) &&
-           isfinite(fitness->total);
 }
 
 static bool fitness_is_zero(const evo_fitness_t *fitness)
@@ -105,7 +94,9 @@ bool evo_population_validate_completed(
             sizeof(evo_candidate_evaluation_t),
             &expected_evaluation_bytes) ||
         expected_evaluation_bytes != population->evaluation_bytes ||
-        population->evaluation_bytes > config->max_evaluation_bytes) {
+        population->evaluation_bytes > config->max_evaluation_bytes ||
+        population->fitness_comparison_policy_version !=
+            EVO_FITNESS_COMPARISON_POLICY_VERSION) {
         return false;
     }
 
@@ -114,6 +105,13 @@ bool evo_population_validate_completed(
          ++index) {
         const evo_candidate_evaluation_t *evaluation =
             &population->evaluations[index];
+        const evo_fitness_candidate_view_t candidate_view = {
+            .fitness = &evaluation->fitness,
+            .generation = UINT64_C(0),
+            .population_index = index,
+            .hard_valid = evaluation->valid,
+            .evaluated = evaluation->evaluated,
+        };
 
         if (!evaluation->valid) {
             if (evaluation->evaluated ||
@@ -123,17 +121,34 @@ bool evo_population_validate_completed(
             continue;
         }
 
-        if (!evaluation->evaluated ||
-            !fitness_is_finite(&evaluation->fitness)) {
+        if (!evo_fitness_candidate_is_rankable(&candidate_view)) {
             return false;
         }
 
         ++valid_count;
-        if (!has_best ||
-            evaluation->fitness.total >
-                population->evaluations[best_index].fitness.total) {
+        if (!has_best) {
             best_index = index;
             has_best = true;
+        } else {
+            const evo_candidate_evaluation_t *best_evaluation =
+                &population->evaluations[best_index];
+            const evo_fitness_candidate_view_t best_view = {
+                .fitness = &best_evaluation->fitness,
+                .generation = UINT64_C(0),
+                .population_index = best_index,
+                .hard_valid = best_evaluation->valid,
+                .evaluated = best_evaluation->evaluated,
+            };
+            evo_fitness_order_t order = EVO_FITNESS_ORDER_EQUAL;
+
+            if (!evo_fitness_compare_candidates(&candidate_view,
+                                                &best_view,
+                                                &order)) {
+                return false;
+            }
+            if (order == EVO_FITNESS_ORDER_LEFT) {
+                best_index = index;
+            }
         }
     }
 

@@ -186,6 +186,8 @@ evo_status_t evo_population_advance_generation(
         evaluated_children->operator_seed_schedule_version;
     candidate.odd_child_policy_version =
         evaluated_children->odd_child_policy_version;
+    candidate.fitness_comparison_policy_version =
+        evaluated_children->fitness_comparison_policy_version;
     candidate.policy_version =
         EVO_GENERATION_ADVANCEMENT_POLICY_VERSION;
     candidate.has_best = evaluated_children->has_best;

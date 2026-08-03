@@ -2,7 +2,7 @@
 
 This document distinguishes algorithms implemented by the reusable
 `catalyst_evo` core from the structured program transformations and evaluation
-algorithm required by the EVO 1.0 source optimizer. Version 0.20.0 implements
+algorithm required by the EVO 1.0 source optimizer. Version 0.21.0 implements
 only the core boundary described below.
 
 ## EVO Core Initial Release
@@ -114,14 +114,39 @@ per genome in ascending index order. A missing validator accepts every
 candidate. The `evaluate` callback then runs once for each valid candidate in
 ascending order; invalid candidates are never evaluated.
 
-All seven returned fitness components must be finite. `fitness.total` is the
-consumer-computed scalar objective, and EVO selects the greatest total. Exact
-ties preserve the lower population index. The remaining components are
+All seven returned fitness components must be finite. From version 0.21.0,
+`constraint_penalty` must also be a non-negative magnitude. `fitness.total` is
+the consumer-computed scalar objective, and EVO selects the greatest total.
+Exact ties preserve the lower population index. The remaining components are
 recorded for evidence but receive no library-defined ordering.
 
 An all-invalid population completes evaluation without a winner. Evaluation
 records are bounded by `max_evaluation_bytes`, and failures discard provisional
 records while preserving the initialized genome slab within the private phase.
+
+## Hard Constraints, Soft Penalties, and Stable Comparison
+
+Version 0.21.0 defines fitness-comparison policy version 1. Hard feasibility is
+owned exclusively by `is_valid`: false candidates never reach the evaluator or
+any ranking site. A soft violation remains hard-valid and is reported as a
+finite `constraint_penalty >= 0`. The evaluator computes the final scalar
+`total`, including whatever weighted penalty effect the caller intends. EVO
+does not subtract or reweight the penalty again.
+
+The shared comparison algorithm accepts only hard-valid evaluated records with
+policy-valid fitness evidence, then orders them by:
+
+1. greater `total`;
+2. earlier generation on an exact total tie; and
+3. lower population index within the same generation.
+
+Evaluation, completed-population validation, tournament selection, odd-tail
+elite validation, and global-best replacement all use this authority. Policy
+version 1 is recorded in completed private populations and propagated through
+child-evaluation, generation-advancement, bounded-run, and public statistics
+evidence. A negative or non-finite penalty rejects with
+`EVO_ERROR_EVALUATION` before provisional records commit. Total-only evaluators
+remain unchanged because zero-initialized penalty evidence is valid.
 
 ## Public Generation-Zero Execution
 
@@ -316,13 +341,15 @@ RNG state or changing any genome byte.
   `max_evaluation_bytes`.
 - Validation visits every candidate in ascending index order.
 - Only valid candidates are evaluated, also in ascending index order.
-- All seven fitness fields must be finite before the record set is committed.
+- All seven fitness fields must satisfy comparison policy version 1 before the
+  record set is committed.
 - Higher `fitness.total` wins, with the lower index retained on exact ties.
 - Invalid candidates retain zero fitness and are never evaluated.
 - An all-invalid child completes without a best candidate.
 - Success preserves production metadata and commits evaluation records,
-  valid count, stable best, and policy evidence exactly once.
-- Preflight, resource, allocation, and non-finite-fitness failures preserve
+  valid count, stable best, comparison policy, and child-evaluation policy
+  version 2 evidence exactly once.
+- Preflight, resource, allocation, and malformed-fitness failures preserve
   child-owned bytes and metadata plus caller-owned evidence. Consumer callback
   side effects after dispatch begins cannot be rolled back.
 
@@ -361,6 +388,10 @@ identities and every byte while releasing the former owners exactly once.
 All-invalid completed children use the same move. Termination, generation-
 limit enforcement, old-slab recycling, and public loop integration remain
 separate policies.
+
+Version 0.21.0 advances generation-advancement policy to version 2 so its
+evidence carries fitness-comparison policy version 1 from the promoted child.
+Ownership transfer and generation numbering remain unchanged.
 
 ## Bounded Multi-Generation Execution
 
@@ -429,6 +460,11 @@ record is computed before promotion but replaces the prior record only after
 promotion succeeds. This constant-space rule records terminal population state
 without allocating history proportional to `generation_limit`.
 
+Version 0.21.0 advances the public statistics schema to version 2 by appending
+fitness-comparison policy version 1. Aggregation order and arithmetic remain
+schema-version-1 compatible; the new field identifies the authority that
+established the copied generation-local best.
+
 ## Synchronous Generation Observation
 
 Version 0.19.0 delivers the committed statistics stream without changing that
@@ -472,6 +508,11 @@ promoted all-invalid child uses `EVO_TERMINATION_ALL_INVALID`. No stop decision
 is made for those states, nor for provisional or failed children. The callback
 allocates no engine storage, consumes no RNG, owns no view, and may not mutate
 EVO state. A null callback is replay-equivalent to 0.19.0.
+
+Version 0.21.0 advances bounded-run policy to version 3. Its evidence records
+fitness-comparison policy version 1 plus the winning generation and population
+index used by the shared comparator. Candidate work, RNG schedules, callback
+ordering, and the three 0.20.0 termination conditions remain unchanged.
 
 ## Structured C Source Evolution
 

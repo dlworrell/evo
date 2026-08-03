@@ -83,6 +83,7 @@ static void assert_population_empty(const evo_population_t *population)
     assert(population->rng_algorithm_version == 0);
     assert(population->operator_seed_schedule_version == 0);
     assert(population->odd_child_policy_version == 0);
+    assert(population->fitness_comparison_policy_version == 0);
     assert(!population->initialized);
     assert(!population->has_best);
     assert(!population->evaluated);
@@ -104,6 +105,7 @@ static void assert_child_storage(const evo_population_t *children)
     assert(children->rng_algorithm_version == 0);
     assert(children->operator_seed_schedule_version == 0);
     assert(children->odd_child_policy_version == 0);
+    assert(children->fitness_comparison_policy_version == 0);
     assert(!children->initialized);
     assert(!children->has_best);
     assert(!children->evaluated);
@@ -154,6 +156,8 @@ static void assert_parent_unchanged(const evo_population_t *parents,
            before->operator_seed_schedule_version);
     assert(parents->odd_child_policy_version ==
            before->odd_child_policy_version);
+    assert(parents->fitness_comparison_policy_version ==
+           before->fitness_comparison_policy_version);
     assert(parents->initialized == before->initialized);
     assert(parents->has_best == before->has_best);
     assert(parents->evaluated == before->evaluated);

@@ -284,6 +284,8 @@ static void assert_evidence_equal(
            right->operator_seed_schedule_version);
     assert(left->odd_child_policy_version ==
            right->odd_child_policy_version);
+    assert(left->fitness_comparison_policy_version ==
+           right->fitness_comparison_policy_version);
     assert(left->policy_version == right->policy_version);
     assert(left->has_best == right->has_best);
     assert(left->complete == right->complete);
@@ -324,6 +326,8 @@ static void assert_unevaluated_unchanged(
            before->operator_seed_schedule_version);
     assert(population->odd_child_policy_version ==
            before->odd_child_policy_version);
+    assert(population->fitness_comparison_policy_version ==
+           before->fitness_comparison_policy_version);
     assert(population->initialized == before->initialized);
     assert(population->has_best == before->has_best);
     assert(population->evaluated == before->evaluated);
@@ -372,6 +376,8 @@ static void assert_completed_unchanged(
            before->operator_seed_schedule_version);
     assert(population->odd_child_policy_version ==
            before->odd_child_policy_version);
+    assert(population->fitness_comparison_policy_version ==
+           before->fitness_comparison_policy_version);
     assert(population->initialized == before->initialized);
     assert(population->has_best == before->has_best);
     assert(population->evaluated == before->evaluated);
@@ -461,6 +467,8 @@ static void test_odd_child_order_tie_and_completed_authority(void)
            EVO_OPERATOR_SEED_SCHEDULE_VERSION);
     assert(fixture.children.odd_child_policy_version ==
            EVO_ODD_CHILD_POLICY_VERSION);
+    assert(fixture.children.fitness_comparison_policy_version ==
+           EVO_FITNESS_COMPARISON_POLICY_VERSION);
     for (size_t index = 0; index < fixture.children.storage_bytes;
          ++index) {
         assert(fixture.children.genomes[index] == before.genomes[index]);
@@ -480,6 +488,8 @@ static void test_odd_child_order_tie_and_completed_authority(void)
            EVO_OPERATOR_SEED_SCHEDULE_VERSION);
     assert(evidence.odd_child_policy_version ==
            EVO_ODD_CHILD_POLICY_VERSION);
+    assert(evidence.fitness_comparison_policy_version ==
+           EVO_FITNESS_COMPARISON_POLICY_VERSION);
     assert(evidence.policy_version ==
            EVO_CHILD_EVALUATION_POLICY_VERSION);
     assert(evidence.has_best);
@@ -527,10 +537,14 @@ static void test_even_all_invalid_child_completes_without_best(void)
     assert(!fixture.children.has_best);
     assert(fixture.children.evaluated);
     assert(fixture.children.odd_child_policy_version == 0);
+    assert(fixture.children.fitness_comparison_policy_version ==
+           EVO_FITNESS_COMPARISON_POLICY_VERSION);
     assert(evidence.valid_count == 0);
     assert(evidence.best_index == 0);
     assert(!evidence.has_best);
     assert(evidence.odd_child_policy_version == 0);
+    assert(evidence.fitness_comparison_policy_version ==
+           EVO_FITNESS_COMPARISON_POLICY_VERSION);
     assert(evo_population_validate_completed(
         &fixture.config,
         &fixture.children,
@@ -554,6 +568,7 @@ static void test_one_member_child_is_evaluated(void)
            EVO_OPERATOR_SEED_SCHEDULE_VERSION);
     assert(fixture.children.odd_child_policy_version ==
            EVO_ODD_CHILD_POLICY_VERSION);
+    assert(fixture.children.fitness_comparison_policy_version == 0);
     assert(evo_child_population_evaluate(&fixture.problem,
                                          &fixture.config,
                                          &fixture,
@@ -565,7 +580,11 @@ static void test_one_member_child_is_evaluated(void)
     assert(fixture.children.valid_count == 1);
     assert(fixture.children.best_index == 0);
     assert(fixture.children.has_best);
+    assert(fixture.children.fitness_comparison_policy_version ==
+           EVO_FITNESS_COMPARISON_POLICY_VERSION);
     assert(evidence.source_generation == 0);
+    assert(evidence.fitness_comparison_policy_version ==
+           EVO_FITNESS_COMPARISON_POLICY_VERSION);
     fixture_destroy(&fixture);
 }
 

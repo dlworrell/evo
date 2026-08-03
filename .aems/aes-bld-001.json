@@ -143,6 +143,12 @@
         "autotools": "tests/evo_population_evaluation_test"
       },
       {
+        "id": "fitness",
+        "source": "tests/fitness_test.c",
+        "cmake": "evo_fitness_test",
+        "autotools": "tests/evo_fitness_test"
+      },
+      {
         "id": "selection",
         "source": "tests/selection_test.c",
         "cmake": "evo_selection_test",

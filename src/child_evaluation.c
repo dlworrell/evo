@@ -38,6 +38,7 @@ static bool produced_child_ready_for_evaluation(
         children->source_generation != source_generation ||
         children->operator_seed_schedule_version !=
             EVO_OPERATOR_SEED_SCHEDULE_VERSION ||
+        children->fitness_comparison_policy_version != 0 ||
         children->initialized || children->has_best ||
         children->evaluated ||
         config->max_genome_bytes < children->genome_size ||
@@ -105,6 +106,8 @@ evo_status_t evo_child_population_evaluate(
         children->operator_seed_schedule_version;
     candidate.odd_child_policy_version =
         children->odd_child_policy_version;
+    candidate.fitness_comparison_policy_version =
+        children->fitness_comparison_policy_version;
     candidate.policy_version = EVO_CHILD_EVALUATION_POLICY_VERSION;
     candidate.has_best = children->has_best;
     candidate.complete = true;

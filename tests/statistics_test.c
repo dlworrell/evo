@@ -44,6 +44,8 @@ static void initialize_fixture(statistics_fixture_t *fixture,
         generation_index == UINT64_C(0)
             ? UINT64_C(0)
             : generation_index - UINT64_C(1);
+    fixture->population.fitness_comparison_policy_version =
+        EVO_FITNESS_COMPARISON_POLICY_VERSION;
     fixture->population.evaluated = true;
 }
 
@@ -114,6 +116,8 @@ static void assert_statistics(
     const evo_fitness_t *expected_sums)
 {
     assert(statistics->version == EVO_GENERATION_STATISTICS_VERSION);
+    assert(statistics->fitness_comparison_policy_version ==
+           EVO_FITNESS_COMPARISON_POLICY_VERSION);
     assert(statistics->generation_index == generation_index);
     assert(statistics->population_size == population_size);
     assert(statistics->valid_count == valid_count);
@@ -365,6 +369,14 @@ static void test_non_finite_valid_or_aggregate_rejects(void)
     initialize_fixture(&fixture, 1, UINT64_C(0));
     add_valid_candidate(&fixture, 0, 1.0);
     fixture.evaluations[0].fitness.total = NAN;
+    assert(evo_generation_statistics_record(&fixture.population,
+                                            UINT64_C(0),
+                                            &statistics) ==
+           EVO_ERROR_EVALUATION);
+    assert(statistics.version == UINT32_C(77));
+
+    fixture.evaluations[0].fitness = make_fitness(1.0);
+    fixture.evaluations[0].fitness.constraint_penalty = -1.0;
     assert(evo_generation_statistics_record(&fixture.population,
                                             UINT64_C(0),
                                             &statistics) ==

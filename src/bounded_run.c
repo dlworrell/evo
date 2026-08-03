@@ -3,6 +3,7 @@
 #include "internal/child_evaluation.h"
 #include "internal/child_pair.h"
 #include "internal/child_tail.h"
+#include "internal/fitness.h"
 #include "internal/observer.h"
 #include "internal/statistics.h"
 
@@ -123,7 +124,9 @@ static bool generation_statistics_equal(
            left->best_index == right->best_index &&
            fitness_equal(&left->best_fitness, &right->best_fitness) &&
            fitness_equal(&left->fitness_sums, &right->fitness_sums) &&
-           left->has_best == right->has_best;
+           left->has_best == right->has_best &&
+           left->fitness_comparison_policy_version ==
+               right->fitness_comparison_policy_version;
 }
 
 static bool bytes_equal(const void *left,
@@ -304,27 +307,66 @@ static evo_status_t produce_child_population(
     return status;
 }
 
-static bool resolve_strict_improvement(
+static evo_status_t resolve_strict_improvement(
     const evo_population_t *children,
     const evo_result_t *best_result,
+    uint64_t child_generation,
+    uint64_t best_generation,
+    size_t best_population_index,
     const void **genome,
-    const evo_candidate_evaluation_t **evaluation)
+    const evo_candidate_evaluation_t **evaluation,
+    bool *has_improvement)
 {
+    evo_fitness_candidate_view_t candidate_view = {0};
+    evo_fitness_candidate_view_t incumbent_view = {0};
+    evo_fitness_order_t order = EVO_FITNESS_ORDER_EQUAL;
     size_t best_index = 0;
 
+    if (children == NULL || best_result == NULL || genome == NULL ||
+        evaluation == NULL || has_improvement == NULL) {
+        return EVO_ERROR_INVALID_ARGUMENT;
+    }
+
+    *genome = NULL;
+    *evaluation = NULL;
+    *has_improvement = false;
+
     if (!children->has_best || children->valid_count == 0) {
-        return false;
+        return EVO_SUCCESS;
     }
 
     if (!evo_population_best_index(children, &best_index)) {
-        return false;
+        return EVO_ERROR_STATE;
     }
 
     *genome = evo_population_genome_const(children, best_index);
     *evaluation = evo_population_evaluation_const(children, best_index);
-    return *genome != NULL && *evaluation != NULL &&
-           (*evaluation)->valid && (*evaluation)->evaluated &&
-           (*evaluation)->fitness.total > best_result->best_fitness.total;
+    if (*genome == NULL || *evaluation == NULL) {
+        return EVO_ERROR_STATE;
+    }
+
+    candidate_view = (evo_fitness_candidate_view_t){
+        .fitness = &(*evaluation)->fitness,
+        .generation = child_generation,
+        .population_index = best_index,
+        .hard_valid = (*evaluation)->valid,
+        .evaluated = (*evaluation)->evaluated,
+    };
+    incumbent_view = (evo_fitness_candidate_view_t){
+        .fitness = &best_result->best_fitness,
+        .generation = best_generation,
+        .population_index = best_population_index,
+        .hard_valid = true,
+        .evaluated = true,
+    };
+    if (!evo_fitness_compare_candidates(&candidate_view,
+                                        &incumbent_view,
+                                        &order)) {
+        return EVO_ERROR_STATE;
+    }
+
+    *has_improvement = order == EVO_FITNESS_ORDER_LEFT;
+    return EVO_SUCCESS;
 }
 
 evo_status_t evo_bounded_run_advance(
@@ -360,8 +402,11 @@ evo_status_t evo_bounded_run_advance(
     candidate.population_size = config->population_size;
     candidate.requested_transitions = config->generation_limit;
     candidate.best_generation = 0;
+    candidate.best_population_index = parents->best_index;
     candidate.operator_seed_schedule_version =
         EVO_OPERATOR_SEED_SCHEDULE_VERSION;
+    candidate.fitness_comparison_policy_version =
+        EVO_FITNESS_COMPARISON_POLICY_VERSION;
     candidate.child_evaluation_policy_version =
         EVO_CHILD_EVALUATION_POLICY_VERSION;
     candidate.generation_advancement_policy_version =
@@ -419,11 +464,18 @@ evo_status_t evo_bounded_run_advance(
             break;
         }
 
-        has_improvement = resolve_strict_improvement(
+        status = resolve_strict_improvement(
             &children,
             best_result,
+            source_generation + UINT64_C(1),
+            candidate.best_generation,
+            candidate.best_population_index,
             &improved_genome,
-            &improved_evaluation);
+            &improved_evaluation,
+            &has_improvement);
+        if (status != EVO_SUCCESS) {
+            break;
+        }
 
         status = evo_population_advance_generation(problem,
                                                    config,
@@ -453,6 +505,8 @@ evo_status_t evo_bounded_run_advance(
                         problem->genome_size);
             best_result->best_fitness = improved_evaluation->fitness;
             candidate.best_generation = candidate.final_generation;
+            candidate.best_population_index =
+                candidate.final_best_index;
         }
 
         if (!candidate.final_has_best) {

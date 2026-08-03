@@ -117,6 +117,8 @@ static void fixture_initialize(tail_fixture_t *fixture,
     fixture->parents.best_index = population_size - 1;
     fixture->parents.initialization_seed = fixture->config.random_seed;
     fixture->parents.rng_algorithm_version = EVO_RNG_ALGORITHM_VERSION;
+    fixture->parents.fitness_comparison_policy_version =
+        EVO_FITNESS_COMPARISON_POLICY_VERSION;
     fixture->parents.initialized = true;
     fixture->parents.has_best = true;
     fixture->parents.evaluated = true;
@@ -223,6 +225,8 @@ static void assert_population_metadata_equal(
            right->operator_seed_schedule_version);
     assert(left->odd_child_policy_version ==
            right->odd_child_policy_version);
+    assert(left->fitness_comparison_policy_version ==
+           right->fitness_comparison_policy_version);
     assert(left->initialized == right->initialized);
     assert(left->has_best == right->has_best);
     assert(left->evaluated == right->evaluated);
@@ -312,6 +316,7 @@ static void assert_completed_child(const evo_population_t *children,
            EVO_OPERATOR_SEED_SCHEDULE_VERSION);
     assert(children->odd_child_policy_version ==
            EVO_ODD_CHILD_POLICY_VERSION);
+    assert(children->fitness_comparison_policy_version == 0);
     assert(!children->initialized);
     assert(!children->has_best);
     assert(!children->evaluated);

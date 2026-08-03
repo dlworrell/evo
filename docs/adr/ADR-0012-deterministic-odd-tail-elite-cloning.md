@@ -49,6 +49,10 @@ resume pair production is rejected.
 
 The operation remains private and is not called by `evo_run`.
 
+From EVO 0.21.0, completed-parent validation reconstructs the recorded stable
+best through fitness-comparison policy version 1 before this elite copy. The
+odd-tail policy and its RNG-free byte copy remain version 1.
+
 ## Consequences
 
 - Odd child slabs are byte-replayable without an additional random decision.

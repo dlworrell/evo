@@ -51,6 +51,11 @@ the initialized genome slab as unevaluated. Allocation and resource failures
 have the same internal-state preservation boundary. Consumer context side
 effects are outside EVO ownership and cannot be rolled back.
 
+ADR-0021 extends this boundary in EVO 0.21.0: `constraint_penalty` is a non-
+negative magnitude, negative penalty evidence also returns
+`EVO_ERROR_EVALUATION`, and comparison is centralized under public policy
+version 1 without changing caller ownership of `total`.
+
 Completing the phase with no valid candidates returns `EVO_SUCCESS`, records a
 completed evaluation with `valid_count == 0`, and records no winner. This
 distinguishes successful classification of an all-invalid population from an
