@@ -10,6 +10,10 @@ enum {
     TEST_EVENT_CAPACITY = 16
 };
 
+_Static_assert(
+    _Generic(((evo_generation_result_view_t *)0)->best_genome, const void *: 1, default: 0),
+    "callback genome views must remain const");
+
 typedef struct evolution_context {
     unsigned char initial_values[TEST_POPULATION_SIZE];
     unsigned char mutation_values[TEST_GENERATION_CAPACITY];
@@ -79,6 +83,30 @@ static bool statistics_equal(
            fitness_equal(&left->best_fitness, &right->best_fitness) &&
            fitness_equal(&left->fitness_sums, &right->fitness_sums) &&
            left->has_best == right->has_best;
+}
+
+static void assert_callback_view(
+    const evo_generation_result_view_t *result,
+    const evo_generation_statistics_t *statistics,
+    const evo_result_t *public_result)
+{
+    assert(result != NULL);
+    assert(statistics != NULL);
+    assert(public_result != NULL);
+    assert(result->version == EVO_GENERATION_RESULT_VIEW_VERSION);
+    assert(statistics->version == EVO_GENERATION_STATISTICS_VERSION);
+    assert((const void *)result != (const void *)public_result);
+    assert(statistics != &public_result->generation_statistics);
+    assert(result->best_genome == public_result->best_genome);
+    assert(result->best_genome_size == 1);
+    assert(fitness_equal(&result->best_fitness,
+                         &public_result->best_fitness));
+    assert(result->generations_completed ==
+           public_result->generations_completed);
+    assert(result->random_seed == public_result->random_seed);
+    assert(statistics_equal(statistics,
+                            &public_result->generation_statistics));
+    assert(public_result->termination_reason == EVO_TERMINATION_NONE);
 }
 
 static void record_callback(callback_trace_t *trace,
@@ -175,20 +203,13 @@ static bool decide_stop(
 {
     stop_context_t *context = opaque;
 
-    assert(result != NULL);
-    assert(statistics != NULL);
     assert(context != NULL);
     assert(context->trace != NULL);
     assert(context->evolution != NULL);
     assert(context->public_result != NULL);
     assert(context->calls < TEST_EVENT_CAPACITY);
-    assert(result->version == EVO_GENERATION_RESULT_VIEW_VERSION);
-    assert(statistics->version == EVO_GENERATION_STATISTICS_VERSION);
+    assert_callback_view(result, statistics, context->public_result);
     assert(result->termination_reason == EVO_TERMINATION_NONE);
-    assert((const void *)result != (const void *)context->public_result);
-    assert(statistics !=
-           &context->public_result->generation_statistics);
-    assert(result->best_genome == context->public_result->best_genome);
     assert(context->evolution->mutation_calls ==
            result->generations_completed * TEST_POPULATION_SIZE);
 
@@ -207,18 +228,11 @@ static void observe_generation(
 {
     observer_context_t *context = opaque;
 
-    assert(result != NULL);
-    assert(statistics != NULL);
     assert(context != NULL);
     assert(context->trace != NULL);
     assert(context->public_result != NULL);
     assert(context->calls < TEST_EVENT_CAPACITY);
-    assert(result->version == EVO_GENERATION_RESULT_VIEW_VERSION);
-    assert(statistics->version == EVO_GENERATION_STATISTICS_VERSION);
-    assert((const void *)result != (const void *)context->public_result);
-    assert(statistics !=
-           &context->public_result->generation_statistics);
-    assert(result->best_genome == context->public_result->best_genome);
+    assert_callback_view(result, statistics, context->public_result);
 
     copy_record(&context->records[context->calls], result, statistics);
     record_callback(context->trace,
@@ -290,14 +304,30 @@ static void bind_contexts(stop_context_t *stop,
 static void assert_result(const evo_result_t *result,
                           size_t generation,
                           unsigned char best_value,
-                          evo_termination_reason_t reason)
+                          evo_termination_reason_t reason,
+                          uint64_t random_seed)
 {
     assert(result->best_genome != NULL);
     assert(((const unsigned char *)result->best_genome)[0] == best_value);
     assert(result->best_fitness.total == (double)best_value);
     assert(result->generations_completed == generation);
+    assert(result->random_seed == random_seed);
     assert(result->termination_reason == reason);
     assert(result->generation_statistics.generation_index == generation);
+}
+
+static void assert_result_empty(const evo_result_t *result)
+{
+    const evo_fitness_t empty_fitness = {0};
+    const evo_generation_statistics_t empty_statistics = {0};
+
+    assert(result->best_genome == NULL);
+    assert(fitness_equal(&result->best_fitness, &empty_fitness));
+    assert(result->generations_completed == 0);
+    assert(result->random_seed == 0);
+    assert(result->termination_reason == EVO_TERMINATION_NONE);
+    assert(statistics_equal(&result->generation_statistics,
+                            &empty_statistics));
 }
 
 static void assert_trace_event(const callback_trace_t *trace,
@@ -327,7 +357,8 @@ static void test_immediate_stop_after_generation_zero(void)
     assert_result(&result,
                   0,
                   4,
-                  EVO_TERMINATION_APPLICATION_REQUESTED);
+                  EVO_TERMINATION_APPLICATION_REQUESTED,
+                  UINT64_C(301));
     assert(evolution.mutation_calls == 0);
     assert(stop.calls == 1);
     assert(observer.calls == 1);
@@ -359,7 +390,8 @@ static void test_intermediate_stop_after_promoted_child(void)
     assert_result(&result,
                   2,
                   20,
-                  EVO_TERMINATION_APPLICATION_REQUESTED);
+                  EVO_TERMINATION_APPLICATION_REQUESTED,
+                  UINT64_C(302));
     assert(evolution.mutation_calls == 2 * TEST_POPULATION_SIZE);
     assert(stop.calls == 3);
     assert(observer.calls == 3);
@@ -505,7 +537,10 @@ static void test_natural_termination_suppresses_stop_decision(void)
     assert_result(&zero_result,
                   0,
                   4,
-                  EVO_TERMINATION_GENERATION_LIMIT);
+                  EVO_TERMINATION_GENERATION_LIMIT,
+                  UINT64_C(304));
+    assert(zero_observer.records[0].termination_reason ==
+           EVO_TERMINATION_GENERATION_LIMIT);
 
     invalid_evolution.reject_value = true;
     invalid_evolution.rejected_value = 0xee;
@@ -524,7 +559,8 @@ static void test_natural_termination_suppresses_stop_decision(void)
     assert_result(&invalid_result,
                   1,
                   4,
-                  EVO_TERMINATION_ALL_INVALID);
+                  EVO_TERMINATION_ALL_INVALID,
+                  UINT64_C(305));
     assert(invalid_observer.records[1].termination_reason ==
            EVO_TERMINATION_ALL_INVALID);
 
@@ -555,9 +591,7 @@ static void test_failed_child_emits_no_partial_stop_decision(void)
     assert(trace.count == 2);
     assert_trace_event(&trace, 0, 'S', 0);
     assert_trace_event(&trace, 1, 'O', 0);
-    assert(result.best_genome == NULL);
-    assert(result.generations_completed == 0);
-    assert(result.termination_reason == EVO_TERMINATION_NONE);
+    assert_result_empty(&result);
 }
 
 int main(void)
