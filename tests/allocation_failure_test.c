@@ -11,6 +11,7 @@ void *__real_calloc(size_t count, size_t size);
 void __real_free(void *allocation);
 
 static size_t allocation_calls;
+static size_t continuation_stop_calls;
 static size_t fail_allocation_call;
 static size_t observation_calls;
 static size_t release_calls;
@@ -99,6 +100,24 @@ static bool request_immediate_stop(
     return true;
 }
 
+static bool continue_after_commit(
+    const evo_generation_result_view_t *result,
+    const evo_generation_statistics_t *statistics,
+    void *context)
+{
+    size_t *count = context;
+
+    assert(result != NULL);
+    assert(statistics != NULL);
+    assert(count == &continuation_stop_calls);
+    assert(result->version == EVO_GENERATION_RESULT_VIEW_VERSION);
+    assert(result->termination_reason == EVO_TERMINATION_NONE);
+    assert(statistics->version == EVO_GENERATION_STATISTICS_VERSION);
+    assert(statistics->generation_index == result->generations_completed);
+    ++*count;
+    return false;
+}
+
 static void assert_population_empty(const evo_population_t *population)
 {
     assert(population->genomes == NULL);
@@ -159,6 +178,7 @@ static void assert_child_evaluation_empty(
 static void reset_allocation_injection(size_t failure_call)
 {
     allocation_calls = 0;
+    continuation_stop_calls = 0;
     fail_allocation_call = failure_call;
     observation_calls = 0;
     stop_calls = 0;
@@ -174,6 +194,7 @@ static void assert_run_allocation_failure(const evo_problem_t *problem,
     assert(evo_run(problem, config, NULL, &result) ==
            EVO_ERROR_OUT_OF_MEMORY);
     assert(allocation_calls == failure_call);
+    assert(continuation_stop_calls == 0);
     assert(observation_calls == 0);
     fail_allocation_call = 0;
     assert_completely_empty(&result);
@@ -239,6 +260,7 @@ int main(void)
         assert(evo_run(&problem, &run_config, NULL, &result) ==
                EVO_SUCCESS);
         assert(allocation_calls == 3);
+        assert(continuation_stop_calls == 0);
         assert(stop_calls == 1);
         assert(observation_calls == 1);
         assert(release_calls == releases_before_run + 2);
@@ -256,6 +278,8 @@ int main(void)
     run_config.tournament_size = 2;
     run_config.crossover_rate = 0.0;
     run_config.mutation_rate = 0.0;
+    run_config.generation_stop = continue_after_commit;
+    run_config.generation_stop_context = &continuation_stop_calls;
 
     reset_allocation_injection(0);
     {
@@ -264,6 +288,7 @@ int main(void)
         assert(evo_run(&problem, &run_config, NULL, &result) ==
                EVO_SUCCESS);
         assert(allocation_calls == 5);
+        assert(continuation_stop_calls == 1);
         assert(observation_calls == 2);
         assert(release_calls == releases_before_run + 4);
         assert(result.best_genome != NULL);
@@ -286,6 +311,7 @@ int main(void)
         assert(evo_run(&problem, &run_config, NULL, &result) ==
                EVO_ERROR_OUT_OF_MEMORY);
         assert(allocation_calls == 4);
+        assert(continuation_stop_calls == 1);
         assert(observation_calls == 1);
         assert(release_calls == releases_before_run + 3);
         assert_completely_empty(&result);
@@ -298,6 +324,7 @@ int main(void)
         assert(evo_run(&problem, &run_config, NULL, &result) ==
                EVO_ERROR_OUT_OF_MEMORY);
         assert(allocation_calls == 5);
+        assert(continuation_stop_calls == 1);
         assert(observation_calls == 1);
         assert(release_calls == releases_before_run + 4);
         assert_completely_empty(&result);
@@ -311,6 +338,7 @@ int main(void)
         assert(evo_run(&problem, &run_config, NULL, &result) ==
                EVO_ERROR_OUT_OF_MEMORY);
         assert(allocation_calls == 6);
+        assert(continuation_stop_calls == 2);
         assert(observation_calls == 2);
         assert(release_calls == releases_before_run + 5);
         assert_completely_empty(&result);
@@ -323,6 +351,7 @@ int main(void)
         assert(evo_run(&problem, &run_config, NULL, &result) ==
                EVO_ERROR_OUT_OF_MEMORY);
         assert(allocation_calls == 7);
+        assert(continuation_stop_calls == 2);
         assert(observation_calls == 2);
         assert(release_calls == releases_before_run + 6);
         assert_completely_empty(&result);

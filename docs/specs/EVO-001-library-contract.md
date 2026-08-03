@@ -1172,12 +1172,15 @@ and reports only earlier committed generations before a later injected failure.
 
 The application-stop test proves immediate generation-zero stopping,
 intermediate stopping after a promoted child, stop-before-observer ordering,
-independent callback snapshots, application termination evidence, exact
-committed winner and statistics retention, natural-reason precedence, absence
-of decisions for provisional or failed children, and null/never-stop replay
-equivalence with 0.19.0. The installed consumer exercises both callback types.
-Wrapped allocation tests prove immediate stopping adds no allocation, consumes
-no child transition, and releases each owner exactly once.
+const independent callback snapshots that exactly mirror the committed public
+winner and statistics, callback-time deferral of the public termination reason,
+application termination evidence, natural-reason precedence, complete failure
+reset, absence of decisions for provisional or failed children, and null/never-
+stop replay equivalence with 0.19.0. The installed consumer validates the full
+public view shape for both callback types. Wrapped allocation tests prove
+immediate stopping adds no allocation, consumes no child transition, and
+releases each owner exactly once; they also prove a continuing stop decision is
+delivered only for generations committed before an injected later failure.
 
 The bounded-run test proves zero-limit compatibility; positive-limit policy
 validation before callbacks; even, odd, and one-member execution; deterministic

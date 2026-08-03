@@ -3,7 +3,8 @@
 typedef struct callback_state {
     size_t observer_calls;
     size_t stop_calls;
-    int valid;
+    int observer_valid;
+    int stop_valid;
 } callback_state_t;
 
 static evo_fitness_t evaluate_genome(const void *genome, void *context)
@@ -36,7 +37,7 @@ static void observe_generation(
         statistics->population_size != 1 ||
         statistics->valid_count != 1 ||
         statistics->fitness_sums.total != 1.0) {
-        state->valid = 0;
+        state->observer_valid = 0;
     }
 }
 
@@ -49,10 +50,17 @@ static bool request_stop(
 
     ++state->stop_calls;
     if (result == NULL || statistics == NULL ||
+        result->version != EVO_GENERATION_RESULT_VIEW_VERSION ||
+        result->best_genome == NULL || result->best_genome_size != 8 ||
+        result->best_fitness.total != 1.0 ||
         result->generations_completed != 0 ||
         result->termination_reason != EVO_TERMINATION_NONE ||
-        statistics->generation_index != 0) {
-        state->valid = 0;
+        statistics->version != EVO_GENERATION_STATISTICS_VERSION ||
+        statistics->generation_index != 0 ||
+        statistics->population_size != 1 ||
+        statistics->valid_count != 1 ||
+        statistics->fitness_sums.total != 1.0) {
+        state->stop_valid = 0;
     }
     return true;
 }
@@ -60,7 +68,8 @@ static bool request_stop(
 int main(void)
 {
     callback_state_t callbacks = {
-        .valid = 1,
+        .observer_valid = 1,
+        .stop_valid = 1,
     };
     const evo_problem_t problem = {
         .genome_size = 8,
@@ -100,7 +109,7 @@ int main(void)
         result.generation_statistics.fitness_sums.total != 1.0 ||
         !result.generation_statistics.has_best ||
         callbacks.stop_calls != 1 || callbacks.observer_calls != 1 ||
-        !callbacks.valid) {
+        !callbacks.observer_valid || !callbacks.stop_valid) {
         evo_result_destroy(&result);
         return 1;
     }

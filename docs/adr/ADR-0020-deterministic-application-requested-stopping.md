@@ -126,14 +126,20 @@ outside this deterministic serial boundary.
 ## Verification
 
 - `tests/application_stop_test.c` proves immediate and intermediate stopping,
-  stop-before-observer ordering, independent snapshots, exact winner and
-  statistics retention, natural-reason precedence, null/never-stop replay, and
-  absence of callbacks for provisional or failed work.
+  stop-before-observer ordering, const independent snapshots that exactly
+  mirror committed public winner and statistics state, callback-time deferral
+  of the public termination reason, natural-reason precedence, null/never-stop
+  replay, complete failure reset, and absence of callbacks for provisional or
+  failed work.
 - `tests/allocation_failure_test.c` proves immediate stopping adds no allocation
-  or child transition and preserves exact cleanup counts.
+  or child transition and preserves exact cleanup counts. It also proves a
+  continuing decision is delivered only for generations committed before an
+  injected later allocation failure.
 - `tests/evo_lifecycle_test.c` locks the appended enum value and config layout.
 - `tests/bounded_run_test.c` locks private policy version 2 and its terminal
   evidence.
-- The installed consumer exercises both callbacks and the public application
-  termination reason.
+- The installed consumer validates both callback view versions, winner bounds,
+  fitness and statistics evidence, and the public application termination
+  reason.
 - GitHub issue: `https://github.com/dlworrell/evo/issues/42`
+- Verification hardening: `https://github.com/dlworrell/evo/issues/76`
