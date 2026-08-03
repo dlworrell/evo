@@ -14,11 +14,15 @@ static void assert_population_empty(const evo_population_t *population)
     assert(population->valid_count == 0);
     assert(population->best_index == 0);
     assert(population->produced_count == 0);
+    assert(population->elite_count == 0);
+    assert(population->elite_source_valid_count == 0);
     assert(population->initialization_seed == 0);
     assert(population->source_generation == 0);
     assert(population->rng_algorithm_version == 0);
     assert(population->operator_seed_schedule_version == 0);
     assert(population->odd_child_policy_version == 0);
+    assert(population->elite_policy_version == 0);
+    assert(population->singleton_child_policy_version == 0);
     assert(population->fitness_comparison_policy_version == 0);
     assert(population->diversity_policy_version == 0);
     assert(population->diversity_metric_version == 0);
@@ -29,6 +33,7 @@ static void assert_population_empty(const evo_population_t *population)
     assert(!population->initialized);
     assert(!population->has_best);
     assert(!population->evaluated);
+    assert(!population->elite_count_explicit);
 }
 
 static evo_problem_t test_problem(size_t genome_size)
@@ -202,6 +207,15 @@ static void test_active_rejection_and_destruction_idempotency(void)
            active.operator_seed_schedule_version);
     assert(population.odd_child_policy_version ==
            active.odd_child_policy_version);
+    assert(population.elite_count == active.elite_count);
+    assert(population.elite_source_valid_count ==
+           active.elite_source_valid_count);
+    assert(population.elite_policy_version ==
+           active.elite_policy_version);
+    assert(population.singleton_child_policy_version ==
+           active.singleton_child_policy_version);
+    assert(population.elite_count_explicit ==
+           active.elite_count_explicit);
     assert(population.fitness_comparison_policy_version ==
            active.fitness_comparison_policy_version);
     assert(population.produced_count == active.produced_count);

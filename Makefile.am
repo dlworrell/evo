@@ -23,7 +23,9 @@ libcatalyst_evo_la_SOURCES = \
 	src/mutation.c \
 	src/parent_pair.c \
 	src/child_pair.c \
+	src/child_single.c \
 	src/child_tail.c \
+	src/elite.c \
 	src/child_evaluation.c \
 	src/generation_advancement.c \
 	src/bounded_run.c \
@@ -47,7 +49,9 @@ noinst_HEADERS = \
 	src/internal/mutation.h \
 	src/internal/parent_pair.h \
 	src/internal/child_pair.h \
+	src/internal/child_single.h \
 	src/internal/child_tail.h \
+	src/internal/elite.h \
 	src/internal/population_evaluation.h \
 	src/internal/fitness.h \
 	src/internal/child_evaluation.h \
@@ -79,6 +83,7 @@ check_PROGRAMS = \
 	tests/evo_parent_pair_test \
 	tests/evo_child_pair_test \
 	tests/evo_child_tail_test \
+	tests/evo_elite_test \
 	tests/evo_child_evaluation_test \
 	tests/evo_generation_advancement_test \
 	tests/evo_bounded_run_test \
@@ -137,6 +142,9 @@ tests_evo_child_pair_test_LDADD = libcatalyst_evo.la -lm
 
 tests_evo_child_tail_test_SOURCES = tests/child_tail_test.c
 tests_evo_child_tail_test_LDADD = libcatalyst_evo.la -lm
+
+tests_evo_elite_test_SOURCES = tests/elite_test.c
+tests_evo_elite_test_LDADD = libcatalyst_evo.la -lm
 
 tests_evo_child_evaluation_test_SOURCES = \
 	tests/child_evaluation_test.c

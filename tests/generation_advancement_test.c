@@ -2,7 +2,9 @@
 
 #include "internal/child_evaluation.h"
 #include "internal/child_pair.h"
+#include "internal/child_single.h"
 #include "internal/child_tail.h"
+#include "internal/elite.h"
 
 #include <assert.h>
 
@@ -148,11 +150,15 @@ static void assert_population_empty(const evo_population_t *population)
     assert(population->valid_count == 0);
     assert(population->best_index == 0);
     assert(population->produced_count == 0);
+    assert(population->elite_count == 0);
+    assert(population->elite_source_valid_count == 0);
     assert(population->initialization_seed == 0);
     assert(population->source_generation == 0);
     assert(population->rng_algorithm_version == 0);
     assert(population->operator_seed_schedule_version == 0);
     assert(population->odd_child_policy_version == 0);
+    assert(population->elite_policy_version == 0);
+    assert(population->singleton_child_policy_version == 0);
     assert(population->fitness_comparison_policy_version == 0);
     assert(population->diversity_policy_version == 0);
     assert(population->diversity_metric_version == 0);
@@ -163,6 +169,7 @@ static void assert_population_empty(const evo_population_t *population)
     assert(!population->initialized);
     assert(!population->has_best);
     assert(!population->evaluated);
+    assert(!population->elite_count_explicit);
 }
 
 static void snapshot_population(const evo_population_t *population,
@@ -199,6 +206,9 @@ static void assert_population_matches_snapshot(
     assert(population->valid_count == before->valid_count);
     assert(population->best_index == before->best_index);
     assert(population->produced_count == before->produced_count);
+    assert(population->elite_count == before->elite_count);
+    assert(population->elite_source_valid_count ==
+           before->elite_source_valid_count);
     assert(population->initialization_seed == before->initialization_seed);
     assert(population->source_generation == before->source_generation);
     assert(population->rng_algorithm_version ==
@@ -207,6 +217,10 @@ static void assert_population_matches_snapshot(
            before->operator_seed_schedule_version);
     assert(population->odd_child_policy_version ==
            before->odd_child_policy_version);
+    assert(population->elite_policy_version ==
+           before->elite_policy_version);
+    assert(population->singleton_child_policy_version ==
+           before->singleton_child_policy_version);
     assert(population->fitness_comparison_policy_version ==
            before->fitness_comparison_policy_version);
     assert(population->diversity_policy_version ==
@@ -223,6 +237,8 @@ static void assert_population_matches_snapshot(
     assert(population->initialized == before->initialized);
     assert(population->has_best == before->has_best);
     assert(population->evaluated == before->evaluated);
+    assert(population->elite_count_explicit ==
+           before->elite_count_explicit);
 
     for (size_t index = 0; index < TEST_STORAGE_SIZE; ++index) {
         if (index < population->storage_bytes) {
@@ -249,12 +265,17 @@ static evo_generation_advancement_evidence_t sentinel_evidence(void)
         .population_size = 29,
         .valid_count = 31,
         .best_index = 37,
+        .elite_count = 39,
+        .elite_source_valid_count = 40,
         .previous_generation = 41,
         .completed_generation = 43,
         .operator_seed_schedule_version = 47,
         .odd_child_policy_version = 53,
+        .elite_policy_version = 55,
+        .singleton_child_policy_version = 57,
         .policy_version = 59,
         .has_best = true,
+        .elite_count_explicit = true,
         .complete = true,
     };
 }
@@ -266,12 +287,18 @@ static void assert_evidence_equal(
     assert(left->population_size == right->population_size);
     assert(left->valid_count == right->valid_count);
     assert(left->best_index == right->best_index);
+    assert(left->elite_count == right->elite_count);
+    assert(left->elite_source_valid_count ==
+           right->elite_source_valid_count);
     assert(left->previous_generation == right->previous_generation);
     assert(left->completed_generation == right->completed_generation);
     assert(left->operator_seed_schedule_version ==
            right->operator_seed_schedule_version);
     assert(left->odd_child_policy_version ==
            right->odd_child_policy_version);
+    assert(left->elite_policy_version == right->elite_policy_version);
+    assert(left->singleton_child_policy_version ==
+           right->singleton_child_policy_version);
     assert(left->fitness_comparison_policy_version ==
            right->fitness_comparison_policy_version);
     assert(left->diversity_policy_version ==
@@ -280,6 +307,8 @@ static void assert_evidence_equal(
            right->diversity_metric_version);
     assert(left->policy_version == right->policy_version);
     assert(left->has_best == right->has_best);
+    assert(left->elite_count_explicit ==
+           right->elite_count_explicit);
     assert(left->complete == right->complete);
 }
 
@@ -298,8 +327,12 @@ static void create_evaluated_child(advancement_fixture_t *fixture,
                                    bool all_invalid)
 {
     evo_child_pair_evidence_t pair = {0};
-    evo_child_tail_evidence_t tail = {0};
+    evo_child_single_evidence_t single = {0};
+    evo_elite_evidence_t elite = {0};
     evo_child_evaluation_evidence_t evaluation = {0};
+    size_t requested_count = 0;
+    size_t effective_count = 0;
+    size_t offspring_count = 0;
 
     configure_child_results(fixture, all_invalid);
     fixture->capture_child_evaluation = false;
@@ -307,20 +340,40 @@ static void create_evaluated_child(advancement_fixture_t *fixture,
                                        &fixture->config,
                                        &fixture->parents,
                                        &fixture->children) == EVO_SUCCESS);
-    assert(evo_child_pair_produce(&fixture->problem,
-                                  &fixture->config,
-                                  fixture,
-                                  &fixture->parents,
-                                  source_generation,
-                                  0,
-                                  &fixture->children,
-                                  &pair) == EVO_SUCCESS);
-    assert(evo_child_tail_produce(&fixture->problem,
-                                  &fixture->config,
-                                  &fixture->parents,
-                                  source_generation,
-                                  &fixture->children,
-                                  &tail) == EVO_SUCCESS);
+    assert(evo_elite_policy_counts(&fixture->config,
+                                   fixture->parents.valid_count,
+                                   &requested_count,
+                                   &effective_count,
+                                   &offspring_count) == EVO_SUCCESS);
+    (void)requested_count;
+    (void)effective_count;
+    for (size_t pair_index = 0;
+         pair_index < offspring_count / 2;
+         ++pair_index) {
+        assert(evo_child_pair_produce(&fixture->problem,
+                                      &fixture->config,
+                                      fixture,
+                                      &fixture->parents,
+                                      source_generation,
+                                      pair_index,
+                                      &fixture->children,
+                                      &pair) == EVO_SUCCESS);
+    }
+    if (offspring_count % 2 != 0) {
+        assert(evo_child_single_produce(&fixture->problem,
+                                        &fixture->config,
+                                        fixture,
+                                        &fixture->parents,
+                                        source_generation,
+                                        &fixture->children,
+                                        &single) == EVO_SUCCESS);
+    }
+    assert(evo_elite_population_complete(&fixture->problem,
+                                         &fixture->config,
+                                         &fixture->parents,
+                                         source_generation,
+                                         &fixture->children,
+                                         &elite) == EVO_SUCCESS);
 
     fixture->evaluation_base = fixture->children.genomes;
     fixture->capture_child_evaluation = true;
@@ -430,6 +483,11 @@ static void test_generation_zero_promotion_preserves_child_ownership(void)
            EVO_OPERATOR_SEED_SCHEDULE_VERSION);
     assert(evidence.odd_child_policy_version ==
            EVO_ODD_CHILD_POLICY_VERSION);
+    assert(evidence.elite_count == 1);
+    assert(evidence.elite_source_valid_count == TEST_POPULATION_SIZE);
+    assert(evidence.elite_policy_version == EVO_ELITE_POLICY_VERSION);
+    assert(evidence.singleton_child_policy_version == 0);
+    assert(!evidence.elite_count_explicit);
     assert(evidence.fitness_comparison_policy_version ==
            EVO_FITNESS_COMPARISON_POLICY_VERSION);
     assert(evidence.diversity_policy_version ==
@@ -684,6 +742,44 @@ static void test_repeated_advancement_rejects_empty_child(void)
     fixture_destroy(&fixture);
 }
 
+static void test_explicit_elite_provenance_is_promoted(void)
+{
+    advancement_fixture_t fixture = {0};
+    evo_generation_advancement_evidence_t evidence = {0};
+
+    fixture_initialize(&fixture, false);
+    evo_population_destroy(&fixture.children);
+    fixture.config.elite_count_enabled = true;
+    fixture.config.elite_count = 2;
+    create_evaluated_child(&fixture, 0, false);
+
+    assert(fixture.children.elite_count == 2);
+    assert(fixture.children.elite_source_valid_count ==
+           TEST_POPULATION_SIZE);
+    assert(fixture.children.elite_policy_version ==
+           EVO_ELITE_POLICY_VERSION);
+    assert(fixture.children.singleton_child_policy_version ==
+           EVO_SINGLETON_CHILD_POLICY_VERSION);
+    assert(fixture.children.elite_count_explicit);
+    assert(evo_population_advance_generation(&fixture.problem,
+                                             &fixture.config,
+                                             0,
+                                             &fixture.parents,
+                                             &fixture.children,
+                                             &evidence) == EVO_SUCCESS);
+    assert(evidence.elite_count == 2);
+    assert(evidence.elite_source_valid_count ==
+           TEST_POPULATION_SIZE);
+    assert(evidence.elite_policy_version == EVO_ELITE_POLICY_VERSION);
+    assert(evidence.singleton_child_policy_version ==
+           EVO_SINGLETON_CHILD_POLICY_VERSION);
+    assert(evidence.elite_count_explicit);
+    assert(evidence.policy_version ==
+           EVO_GENERATION_ADVANCEMENT_POLICY_VERSION);
+    assert_population_empty(&fixture.children);
+    fixture_destroy(&fixture);
+}
+
 int main(void)
 {
     test_generation_zero_promotion_preserves_child_ownership();
@@ -691,5 +787,6 @@ int main(void)
     test_all_invalid_child_is_promotable();
     test_rejections_preserve_both_populations_and_evidence();
     test_repeated_advancement_rejects_empty_child();
+    test_explicit_elite_provenance_is_promoted();
     return 0;
 }

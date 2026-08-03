@@ -94,6 +94,10 @@ stopping policy version 1, the current significant-best reference, the
 consecutive stagnant-generation count, and distinct convergence and
 stagnation flags. This adds no public history and no allocation class.
 
+ADR-0024 later advances bounded-run policy to version 6 by appending elite and
+singleton provenance; stopping policy version 1 and its classification order
+remain unchanged.
+
 ## ABI Consequences
 
 Existing termination values and all pre-0.23.0 member offsets are preserved.

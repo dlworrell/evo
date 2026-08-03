@@ -1,6 +1,6 @@
 # ADR-0012: Deterministic Odd-Tail Elite Cloning
 
-Status: Accepted
+Status: Accepted (0.24.0 compatibility subset; generalized by ADR-0024)
 Date: 2026-08-01
 Decision owner: EVO
 
@@ -53,6 +53,11 @@ From EVO 0.21.0, completed-parent validation reconstructs the recorded stable
 best through fitness-comparison policy version 1 before this elite copy. The
 odd-tail policy and its RNG-free byte copy remain version 1.
 
+From EVO 0.24.0, ADR-0024 makes this exact rule the disabled-config
+compatibility subset of elite policy version 1. The private adapter remains to
+lock the pre-0.24.0 odd-population bytes and evidence; explicit elite counts and
+ordinary singleton production use the generalized boundary.
+
 ## Consequences
 
 - Odd child slabs are byte-replayable without an additional random decision.
@@ -65,8 +70,9 @@ odd-tail policy and its RNG-free byte copy remain version 1.
 - `produced_count == population_size` is production evidence only. The child
   still has no validity, fitness, best-candidate, initialization, or evaluation
   evidence.
-- Generalized elite counts, configurable singleton policies, child evaluation,
-  population swapping, and generation advancement remain later decisions.
+- At the 0.13.0 boundary, generalized elite counts, configurable singleton
+  policies, child evaluation, population swapping, and generation advancement
+  remained later decisions. ADR-0024 resolves the first two in 0.24.0.
 - No public layout, installed function, memory budget, or generation-zero
   `evo_run` behavior changes in 0.13.0.
 
@@ -95,9 +101,8 @@ population would violate the configured population size.
 
 ### Add configurable elitism now
 
-Deferred. A public or private elite-count policy should be designed with the
-complete generation transition rather than embedded in the minimal odd-tail
-completion boundary.
+Deferred in 0.13.0. ADR-0024 resolves it with the complete generation
+transition rather than embedding it in this minimal compatibility boundary.
 
 ## Verification
 

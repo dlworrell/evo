@@ -1,6 +1,7 @@
 #include "internal/child_evaluation.h"
 
 #include "internal/child_tail.h"
+#include "internal/elite.h"
 #include "internal/rng.h"
 
 #include <stdint.h>
@@ -24,7 +25,11 @@ static bool produced_child_ready_for_evaluation(
     const evo_population_t *children)
 {
     size_t expected_storage_bytes = 0;
+    size_t expected_requested_elite_count = 0;
+    size_t expected_elite_count = 0;
+    size_t expected_offspring_count = 0;
     uint32_t expected_odd_child_policy_version = 0;
+    uint32_t expected_singleton_child_policy_version = 0;
 
     if (children->genomes == NULL || children->evaluations != NULL ||
         children->population_size == 0 || children->genome_size == 0 ||
@@ -56,13 +61,35 @@ static bool produced_child_ready_for_evaluation(
         return false;
     }
 
-    if (children->population_size % 2 != 0) {
+    if (evo_elite_policy_counts(
+            config,
+            children->elite_source_valid_count,
+            &expected_requested_elite_count,
+            &expected_elite_count,
+            &expected_offspring_count) != EVO_SUCCESS) {
+        return false;
+    }
+    (void)expected_requested_elite_count;
+
+    if (!config->elite_count_enabled &&
+        children->population_size % 2 != 0) {
         expected_odd_child_policy_version =
             EVO_ODD_CHILD_POLICY_VERSION;
     }
+    if (expected_offspring_count % 2 != 0) {
+        expected_singleton_child_policy_version =
+            EVO_SINGLETON_CHILD_POLICY_VERSION;
+    }
 
-    return children->odd_child_policy_version ==
-           expected_odd_child_policy_version;
+    return children->elite_count == expected_elite_count &&
+           children->elite_policy_version ==
+               EVO_ELITE_POLICY_VERSION &&
+           children->singleton_child_policy_version ==
+               expected_singleton_child_policy_version &&
+           children->odd_child_policy_version ==
+               expected_odd_child_policy_version &&
+           children->elite_count_explicit ==
+               config->elite_count_enabled;
 }
 
 evo_status_t evo_child_population_evaluate(
@@ -107,11 +134,17 @@ evo_status_t evo_child_population_evaluate(
     candidate.evaluation_bytes = children->evaluation_bytes;
     candidate.valid_count = children->valid_count;
     candidate.best_index = children->best_index;
+    candidate.elite_count = children->elite_count;
+    candidate.elite_source_valid_count =
+        children->elite_source_valid_count;
     candidate.source_generation = children->source_generation;
     candidate.operator_seed_schedule_version =
         children->operator_seed_schedule_version;
     candidate.odd_child_policy_version =
         children->odd_child_policy_version;
+    candidate.elite_policy_version = children->elite_policy_version;
+    candidate.singleton_child_policy_version =
+        children->singleton_child_policy_version;
     candidate.fitness_comparison_policy_version =
         children->fitness_comparison_policy_version;
     candidate.diversity_policy_version =
@@ -120,6 +153,7 @@ evo_status_t evo_child_population_evaluate(
         children->diversity_metric_version;
     candidate.policy_version = EVO_CHILD_EVALUATION_POLICY_VERSION;
     candidate.has_best = children->has_best;
+    candidate.elite_count_explicit = children->elite_count_explicit;
     candidate.complete = true;
     *evidence = candidate;
     return EVO_SUCCESS;

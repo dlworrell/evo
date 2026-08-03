@@ -28,7 +28,9 @@ subset of this layer, version 0.20.0 adds application-requested stopping over
 committed state, and version 0.21.0 formalizes hard constraints and soft-
 penalty comparison evidence. Version 0.22.0 adds bounded deterministic
 population-diversity evidence, and version 0.23.0 adds deterministic
-convergence and stagnation classification over committed evidence.
+convergence and stagnation classification over committed evidence. Version
+0.24.0 adds caller-bounded deterministic elite preservation with an explicit
+ordinary-singleton path and compatibility-stable operator scheduling.
 
 ### Source analysis and transformation
 
@@ -68,7 +70,7 @@ project patch automatically.
 
 ## Current Conformance Boundary
 
-Only the evolutionary-search core exists in version 0.23.0. Source ingestion,
+Only the evolutionary-search core exists in version 0.24.0. Source ingestion,
 analysis, transformation, candidate materialization, external-process
 isolation, target-code measurement, product commands, and optimized-patch
 artifacts are planned by issues #58 through #69. Documentation of those
@@ -80,6 +82,7 @@ planned boundaries is not an implementation claim.
 - Selection
 - Crossover
 - Mutation
+- Deterministic elite preservation and ordinary singleton production
 - Diversity evidence and deterministic stagnation handling
 - Fitness and constraint handling
 - Statistics and evidence
@@ -275,11 +278,11 @@ runs two tournaments with replacement, and maps the output to child indexes
 version and is committed only after both selections succeed.
 
 The completed parent remains read-only, and no child pointer is accepted or
-written. Exactly `population_size / 2` complete pairs are planned. An odd
-trailing slot remains explicitly unassigned until a singleton or elitism
-policy is selected. Future crossover streams use pair ordinals and future
-mutation streams use child indexes, but this milestone invokes neither
-operator.
+written. Through 0.23.0 exactly `population_size / 2` complete pairs were
+planned. Version 0.24.0 first resolves the effective elite suffix, then plans
+`floor(ordinary_offspring_count / 2)` pairs. A remaining ordinary slot belongs
+to singleton policy version 1. Crossover streams keep pair ordinals and
+mutation streams keep child indexes.
 
 ## Private Complete-Pair Production Boundary
 
@@ -302,10 +305,10 @@ output. Parent genomes and completed evaluation evidence remain read-only.
 Callbacks return no status, so their effects cannot be rolled back; violating
 the bounded deterministic callback contract remains a consumer error. The
 operation does not allocate child evaluations, mark the child as initialized
-or evaluated, handle an odd trailing slot, swap populations, increment a
-generation, or participate in `evo_run`.
+or evaluated, handle an unpaired ordinary slot or elite suffix, swap
+populations, or increment a generation.
 
-## Private Odd-Tail Completion Boundary
+## Deterministic Elite-Preservation Boundary
 
 Version 0.13.0 adds one private completion rule for odd child populations.
 After the complete-pair prefix reaches `population_size - 1`, EVO validates the
@@ -319,19 +322,33 @@ the defined zero-pair case. Every other request requires the complete pair
 prefix and matching metadata. Rejection preserves parent, child, and output
 evidence.
 
-The resulting slab is fully produced but not initialized or evaluated. It has
-no child validity, fitness, or best-candidate evidence and is not yet eligible
-for selection or population swap until evaluation succeeds. Generalized
-elitism, generation accounting, and `evo_run` integration remain later
-boundaries.
+Version 0.24.0 retains that rule as disabled-config compatibility and adds
+elite policy version 1. `elite_count_enabled` selects an explicit request from
+zero through population size; disabled mode requires a zero payload and
+requests the old odd tail or no even elite. Effective count is capped at the
+source valid count, so every retained elite has one distinct valid parent.
+
+Ordinary offspring occupy the prefix and stable elites the suffix. Complete
+pairs fill the largest even part of the prefix. If one ordinary slot remains,
+singleton policy version 1 selects a valid parent using the next unused
+pair-selection stream, clones it, and dispatches its child-indexed mutation
+stream without crossover or scratch storage. Elite completion then ranks valid
+parents through the common comparator and clones them best-to-worst after a
+complete dry pass. Elite copying consumes no RNG and invokes no callback.
+
+The resulting slab is fully produced but not initialized or evaluated. It
+records effective elite count, source valid count, elite and singleton policy
+versions, and explicit-versus-compatibility mode so later lifecycle validation
+can reconstruct the slot layout.
 
 ## Private Produced-Child Evaluation Boundary
 
 Version 0.14.0 adds a private evaluation operation for a fully produced child
-slab. The operation accepts even populations completed entirely by pairs and
-odd populations completed by the version-1 stable-best tail policy. It
-requires matching source-generation and operator-schedule provenance before
-allocating provisional evaluation records.
+slab. From 0.24.0, the operation accepts the policy-derived pair prefix,
+optional singleton, and stable elite suffix, including the old version-1
+stable-best tail compatibility form. It requires matching source-generation,
+operator-schedule, elite, and singleton provenance before allocating
+provisional evaluation records.
 
 The existing evaluation engine is now shared by generation-zero and produced-
 child lifecycle preflights. It validates all candidates first, evaluates only
@@ -391,11 +408,13 @@ generation-zero behavior.
 
 Transition-only configuration is validated before generation-zero allocation
 or any consumer callback. For every source generation in ascending order, a
-private bounded-run owner constructs one child slab, produces all complete
-pairs, completes an odd tail through stable-best cloning when necessary,
-evaluates the full child, and atomically promotes it. A one-member population
-uses the odd-tail rule directly and does not require tournament, crossover, or
-mutation policy that cannot be exercised.
+private bounded-run owner constructs one child slab, produces the policy-
+derived complete pairs, an optional ordinary singleton, and the stable elite
+suffix, evaluates the full child, and atomically promotes it. Compatibility or
+explicit one-elite mode completes a one-member population directly and does
+not require operator policy that cannot be exercised. One-member explicit-zero
+mode exercises only tournament selection and mutation, so its crossover policy
+is likewise unused.
 
 The independent result genome is allocated once after generation zero. It is
 a global best-so-far snapshot, not a view into either working population. A
@@ -499,9 +518,13 @@ Classification is allocation-free and RNG-free. Coincident terminal evidence
 uses the fixed order all-invalid, converged, stagnated, generation limit, then
 application requested. Natural classification suppresses the application stop
 callback, and the observer sees the selected final reason. Bounded-run policy
-version 5 records constant-space stopping evidence privately. Generalized
-elitism, adaptive mutation, recycling, checkpointing, and parallelism remain
-separate decisions.
+version 5 records constant-space stopping evidence privately. Adaptive
+mutation, recycling, checkpointing, and parallelism remain separate decisions.
+
+Version 0.24.0 advances bounded-run policy to version 6. It records the final
+elite count, source valid count, elite policy, singleton policy, and explicit-
+mode flag. Child-evaluation and generation-advancement policies advance to
+version 4 so the same provenance survives evaluation and ownership transfer.
 
 ## EVO Core Execution Flow
 
@@ -513,10 +536,10 @@ separate decisions.
 6. Record statistics and evidence.
 7. Stop on convergence, stagnation, generation limit, or an application-defined condition.
 
-Version 0.23.0 publicly implements steps 1 through 4 for at most
-`generation_limit` bounded transitions, with the version-1 odd-tail policy as
-the current elite-preservation rule and bounded diversity measurement in step
-5. It implements the constant-space
+Version 0.24.0 publicly implements steps 1 through 5 for at most
+`generation_limit` bounded transitions, with caller-bounded elite policy
+version 1 and bounded diversity measurement in step 5. It implements the
+constant-space
 statistics portion of step 6 for every committed generation, records the global
 winner and completed transition count, and explicitly identifies limit
 completion, later all-invalid extinction, convergence, stagnation, or an

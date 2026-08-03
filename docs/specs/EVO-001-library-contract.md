@@ -1,13 +1,13 @@
 # EVO-001: Evolutionary Optimization Library Contract
 
 Status: Baseline
-Version: 0.23.0
+Version: 0.24.0
 Owner: EVO
 
 ## Scope Boundary
 
 This specification governs the reusable deterministic C17 evolutionary-search
-core implemented through version 0.23.0. It does not define C-project
+core implemented through version 0.24.0. It does not define C-project
 ingestion, Clang/LLVM analysis, structured source transformations, isolated
 candidate builds, baseline-versus-candidate measurement, optimized patches, or
 product-level replay artifacts.
@@ -76,7 +76,8 @@ crossover rate, mutation rate, random seed, `max_genome_bytes`,
 `generation_observer_context`, then the optional `generation_stop` and its
 independent caller-owned `generation_stop_context`, followed by
 `max_diversity_work`, then the disabled-by-default fitness-target,
-tolerance/patience, and diversity-floor stopping controls.
+tolerance/patience, and diversity-floor stopping controls, then
+`elite_count_enabled` and `elite_count`.
 
 `max_genome_bytes` is trusted caller policy for the largest individual genome
 allocation accepted by `evo_run`. It avoids a platform-specific hard-coded
@@ -135,6 +136,39 @@ in `[0, 1]`. When disabled, the floor payload must be zero. These canonical
 disabled representations make a zero-initialized configuration preserve the
 0.22.0 stopping surface exactly. Malformed controls return
 `EVO_ERROR_INVALID_ARGUMENT` before any run callback.
+
+### Elite-preservation policy
+
+`EVO_ELITE_POLICY_VERSION` is `1`.
+
+For a positive `generation_limit`, disabled mode requires
+`elite_count == 0` and preserves pre-0.24.0 behavior: one stable-best elite for
+an odd population and no elite for an even population. Enabled mode accepts an
+explicit count in `[0, population_size]`. Zero is a valid explicit request. A
+count above population size or a nonzero disabled payload returns
+`EVO_ERROR_RESOURCE_LIMIT` before a run callback. A zero generation limit does
+not validate unused transition policy.
+
+For each transition, EVO derives:
+
+```text
+requested = elite_count_enabled ? elite_count : population_size % 2
+effective = min(requested, source_valid_count)
+ordinary_offspring = population_size - effective
+```
+
+The cap prevents duplicate elite ownership when fewer hard-valid parents exist
+than requested. Every distinct valid source is retained once when the request
+exceeds that set, and ordinary offspring fill the remaining slots. A completed
+all-invalid population stops before another transition.
+
+Ordinary offspring occupy the child prefix. Stable elites occupy the suffix in
+best-to-worst order under fitness-comparison policy version 1. Complete pairs
+fill the largest even portion of the prefix. If the prefix is odd, singleton-
+child policy version 1 uses the next unused pair-selection stream to select one
+valid parent, clones it, and runs the standard child-indexed mutation stream.
+The singleton invokes no crossover and allocates no scratch sibling. Elite
+ranking and copies allocate nothing, consume no RNG, and invoke no callback.
 
 ### Diversity policy
 
@@ -548,9 +582,10 @@ The planning lifecycle is:
 2. `population_size` and `tournament_size` must be nonzero, and tournament size
    must not exceed population size; otherwise planning returns
    `EVO_ERROR_RESOURCE_LIMIT`.
-3. Exactly `floor(population_size / 2)` complete pair ordinals are valid. An
-   out-of-range ordinal returns `EVO_ERROR_RESOURCE_LIMIT` and preserves the
-   output.
+3. Through 0.23.0 exactly `floor(population_size / 2)` complete pair ordinals
+   were valid. Version 0.24.0 resolves elite policy first; exactly
+   `floor(ordinary_offspring / 2)` pair ordinals are valid. An out-of-range
+   ordinal returns `EVO_ERROR_RESOURCE_LIMIT` and preserves the output.
 4. EVO proves the completed parent storage and evaluation evidence through the
    shared population validator. Inconsistent evidence returns
    `EVO_ERROR_STATE`; a consistent all-invalid parent returns
@@ -567,8 +602,8 @@ The planning lifecycle is:
    succeed.
 9. Every rejection preserves the output object and the complete parent
    population.
-10. For an odd population, the final child index is not part of a complete
-    pair. A later singleton or elitism policy owns it.
+10. If the ordinary-offspring prefix is odd, its final index is not part of a
+    complete pair and singleton policy version 1 owns it.
 
 The planner receives no child pointer, writes no genome, invokes no crossover
 or mutation callback, and marks no lifecycle state. Version 0.16.0 invokes it
@@ -611,49 +646,63 @@ The production lifecycle is:
 12. Consumer callbacks retain their existing bounded deterministic contract
     and no failure channel. EVO cannot roll back consumer-context side effects
     or recover from a callback contract violation.
-13. For an odd population, production stops after the last complete pair and
-    leaves the trailing child untouched.
+13. Production stops after the last complete pair and leaves any ordinary
+    singleton plus the elite suffix untouched.
 
 Production metadata is not completed-population evidence. The child remains
-uninitialized, unevaluated, and ineligible for selection. Odd-slot policy,
-child evaluation, population swapping, generation advancement, and public
-`evo_run` integration are not implemented by this boundary.
+uninitialized, unevaluated, and ineligible for selection. Singleton and elite
+completion, child evaluation, population swapping, and generation advancement
+are separate boundaries.
 
-### Private deterministic odd-tail elite cloning
+### Private deterministic elite preservation
 
-Version 0.13.0 adds a private odd-population completion boundary. The
-normative decision is recorded in
-`docs/adr/ADR-0012-deterministic-odd-tail-elite-cloning.md`.
+Version 0.13.0 adds the odd-population stable-best tail recorded by ADR-0012.
+Version 0.24.0 generalizes it through ADR-0024 while retaining that exact rule
+as the disabled-config compatibility subset of elite policy version 1.
 
-The odd-tail lifecycle is:
+The generalized lifecycle is:
 
 1. Problem, configuration, completed parents, active child storage, and output
-   evidence must be non-null and separately owned.
-2. The configured population must be odd and nonzero, dimensions must match,
-   and the genome and child-slab budgets must authorize the existing storage.
-3. Parent evaluation evidence must be structurally complete and contain a
-   stable best valid candidate.
-4. Child initialization, evaluation, validity, fitness, and best-candidate
-   evidence must remain empty.
-5. For populations larger than one, `produced_count` must equal
-   `population_size - 1` and the pair prefix must match the supplied source
-   generation and operator seed-schedule version 1. A one-member population
-   accepts the corresponding zero-pair empty metadata.
-6. EVO resolves bounded distinct views of the recorded best parent and final
-   child before writing any byte.
-7. Policy version 1 copies exactly `genome_size` bytes from the stable best
-   parent into child index `population_size - 1`.
-8. The operation consumes no RNG word and invokes no consumer callback.
-9. Success records `produced_count == population_size`, source generation,
-   operator schedule version 1, odd-tail policy version 1, and output evidence.
-10. Every rejection preserves parent state, child bytes and metadata, and
-    output evidence. Repeated completion and later pair production reject.
+   evidence must be non-null and every typed object and owned byte range must be
+   independent.
+2. Population and genome dimensions must match; checked storage size and the
+   genome and child-slab budgets must authorize the existing owners.
+3. Disabled mode requires a zero payload. Enabled mode accepts every requested
+   count through population size. Invalid configuration returns
+   `EVO_ERROR_RESOURCE_LIMIT` before child output.
+4. Parent evaluation evidence must be structurally complete and contain at
+   least one hard-valid rankable candidate.
+5. EVO computes requested, effective, and ordinary-offspring counts. Effective
+   count is capped at source valid count and therefore names distinct sources.
+6. Child initialization, evaluation, validity, fitness, best-candidate, and
+   completed elite evidence must remain empty.
+7. Exactly `floor(ordinary_offspring / 2)` complete pairs must form the
+   contiguous prefix with matching source generation and operator schedule.
+8. If `ordinary_offspring` is odd, singleton policy version 1 derives the
+   selection stream at index `floor(ordinary_offspring / 2)`, selects one valid
+   parent by tournament, clones it into `ordinary_offspring - 1`, and invokes
+   the standard mutation dispatcher with that child index's mutation stream.
+   It invokes no crossover and allocates no scratch storage.
+9. Before elite output, EVO performs a complete stable ranking dry pass through
+   fitness-comparison policy version 1 and resolves bounded source and
+   destination views.
+10. EVO copies exactly `genome_size` bytes for each effective elite into suffix
+    indexes `ordinary_offspring + rank`, best-to-worst. Ranking and copies
+    consume no RNG and invoke no callback.
+11. Success records full produced count, source generation, operator schedule,
+    effective elite count, source valid count, elite policy version 1,
+    singleton policy version when used, explicit-versus-compatibility mode, and
+    complete output evidence.
+12. Only disabled odd compatibility records odd-tail policy version 1. Disabled
+    even and every explicit configuration record no odd-tail marker.
+13. Every detectable rejection before consumer singleton dispatch preserves
+    parent, child, and output evidence. Elite completion has a fully preflighted
+    no-expected-failure copy suffix. Consumer mutation side effects retain the
+    established no-rollback contract after dispatch.
 
-The one elite clone is the complete odd-tail policy, not a generalized elitism
-contract. Full production metadata alone does not make the child initialized,
-evaluated, or selectable. Version 0.14.0 adds evaluation as the next distinct
-boundary; swapping, generation advancement, and public `evo_run` integration
-remain unimplemented.
+Full production metadata alone does not make the child initialized, evaluated,
+or selectable. Version 0.14.0 evaluation remains the next distinct lifecycle
+boundary.
 
 ### Private deterministic produced-child evaluation
 
@@ -669,8 +718,10 @@ The child-evaluation lifecycle is:
    exact checked storage size, and evaluation budget must be consistent.
 3. The child must record `produced_count == population_size`, the supplied
    source generation, and operator seed-schedule version 1.
-4. Odd populations must record odd-tail policy version 1. Even populations
-   must record no odd-tail policy. This includes the defined one-member case.
+4. The child must record elite policy version 1, effective elite count, source
+   valid count, explicit-versus-compatibility mode, and singleton policy
+   version exactly when the ordinary prefix is odd. Only disabled odd
+   compatibility records odd-tail policy version 1.
 5. Generation-zero initialization evidence, RNG initialization evidence,
    evaluation records, valid count, and best-candidate evidence must remain
    empty before evaluation.
@@ -691,7 +742,7 @@ The child-evaluation lifecycle is:
     production provenance. An all-invalid child completes with no best.
 12. Output evidence records population and evaluation sizes, valid count,
     stable best, source generation, production-policy versions, fitness-
-    comparison policy version 1, child-evaluation policy version 2, and
+    comparison policy version 1, child-evaluation policy version 4, and
     completion.
 13. Repeated evaluation and every malformed, incomplete, mismatched, resource,
     allocation, or detectable callback-output failure preserve caller-owned
@@ -736,9 +787,9 @@ The generation-advancement lifecycle is:
 9. The incoming population must be a produced, evaluated child whose source
    generation equals `current_generation`.
 10. Output evidence is prepared with population size, valid count, stable-best
-    state, previous generation, completed generation, production-policy
-    versions, fitness-comparison policy version 1, and generation-advancement
-    policy version 2.
+    state, previous generation, completed generation, elite count and source-
+    valid count, production-policy versions, fitness-comparison policy version
+    1, and generation-advancement policy version 4.
 11. After all fallible checks, EVO moves the child structure into the parent
     handle, resets the child handle to the complete zero state, releases the
     former parent allocations, and commits evidence.
@@ -753,8 +804,9 @@ handle.
 An all-invalid evaluated child is a structurally completed population and is
 therefore promotable. A later termination boundary decides whether the run
 stops. Generation-limit enforcement, convergence and stagnation, old-parent
-recycling, generalized elitism, checkpoint persistence, and public `evo_run`
-iteration are not part of this operation.
+recycling, checkpoint persistence, and public `evo_run` iteration are not part
+of this operation. Generalized elite provenance is preserved by the move but
+does not alter ownership semantics.
 
 Atomicity here is a library-state contract: every rejection precedes mutation,
 and the remaining commit suffix has no expected failure. It does not make the
@@ -773,13 +825,17 @@ The bounded-run lifecycle is:
 2. For a positive limit, EVO validates the child slab budget and every
    transition policy before allocation or callback dispatch. Populations above
    one require valid tournament size and finite crossover and mutation rates in
-   `[0, 1]`. A one-member population uses odd-tail cloning directly and does not
-   require unused pair policy.
+   `[0, 1]`. A one-member compatibility population or explicit one-elite
+   population uses elite cloning directly and does not require unused operator
+   policy. A one-member explicit-zero population uses one singleton, requires
+   valid tournament and mutation policy, and does not validate unused
+   crossover policy.
 3. EVO constructs, initializes, and evaluates generation zero and transfers its
    stable valid winner into one independent result allocation.
 4. For each source generation in ascending order, EVO creates one child slab,
-   produces all complete pairs, completes an odd tail when required, evaluates
-   the complete child, and resolves strict global-best improvement.
+   resolves elite counts, produces complete pairs, an optional ordinary
+   singleton, and the stable elite suffix, evaluates the complete child, and
+   resolves strict global-best improvement.
 5. EVO atomically promotes the evaluated child before changing the result.
    Promotion increments the completed-transition count and releases the former
    parent.
@@ -811,9 +867,10 @@ index. Version 0.22.0 advances it to version 4 and records diversity policy and
 metric provenance without changing operator RNG or selection. Version 0.23.0
 advances it to version 5 and records stopping policy version 1, the
 significant-best reference, stagnant generation count, and distinct final
-classification flags. The bounded run does not define generalized elitism,
-adaptive mutation, old-slab recycling, checkpointing, parallelism, or secure
-erasure.
+classification flags. Version 0.24.0 advances it to version 6 and records final
+elite count, source valid count, elite and singleton policy versions, and
+explicit-versus-compatibility mode. The bounded run does not define adaptive
+mutation, old-slab recycling, checkpointing, parallelism, or secure erasure.
 
 ### Result lifecycle
 
@@ -871,7 +928,7 @@ reviewed erasure boundary.
 | `EVO_ERROR_INVALID_ARGUMENT` | A required pointer is null, distance callback/version coupling is inconsistent, or stopping controls are malformed or noncanonical. |
 | `EVO_ERROR_OUT_OF_MEMORY` | The system allocator returned null. |
 | `EVO_ERROR_RESULT_ACTIVE` | The result already owns a genome and is preserved unchanged. |
-| `EVO_ERROR_RESOURCE_LIMIT` | A required size is zero, arithmetic overflows, or a caller budget is exceeded. |
+| `EVO_ERROR_RESOURCE_LIMIT` | A required size is zero, arithmetic overflows, a caller budget is exceeded, or positive-limit elite count configuration is outside its canonical population bound. |
 | `EVO_ERROR_STATE` | A private lifecycle operation received inactive, initialized, or inconsistent state. |
 | `EVO_ERROR_EVALUATION` | A fitness callback returned a non-finite component or negative penalty, a domain-distance callback returned outside finite `[0, 1]`, or a fixed-order statistics component sum became non-finite. |
 | `EVO_ERROR_NO_VALID_CANDIDATE` | Generation-zero evaluation completed, but every candidate was invalid, so no public winner exists. |
@@ -1168,7 +1225,15 @@ is not assumed, so consumers must rebuild. Public function signatures,
 installed symbols, statistics schema, allocation classes, and resource budgets
 do not change.
 
-## Current 0.23.0 Conformance Boundary
+Version 0.24.0 adds `EVO_ELITE_POLICY_VERSION` and appends
+`elite_count_enabled` plus `elite_count` after the complete pre-0.24.0
+`evo_config_t` prefix. Existing member offsets are preserved, but configuration
+size and array stride may change, so consumers must rebuild. Public function
+signatures, installed symbols, statistics schema, allocation classes, and
+resource budgets do not change. Disabled zero payload preserves pre-0.24.0
+positive-limit behavior; explicit mode changes child composition as requested.
+
+## Current 0.24.0 Conformance Boundary
 
 The current implementation exposes generation-zero compatibility plus bounded
 multi-generation execution:
@@ -1216,14 +1281,18 @@ multi-generation execution:
   enforces a separate checked budget, and creates independently owned empty
   output storage;
 - private complete-pair planning derives a pair-local selection stream, runs
-  two tournaments with replacement, maps consecutive child slots, and
-  preserves output and parent evidence on rejection;
+  two tournaments with replacement, maps consecutive ordinary-prefix slots,
+  and preserves output and parent evidence on rejection;
 - private complete-pair production preflights the combined boundary, derives
   pair- and child-indexed operator streams, dispatches crossover and both
   mutations, records a contiguous child prefix, and preserves parent evidence;
-- private odd-tail completion requires the complete pair prefix, clones the
-  stable best valid parent without RNG or callbacks, records policy version 1,
-  and preserves every object on rejection;
+- private elite policy resolves explicit or compatibility requests, caps them
+  at distinct hard-valid parents, lays stable best-to-worst clones in a suffix,
+  consumes no RNG or callbacks for elites, and preserves every object on
+  detectable rejection;
+- a private ordinary-singleton path owns an odd prefix slot through the next
+  selection stream and the standard child-indexed mutation stream without
+  crossover or scratch allocation;
 - private produced-child evaluation accepts complete even and odd production
   provenance, commits deterministic valid-only policy-valid fitness evidence,
   and promotes the child to shared completed-population authority;
@@ -1265,8 +1334,8 @@ multi-generation execution:
 - observer delivery follows winner update and final stop classification, precedes
   the next generation, allocates no history, and emits nothing for provisional
   or failed generations; and
-- generalized elitism, adaptive mutation, checkpointing, buffer recycling,
-  asynchronous or concurrent callbacks, and parallelism are not implemented.
+- adaptive mutation, checkpointing, buffer recycling, asynchronous or
+  concurrent callbacks, and parallelism are not implemented.
 
 Consumers may treat `EVO_SUCCESS` as evidence of a valid global winner and
 exactly `generations_completed` promoted child generations. They must inspect
@@ -1275,7 +1344,7 @@ count. They may inspect `generation_statistics` for the final committed
 population, which is distinct from the global winner on all-invalid
 termination. When configured, they may copy each callback-lifetime observation
 into their own bounded storage. They may also configure deterministic stopping
-over committed snapshots. Version 0.23.0 defines no statistics history,
+over committed snapshots. Version 0.24.0 defines no statistics history,
 asynchronous cancellation, or retained callback delivery.
 
 ## Verification
@@ -1339,6 +1408,12 @@ The child-tail test proves complete-prefix enforcement, stable-best and tie
 behavior, one-member completion, byte-and-evidence replay, absence of extra RNG
 or callbacks, parent and prefix preservation, all-invalid and alias rejection,
 and terminal policy metadata.
+
+The elite test proves explicit counts `0`, `1`, `N - 1`, and `N` across even
+and odd populations; stable tie order; invalid-heavy effective-count capping;
+best-to-worst suffix layout; singleton selection and mutation stream identity;
+compatibility bytes; replay; absence of hidden elite callbacks; parent
+immutability; and atomic object and owned-range alias rejection.
 
 The child-evaluation test proves even, odd, and one-member production
 provenance; deterministic validation-before-evaluation ordering; invalid-
@@ -1410,8 +1485,8 @@ also proves generation-zero, promoted,
 replay, odd-tail, one-member, tied, and terminal all-invalid statistics, plus
 private rejection of mismatched generation-zero statistics. The
 wrapped-allocation test additionally proves the five-allocation bounded path,
-exact successful cleanup, and empty public failure after child-slab or child-
-evaluation allocation failure.
+exact successful cleanup, explicit-elite transition composition, and empty
+public failure after child-slab or child-evaluation allocation failure.
 
 ## Related Records
 
@@ -1437,6 +1512,7 @@ evaluation allocation failure.
 - `docs/adr/ADR-0021-versioned-fitness-comparison-policy.md`
 - `docs/adr/ADR-0022-bounded-deterministic-diversity.md`
 - `docs/adr/ADR-0023-deterministic-convergence-and-stagnation.md`
+- `docs/adr/ADR-0024-generalized-deterministic-elite-preservation.md`
 - `docs/architecture.md`
 - `docs/algorithms.md`
 - `docs/benchmarks.md`
@@ -1465,4 +1541,5 @@ evaluation allocation failure.
 - `https://github.com/dlworrell/evo/issues/43`
 - `https://github.com/dlworrell/evo/issues/44`
 - `https://github.com/dlworrell/evo/issues/45`
+- `https://github.com/dlworrell/evo/issues/46`
 - `https://github.com/dlworrell/AEMS/issues/18`

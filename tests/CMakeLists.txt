@@ -66,6 +66,11 @@ target_include_directories(evo_child_tail_test PRIVATE ${PROJECT_SOURCE_DIR}/src
 target_link_libraries(evo_child_tail_test PRIVATE catalyst_evo)
 add_test(NAME evo_child_tail_test COMMAND evo_child_tail_test)
 
+add_executable(evo_elite_test elite_test.c)
+target_include_directories(evo_elite_test PRIVATE ${PROJECT_SOURCE_DIR}/src)
+target_link_libraries(evo_elite_test PRIVATE catalyst_evo)
+add_test(NAME evo_elite_test COMMAND evo_elite_test)
+
 add_executable(evo_child_evaluation_test child_evaluation_test.c)
 target_include_directories(evo_child_evaluation_test PRIVATE ${PROJECT_SOURCE_DIR}/src)
 target_link_libraries(evo_child_evaluation_test PRIVATE catalyst_evo)

@@ -42,15 +42,20 @@ static void assert_population_empty(const evo_population_t *population)
     assert(population->valid_count == 0);
     assert(population->best_index == 0);
     assert(population->produced_count == 0);
+    assert(population->elite_count == 0);
+    assert(population->elite_source_valid_count == 0);
     assert(population->initialization_seed == 0);
     assert(population->source_generation == 0);
     assert(population->rng_algorithm_version == 0);
     assert(population->operator_seed_schedule_version == 0);
     assert(population->odd_child_policy_version == 0);
+    assert(population->elite_policy_version == 0);
+    assert(population->singleton_child_policy_version == 0);
     assert(population->fitness_comparison_policy_version == 0);
     assert(!population->initialized);
     assert(!population->has_best);
     assert(!population->evaluated);
+    assert(!population->elite_count_explicit);
 }
 
 static void deterministic_initializer(void *genome, void *context)
@@ -98,6 +103,9 @@ static void assert_populations_equal(const evo_population_t *left,
     assert(left->valid_count == right->valid_count);
     assert(left->best_index == right->best_index);
     assert(left->produced_count == right->produced_count);
+    assert(left->elite_count == right->elite_count);
+    assert(left->elite_source_valid_count ==
+           right->elite_source_valid_count);
     assert(left->initialization_seed == right->initialization_seed);
     assert(left->source_generation == right->source_generation);
     assert(left->rng_algorithm_version == right->rng_algorithm_version);
@@ -105,11 +113,16 @@ static void assert_populations_equal(const evo_population_t *left,
            right->operator_seed_schedule_version);
     assert(left->odd_child_policy_version ==
            right->odd_child_policy_version);
+    assert(left->elite_policy_version == right->elite_policy_version);
+    assert(left->singleton_child_policy_version ==
+           right->singleton_child_policy_version);
     assert(left->fitness_comparison_policy_version ==
            right->fitness_comparison_policy_version);
     assert(left->initialized == right->initialized);
     assert(left->has_best == right->has_best);
     assert(left->evaluated == right->evaluated);
+    assert(left->elite_count_explicit ==
+           right->elite_count_explicit);
 
     for (size_t index = 0; index < left->storage_bytes; ++index) {
         assert(left->genomes[index] == right->genomes[index]);

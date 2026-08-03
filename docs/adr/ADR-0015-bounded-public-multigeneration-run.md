@@ -67,6 +67,11 @@ ADR-0022 advances bounded-run policy to version 4 in EVO 0.22.0 and records
 diversity policy and metric provenance. Pair measurement consumes no operator
 RNG and does not change strict improvement, selection, or termination.
 
+ADR-0023 advances bounded-run policy to version 5 in EVO 0.23.0. ADR-0024 then
+advances it to version 6 in EVO 0.24.0 and replaces the fixed pair/odd-tail
+composition with an ordinary-offspring prefix, optional singleton, and stable
+elite suffix. Disabled elite configuration preserves the version-1 sequence.
+
 ## Consequences
 
 - Public `EVO_SUCCESS` can now represent zero or more completed transitions;
@@ -80,9 +85,11 @@ RNG and does not change strict improvement, selection, or termination.
   than publishing a partial result.
 - No public layout or installed function signature changes, but successful
   behavior changes when `generation_limit` is positive.
-- Convergence, stagnation, application stop or observer callbacks, a public
-  termination reason, generalized elitism, adaptive mutation, population
-  recycling, checkpointing, parallelism, and secure erasure remain deferred.
+- At the 0.16.0 boundary, convergence, stagnation, application stop or observer
+  callbacks, a public termination reason, generalized elitism, adaptive
+  mutation, population recycling, checkpointing, parallelism, and secure
+  erasure remained deferred. ADR-0017 through ADR-0024 resolve the first six;
+  the remaining items stay separate.
 
 ## Alternatives considered
 

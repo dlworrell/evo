@@ -180,12 +180,19 @@ evo_status_t evo_population_advance_generation(
     candidate.population_size = evaluated_children->population_size;
     candidate.valid_count = child_valid_count;
     candidate.best_index = evaluated_children->best_index;
+    candidate.elite_count = evaluated_children->elite_count;
+    candidate.elite_source_valid_count =
+        evaluated_children->elite_source_valid_count;
     candidate.previous_generation = current_generation;
     candidate.completed_generation = current_generation + UINT64_C(1);
     candidate.operator_seed_schedule_version =
         evaluated_children->operator_seed_schedule_version;
     candidate.odd_child_policy_version =
         evaluated_children->odd_child_policy_version;
+    candidate.elite_policy_version =
+        evaluated_children->elite_policy_version;
+    candidate.singleton_child_policy_version =
+        evaluated_children->singleton_child_policy_version;
     candidate.fitness_comparison_policy_version =
         evaluated_children->fitness_comparison_policy_version;
     candidate.diversity_policy_version =
@@ -195,6 +202,8 @@ evo_status_t evo_population_advance_generation(
     candidate.policy_version =
         EVO_GENERATION_ADVANCEMENT_POLICY_VERSION;
     candidate.has_best = evaluated_children->has_best;
+    candidate.elite_count_explicit =
+        evaluated_children->elite_count_explicit;
     candidate.complete = true;
 
     /*

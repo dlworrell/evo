@@ -35,15 +35,20 @@ static bool initialized_population_ready_for_evaluation(
         population->initialization_seed != config->random_seed ||
         population->rng_algorithm_version != EVO_RNG_ALGORITHM_VERSION ||
         population->produced_count != 0 ||
+        population->elite_count != 0 ||
+        population->elite_source_valid_count != 0 ||
         population->source_generation != 0 ||
         population->operator_seed_schedule_version != 0 ||
         population->odd_child_policy_version != 0 ||
+        population->elite_policy_version != 0 ||
+        population->singleton_child_policy_version != 0 ||
         population->fitness_comparison_policy_version != 0 ||
         population->diversity_policy_version != 0 ||
         population->diversity_metric_version != 0 ||
         population->diversity_pair_count != 0 ||
         population->diversity_work_units != 0 ||
         population->diversity != 0.0 ||
+        population->elite_count_explicit ||
         population->diversity_uses_domain_distance ||
         config->max_genome_bytes < population->genome_size ||
         config->max_population_bytes < population->storage_bytes ||

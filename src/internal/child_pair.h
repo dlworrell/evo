@@ -11,7 +11,8 @@ typedef struct evo_child_pair_evidence {
 } evo_child_pair_evidence_t;
 
 /*
- * Produce the next complete pair in an independently owned child slab.
+ * Produce the next complete pair in the non-elite prefix of an independently
+ * owned child slab.
  *
  * Complete pairs are committed in ascending pair order. The operation plans
  * two parents, derives pair-local crossover and child-local mutation streams,

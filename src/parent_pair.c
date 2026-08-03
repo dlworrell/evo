@@ -1,5 +1,6 @@
 #include "internal/parent_pair.h"
 
+#include "internal/elite.h"
 #include "internal/selection.h"
 
 evo_status_t evo_parent_pair_plan(
@@ -12,6 +13,9 @@ evo_status_t evo_parent_pair_plan(
     evo_parent_pair_t candidate = {0};
     evo_rng_t selection_rng = {0};
     size_t valid_count = 0;
+    size_t requested_elite_count = 0;
+    size_t effective_elite_count = 0;
+    size_t offspring_count = 0;
     size_t pair_count = 0;
     uint64_t stream_index = 0;
     evo_status_t status = EVO_SUCCESS;
@@ -26,7 +30,26 @@ evo_status_t evo_parent_pair_plan(
         return EVO_ERROR_RESOURCE_LIMIT;
     }
 
-    pair_count = config->population_size / 2;
+    if (!evo_population_validate_completed(
+            config, parents, &valid_count)) {
+        return EVO_ERROR_STATE;
+    }
+    if (valid_count == 0) {
+        return EVO_ERROR_NO_VALID_CANDIDATE;
+    }
+
+    status = evo_elite_policy_counts(config,
+                                     valid_count,
+                                     &requested_elite_count,
+                                     &effective_elite_count,
+                                     &offspring_count);
+    if (status != EVO_SUCCESS) {
+        return status;
+    }
+    (void)requested_elite_count;
+    (void)effective_elite_count;
+
+    pair_count = offspring_count / 2;
     if (pair_index >= pair_count) {
         return EVO_ERROR_RESOURCE_LIMIT;
     }
@@ -34,14 +57,6 @@ evo_status_t evo_parent_pair_plan(
     stream_index = (uint64_t)pair_index;
     if ((size_t)stream_index != pair_index) {
         return EVO_ERROR_RESOURCE_LIMIT;
-    }
-
-    if (!evo_population_validate_completed(
-            config, parents, &valid_count)) {
-        return EVO_ERROR_STATE;
-    }
-    if (valid_count == 0) {
-        return EVO_ERROR_NO_VALID_CANDIDATE;
     }
 
     if (!evo_rng_derive_operator_stream(

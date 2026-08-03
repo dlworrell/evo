@@ -2,7 +2,7 @@
 
 This document distinguishes algorithms implemented by the reusable
 `catalyst_evo` core from the structured program transformations and evaluation
-algorithm required by the EVO 1.0 source optimizer. Version 0.23.0 implements
+algorithm required by the EVO 1.0 source optimizer. Version 0.24.0 implements
 only the core boundary described below.
 
 ## EVO Core Initial Release
@@ -258,7 +258,9 @@ streams, or advance a generation.
 
 Version 0.11.0 adds a read-only private planner over completed parent evidence.
 
-- Exactly `population_size / 2` complete pairs are addressable.
+- Through 0.23.0, exactly `population_size / 2` complete pairs are
+  addressable. Version 0.24.0 resolves the effective elite count first and
+  addresses `floor(ordinary_offspring_count / 2)` pairs.
 - Pair `i` owns child indexes `2i` and `2i + 1`.
 - The selection stream is derived from the master seed, source generation,
   pair ordinal, and selection domain.
@@ -267,8 +269,8 @@ Version 0.11.0 adds a read-only private planner over completed parent evidence.
 - The plan records pair ordinal, source generation, and seed-schedule version.
 - Null, policy, lifecycle, all-invalid, and pair-bound failures preserve parent
   evidence and the output object.
-- An odd trailing child index is outside complete-pair planning and remains
-  reserved for later singleton or elitism policy.
+- A trailing ordinary child index is outside complete-pair planning and belongs
+  to singleton policy version 1.
 
 The planner does not accept child pointers, write genome bytes, invoke
 crossover or mutation, mark child storage complete, or advance a generation.
@@ -299,11 +301,11 @@ Consumer callbacks return no status. After complete preflight, the valid
 dispatch suffix has no expected library rejection, but callback side effects
 and callback contract violations cannot be rolled back.
 
-For an odd population, complete-pair production stops before the final child.
-The child remains unevaluated and is not a completed population. Odd-slot
-policy, evaluation, swapping, and generation advancement remain separate.
+Complete-pair production stops at the largest even prefix below the resolved
+ordinary-offspring count. The child remains unevaluated and incomplete until
+an optional singleton and the elite suffix are committed.
 
-## Deterministic Odd-Tail Elite Cloning
+## Deterministic Elite Preservation
 
 Version 0.13.0 completes the single trailing slot of an odd child population
 after every complete pair has been committed.
@@ -323,10 +325,26 @@ after every complete pair has been committed.
 - Repeated, even-population, all-invalid, aliased, incomplete-prefix, and
   mismatched-generation requests preserve all inputs and output evidence.
 
-Full child production does not imply initialization or evaluation. The child
-still has no validity, fitness, or best-candidate evidence and cannot be used
-for selection until evaluation succeeds.
-General elite counts, swapping, and generation advancement remain separate.
+Version 0.24.0 retains that rule as disabled-config compatibility and defines
+elite policy version 1:
+
+- enabled mode accepts a requested count from zero through population size;
+- disabled mode requires zero and requests one elite for odd populations or
+  none for even populations;
+- effective count is the smaller of the request and source valid count;
+- ordinary offspring occupy the prefix and distinct valid elites occupy the
+  suffix in stable best-to-worst order;
+- `floor(ordinary_offspring_count / 2)` complete pairs retain their existing
+  streams and child slots;
+- an odd ordinary prefix uses the next selection-stream index to choose one
+  valid parent, clones it, and runs its child-indexed mutation stream;
+- the singleton invokes no crossover and allocates no scratch sibling; and
+- elite ranking and copying consume no RNG and invoke no callback.
+
+All ranking, alias, bounds, and lifecycle checks plus a complete dry ranking
+pass precede elite copies. Evidence records requested, effective, source-valid,
+ordinary-offspring, singleton, and compatibility policy facts. Full child
+production still does not imply initialization or evaluation.
 
 ## Deterministic Produced-Child Evaluation
 
@@ -335,8 +353,9 @@ RNG state or changing any genome byte.
 
 - The child must contain exactly `population_size` produced genomes with
   source-generation and operator-schedule provenance from production.
-- Odd populations require odd-tail policy version 1; even populations require
-  no odd-tail policy marker.
+- Production must carry elite policy version 1, the resolved elite and source-
+  valid counts, explicit-versus-compatibility mode, and the expected singleton
+  marker. Only disabled odd compatibility carries odd-tail policy version 1.
 - Evaluation records are allocated provisionally under
   `max_evaluation_bytes`.
 - Validation visits every candidate in ascending index order.
@@ -348,7 +367,7 @@ RNG state or changing any genome byte.
 - An all-invalid child completes without a best candidate.
 - Success preserves production metadata and commits evaluation records,
   valid count, stable best, comparison and diversity policy, and child-
-  evaluation policy version 3 evidence exactly once.
+  evaluation policy version 4 evidence exactly once.
 - Preflight, resource, allocation, and malformed-fitness failures preserve
   child-owned bytes and metadata plus caller-owned evidence. Consumer callback
   side effects after dispatch begins cannot be rolled back.
@@ -394,6 +413,10 @@ evidence carries both fitness-comparison policy version 1 and the child's
 diversity policy and metric versions. Ownership transfer and generation
 numbering remain unchanged.
 
+Version 0.24.0 advances generation-advancement policy to version 4 and copies
+elite count, source-valid count, elite policy, singleton policy, and explicit-
+mode evidence without changing ownership transfer.
+
 ## Bounded Multi-Generation Execution
 
 Version 0.16.0 adds bounded-run policy version 1 and composes the complete
@@ -407,9 +430,9 @@ generation pipeline through public `evo_run`:
 3. Construct, initialize, validate, and evaluate generation zero. Transfer its
    stable valid winner into one independently owned result allocation.
 4. For source generations `g = 0..generation_limit - 1`, allocate one child
-   slab and produce complete pairs in ascending pair order.
-5. If the population size is odd, complete the trailing child using odd-tail
-   policy version 1. A one-member population takes this path directly.
+   slab and resolve requested, effective, and ordinary-offspring counts.
+5. Produce complete pairs in ascending pair order, an ordinary singleton when
+   the prefix is odd, and the stable elite suffix.
 6. Evaluate the complete child and resolve whether its stable best has a
    strictly greater total fitness than the retained global winner.
 7. Atomically promote the evaluated child to completed generation `g + 1`.
@@ -426,7 +449,7 @@ affected by allocation addresses or later equal candidates. Failure at any
 transition destroys all internal owners and the result allocation; no partial
 winner or completion count escapes the public call.
 
-Through version 0.22.0, this algorithm has a bounded sequential working set of
+Through version 0.24.0, this algorithm has a bounded sequential working set of
 one current population, one child population, one result genome, and the
 current population's evaluation records plus provisional child evaluation
 records during child evaluation. It does not recycle slabs or run callbacks
@@ -591,6 +614,10 @@ nothing, consumes no RNG, invokes no new callback, and contains no time,
 address, process, or entropy input. Bounded-run policy version 5 records
 stopping policy version 1, the significant-best reference, stagnant count, and
 final classification flags in constant-space private evidence.
+
+Version 0.24.0 advances bounded-run policy to version 6 and records final
+elite and singleton provenance. Elite copies do not perturb operator streams;
+disabled mode remains byte- and callback-replay compatible with 0.23.0.
 
 ## Structured C Source Evolution
 

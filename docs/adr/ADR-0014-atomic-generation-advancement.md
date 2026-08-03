@@ -61,6 +61,11 @@ ADR-0022 advances generation-advancement policy to version 3 in EVO 0.22.0 so
 the output also records the promoted population's diversity policy and metric
 versions. The ownership move and lineage rules remain unchanged.
 
+ADR-0024 advances generation-advancement policy to version 4 in EVO 0.24.0 so
+the output also preserves elite count, source valid count, elite policy,
+singleton policy, and explicit-versus-compatibility provenance. The ownership
+move and lineage rules remain unchanged.
+
 ## Consequences
 
 - Rejection preserves both population structures, their allocations and
@@ -77,9 +82,9 @@ versions. The ownership move and lineage rules remain unchanged.
 - Atomicity describes the rejection-before-mutation/no-fail-commit contract;
   it does not provide synchronization for concurrent callers.
 - Public `evo_run` behavior and installed public symbols remain unchanged.
-- Generation-limit, convergence, stagnation, generalized elitism, checkpoint
-  persistence, buffer recycling, and public multi-generation execution remain
-  separate milestones.
+- Generation-limit, convergence, stagnation, checkpoint persistence, buffer
+  recycling, and public multi-generation execution remain separate from the
+  ownership move. ADR-0024 composes generalized elitism without changing it.
 
 ## Alternatives considered
 

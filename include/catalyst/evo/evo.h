@@ -10,7 +10,7 @@ extern "C" {
 #endif
 
 #define EVO_VERSION_MAJOR 0
-#define EVO_VERSION_MINOR 23
+#define EVO_VERSION_MINOR 24
 #define EVO_VERSION_PATCH 0
 
 typedef enum evo_status {
@@ -37,6 +37,7 @@ typedef enum evo_termination_reason {
 #define EVO_DIVERSITY_POLICY_VERSION UINT32_C(1)
 #define EVO_BYTE_DIVERSITY_METRIC_VERSION UINT32_C(1)
 #define EVO_STOPPING_POLICY_VERSION UINT32_C(1)
+#define EVO_ELITE_POLICY_VERSION UINT32_C(1)
 
 /*
  * Fitness components are caller-owned evidence. constraint_penalty is a
@@ -220,6 +221,17 @@ typedef struct evo_config {
      */
     bool diversity_floor_enabled;
     double diversity_floor;
+    /*
+     * When enabled, preserve up to elite_count distinct valid parents in
+     * stable best-to-worst order at the child-population suffix. The count may
+     * be zero and must not exceed population_size. If fewer valid parents are
+     * available, every distinct valid parent is preserved and the remaining
+     * slots are ordinary offspring. When disabled, elite_count must be zero
+     * and EVO preserves the pre-0.24.0 compatibility behavior: one best-parent
+     * tail clone for odd populations and no elite for even populations.
+     */
+    bool elite_count_enabled;
+    size_t elite_count;
 } evo_config_t;
 
 typedef struct evo_result {
@@ -248,6 +260,12 @@ typedef struct evo_result {
  * constraint_penalty is a finite non-negative magnitude already accounted for
  * by the caller in total; EVO never applies it again. Exact ties preserve the
  * earlier generation, then the lower population index.
+ *
+ * For each positive-limit transition, ordinary offspring occupy the child
+ * prefix and stable elites occupy the suffix. Complete pairs use the existing
+ * pair-local streams. If that prefix is odd, its last child is selected with
+ * the next selection stream, cloned, and mutated with its child-index stream.
+ * Elite copies consume no RNG state and invoke no consumer callback.
  *
  * An active result is rejected without modification. Other failures,
  * including completion with no valid candidate, leave a non-null, inactive

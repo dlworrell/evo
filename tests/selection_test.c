@@ -148,6 +148,9 @@ static void assert_fixture_core_unchanged(
     assert(fixture->population.valid_count == before->valid_count);
     assert(fixture->population.best_index == before->best_index);
     assert(fixture->population.produced_count == before->produced_count);
+    assert(fixture->population.elite_count == before->elite_count);
+    assert(fixture->population.elite_source_valid_count ==
+           before->elite_source_valid_count);
     assert(fixture->population.initialization_seed ==
            before->initialization_seed);
     assert(fixture->population.source_generation ==
@@ -158,11 +161,17 @@ static void assert_fixture_core_unchanged(
            before->operator_seed_schedule_version);
     assert(fixture->population.odd_child_policy_version ==
            before->odd_child_policy_version);
+    assert(fixture->population.elite_policy_version ==
+           before->elite_policy_version);
+    assert(fixture->population.singleton_child_policy_version ==
+           before->singleton_child_policy_version);
     assert(fixture->population.fitness_comparison_policy_version ==
            before->fitness_comparison_policy_version);
     assert(fixture->population.initialized == before->initialized);
     assert(fixture->population.has_best == before->has_best);
     assert(fixture->population.evaluated == before->evaluated);
+    assert(fixture->population.elite_count_explicit ==
+           before->elite_count_explicit);
 }
 
 static void test_invalid_arguments_preserve_state(void)
