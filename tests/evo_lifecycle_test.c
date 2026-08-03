@@ -13,6 +13,16 @@ _Static_assert(offsetof(evo_result_t, generation_statistics) >=
                    offsetof(evo_result_t, termination_reason) +
                        sizeof(evo_termination_reason_t),
                "generation statistics must remain appended to evo_result_t");
+_Static_assert(EVO_GENERATION_RESULT_VIEW_VERSION == UINT32_C(1),
+               "the initial observer result-view schema must remain stable");
+_Static_assert(offsetof(evo_config_t, generation_observer) >=
+                   offsetof(evo_config_t, max_child_population_bytes) +
+                       sizeof(size_t),
+               "the generation observer must remain appended to evo_config_t");
+_Static_assert(offsetof(evo_config_t, generation_observer_context) >=
+                   offsetof(evo_config_t, generation_observer) +
+                       sizeof(evo_generation_observer_fn),
+               "the observer context must follow its callback");
 
 enum {
     TEST_POPULATION_CAPACITY = 8,

@@ -3,6 +3,7 @@
 #include "internal/child_evaluation.h"
 #include "internal/child_pair.h"
 #include "internal/child_tail.h"
+#include "internal/observer.h"
 #include "internal/statistics.h"
 
 #include <math.h>
@@ -376,6 +377,8 @@ evo_status_t evo_bounded_run_advance(
         const evo_candidate_evaluation_t *improved_evaluation = NULL;
         const void *improved_genome = NULL;
         const uint64_t source_generation = (uint64_t)transition;
+        evo_termination_reason_t observation_reason =
+            EVO_TERMINATION_NONE;
         bool has_improvement = false;
 
         status = evo_child_population_create(problem,
@@ -452,6 +455,20 @@ evo_status_t evo_bounded_run_advance(
 
         if (!candidate.final_has_best) {
             candidate.stopped_all_invalid = true;
+        }
+
+        if (candidate.stopped_all_invalid) {
+            observation_reason = EVO_TERMINATION_ALL_INVALID;
+        } else if (candidate.completed_transitions ==
+                   candidate.requested_transitions) {
+            observation_reason = EVO_TERMINATION_GENERATION_LIMIT;
+        }
+        evo_generation_observer_notify(problem,
+                                       config,
+                                       best_result,
+                                       observation_reason);
+
+        if (candidate.stopped_all_invalid) {
             break;
         }
     }

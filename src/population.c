@@ -1,5 +1,6 @@
 #include "catalyst/evo/evo.h"
 #include "internal/bounded_run.h"
+#include "internal/observer.h"
 #include "internal/population_storage.h"
 #include "internal/statistics.h"
 
@@ -110,6 +111,14 @@ evo_status_t evo_run(const evo_problem_t *problem, const evo_config_t *config, v
         return status;
     }
     result->generation_statistics = generation_statistics;
+
+    if (config->generation_limit == 0) {
+        result->termination_reason = EVO_TERMINATION_GENERATION_LIMIT;
+    }
+    evo_generation_observer_notify(problem,
+                                   config,
+                                   result,
+                                   result->termination_reason);
 
     if (config->generation_limit != 0) {
         status = evo_bounded_run_advance(problem,

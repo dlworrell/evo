@@ -22,7 +22,7 @@ patch/evidence artifacts.
 `catalyst_evo` owns deterministic population storage, random streams,
 selection, crossover, mutation dispatch, validation/evaluation ordering,
 generation advancement, stopping, and core result ownership. EVO-001 is its
-normative contract. Version 0.18.0 implements a bounded multi-generation
+normative contract. Version 0.19.0 implements a bounded multi-generation
 subset of this layer.
 
 ### Source analysis and transformation
@@ -63,7 +63,7 @@ project patch automatically.
 
 ## Current Conformance Boundary
 
-Only the evolutionary-search core exists in version 0.18.0. Source ingestion,
+Only the evolutionary-search core exists in version 0.19.0. Source ingestion,
 analysis, transformation, candidate materialization, external-process
 isolation, target-code measurement, product commands, and optimized-patch
 artifacts are planned by issues #58 through #69. Documentation of those
@@ -420,10 +420,24 @@ fitness records. Invalid fitness payloads are never read. No history array,
 statistics allocation, RNG consumption, callback, or ranking decision is
 introduced.
 
+Version 0.19.0 appends optional observer configuration and delivers one
+synchronous event after every committed generation. The observer receives
+stack-backed result and statistics snapshots. Its only genome alias is a
+byte-bounded `const` view of the independently owned global winner; no writable
+population or result ownership crosses the boundary. Each invocation returns
+before the next generation begins.
+
+Generation-zero delivery follows winner transfer. Child delivery follows
+statistics construction, atomic promotion, completion-count update, global-
+winner update, and stop classification. Intermediate events carry
+`EVO_TERMINATION_NONE`; the final event carries the applicable limit or all-
+invalid reason. Failed and provisional generations do not emit events, and a
+later failure does not invalidate observations already delivered for earlier
+committed generations.
+
 Bounded-run policy evidence remains private. Convergence, stagnation,
-application stop and observer callbacks, generalized elitism, adaptive
-mutation, recycling, checkpointing, and parallelism remain separate
-decisions.
+application stopping, generalized elitism, adaptive mutation, recycling,
+checkpointing, and parallelism remain separate decisions.
 
 ## EVO Core Execution Flow
 
@@ -435,14 +449,15 @@ decisions.
 6. Record statistics and evidence.
 7. Stop on convergence, stagnation, generation limit, or an application-defined condition.
 
-Version 0.18.0 publicly implements steps 1 through 4 for exactly
+Version 0.19.0 publicly implements steps 1 through 4 for exactly
 `generation_limit` bounded transitions, with the version-1 odd-tail policy as
 the current elite-preservation rule in step 5. It implements the constant-space
 statistics portion of step 6 for every committed generation, records the global
 winner and completed transition count, and explicitly identifies limit
 completion or later all-invalid extinction. Those remain the only public stop
-conditions. Diversity, convergence, stagnation, application-defined stopping,
-statistics observers, checkpointing, and parallel evaluation remain absent.
+conditions. Committed-generation observation completes the current bounded
+portion of step 6. Diversity, convergence, stagnation, application-defined
+stopping, checkpointing, and parallel evaluation remain absent.
 
 ## Source-Optimizer Execution Flow
 

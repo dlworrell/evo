@@ -11,7 +11,7 @@ codebases. It emits the highest-ranked fully verified source candidate found
 within a recorded bounded search as a reviewable patch and reproducibility
 package.
 
-The completed EVO 0.18.0 code is the deterministic C17 evolutionary-search
+The completed EVO 0.19.0 code is the deterministic C17 evolutionary-search
 core. It is necessary infrastructure, not the completed source optimizer.
 
 ## Phase Topology

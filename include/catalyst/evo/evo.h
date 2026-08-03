@@ -10,7 +10,7 @@ extern "C" {
 #endif
 
 #define EVO_VERSION_MAJOR 0
-#define EVO_VERSION_MINOR 18
+#define EVO_VERSION_MINOR 19
 #define EVO_VERSION_PATCH 0
 
 typedef enum evo_status {
@@ -60,6 +60,34 @@ typedef struct evo_generation_statistics {
     bool has_best;
 } evo_generation_statistics_t;
 
+#define EVO_GENERATION_RESULT_VIEW_VERSION UINT32_C(1)
+
+/*
+ * Read-only, callback-lifetime view of the global result after one generation
+ * commits. best_genome points to exactly best_genome_size bytes and may be
+ * inspected only until the observer returns. The view owns no storage.
+ */
+typedef struct evo_generation_result_view {
+    uint32_t version;
+    const void *best_genome;
+    size_t best_genome_size;
+    evo_fitness_t best_fitness;
+    size_t generations_completed;
+    uint64_t random_seed;
+    evo_termination_reason_t termination_reason;
+} evo_generation_result_view_t;
+
+/*
+ * Synchronous, non-stopping notification for one committed generation. Both
+ * view pointers and best_genome are non-owning and valid only for the duration
+ * of the call. The observer must not retain them or cast away const, and it
+ * cannot cancel or otherwise change EVO control flow.
+ */
+typedef void (*evo_generation_observer_fn)(
+    const evo_generation_result_view_t *result,
+    const evo_generation_statistics_t *statistics,
+    void *context);
+
 typedef struct evo_problem {
     size_t genome_size;
     /*
@@ -102,6 +130,10 @@ typedef struct evo_config {
     size_t max_evaluation_bytes;
     /* Maximum bytes accepted for one private child-population genome slab. */
     size_t max_child_population_bytes;
+    /* Optional committed-generation observer; NULL disables observation. */
+    evo_generation_observer_fn generation_observer;
+    /* Caller-owned observer state, never inspected or retained by EVO. */
+    void *generation_observer_context;
 } evo_config_t;
 
 typedef struct evo_result {
@@ -142,6 +174,12 @@ typedef struct evo_result {
  * destroyed result and is never a successful termination reason. The result
  * also retains one versioned, constant-space statistics record for the most
  * recently committed generation. It does not allocate generation history.
+ *
+ * If generation_observer is non-null, EVO invokes it synchronously after
+ * generation zero commits and after every successfully promoted child. The
+ * callback sees the updated global winner and statistics. Its termination
+ * reason is NONE while execution continues and the final reason when the run
+ * stops. Failed or provisional generations never produce an event.
  */
 evo_status_t evo_run(const evo_problem_t *problem, const evo_config_t *config, void *context, evo_result_t *result);
 
