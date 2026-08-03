@@ -94,7 +94,9 @@
       "src/mutation.c",
       "src/parent_pair.c",
       "src/child_pair.c",
+      "src/child_single.c",
       "src/child_tail.c",
+      "src/elite.c",
       "src/child_evaluation.c",
       "src/generation_advancement.c",
       "src/bounded_run.c",
@@ -190,6 +192,12 @@
         "source": "tests/child_tail_test.c",
         "cmake": "evo_child_tail_test",
         "autotools": "tests/evo_child_tail_test"
+      },
+      {
+        "id": "elite",
+        "source": "tests/elite_test.c",
+        "cmake": "evo_elite_test",
+        "autotools": "tests/evo_elite_test"
       },
       {
         "id": "child-evaluation",

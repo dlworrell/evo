@@ -2,6 +2,7 @@
 #include "internal/bounded_run.h"
 #include "internal/child_evaluation.h"
 #include "internal/child_pair.h"
+#include "internal/elite.h"
 #include "internal/population_storage.h"
 #include "internal/statistics.h"
 
@@ -28,6 +29,7 @@ typedef struct run_context {
     size_t genome_size;
     size_t initialization_calls;
     size_t mutation_calls;
+    size_t mutations_per_generation;
     size_t validation_calls;
     size_t evaluation_calls;
     size_t event_count;
@@ -95,7 +97,9 @@ static void mutate_genome(void *genome,
     run_context_t *context = opaque;
     unsigned char *bytes = genome;
     const size_t mutations_per_generation =
-        context->population_size - context->population_size % 2;
+        context->mutations_per_generation != 0
+            ? context->mutations_per_generation
+            : context->population_size - context->population_size % 2;
     size_t generation_index = 0;
     unsigned char value = 0;
 
@@ -273,6 +277,7 @@ static void test_zero_limit_preserves_generation_zero(void)
     config.crossover_rate = NAN;
     config.mutation_rate = NAN;
     config.max_child_population_bytes = 0;
+    config.elite_count = SIZE_MAX;
 
     assert(evo_run(&problem, &config, &context, &result) == EVO_SUCCESS);
     assert_result(&result,
@@ -394,6 +399,9 @@ static void test_odd_and_single_member_populations(void)
     evo_config_t single_config = make_config(1, 4, 2, 106);
     run_context_t single_context = make_context(1, 4);
     evo_result_t single_result = {0};
+    evo_config_t explicit_zero_config = make_config(1, 4, 1, 116);
+    run_context_t explicit_zero_context = make_context(1, 4);
+    evo_result_t explicit_zero_result = {0};
 
     odd_context.mutation_values[0] = 20;
     assert(evo_run(&odd_problem,
@@ -428,8 +436,35 @@ static void test_odd_and_single_member_populations(void)
     assert(single_context.validation_calls == 3);
     assert(single_context.evaluation_calls == 3);
 
+    explicit_zero_context.initial_values[0] = 7;
+    explicit_zero_context.mutation_values[0] = 9;
+    explicit_zero_context.mutations_per_generation = 1;
+    explicit_zero_config.crossover_rate = NAN;
+    explicit_zero_config.elite_count_enabled = true;
+    explicit_zero_config.elite_count = 0;
+    assert(evo_run(&single_problem,
+                   &explicit_zero_config,
+                   &explicit_zero_context,
+                   &explicit_zero_result) == EVO_SUCCESS);
+    assert_result(&explicit_zero_result,
+                  9,
+                  9.0,
+                  1,
+                  EVO_TERMINATION_GENERATION_LIMIT,
+                  116);
+    assert_generation_statistics(&explicit_zero_result,
+                                 1,
+                                 1,
+                                 0,
+                                 9.0,
+                                 9.0);
+    assert(explicit_zero_context.mutation_calls == 1);
+    assert(explicit_zero_context.validation_calls == 2);
+    assert(explicit_zero_context.evaluation_calls == 2);
+
     evo_result_destroy(&odd_result);
     evo_result_destroy(&single_result);
+    evo_result_destroy(&explicit_zero_result);
 }
 
 static void test_later_all_invalid_stops_with_earlier_best(void)
@@ -503,6 +538,21 @@ static void test_transition_preflight_and_active_result(void)
     assert(context.initialization_calls == 0);
 
     config = make_config(4, 4, 1, 109);
+    config.elite_count = 1;
+    assert(evo_run(&problem, &config, &context, &result) ==
+           EVO_ERROR_RESOURCE_LIMIT);
+    assert_result_empty(&result);
+    assert(context.initialization_calls == 0);
+
+    config = make_config(4, 4, 1, 109);
+    config.elite_count_enabled = true;
+    config.elite_count = 5;
+    assert(evo_run(&problem, &config, &context, &result) ==
+           EVO_ERROR_RESOURCE_LIMIT);
+    assert_result_empty(&result);
+    assert(context.initialization_calls == 0);
+
+    config = make_config(4, 4, 1, 109);
     assert(evo_run(&problem, &config, &context, &active) ==
            EVO_ERROR_RESULT_ACTIVE);
     assert(active.best_genome == active_storage);
@@ -555,6 +605,9 @@ static void test_private_bounded_run_evidence(void)
 
     context.mutation_values[0] = 10;
     context.mutation_values[1] = 20;
+    context.mutations_per_generation = 1;
+    config.elite_count_enabled = true;
+    config.elite_count = 1;
     assert(evo_population_create(&problem, &config, &population) ==
            EVO_SUCCESS);
     assert(evo_population_initialize(&problem,
@@ -613,6 +666,8 @@ static void test_private_bounded_run_evidence(void)
     assert(evidence.best_generation == 2);
     assert(evidence.best_population_index == 0);
     assert(evidence.final_valid_count == 2);
+    assert(evidence.final_elite_count == 1);
+    assert(evidence.final_elite_source_valid_count == 2);
     assert(evidence.final_has_best);
     assert(!evidence.stopped_all_invalid);
     assert(!evidence.stopped_application_requested);
@@ -620,6 +675,11 @@ static void test_private_bounded_run_evidence(void)
            EVO_TERMINATION_GENERATION_LIMIT);
     assert(evidence.operator_seed_schedule_version ==
            EVO_OPERATOR_SEED_SCHEDULE_VERSION);
+    assert(evidence.odd_child_policy_version == 0);
+    assert(evidence.elite_policy_version == EVO_ELITE_POLICY_VERSION);
+    assert(evidence.singleton_child_policy_version ==
+           EVO_SINGLETON_CHILD_POLICY_VERSION);
+    assert(evidence.elite_count_explicit);
     assert(evidence.fitness_comparison_policy_version ==
            EVO_FITNESS_COMPARISON_POLICY_VERSION);
     assert(evidence.child_evaluation_policy_version ==
@@ -644,7 +704,7 @@ static void test_private_bounded_run_evidence(void)
                   2,
                   EVO_TERMINATION_NONE,
                   110);
-    assert_generation_statistics(&best, 2, 2, 0, 20.0, 40.0);
+    assert_generation_statistics(&best, 2, 2, 0, 20.0, 30.0);
 
     best = (evo_result_t){0};
     evo_population_destroy(&population);

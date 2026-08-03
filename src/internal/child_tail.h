@@ -18,7 +18,8 @@ typedef struct evo_child_tail_evidence {
 /*
  * Complete the one trailing slot of an odd child population.
  *
- * Policy version 1 clones the completed parent's stable best valid genome.
+ * This compatibility wrapper selects the disabled elite-count mode, whose
+ * policy version 1 clones the completed parent's stable best valid genome.
  * Every fallible condition and bounded view is resolved before the byte copy.
  * No RNG state is consumed and no consumer callback is invoked. Rejection
  * preserves the parent, child, and output evidence.

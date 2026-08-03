@@ -1,6 +1,7 @@
 #include "internal/child_pair.h"
 
 #include "internal/crossover.h"
+#include "internal/elite.h"
 #include "internal/mutation.h"
 
 #include <math.h>
@@ -46,6 +47,9 @@ static bool child_progress_is_valid(
 {
     size_t expected_storage_bytes = 0;
     size_t expected_produced_count = 0;
+    size_t requested_elite_count = 0;
+    size_t effective_elite_count = 0;
+    size_t offspring_count = 0;
     size_t complete_pair_count = 0;
 
     if (parents == children || children->genomes == NULL ||
@@ -57,9 +61,13 @@ static bool child_progress_is_valid(
         children->genome_size != parents->genome_size ||
         children->evaluation_bytes != 0 ||
         children->valid_count != 0 || children->best_index != 0 ||
+        children->elite_count != 0 ||
+        children->elite_source_valid_count != 0 ||
         children->initialization_seed != 0 ||
         children->rng_algorithm_version != 0 ||
         children->odd_child_policy_version != 0 ||
+        children->elite_policy_version != 0 ||
+        children->singleton_child_policy_version != 0 ||
         children->fitness_comparison_policy_version != 0 ||
         children->diversity_policy_version != 0 ||
         children->diversity_metric_version != 0 ||
@@ -67,6 +75,7 @@ static bool child_progress_is_valid(
         children->diversity_work_units != 0 ||
         children->diversity != 0.0 ||
         children->diversity_uses_domain_distance ||
+        children->elite_count_explicit ||
         children->initialized || children->has_best ||
         children->evaluated ||
         !checked_size_multiply(children->population_size,
@@ -77,7 +86,17 @@ static bool child_progress_is_valid(
         return false;
     }
 
-    complete_pair_count = children->population_size / 2;
+    if (evo_elite_policy_counts(config,
+                                parents->valid_count,
+                                &requested_elite_count,
+                                &effective_elite_count,
+                                &offspring_count) != EVO_SUCCESS) {
+        return false;
+    }
+    (void)requested_elite_count;
+    (void)effective_elite_count;
+
+    complete_pair_count = offspring_count / 2;
     if (pair_index >= complete_pair_count) {
         return false;
     }
@@ -130,6 +149,7 @@ evo_status_t evo_child_pair_produce(
     uint64_t pair_stream_index = 0;
     uint64_t child_a_stream_index = 0;
     uint64_t child_b_stream_index = 0;
+    size_t valid_count = 0;
     evo_status_t status = EVO_SUCCESS;
 
     if (problem == NULL || config == NULL || parents == NULL ||
@@ -139,6 +159,15 @@ evo_status_t evo_child_pair_produce(
 
     if (!operator_policy_is_valid(problem, config)) {
         return EVO_ERROR_RESOURCE_LIMIT;
+    }
+
+    if (!evo_population_validate_completed(config,
+                                           parents,
+                                           &valid_count)) {
+        return EVO_ERROR_STATE;
+    }
+    if (valid_count == 0) {
+        return EVO_ERROR_NO_VALID_CANDIDATE;
     }
 
     if (!child_progress_is_valid(problem,

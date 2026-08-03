@@ -1,6 +1,7 @@
 #include "catalyst/evo/evo.h"
 #include "internal/child_evaluation.h"
 #include "internal/child_pair.h"
+#include "internal/elite.h"
 #include "internal/generation_advancement.h"
 #include "internal/population_storage.h"
 
@@ -131,12 +132,17 @@ static void assert_population_empty(const evo_population_t *population)
     assert(population->valid_count == 0);
     assert(population->best_index == 0);
     assert(population->produced_count == 0);
+    assert(population->elite_count == 0);
+    assert(population->elite_source_valid_count == 0);
     assert(population->initialization_seed == 0);
     assert(population->source_generation == 0);
     assert(population->rng_algorithm_version == 0);
     assert(population->operator_seed_schedule_version == 0);
     assert(population->odd_child_policy_version == 0);
+    assert(population->elite_policy_version == 0);
+    assert(population->singleton_child_policy_version == 0);
     assert(population->fitness_comparison_policy_version == 0);
+    assert(!population->elite_count_explicit);
     assert(!population->initialized);
     assert(!population->has_best);
     assert(!population->evaluated);
@@ -150,10 +156,15 @@ static void assert_population_evaluation_empty(
     assert(population->valid_count == 0);
     assert(population->best_index == 0);
     assert(population->produced_count == 0);
+    assert(population->elite_count == 0);
+    assert(population->elite_source_valid_count == 0);
     assert(population->source_generation == 0);
     assert(population->operator_seed_schedule_version == 0);
     assert(population->odd_child_policy_version == 0);
+    assert(population->elite_policy_version == 0);
+    assert(population->singleton_child_policy_version == 0);
     assert(population->fitness_comparison_policy_version == 0);
+    assert(!population->elite_count_explicit);
     assert(!population->has_best);
     assert(!population->evaluated);
 }
@@ -168,13 +179,19 @@ static void assert_child_evaluation_empty(
     assert(population->valid_count == 0);
     assert(population->best_index == 0);
     assert(population->produced_count == population->population_size);
+    assert(population->elite_count == 0);
+    assert(population->elite_source_valid_count ==
+           population->population_size);
     assert(population->initialization_seed == 0);
     assert(population->source_generation == source_generation);
     assert(population->rng_algorithm_version == 0);
     assert(population->operator_seed_schedule_version ==
            EVO_OPERATOR_SEED_SCHEDULE_VERSION);
     assert(population->odd_child_policy_version == 0);
+    assert(population->elite_policy_version == EVO_ELITE_POLICY_VERSION);
+    assert(population->singleton_child_policy_version == 0);
     assert(population->fitness_comparison_policy_version == 0);
+    assert(!population->elite_count_explicit);
     assert(!population->initialized);
     assert(!population->has_best);
     assert(!population->evaluated);
@@ -225,6 +242,7 @@ int main(void)
     evo_population_t population = {0};
     evo_population_t children = {0};
     evo_child_pair_evidence_t pair = {0};
+    evo_elite_evidence_t elite = {0};
     evo_child_evaluation_evidence_t child_evaluation = {0};
     evo_generation_advancement_evidence_t advancement = {0};
     evo_result_t result = {0};
@@ -258,6 +276,8 @@ int main(void)
     run_config.mutation_rate = 0.0;
     run_config.generation_stop = request_immediate_stop;
     run_config.generation_stop_context = &stop_calls;
+    run_config.elite_count_enabled = true;
+    run_config.elite_count = 1;
 
     reset_allocation_injection(0);
     {
@@ -286,6 +306,8 @@ int main(void)
     run_config.mutation_rate = 0.0;
     run_config.generation_stop = continue_after_commit;
     run_config.generation_stop_context = &continuation_stop_calls;
+    run_config.elite_count_enabled = true;
+    run_config.elite_count = 1;
 
     reset_allocation_injection(0);
     {
@@ -418,6 +440,12 @@ int main(void)
                                       &children,
                                       &pair) == EVO_SUCCESS);
     }
+    assert(evo_elite_population_complete(&problem,
+                                         &config,
+                                         &population,
+                                         0,
+                                         &children,
+                                         &elite) == EVO_SUCCESS);
     assert_child_evaluation_empty(&children, 0);
 
     reset_allocation_injection(1);
@@ -459,6 +487,11 @@ int main(void)
     fail_allocation_call = 0;
     assert_population_empty(&children);
     assert(advancement.completed_generation == 1);
+    assert(advancement.elite_count == 0);
+    assert(advancement.elite_source_valid_count == 10);
+    assert(advancement.elite_policy_version == EVO_ELITE_POLICY_VERSION);
+    assert(advancement.singleton_child_policy_version == 0);
+    assert(!advancement.elite_count_explicit);
     assert(advancement.complete);
 
     evo_population_destroy(&children);

@@ -13,15 +13,20 @@ static bool population_matches_inputs(const evo_problem_t *problem,
         population->initialization_seed != 0 ||
         population->rng_algorithm_version != 0 ||
         population->produced_count != 0 ||
+        population->elite_count != 0 ||
+        population->elite_source_valid_count != 0 ||
         population->source_generation != 0 ||
         population->operator_seed_schedule_version != 0 ||
         population->odd_child_policy_version != 0 ||
+        population->elite_policy_version != 0 ||
+        population->singleton_child_policy_version != 0 ||
         population->fitness_comparison_policy_version != 0 ||
         population->diversity_policy_version != 0 ||
         population->diversity_metric_version != 0 ||
         population->diversity_pair_count != 0 ||
         population->diversity_work_units != 0 ||
         population->diversity != 0.0 ||
+        population->elite_count_explicit ||
         population->diversity_uses_domain_distance ||
         population->population_size == 0 || population->genome_size == 0 ||
         population->storage_bytes == 0 ||

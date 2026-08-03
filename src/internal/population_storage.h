@@ -19,11 +19,15 @@ typedef struct evo_population {
     size_t valid_count;
     size_t best_index;
     size_t produced_count;
+    size_t elite_count;
+    size_t elite_source_valid_count;
     uint64_t initialization_seed;
     uint64_t source_generation;
     uint32_t rng_algorithm_version;
     uint32_t operator_seed_schedule_version;
     uint32_t odd_child_policy_version;
+    uint32_t elite_policy_version;
+    uint32_t singleton_child_policy_version;
     uint32_t fitness_comparison_policy_version;
     uint32_t diversity_policy_version;
     uint32_t diversity_metric_version;
@@ -33,6 +37,7 @@ typedef struct evo_population {
     bool initialized;
     bool has_best;
     bool evaluated;
+    bool elite_count_explicit;
     bool diversity_uses_domain_distance;
 } evo_population_t;
 

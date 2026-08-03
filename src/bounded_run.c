@@ -2,8 +2,9 @@
 
 #include "internal/child_evaluation.h"
 #include "internal/child_pair.h"
-#include "internal/child_tail.h"
+#include "internal/child_single.h"
 #include "internal/diversity.h"
+#include "internal/elite.h"
 #include "internal/fitness.h"
 #include "internal/observer.h"
 #include "internal/statistics.h"
@@ -50,8 +51,10 @@ static bool transition_configuration_is_valid(
     const evo_config_t *config)
 {
     size_t child_storage_bytes = 0;
+    bool singleton_operator_policy_is_valid = false;
 
-    if (problem->genome_size == 0 || config->population_size == 0 ||
+    if (evo_elite_validate_config(config) != EVO_SUCCESS ||
+        problem->genome_size == 0 || config->population_size == 0 ||
         config->max_genome_bytes == 0 ||
         problem->genome_size > config->max_genome_bytes ||
         config->max_child_population_bytes == 0 ||
@@ -69,18 +72,24 @@ static bool transition_configuration_is_valid(
     }
 #endif
 
+    singleton_operator_policy_is_valid =
+        config->tournament_size != 0 &&
+        config->tournament_size <= config->population_size &&
+        isfinite(config->mutation_rate) &&
+        config->mutation_rate >= 0.0 &&
+        config->mutation_rate <= 1.0;
+
     if (config->population_size == 1) {
-        return true;
+        if (!config->elite_count_enabled || config->elite_count == 1) {
+            return true;
+        }
+        return singleton_operator_policy_is_valid;
     }
 
-    return config->tournament_size != 0 &&
-           config->tournament_size <= config->population_size &&
+    return singleton_operator_policy_is_valid &&
            isfinite(config->crossover_rate) &&
            config->crossover_rate >= 0.0 &&
-           config->crossover_rate <= 1.0 &&
-           isfinite(config->mutation_rate) &&
-           config->mutation_rate >= 0.0 &&
-           config->mutation_rate <= 1.0;
+           config->crossover_rate <= 1.0;
 }
 
 evo_status_t evo_bounded_run_validate_config(
@@ -305,9 +314,25 @@ static evo_status_t produce_child_population(
     evo_population_t *children)
 {
     evo_child_pair_evidence_t pair_evidence = {0};
-    evo_child_tail_evidence_t tail_evidence = {0};
-    const size_t complete_pair_count = config->population_size / 2;
+    evo_child_single_evidence_t single_evidence = {0};
+    evo_elite_evidence_t elite_evidence = {0};
+    size_t requested_elite_count = 0;
+    size_t effective_elite_count = 0;
+    size_t offspring_count = 0;
+    size_t complete_pair_count = 0;
     evo_status_t status = EVO_SUCCESS;
+
+    status = evo_elite_policy_counts(config,
+                                     parents->valid_count,
+                                     &requested_elite_count,
+                                     &effective_elite_count,
+                                     &offspring_count);
+    if (status != EVO_SUCCESS) {
+        return status;
+    }
+    (void)requested_elite_count;
+    (void)effective_elite_count;
+    complete_pair_count = offspring_count / 2;
 
     for (size_t pair_index = 0;
          pair_index < complete_pair_count;
@@ -325,16 +350,25 @@ static evo_status_t produce_child_population(
         }
     }
 
-    if (config->population_size % 2 != 0) {
-        status = evo_child_tail_produce(problem,
-                                        config,
-                                        parents,
-                                        source_generation,
-                                        children,
-                                        &tail_evidence);
+    if (offspring_count % 2 != 0) {
+        status = evo_child_single_produce(problem,
+                                          config,
+                                          context,
+                                          parents,
+                                          source_generation,
+                                          children,
+                                          &single_evidence);
+        if (status != EVO_SUCCESS) {
+            return status;
+        }
     }
 
-    return status;
+    return evo_elite_population_complete(problem,
+                                         config,
+                                         parents,
+                                         source_generation,
+                                         children,
+                                         &elite_evidence);
 }
 
 static evo_status_t resolve_strict_improvement(
@@ -436,6 +470,7 @@ evo_status_t evo_bounded_run_advance(
     candidate.best_population_index = parents->best_index;
     candidate.operator_seed_schedule_version =
         EVO_OPERATOR_SEED_SCHEDULE_VERSION;
+    candidate.elite_policy_version = EVO_ELITE_POLICY_VERSION;
     candidate.fitness_comparison_policy_version =
         EVO_FITNESS_COMPARISON_POLICY_VERSION;
     candidate.child_evaluation_policy_version =
@@ -537,9 +572,18 @@ evo_status_t evo_bounded_run_advance(
             advancement_evidence.completed_generation;
         candidate.final_valid_count = advancement_evidence.valid_count;
         candidate.final_best_index = advancement_evidence.best_index;
+        candidate.final_elite_count = advancement_evidence.elite_count;
+        candidate.final_elite_source_valid_count =
+            advancement_evidence.elite_source_valid_count;
         candidate.final_has_best = advancement_evidence.has_best;
         candidate.odd_child_policy_version =
             advancement_evidence.odd_child_policy_version;
+        candidate.elite_policy_version =
+            advancement_evidence.elite_policy_version;
+        candidate.singleton_child_policy_version =
+            advancement_evidence.singleton_child_policy_version;
+        candidate.elite_count_explicit =
+            advancement_evidence.elite_count_explicit;
         best_result->generations_completed =
             candidate.completed_transitions;
         best_result->generation_statistics = generation_statistics;

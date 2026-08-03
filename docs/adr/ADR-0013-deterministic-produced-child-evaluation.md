@@ -72,6 +72,12 @@ operation now commits bounded diversity evidence with evaluation and records
 its policy and metric versions. Distance measurement and rollback are governed
 by ADR-0022.
 
+ADR-0024 advances child-evaluation policy to version 4 in EVO 0.24.0. Completed
+production provenance now records effective elite count, source valid count,
+elite policy version, explicit-versus-compatibility mode, and singleton policy
+version. Evaluation ordering, allocation, byte immutability, and rollback are
+unchanged.
+
 ## Consequences
 
 - Generation-zero and child evaluation cannot drift in ordering, finite-

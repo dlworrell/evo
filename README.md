@@ -27,6 +27,7 @@ The governing product records are:
 - `docs/adr/ADR-0016-layered-source-to-source-c-optimizer.md`
 - `docs/adr/ADR-0022-bounded-deterministic-diversity.md`
 - `docs/adr/ADR-0023-deterministic-convergence-and-stagnation.md`
+- `docs/adr/ADR-0024-generalized-deterministic-elite-preservation.md`
 - `docs/specs/EVO-001-library-contract.md`
 - `docs/specs/EVO-002-source-optimizer-contract.md`
 - `docs/roadmap.md`
@@ -91,7 +92,7 @@ repository.
 - `docs/` — architecture, theory, algorithms, and evidence guidance
 
 The source-optimizer implementation directories will be introduced only by
-their dependency-ordered roadmap issues. Their absence in version 0.23.0 is an
+their dependency-ordered roadmap issues. Their absence in version 0.24.0 is an
 explicit current boundary, not an implicit feature claim.
 
 ## Authoritative Native Builds
@@ -131,7 +132,7 @@ declared Clang/LLVM and GNU profiles.
 
 ## Status
 
-**Current implementation boundary:** EVO 0.23.0 implements the deterministic
+**Current implementation boundary:** EVO 0.24.0 implements the deterministic
 evolutionary-search core. It does not yet ingest a C project, build a Clang AST
 or LLVM IR model, transform source, compile evolved candidates, or emit an
 optimized source patch. Those product boundaries are tracked in the 1.0
@@ -211,6 +212,17 @@ evidence and count child generations, never elapsed time. Public reasons now
 distinguish `EVO_TERMINATION_CONVERGED` and `EVO_TERMINATION_STAGNATED`.
 Coincident reasons use the fixed order all-invalid, converged, stagnated,
 generation limit, then application requested.
+
+EVO 0.24.0 appends a caller-bounded elite-count mode and defines elite policy
+version 1. Explicit counts from zero through `population_size` preserve as many
+distinct hard-valid parents as are available, ranked by the common comparison
+authority and cloned best-to-worst into a child suffix. Ordinary offspring fill
+the prefix. When that prefix is odd, its last child uses the next pair-selection
+stream, a byte clone of the selected valid parent, and the normal child-indexed
+mutation stream; it allocates no scratch sibling and invokes no crossover.
+Elite copies consume no RNG and invoke no callback. Leaving the new fields zero
+preserves the pre-0.24.0 sequence exactly: odd populations retain one stable-
+best tail and even populations retain none.
 
 Version 0.3.0 added the independently tested private population-storage
 foundation: checked `population_size * genome_size` arithmetic, a
@@ -313,8 +325,10 @@ The private parent-pair planner maps each complete pair ordinal to consecutive
 child slots and performs two deterministic tournaments with replacement using
 that pair's selection-domain stream. It commits no output until both parents
 are selected, leaves the completed parent read-only, and writes no child bytes.
-Only `population_size / 2` complete pairs are planned; an odd trailing slot is
-reserved for a later singleton or elitism policy.
+Through 0.23.0, `population_size / 2` complete pairs were planned. Version
+0.24.0 instead plans `floor(ordinary_offspring_count / 2)` pairs after resolving
+the effective elite suffix; a remaining ordinary slot belongs to the
+versioned singleton path.
 
 Version 0.12.0 composes the accepted private boundaries for the next complete
 pair. It requires ascending pair order, derives a pair-indexed crossover stream
@@ -335,6 +349,13 @@ requires every complete pair first, consumes no RNG state, invokes no consumer
 callback, and records full production count, source generation, operator
 schedule version, and odd-tail policy version. A one-member population is
 completed directly from its sole valid parent.
+
+Version 0.24.0 retains that path as the disabled-config compatibility subset of
+general elite policy version 1. Explicit mode permits counts `0..N`; effective
+count is capped by the completed parent's valid count, and every distinct elite
+is cloned into the suffix after a full stable ranking dry pass. This general
+completion boundary records requested, effective, source-valid, offspring,
+singleton, and compatibility-policy evidence.
 
 In version 0.13.0, full production remained distinct from completed-population
 evidence: the child was still unevaluated and without validity, fitness, or
@@ -371,8 +392,8 @@ separate from this private ownership operation until version 0.16.0.
 Version 0.16.0 adds bounded-run policy version 1. Positive limits validate all
 transition-only configuration before any consumer callback. For each source
 generation in ascending order, EVO allocates one child slab, produces complete
-pairs and an odd stable-best tail when required, evaluates the complete child,
-and uses generation-advancement policy version 1 to transfer ownership. The
+pairs, an optional singleton, and the stable elite suffix, evaluates the
+complete child, and uses generation advancement to transfer ownership. The
 former parent is released at each successful promotion.
 
 The public result genome is allocated once after generation-zero evaluation.
@@ -438,9 +459,9 @@ See `docs/specs/EVO-001-library-contract.md` for the complete API, ownership,
 failure-state, alias, compatibility, and secure-erasure boundaries.
 
 The tournament, crossover-dispatch, mutation-dispatch, child-population,
-operator-stream, pair-production, odd-tail, child-evaluation, and atomic-
-advancement boundaries remain independently verified beneath the bounded
-public loop. Generalized elitism, adaptive mutation, population recycling,
+operator-stream, pair-production, singleton, elite-preservation, child-
+evaluation, and atomic-advancement boundaries remain independently verified
+beneath the bounded public loop. Adaptive mutation, population recycling,
 checkpointing, and parallelism remain later boundaries.
 
 ## Project Zero

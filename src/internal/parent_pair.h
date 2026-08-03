@@ -19,9 +19,9 @@ typedef struct evo_parent_pair {
  *
  * The planner derives a selection-domain stream from the master seed, source
  * generation, and pair ordinal, then performs two tournaments with
- * replacement. Only floor(population_size / 2) complete pairs are in scope;
- * an odd trailing child remains unassigned. Rejection preserves the parent
- * population and output object.
+ * replacement. Only the complete pairs in the resolved non-elite prefix are
+ * in scope. A possible singleton and the stable elite suffix remain
+ * unassigned. Rejection preserves the parent population and output object.
  */
 evo_status_t evo_parent_pair_plan(
     const evo_config_t *config,

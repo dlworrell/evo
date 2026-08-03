@@ -184,6 +184,9 @@ static void assert_population_metadata_equal(
     assert(left->valid_count == right->valid_count);
     assert(left->best_index == right->best_index);
     assert(left->produced_count == right->produced_count);
+    assert(left->elite_count == right->elite_count);
+    assert(left->elite_source_valid_count ==
+           right->elite_source_valid_count);
     assert(left->initialization_seed == right->initialization_seed);
     assert(left->source_generation == right->source_generation);
     assert(left->rng_algorithm_version == right->rng_algorithm_version);
@@ -191,6 +194,9 @@ static void assert_population_metadata_equal(
            right->operator_seed_schedule_version);
     assert(left->odd_child_policy_version ==
            right->odd_child_policy_version);
+    assert(left->elite_policy_version == right->elite_policy_version);
+    assert(left->singleton_child_policy_version ==
+           right->singleton_child_policy_version);
     assert(left->fitness_comparison_policy_version ==
            right->fitness_comparison_policy_version);
     assert(left->diversity_policy_version ==
@@ -205,6 +211,8 @@ static void assert_population_metadata_equal(
     assert(left->initialized == right->initialized);
     assert(left->has_best == right->has_best);
     assert(left->evaluated == right->evaluated);
+    assert(left->elite_count_explicit ==
+           right->elite_count_explicit);
 }
 
 static void assert_population_unchanged(
@@ -297,16 +305,21 @@ static void assert_child_progress(const evo_population_t *children,
     assert(children->valid_count == 0);
     assert(children->best_index == 0);
     assert(children->produced_count == produced_count);
+    assert(children->elite_count == 0);
+    assert(children->elite_source_valid_count == 0);
     assert(children->initialization_seed == 0);
     assert(children->source_generation == source_generation);
     assert(children->rng_algorithm_version == 0);
     assert(children->operator_seed_schedule_version ==
            EVO_OPERATOR_SEED_SCHEDULE_VERSION);
     assert(children->odd_child_policy_version == 0);
+    assert(children->elite_policy_version == 0);
+    assert(children->singleton_child_policy_version == 0);
     assert(children->fitness_comparison_policy_version == 0);
     assert(!children->initialized);
     assert(!children->has_best);
     assert(!children->evaluated);
+    assert(!children->elite_count_explicit);
 }
 
 static void test_invalid_preflight_preserves_every_object(void)

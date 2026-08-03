@@ -1,6 +1,7 @@
 #include "internal/population_storage.h"
 #include "internal/child_tail.h"
 #include "internal/diversity.h"
+#include "internal/elite.h"
 #include "internal/fitness.h"
 #include "internal/rng.h"
 
@@ -36,32 +37,63 @@ static bool completed_population_provenance_is_valid(
     const evo_config_t *config,
     const evo_population_t *population)
 {
+    size_t expected_requested_elite_count = 0;
+    size_t expected_elite_count = 0;
+    size_t expected_offspring_count = 0;
     uint32_t expected_odd_child_policy_version = 0;
+    uint32_t expected_singleton_child_policy_version = 0;
 
     if (population->initialized) {
         return population->initialization_seed == config->random_seed &&
                population->rng_algorithm_version ==
                    EVO_RNG_ALGORITHM_VERSION &&
                population->produced_count == 0 &&
+               population->elite_count == 0 &&
+               population->elite_source_valid_count == 0 &&
                population->source_generation == 0 &&
                population->operator_seed_schedule_version == 0 &&
                population->odd_child_policy_version == 0 &&
+               population->elite_policy_version == 0 &&
+               population->singleton_child_policy_version == 0 &&
+               !population->elite_count_explicit &&
                population->storage_bytes <=
                    config->max_population_bytes;
     }
 
-    if (population->population_size % 2 != 0) {
+    if (evo_elite_policy_counts(
+            config,
+            population->elite_source_valid_count,
+            &expected_requested_elite_count,
+            &expected_elite_count,
+            &expected_offspring_count) != EVO_SUCCESS) {
+        return false;
+    }
+    (void)expected_requested_elite_count;
+
+    if (!config->elite_count_enabled &&
+        population->population_size % 2 != 0) {
         expected_odd_child_policy_version =
             EVO_ODD_CHILD_POLICY_VERSION;
+    }
+    if (expected_offspring_count % 2 != 0) {
+        expected_singleton_child_policy_version =
+            EVO_SINGLETON_CHILD_POLICY_VERSION;
     }
 
     return population->initialization_seed == 0 &&
            population->rng_algorithm_version == 0 &&
            population->produced_count == population->population_size &&
+           population->elite_count == expected_elite_count &&
            population->operator_seed_schedule_version ==
                EVO_OPERATOR_SEED_SCHEDULE_VERSION &&
            population->odd_child_policy_version ==
                expected_odd_child_policy_version &&
+           population->elite_policy_version ==
+               EVO_ELITE_POLICY_VERSION &&
+           population->singleton_child_policy_version ==
+               expected_singleton_child_policy_version &&
+           population->elite_count_explicit ==
+               config->elite_count_enabled &&
            population->storage_bytes <=
                config->max_child_population_bytes;
 }

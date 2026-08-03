@@ -4,6 +4,8 @@ _Static_assert(EVO_FITNESS_COMPARISON_POLICY_VERSION == UINT32_C(1),
                "unsupported EVO fitness-comparison policy");
 _Static_assert(EVO_STOPPING_POLICY_VERSION == UINT32_C(1),
                "unsupported EVO stopping policy");
+_Static_assert(EVO_ELITE_POLICY_VERSION == UINT32_C(1),
+               "unsupported EVO elite policy");
 
 typedef struct callback_state {
     size_t observer_calls;
@@ -113,6 +115,8 @@ int main(void)
         .generation_stop_context = &callbacks,
         .fitness_target_enabled = true,
         .fitness_target = 1.0,
+        .elite_count_enabled = true,
+        .elite_count = 1,
     };
     evo_result_t result = {0};
 
