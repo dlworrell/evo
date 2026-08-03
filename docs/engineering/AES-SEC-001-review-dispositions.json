@@ -132,6 +132,30 @@
       "resolution_commit": null
     },
     {
+      "finding_id": "aes-sec-001:6292418f010d6660da29392347e88b613fa37c833dc09f0db0609b62aa11c7fa",
+      "source_fingerprint": "sha256:4d7310b126d587c2cab8a5314fa1a8eadce21814f2cc9e4086509b021bf75a0a",
+      "path": "src/population_evaluation.c",
+      "line": 72,
+      "symbol": "free",
+      "classification": "approved-invariant",
+      "rationale": "The population temporarily becomes the sole owner of the complete candidate-record allocation only after validity and fitness evaluation have succeeded. Diversity measurement runs after that attachment and receives genome views rather than ownership of the evaluation records. If diversity measurement rejects a callback result, the centralized rollback releases the sole evaluation owner and clears the pointer and every evaluation, fitness-comparison, and diversity field while preserving the initialized or produced genome population for a corrected retry.",
+      "invariant": "rollback_population_evaluations is called only for a failed diversity measurement immediately after the provisional evaluation allocation has been attached to the population. It calls free exactly once through population->evaluations, nulls that owner, and restores all evaluation and diversity metadata to the unevaluated state. A later population destruction therefore observes a null evaluation owner, while a corrected retry allocates a new independent record array; the successful diversity path never invokes this rollback.",
+      "evidence": [
+        "src/internal/population_evaluation.h",
+        "src/internal/diversity.h",
+        "src/population_evaluation.c",
+        "src/diversity.c",
+        "tests/diversity_test.c::test_malformed_distance_rolls_back_and_public_failure_is_empty",
+        "docs/adr/ADR-0022-bounded-deterministic-diversity.md",
+        "https://github.com/dlworrell/evo/issues/44"
+      ],
+      "owner": "dlworrell",
+      "reviewer": "dlworrell",
+      "reviewed_at": "2026-08-03",
+      "reassess_after": "2027-08-03",
+      "resolution_commit": null
+    },
+    {
       "finding_id": "aes-sec-001:16146840e7239ed90870170a5d15faf6aa6921e4567208340c87eac082f1a4ca",
       "source_fingerprint": "sha256:fd5540e4619eafc3173d3f5eca4cc95cc969c9420cfe6d20d1e07f1db1cc9644",
       "path": "src/population_evaluation.c",

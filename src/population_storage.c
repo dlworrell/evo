@@ -99,7 +99,7 @@ bool evo_population_validate_completed(
         population->fitness_comparison_policy_version !=
             EVO_FITNESS_COMPARISON_POLICY_VERSION ||
         !evo_population_diversity_evidence_is_valid(config,
-                                                     population)) {
+                                                    population)) {
         return false;
     }
 

@@ -26,6 +26,7 @@ The governing product records are:
 
 - `docs/adr/ADR-0016-layered-source-to-source-c-optimizer.md`
 - `docs/adr/ADR-0022-bounded-deterministic-diversity.md`
+- `docs/adr/ADR-0023-deterministic-convergence-and-stagnation.md`
 - `docs/specs/EVO-001-library-contract.md`
 - `docs/specs/EVO-002-source-optimizer-contract.md`
 - `docs/roadmap.md`
@@ -90,7 +91,7 @@ repository.
 - `docs/` — architecture, theory, algorithms, and evidence guidance
 
 The source-optimizer implementation directories will be introduced only by
-their dependency-ordered roadmap issues. Their absence in version 0.22.0 is an
+their dependency-ordered roadmap issues. Their absence in version 0.23.0 is an
 explicit current boundary, not an implicit feature claim.
 
 ## Authoritative Native Builds
@@ -130,7 +131,7 @@ declared Clang/LLVM and GNU profiles.
 
 ## Status
 
-**Current implementation boundary:** EVO 0.22.0 implements the deterministic
+**Current implementation boundary:** EVO 0.23.0 implements the deterministic
 evolutionary-search core. It does not yet ingest a C project, build a Clang AST
 or LLVM IR model, transform source, compile evolved candidates, or emit an
 optimized source patch. Those product boundaries are tracked in the 1.0
@@ -200,6 +201,16 @@ invocations. Invalid candidates are excluded, zero or one valid candidate
 reports zero without pair work, and generation-statistics schema version 3
 publishes the metric identity, pair count, work, value, and metric kind. The
 measurement consumes no operator RNG and does not change selection.
+
+EVO 0.23.0 adds deterministic convergence and stagnation policy version 1.
+Zero-initialized controls preserve the prior generation-limit behavior.
+Consumers may enable a finite global-best fitness target, patience over
+improvements greater than a finite non-negative tolerance, and an independent
+normalized diversity floor. Decisions use only committed winner and statistics
+evidence and count child generations, never elapsed time. Public reasons now
+distinguish `EVO_TERMINATION_CONVERGED` and `EVO_TERMINATION_STAGNATED`.
+Coincident reasons use the fixed order all-invalid, converged, stagnated,
+generation limit, then application requested.
 
 Version 0.3.0 added the independently tested private population-storage
 foundation: checked `population_size * genome_size` arithmetic, a
@@ -380,9 +391,10 @@ resets the full result to zero, and makes it immediately reusable.
 
 `termination_reason` is nonzero only after `EVO_SUCCESS`. It reports whether
 the configured generation limit completed, a later all-invalid generation
-ended the run, or the application requested stopping after a committed
-generation. Generation-zero all-invalid remains an error and leaves the reason
-as `EVO_TERMINATION_NONE`.
+ended the run, a fitness target converged, patience or diversity stagnated, or
+the application requested stopping after a committed generation.
+Generation-zero all-invalid remains an error and leaves the reason as
+`EVO_TERMINATION_NONE`.
 
 `generation_statistics` is versioned and nonzero only in a successful active
 result. It describes the last committed population, which may be an all-invalid
@@ -428,8 +440,8 @@ failure-state, alias, compatibility, and secure-erasure boundaries.
 The tournament, crossover-dispatch, mutation-dispatch, child-population,
 operator-stream, pair-production, odd-tail, child-evaluation, and atomic-
 advancement boundaries remain independently verified beneath the bounded
-public loop. Convergence, stagnation, generalized elitism, adaptive mutation,
-population recycling, checkpointing, and parallelism remain later boundaries.
+public loop. Generalized elitism, adaptive mutation, population recycling,
+checkpointing, and parallelism remain later boundaries.
 
 ## Project Zero
 

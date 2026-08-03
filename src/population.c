@@ -3,6 +3,7 @@
 #include "internal/observer.h"
 #include "internal/population_storage.h"
 #include "internal/statistics.h"
+#include "internal/stopping.h"
 
 #include <stdlib.h>
 
@@ -114,8 +115,15 @@ evo_status_t evo_run(const evo_problem_t *problem, const evo_config_t *config, v
     }
     result->generation_statistics = generation_statistics;
 
-    if (config->generation_limit == 0) {
-        termination_reason = EVO_TERMINATION_GENERATION_LIMIT;
+    status = evo_stopping_classify_initial(
+        config,
+        result,
+        config->generation_limit == 0,
+        &termination_reason);
+    if (status != EVO_SUCCESS) {
+        evo_population_destroy(&population);
+        evo_result_destroy(result);
+        return EVO_ERROR_STATE;
     }
     termination_reason = evo_generation_callbacks_notify(problem,
                                                          config,

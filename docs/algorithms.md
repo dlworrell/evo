@@ -2,7 +2,7 @@
 
 This document distinguishes algorithms implemented by the reusable
 `catalyst_evo` core from the structured program transformations and evaluation
-algorithm required by the EVO 1.0 source optimizer. Version 0.22.0 implements
+algorithm required by the EVO 1.0 source optimizer. Version 0.23.0 implements
 only the core boundary described below.
 
 ## EVO Core Initial Release
@@ -426,11 +426,11 @@ affected by allocation addresses or later equal candidates. Failure at any
 transition destroys all internal owners and the result allocation; no partial
 winner or completion count escapes the public call.
 
-This algorithm has a bounded sequential working set of one current population,
-one child population, one result genome, and the current population's
-evaluation records plus provisional child evaluation records during child
-evaluation. It does not recycle slabs, run callbacks concurrently, infer
-convergence, or infer any stop beyond the three explicit conditions.
+Through version 0.22.0, this algorithm has a bounded sequential working set of
+one current population, one child population, one result genome, and the
+current population's evaluation records plus provisional child evaluation
+records during child evaluation. It does not recycle slabs or run callbacks
+concurrently.
 
 Version 0.17.0 maps successful completion to explicit result evidence after
 all fallible run work succeeds. Exhausting the configured transition bound
@@ -513,7 +513,8 @@ replace the previous record, and any strict global winner improvement is
 copied. The observer therefore sees the global best-so-far together with the
 generation-local record. Delivery also follows stop classification: continuing
 events use `EVO_TERMINATION_NONE`, while the final event identifies generation-
-limit, all-invalid, or application-requested termination.
+limit, all-invalid, converged, stagnated, or application-requested
+termination.
 
 The observer has no return value. Its invocation cannot add a stop decision,
 retry a failed generation, or change winner selection. A provisional child
@@ -552,6 +553,44 @@ ordering, and the three 0.20.0 termination conditions remain unchanged.
 Version 0.22.0 advances bounded-run policy to version 4 and records diversity
 policy and metric provenance. It does not change operator stream derivation,
 selection draws, global-best comparison, or termination classification.
+
+## Deterministic Convergence and Stagnation
+
+Version 0.23.0 defines stopping policy version 1. Every control is disabled in
+a zero-initialized configuration. An enabled fitness target is reached when
+the committed stable global-best total is `>= fitness_target`. An enabled
+diversity floor is reached when the latest committed schema-3 diversity is
+`<= diversity_floor`. Both comparisons intentionally include equality and may
+classify generation zero.
+
+Enabled patience establishes generation zero's global-best total as the first
+significant-best reference. For each committed child, it applies exactly one
+binary64 addition and comparison:
+
+```text
+threshold = significant_best + improvement_tolerance
+significant = current_global_best > threshold
+```
+
+The finite tolerance must be non-negative. A significant improvement replaces
+the reference and resets the consecutive stagnant count. Otherwise the count
+increases once. The run stagnates at `count >= stagnation_patience`. Equality,
+an exact global tie, and a strict improvement no greater than the tolerance do
+not reset patience; multiple small improvements can reset it after their
+cumulative global best exceeds the retained reference plus tolerance.
+
+After each commit EVO classifies all-invalid, converged, stagnated, and
+generation-limit evidence in that exact order. Only when all are absent may
+the application callback select `EVO_TERMINATION_APPLICATION_REQUESTED`.
+Generation-zero all-invalid remains an error. This ordering makes coincident
+conditions replay-unambiguous while the configured limit still prevents any
+extra transition.
+
+The classifier reads only committed result and statistics fields. It allocates
+nothing, consumes no RNG, invokes no new callback, and contains no time,
+address, process, or entropy input. Bounded-run policy version 5 records
+stopping policy version 1, the significant-best reference, stagnant count, and
+final classification flags in constant-space private evidence.
 
 ## Structured C Source Evolution
 

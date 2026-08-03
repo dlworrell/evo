@@ -2,6 +2,8 @@
 
 _Static_assert(EVO_FITNESS_COMPARISON_POLICY_VERSION == UINT32_C(1),
                "unsupported EVO fitness-comparison policy");
+_Static_assert(EVO_STOPPING_POLICY_VERSION == UINT32_C(1),
+               "unsupported EVO stopping policy");
 
 typedef struct callback_state {
     size_t observer_calls;
@@ -33,8 +35,7 @@ static void observe_generation(
         result->best_genome == NULL || result->best_genome_size != 8 ||
         result->best_fitness.total != 1.0 ||
         result->generations_completed != 0 ||
-        result->termination_reason !=
-            EVO_TERMINATION_APPLICATION_REQUESTED ||
+        result->termination_reason != EVO_TERMINATION_CONVERGED ||
         statistics->version != EVO_GENERATION_STATISTICS_VERSION ||
         statistics->fitness_comparison_policy_version !=
             EVO_FITNESS_COMPARISON_POLICY_VERSION ||
@@ -110,6 +111,8 @@ int main(void)
         .generation_observer_context = &callbacks,
         .generation_stop = request_stop,
         .generation_stop_context = &callbacks,
+        .fitness_target_enabled = true,
+        .fitness_target = 1.0,
     };
     evo_result_t result = {0};
 
@@ -120,8 +123,7 @@ int main(void)
     if (result.best_genome == NULL ||
         result.best_fitness.correctness != 1.0 ||
         result.best_fitness.total != 1.0 ||
-        result.termination_reason !=
-            EVO_TERMINATION_APPLICATION_REQUESTED ||
+        result.termination_reason != EVO_TERMINATION_CONVERGED ||
         result.generation_statistics.version !=
             EVO_GENERATION_STATISTICS_VERSION ||
         result.generation_statistics.fitness_comparison_policy_version !=
@@ -142,7 +144,7 @@ int main(void)
         result.generation_statistics.best_fitness.total != 1.0 ||
         result.generation_statistics.fitness_sums.total != 1.0 ||
         !result.generation_statistics.has_best ||
-        callbacks.stop_calls != 1 || callbacks.observer_calls != 1 ||
+        callbacks.stop_calls != 0 || callbacks.observer_calls != 1 ||
         !callbacks.observer_valid || !callbacks.stop_valid) {
         evo_result_destroy(&result);
         return 1;

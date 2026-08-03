@@ -7,6 +7,7 @@
 #include "internal/fitness.h"
 #include "internal/observer.h"
 #include "internal/statistics.h"
+#include "internal/stopping.h"
 
 #include <math.h>
 #include <stdint.h>
@@ -88,6 +89,15 @@ evo_status_t evo_bounded_run_validate_config(
 {
     if (problem == NULL || config == NULL) {
         return EVO_ERROR_INVALID_ARGUMENT;
+    }
+
+    {
+        const evo_status_t stopping_status =
+            evo_stopping_validate_config(config);
+
+        if (stopping_status != EVO_SUCCESS) {
+            return stopping_status;
+        }
     }
 
     {
@@ -399,6 +409,7 @@ evo_status_t evo_bounded_run_advance(
 {
     evo_bounded_run_evidence_t candidate = {0};
     evo_population_t children = {0};
+    evo_stopping_state_t stopping_state = {0};
     evo_status_t status = EVO_SUCCESS;
 
     if (problem == NULL || config == NULL || parents == NULL ||
@@ -434,7 +445,17 @@ evo_status_t evo_bounded_run_advance(
     candidate.diversity_policy_version = EVO_DIVERSITY_POLICY_VERSION;
     candidate.diversity_metric_version =
         parents->diversity_metric_version;
+    candidate.stopping_policy_version = EVO_STOPPING_POLICY_VERSION;
     candidate.policy_version = EVO_BOUNDED_RUN_POLICY_VERSION;
+
+    status = evo_stopping_state_initialize(config,
+                                           best_result,
+                                           &stopping_state);
+    if (status != EVO_SUCCESS) {
+        return EVO_ERROR_STATE;
+    }
+    candidate.significant_best_total =
+        stopping_state.significant_best_total;
 
     for (size_t transition = 0;
          transition < config->generation_limit;
@@ -533,22 +554,33 @@ evo_status_t evo_bounded_run_advance(
                 candidate.final_best_index;
         }
 
-        if (!candidate.final_has_best) {
-            candidate.stopped_all_invalid = true;
+        status = evo_stopping_classify_committed(
+            config,
+            best_result,
+            !candidate.final_has_best,
+            candidate.completed_transitions == candidate.requested_transitions,
+            &stopping_state,
+            &natural_reason);
+        if (status != EVO_SUCCESS) {
+            status = EVO_ERROR_STATE;
+            break;
         }
-
-        if (candidate.stopped_all_invalid) {
-            natural_reason = EVO_TERMINATION_ALL_INVALID;
-        } else if (candidate.completed_transitions ==
-                   candidate.requested_transitions) {
-            natural_reason = EVO_TERMINATION_GENERATION_LIMIT;
-        }
+        candidate.significant_best_total =
+            stopping_state.significant_best_total;
+        candidate.stagnant_generations =
+            stopping_state.stagnant_generations;
         termination_reason = evo_generation_callbacks_notify(problem,
                                                              config,
                                                              best_result,
                                                              natural_reason);
         if (termination_reason != EVO_TERMINATION_NONE) {
             candidate.termination_reason = termination_reason;
+            candidate.stopped_all_invalid =
+                termination_reason == EVO_TERMINATION_ALL_INVALID;
+            candidate.stopped_converged =
+                termination_reason == EVO_TERMINATION_CONVERGED;
+            candidate.stopped_stagnated =
+                termination_reason == EVO_TERMINATION_STAGNATED;
             candidate.stopped_application_requested =
                 termination_reason ==
                 EVO_TERMINATION_APPLICATION_REQUESTED;

@@ -1,13 +1,13 @@
 # EVO-001: Evolutionary Optimization Library Contract
 
 Status: Baseline
-Version: 0.22.0
+Version: 0.23.0
 Owner: EVO
 
 ## Scope Boundary
 
 This specification governs the reusable deterministic C17 evolutionary-search
-core implemented through version 0.22.0. It does not define C-project
+core implemented through version 0.23.0. It does not define C-project
 ingestion, Clang/LLVM analysis, structured source transformations, isolated
 candidate builds, baseline-versus-candidate measurement, optimized patches, or
 product-level replay artifacts.
@@ -75,7 +75,8 @@ crossover rate, mutation rate, random seed, `max_genome_bytes`,
 `generation_observer` and its caller-owned
 `generation_observer_context`, then the optional `generation_stop` and its
 independent caller-owned `generation_stop_context`, followed by
-`max_diversity_work`.
+`max_diversity_work`, then the disabled-by-default fitness-target,
+tolerance/patience, and diversity-floor stopping controls.
 
 `max_genome_bytes` is trusted caller policy for the largest individual genome
 allocation accepted by `evo_run`. It avoids a platform-specific hard-coded
@@ -120,6 +121,21 @@ units are byte comparisons; domain-distance units are callback invocations.
 The budget is required even when `generation_limit` is zero because generation
 zero is measured. A population that cannot form a pair requires zero work.
 
+`fitness_target_enabled` activates `fitness_target`. The target may be any
+finite `double`, including a negative value. When disabled, the target payload
+must be zero.
+
+`stagnation_enabled` activates `improvement_tolerance` and
+`stagnation_patience` together. The tolerance must be finite and non-negative,
+and patience must be a positive number of committed child generations. When
+disabled, both payloads must be zero.
+
+`diversity_floor_enabled` activates `diversity_floor`, which must be finite and
+in `[0, 1]`. When disabled, the floor payload must be zero. These canonical
+disabled representations make a zero-initialized configuration preserve the
+0.22.0 stopping surface exactly. Malformed controls return
+`EVO_ERROR_INVALID_ARGUMENT` before any run callback.
+
 ### Diversity policy
 
 `EVO_DIVERSITY_POLICY_VERSION` and
@@ -146,6 +162,41 @@ distance, observer, or stopping callbacks. Diversity consumes no RNG state and
 does not alter comparison, selection, operator dispatch, or stopping in
 version 0.22.0. Successful evidence is stored with the evaluated population
 and copied into statistics without repeating a distance callback.
+
+### Convergence and stagnation policy
+
+`EVO_STOPPING_POLICY_VERSION` is `1`.
+
+The enabled fitness target is reached when the committed stable global-best
+`fitness.total >= fitness_target`. The enabled diversity floor is reached when
+the latest committed statistics record has
+`diversity <= diversity_floor`. Both equality boundaries are inclusive and
+both policies may classify generation zero.
+
+Patience establishes generation zero's global-best total as the significant-
+best reference without consuming patience. For each committed child, EVO
+computes `significant_best + improvement_tolerance` once using `double`
+arithmetic. A current global-best total strictly greater than that threshold
+replaces the reference and resets the consecutive stagnant-generation count.
+Otherwise the count increases once. Equality, an exact global tie, and a
+strict improvement no greater than the tolerance do not reset the count.
+Because the reference remains the last significant best, multiple small
+strict improvements may reset patience after their cumulative global best
+crosses the threshold. A count greater than or equal to
+`stagnation_patience` selects stagnation.
+
+Stopping reads only the independently owned global winner and the latest
+committed schema-3 statistics. It allocates no storage, consumes no RNG,
+invokes no new callback, and uses no wall clock, process identity, allocation
+address, or unrecorded entropy. Patience counts committed child generations,
+while `generation_limit` remains the hard upper bound on those transitions.
+
+Coincident conditions use this exact precedence: promoted all-invalid child,
+fitness-target convergence, diversity-floor or patience stagnation,
+generation limit, then application-requested stopping. A natural reason
+suppresses the application callback. The observer sees the selected reason.
+Generation-zero all-invalid remains `EVO_ERROR_NO_VALID_CANDIDATE` before this
+classification.
 
 ### Internal population storage
 
@@ -738,10 +789,13 @@ The bounded-run lifecycle is:
 7. A promoted all-invalid child terminates the loop successfully and retains
    the earlier valid winner. Its promotion is included in
    `generations_completed`.
-8. After any nonterminal committed generation, an optional application stop
-   decision may terminate successfully while preserving that exact committed
-   winner, statistics, and completed-transition count.
-9. Any other failure destroys every current internal owner and the result
+8. After each commit, enabled target, patience, and diversity-floor policy
+   classifies only the committed winner and statistics. Natural reasons use
+   the fixed all-invalid, converged, stagnated, then generation-limit order.
+9. After any still-nonterminal committed generation, an optional application
+   stop decision may terminate successfully while preserving that exact
+   committed winner, statistics, and completed-transition count.
+10. Any other failure destroys every current internal owner and the result
    allocation, returning the inactive result to its complete zero state. No
    partial public progress is retained.
 
@@ -754,10 +808,12 @@ Version 0.20.0 can stop on an application decision after a committed
 generation. Version 0.21.0 advances bounded-run policy to version 3 and records
 fitness-comparison policy version 1 plus the winning generation and population
 index. Version 0.22.0 advances it to version 4 and records diversity policy and
-metric provenance without changing operator RNG or selection. The bounded run
-does not define convergence, stagnation,
-generalized elitism, adaptive mutation, old-slab recycling, checkpointing,
-parallelism, or secure erasure.
+metric provenance without changing operator RNG or selection. Version 0.23.0
+advances it to version 5 and records stopping policy version 1, the
+significant-best reference, stagnant generation count, and distinct final
+classification flags. The bounded run does not define generalized elitism,
+adaptive mutation, old-slab recycling, checkpointing, parallelism, or secure
+erasure.
 
 ### Result lifecycle
 
@@ -779,8 +835,10 @@ The lifecycle contract is:
 4. On success, `termination_reason` is
    `EVO_TERMINATION_GENERATION_LIMIT` when the configured transition bound
    completed or `EVO_TERMINATION_ALL_INVALID` when a promoted later child had
-   no valid candidate, or `EVO_TERMINATION_APPLICATION_REQUESTED` when the
-   application stop callback selected a committed generation.
+   no valid candidate, `EVO_TERMINATION_CONVERGED` when a fitness target was
+   reached, `EVO_TERMINATION_STAGNATED` when patience or a diversity floor was
+   reached, or `EVO_TERMINATION_APPLICATION_REQUESTED` when the application
+   stop callback selected a committed generation.
    `EVO_TERMINATION_NONE` is never a successful reason.
 5. On success, `generation_statistics` describes the most recently committed
    population. Generation zero and every promoted child replace the record in
@@ -809,8 +867,8 @@ reviewed erasure boundary.
 
 | Status | Meaning |
 |---|---|
-| `EVO_SUCCESS` | Generation zero produced a valid winner and the run ended at the hard limit, after a promoted later all-invalid child, or after an application stop decision over committed state. |
-| `EVO_ERROR_INVALID_ARGUMENT` | A required pointer is null, or distance callback/version coupling is inconsistent. |
+| `EVO_SUCCESS` | Generation zero produced a valid winner and the run ended at the hard limit, after a promoted later all-invalid child, after convergence or stagnation, or after an application stop decision over committed state. |
+| `EVO_ERROR_INVALID_ARGUMENT` | A required pointer is null, distance callback/version coupling is inconsistent, or stopping controls are malformed or noncanonical. |
 | `EVO_ERROR_OUT_OF_MEMORY` | The system allocator returned null. |
 | `EVO_ERROR_RESULT_ACTIVE` | The result already owns a genome and is preserved unchanged. |
 | `EVO_ERROR_RESOURCE_LIMIT` | A required size is zero, arithmetic overflows, or a caller budget is exceeded. |
@@ -829,10 +887,15 @@ from `evo_status_t`:
 | `EVO_TERMINATION_GENERATION_LIMIT` | Generation zero completed with a zero limit, or every requested child transition completed. |
 | `EVO_TERMINATION_ALL_INVALID` | A later all-invalid child was evaluated, promoted, counted, and ended the run while the earlier global winner was retained. |
 | `EVO_TERMINATION_APPLICATION_REQUESTED` | The application stop callback returned true after a committed generation from which execution could otherwise continue. |
+| `EVO_TERMINATION_CONVERGED` | The stable committed global-best total reached the enabled finite fitness target. |
+| `EVO_TERMINATION_STAGNATED` | Enabled patience was exhausted or committed diversity reached the enabled floor. |
 
 The reason is assigned only after all fallible public run work succeeds. It
 does not replace `generations_completed`, which remains the exact quantitative
-transition count.
+transition count. For one committed generation the precedence is
+`ALL_INVALID`, `CONVERGED`, `STAGNATED`, `GENERATION_LIMIT`, then
+`APPLICATION_REQUESTED`. The application callback is not invoked when an
+earlier reason applies.
 
 ### Generation statistics
 
@@ -1095,7 +1158,17 @@ is not assumed, so consumers must rebuild. Public function signatures and
 installed symbols do not change, and diversity introduces no allocation
 class.
 
-## Current 0.22.0 Conformance Boundary
+Version 0.23.0 adds `EVO_STOPPING_POLICY_VERSION`, appends
+`EVO_TERMINATION_CONVERGED` and `EVO_TERMINATION_STAGNATED` after every prior
+termination value, and appends the seven fitness-target, tolerance/patience,
+and diversity-floor controls after the complete pre-0.23.0
+`evo_config_t` prefix. Existing member offsets and enum values are preserved,
+but the configuration size and array stride may change. Binary compatibility
+is not assumed, so consumers must rebuild. Public function signatures,
+installed symbols, statistics schema, allocation classes, and resource budgets
+do not change.
+
+## Current 0.23.0 Conformance Boundary
 
 The current implementation exposes generation-zero compatibility plus bounded
 multi-generation execution:
@@ -1162,9 +1235,9 @@ multi-generation execution:
   runs ascending transitions, allocates the result once, retains earlier exact
   ties, counts completed promotions, and stops successfully after promoting a
   later all-invalid child;
-- public success records generation-limit, later-all-invalid, or application-
-  requested termination, while every failure and destruction restores the
-  zero reason;
+- public success records generation-limit, later-all-invalid, converged,
+  stagnated, or application-requested termination, while every failure and
+  destruction restores the zero reason;
 - generation zero and each promoted child receive versioned fixed-order
   statistics over valid records, with the terminal record retained in constant
   result space;
@@ -1183,12 +1256,17 @@ multi-generation execution:
   read-only snapshots only after a nonterminal committed generation;
 - natural terminal reasons suppress the application decision, a true decision
   preserves committed state, and a null callback is 0.19.0 replay-equivalent;
+- zero-initialized stopping controls preserve the 0.22.0 limit behavior, while
+  enabled target, tolerance/patience, and diversity-floor controls inspect
+  only committed global-winner and statistics evidence;
+- stopping equality boundaries, significant-improvement reset, generation
+  counts, and the all-invalid/converged/stagnated/limit/application precedence
+  are fixed by policy version 1 without time, addresses, RNG, or allocation;
 - observer delivery follows winner update and final stop classification, precedes
   the next generation, allocates no history, and emits nothing for provisional
   or failed generations; and
-- generalized elitism, adaptive mutation, convergence, stagnation,
-  checkpointing, buffer recycling, asynchronous or concurrent callbacks, and
-  parallelism are not implemented.
+- generalized elitism, adaptive mutation, checkpointing, buffer recycling,
+  asynchronous or concurrent callbacks, and parallelism are not implemented.
 
 Consumers may treat `EVO_SUCCESS` as evidence of a valid global winner and
 exactly `generations_completed` promoted child generations. They must inspect
@@ -1197,9 +1275,8 @@ count. They may inspect `generation_statistics` for the final committed
 population, which is distinct from the global winner on all-invalid
 termination. When configured, they may copy each callback-lifetime observation
 into their own bounded storage. They may also configure deterministic stopping
-over committed snapshots. Version 0.22.0 defines no convergence or stagnation
-reason, statistics history, asynchronous cancellation, or retained callback
-delivery.
+over committed snapshots. Version 0.23.0 defines no statistics history,
+asynchronous cancellation, or retained callback delivery.
 
 ## Verification
 
@@ -1298,9 +1375,10 @@ for N completed transitions, synchronous ordering before the next generation,
 updated global-winner and generation-statistics evidence, terminal reason
 visibility, all-invalid global/local separation, independent snapshot
 addresses, fixed-seed replay, and absence of events for failed or provisional
-generations. The installed consumer exercises the public callback and view
-types. Wrapped allocation tests prove observation adds no allocation or release
-and reports only earlier committed generations before a later injected failure.
+generations. The installed consumer exercises converged reason delivery through
+the public observer view. Wrapped allocation tests prove observation adds no
+allocation or release and reports only earlier committed generations before a
+later injected failure.
 
 The application-stop test proves immediate generation-zero stopping,
 intermediate stopping after a promoted child, stop-before-observer ordering,
@@ -1308,11 +1386,18 @@ const independent callback snapshots that exactly mirror the committed public
 winner and statistics, callback-time deferral of the public termination reason,
 application termination evidence, natural-reason precedence, complete failure
 reset, absence of decisions for provisional or failed children, and null/never-
-stop replay equivalence with 0.19.0. The installed consumer validates the full
-public view shape for both callback types. Wrapped allocation tests prove
+stop replay equivalence with 0.19.0. Wrapped allocation tests prove
 immediate stopping adds no allocation, consumes no child transition, and
 releases each owner exactly once; they also prove a continuing stop decision is
 delivered only for generations committed before an injected later failure.
+
+The stopping-policy test locks exact target, tolerance, and diversity-floor
+boundaries; generation-zero target and floor decisions; significant-
+improvement patience reset; exact fitness ties; cumulative small improvement;
+replay; extinction, convergence, stagnation, limit, and application
+precedence; canonical disabled behavior; and malformed-control rejection
+before callbacks. The installed consumer proves target convergence suppresses
+the application callback and reaches the observer and final public result.
 
 The bounded-run test proves zero-limit compatibility; positive-limit policy
 validation before callbacks; even, odd, and one-member execution; deterministic
@@ -1351,6 +1436,7 @@ evaluation allocation failure.
 - `docs/adr/ADR-0020-deterministic-application-requested-stopping.md`
 - `docs/adr/ADR-0021-versioned-fitness-comparison-policy.md`
 - `docs/adr/ADR-0022-bounded-deterministic-diversity.md`
+- `docs/adr/ADR-0023-deterministic-convergence-and-stagnation.md`
 - `docs/architecture.md`
 - `docs/algorithms.md`
 - `docs/benchmarks.md`
@@ -1378,4 +1464,5 @@ evaluation allocation failure.
 - `https://github.com/dlworrell/evo/issues/42`
 - `https://github.com/dlworrell/evo/issues/43`
 - `https://github.com/dlworrell/evo/issues/44`
+- `https://github.com/dlworrell/evo/issues/45`
 - `https://github.com/dlworrell/AEMS/issues/18`

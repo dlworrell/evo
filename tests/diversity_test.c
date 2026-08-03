@@ -25,8 +25,7 @@ typedef struct distance_pair {
 } distance_pair_t;
 
 typedef struct diversity_context {
-    unsigned char genomes[
-        TEST_POPULATION_CAPACITY * TEST_GENOME_CAPACITY];
+    unsigned char genomes[TEST_POPULATION_CAPACITY * TEST_GENOME_CAPACITY];
     bool validity[TEST_POPULATION_CAPACITY];
     size_t population_size;
     size_t genome_size;

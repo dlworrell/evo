@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(catalyst_evo VERSION 0.22.0 LANGUAGES C)
+project(catalyst_evo VERSION 0.23.0 LANGUAGES C)
 
 include(CTest)
 include(GNUInstallDirs)
@@ -51,6 +51,7 @@ add_library(catalyst_evo STATIC
     src/fitness.c
     src/statistics.c
     src/observer.c
+    src/stopping.c
     src/checkpoint.c
     src/rng.c
 )
