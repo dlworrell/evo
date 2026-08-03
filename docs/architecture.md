@@ -21,10 +21,12 @@ patch/evidence artifacts.
 
 `catalyst_evo` owns deterministic population storage, random streams,
 selection, crossover, mutation dispatch, validation/evaluation ordering,
-generation advancement, stopping, and core result ownership. EVO-001 is its
+fitness comparison, generation advancement, stopping, and core result
+ownership. EVO-001 is its
 normative contract. Version 0.19.0 implements a bounded multi-generation
-subset of this layer, and version 0.20.0 adds application-requested stopping
-over committed state.
+subset of this layer, version 0.20.0 adds application-requested stopping over
+committed state, and version 0.21.0 formalizes hard constraints and soft-
+penalty comparison evidence.
 
 ### Source analysis and transformation
 
@@ -64,7 +66,7 @@ project patch automatically.
 
 ## Current Conformance Boundary
 
-Only the evolutionary-search core exists in version 0.20.0. Source ingestion,
+Only the evolutionary-search core exists in version 0.21.0. Source ingestion,
 analysis, transformation, candidate materialization, external-process
 isolation, target-code measurement, product commands, and optimized-patch
 artifacts are planned by issues #58 through #69. Documentation of those
@@ -129,15 +131,20 @@ One caller-budgeted private record stores each candidate's validity and fitness
 evidence. EVO checks the record-array multiplication for `size_t` overflow and
 enforces `max_evaluation_bytes` independently from the genome-slab budget.
 Provisional records are attached to the population only after all returned
-fitness fields are proven finite.
+fitness fields are proven finite and soft-penalty evidence satisfies the
+versioned comparison policy.
 
-Validity is a hard correctness gate. Among valid candidates, higher
-consumer-computed `fitness.total` wins, and the lower index wins an exact tie.
-The other component fields remain evidence rather than library-defined
-objectives. An all-invalid population is a completed evaluation state with no
-winner.
+Validity is a hard correctness gate. Hard-invalid candidates are never
+evaluated, included in statistics fitness sums, selected, or retained as an
+elite. Under fitness-comparison policy version 1, `constraint_penalty` is a
+finite non-negative magnitude. The caller accounts for any desired penalty
+when computing the authoritative `fitness.total`; EVO never applies it again.
+Among valid evaluated candidates, higher total wins and exact ties prefer the
+earlier generation, then the lower population index. The other component
+fields remain evidence rather than library-defined objectives. An all-invalid
+population is a completed evaluation state with no winner.
 
-Resource, allocation, and non-finite-fitness failures leave the initialized
+Resource, allocation, and malformed-fitness failures leave the initialized
 genome slab owned and unevaluated inside the private phase. Population
 destruction releases both the genome slab and evaluation records and resets
 the complete private object.
@@ -174,8 +181,9 @@ metadata before advancing the stream.
 
 Each draw uses rejection-sampled bounded indexing and maps a valid-candidate
 ordinal to an ascending population index. Sampling is with replacement, higher
-`fitness.total` wins, and the lower index wins an exact tie. Invalid candidates
-are excluded before sampling rather than sampled and retried.
+`fitness.total` wins, and the lower index wins an exact tie through the same
+versioned authority used by evaluation and global-best replacement. Invalid
+candidates are excluded before sampling rather than sampled and retried.
 
 Selection is read-only over population state, performs no allocation, and
 commits its output only after all draws succeed. It does not define stream
@@ -450,6 +458,15 @@ the stop decision runs first with reason `EVO_TERMINATION_NONE`; the observer
 then receives an independent snapshot with the final post-decision reason. No
 callback runs for provisional or failed child state.
 
+Version 0.21.0 centralizes rankability and comparison in `src/fitness.c`.
+Evaluation, completed-population validation, tournament selection, odd-tail
+elite validation, and global-best replacement therefore share one policy:
+hard-valid and evaluated evidence only, greatest caller total, then earlier
+generation and lower index. Evaluated populations and private transition
+evidence record comparison policy version 1. Public generation-statistics
+schema version 2 appends that policy identity without adding history or a new
+allocation.
+
 Bounded-run policy evidence remains private. Convergence, stagnation,
 generalized elitism, adaptive mutation, recycling, checkpointing, and
 parallelism remain separate decisions.
@@ -464,7 +481,7 @@ parallelism remain separate decisions.
 6. Record statistics and evidence.
 7. Stop on convergence, stagnation, generation limit, or an application-defined condition.
 
-Version 0.20.0 publicly implements steps 1 through 4 for at most
+Version 0.21.0 publicly implements steps 1 through 4 for at most
 `generation_limit` bounded transitions, with the version-1 odd-tail policy as
 the current elite-preservation rule in step 5. It implements the constant-space
 statistics portion of step 6 for every committed generation, records the global

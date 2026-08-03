@@ -47,6 +47,11 @@ allocation. Result storage is constant with respect to `generation_limit`.
 EVO 0.19.0 now delivers each committed record synchronously through the
 bounded read-only view governed by ADR-0019 without retaining a history array.
 
+ADR-0021 advances the public statistics schema to version 2 in EVO 0.21.0 by
+appending `fitness_comparison_policy_version`. Every successful record carries
+comparison policy version 1. The aggregation policy below remains version 1,
+and every pre-existing field retains its meaning and offset.
+
 ## Aggregation Policy Version 1
 
 Candidates are visited once in ascending population index. Invalid records are
@@ -88,6 +93,11 @@ appended after `termination_reason`, preserving every pre-0.18.0
 `evo_result_t` member offset. `sizeof(evo_result_t)` and array stride change,
 so consumers must rebuild against the 0.18.0 header. No public function
 signature or installed symbol changes.
+
+The 0.21.0 appended comparison-policy field preserves all pre-0.21.0
+statistics member offsets. Depending on ABI padding, the statistics and result
+sizes may remain unchanged or increase; binary layout compatibility is not
+assumed. Consumers must rebuild against the 0.21.0 header.
 
 ## Alternatives Considered
 

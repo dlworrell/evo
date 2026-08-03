@@ -57,6 +57,12 @@ Every failure after generation zero destroys the current child, current parent,
 and public result allocation. Public failure therefore remains empty and does
 not expose partial progress. Bounded-run evidence is private and versioned.
 
+ADR-0020 advances bounded-run policy to version 2 for application stopping.
+ADR-0021 advances it to version 3 in EVO 0.21.0, centralizes global ordering
+under fitness-comparison policy version 1, and records the best generation and
+population index. The strict-improvement and earlier-tie results remain
+logically unchanged.
+
 ## Consequences
 
 - Public `EVO_SUCCESS` can now represent zero or more completed transitions;

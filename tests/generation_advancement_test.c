@@ -153,6 +153,7 @@ static void assert_population_empty(const evo_population_t *population)
     assert(population->rng_algorithm_version == 0);
     assert(population->operator_seed_schedule_version == 0);
     assert(population->odd_child_policy_version == 0);
+    assert(population->fitness_comparison_policy_version == 0);
     assert(!population->initialized);
     assert(!population->has_best);
     assert(!population->evaluated);
@@ -200,6 +201,8 @@ static void assert_population_matches_snapshot(
            before->operator_seed_schedule_version);
     assert(population->odd_child_policy_version ==
            before->odd_child_policy_version);
+    assert(population->fitness_comparison_policy_version ==
+           before->fitness_comparison_policy_version);
     assert(population->initialized == before->initialized);
     assert(population->has_best == before->has_best);
     assert(population->evaluated == before->evaluated);
@@ -252,6 +255,8 @@ static void assert_evidence_equal(
            right->operator_seed_schedule_version);
     assert(left->odd_child_policy_version ==
            right->odd_child_policy_version);
+    assert(left->fitness_comparison_policy_version ==
+           right->fitness_comparison_policy_version);
     assert(left->policy_version == right->policy_version);
     assert(left->has_best == right->has_best);
     assert(left->complete == right->complete);
@@ -403,6 +408,8 @@ static void test_generation_zero_promotion_preserves_child_ownership(void)
            EVO_OPERATOR_SEED_SCHEDULE_VERSION);
     assert(evidence.odd_child_policy_version ==
            EVO_ODD_CHILD_POLICY_VERSION);
+    assert(evidence.fitness_comparison_policy_version ==
+           EVO_FITNESS_COMPARISON_POLICY_VERSION);
     assert(evidence.policy_version ==
            EVO_GENERATION_ADVANCEMENT_POLICY_VERSION);
     assert(evidence.has_best);

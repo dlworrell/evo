@@ -56,6 +56,10 @@ The operator is private and is not invoked by `evo_run`. Version 0.7.0 therefore
 does not perform a generation transition and does not change public success or
 `generations_completed`.
 
+ADR-0021 preserves these draw and tie semantics in EVO 0.21.0 but routes
+rankability and ordering through fitness-comparison policy version 1. A
+completed population must record that policy before selection consumes RNG.
+
 ## Consequences
 
 - Tournament behavior is deterministic for fixed population evidence,

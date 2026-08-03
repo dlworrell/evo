@@ -100,6 +100,8 @@ static void fixture_initialize(pair_fixture_t *fixture,
     fixture->population.initialization_seed = seed;
     fixture->population.rng_algorithm_version =
         EVO_RNG_ALGORITHM_VERSION;
+    fixture->population.fitness_comparison_policy_version =
+        EVO_FITNESS_COMPARISON_POLICY_VERSION;
     fixture->population.initialized = true;
     fixture->population.evaluated = true;
 
@@ -164,6 +166,8 @@ static void assert_parent_unchanged(const pair_fixture_t *fixture,
            before->operator_seed_schedule_version);
     assert(fixture->population.odd_child_policy_version ==
            before->odd_child_policy_version);
+    assert(fixture->population.fitness_comparison_policy_version ==
+           before->fitness_comparison_policy_version);
     assert(fixture->population.initialized == before->initialized);
     assert(fixture->population.has_best == before->has_best);
     assert(fixture->population.evaluated == before->evaluated);

@@ -472,6 +472,19 @@ static void test_non_finite_fitness_rolls_back_and_allows_retry(void)
     }
 
     context.event_count = 0;
+    context.validation_calls = 0;
+    context.evaluation_calls = 0;
+    context.fitness[1] = fitness_with_total(2.0);
+    context.fitness[1].constraint_penalty = -1.0;
+    assert(evo_population_evaluate(
+               &problem, &config, &context, &population) ==
+           EVO_ERROR_EVALUATION);
+    assert(context.evaluation_calls == 2);
+    assert_evaluation_empty(&population);
+    assert(population.initialized);
+    assert(population.genomes != NULL);
+
+    context.event_count = 0;
     context.evaluation_calls = 0;
     context.fitness[1] = fitness_with_total(2.0);
     assert(evo_population_evaluate(

@@ -3,7 +3,7 @@
 
 #include "internal/generation_advancement.h"
 
-#define EVO_BOUNDED_RUN_POLICY_VERSION UINT32_C(2)
+#define EVO_BOUNDED_RUN_POLICY_VERSION UINT32_C(3)
 
 typedef struct evo_bounded_run_evidence {
     size_t population_size;
@@ -13,8 +13,10 @@ typedef struct evo_bounded_run_evidence {
     size_t final_best_index;
     uint64_t final_generation;
     uint64_t best_generation;
+    size_t best_population_index;
     uint32_t operator_seed_schedule_version;
     uint32_t odd_child_policy_version;
+    uint32_t fitness_comparison_policy_version;
     uint32_t child_evaluation_policy_version;
     uint32_t generation_advancement_policy_version;
     uint32_t policy_version;

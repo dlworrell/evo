@@ -59,6 +59,7 @@ static bool child_tail_state_is_valid(
         children->initialization_seed != 0 ||
         children->rng_algorithm_version != 0 ||
         children->odd_child_policy_version != 0 ||
+        children->fitness_comparison_policy_version != 0 ||
         children->initialized || children->has_best ||
         children->evaluated ||
         !checked_size_multiply(children->population_size,

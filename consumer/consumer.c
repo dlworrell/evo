@@ -1,5 +1,8 @@
 #include <catalyst/evo/evo.h>
 
+_Static_assert(EVO_FITNESS_COMPARISON_POLICY_VERSION == UINT32_C(1),
+               "unsupported EVO fitness-comparison policy");
+
 typedef struct callback_state {
     size_t observer_calls;
     size_t stop_calls;
@@ -33,6 +36,8 @@ static void observe_generation(
         result->termination_reason !=
             EVO_TERMINATION_APPLICATION_REQUESTED ||
         statistics->version != EVO_GENERATION_STATISTICS_VERSION ||
+        statistics->fitness_comparison_policy_version !=
+            EVO_FITNESS_COMPARISON_POLICY_VERSION ||
         statistics->generation_index != 0 ||
         statistics->population_size != 1 ||
         statistics->valid_count != 1 ||
@@ -56,6 +61,8 @@ static bool request_stop(
         result->generations_completed != 0 ||
         result->termination_reason != EVO_TERMINATION_NONE ||
         statistics->version != EVO_GENERATION_STATISTICS_VERSION ||
+        statistics->fitness_comparison_policy_version !=
+            EVO_FITNESS_COMPARISON_POLICY_VERSION ||
         statistics->generation_index != 0 ||
         statistics->population_size != 1 ||
         statistics->valid_count != 1 ||
@@ -100,6 +107,8 @@ int main(void)
             EVO_TERMINATION_APPLICATION_REQUESTED ||
         result.generation_statistics.version !=
             EVO_GENERATION_STATISTICS_VERSION ||
+        result.generation_statistics.fitness_comparison_policy_version !=
+            EVO_FITNESS_COMPARISON_POLICY_VERSION ||
         result.generation_statistics.generation_index != 0 ||
         result.generation_statistics.population_size != 1 ||
         result.generation_statistics.valid_count != 1 ||

@@ -1,13 +1,13 @@
 # EVO-001: Evolutionary Optimization Library Contract
 
 Status: Baseline
-Version: 0.20.0
+Version: 0.21.0
 Owner: EVO
 
 ## Scope Boundary
 
 This specification governs the reusable deterministic C17 evolutionary-search
-core implemented through version 0.20.0. It does not define C-project
+core implemented through version 0.21.0. It does not define C-project
 ingestion, Clang/LLVM analysis, structured source transformations, isolated
 candidate builds, baseline-versus-candidate measurement, optimized patches, or
 product-level replay artifacts.
@@ -40,6 +40,30 @@ The public API is declared in `include/catalyst/evo/evo.h`.
 The consumer owns callback code and context lifetime. Callback behavior must be
 deterministic for a fixed input, context, and random stream unless the consumer
 records an additional source of variation.
+
+### Fitness, constraints, and comparison
+
+`EVO_FITNESS_COMPARISON_POLICY_VERSION` is `1`.
+
+`problem->is_valid` is the hard admissibility gate. A false candidate is never
+passed to `evaluate`, included in statistics fitness sums, sampled by
+selection, retained as an elite, or considered for the global winner. A null
+validator admits every candidate. Conditions that cannot be traded against
+fitness must use this hard gate or a higher-level candidate-assurance gate.
+
+For a hard-valid candidate, all `evo_fitness_t` fields must be finite and
+`constraint_penalty` must be a non-negative soft-constraint penalty magnitude.
+Both signed zeros are accepted as zero. `fitness.total` is the authoritative
+caller-computed scalar objective. The caller accounts for any desired penalty
+effect when computing `total`; EVO never subtracts, normalizes, or reweights
+`constraint_penalty` independently and does not infer a component aggregation
+formula.
+
+Comparison policy version 1 accepts only hard-valid evaluated evidence, then
+orders it by greater `total`, earlier committed generation for an exact tie,
+and lower population index within that generation. No other fitness field
+provides an independent tie-break. Total-only evaluators that zero-initialize
+the other fields remain valid and replay-compatible.
 
 ### Run configuration
 
@@ -215,12 +239,14 @@ The evaluation lifecycle is:
    calls it exactly once for every genome in ascending index order.
 5. EVO calls `problem->evaluate` exactly once for each valid genome in
    ascending index order. Invalid candidates are never evaluated.
-6. Every field in the returned `evo_fitness_t` must be finite. NaN or infinity
-   returns `EVO_ERROR_EVALUATION`, releases provisional records, and preserves
-   the initialized population as unevaluated.
-7. Validity is a hard gate. Higher consumer-computed `fitness.total` wins, and
-   the lower population index wins an exact tie. EVO records but does not
-   independently rank the other fitness components.
+6. Every field in the returned `evo_fitness_t` must be finite, and
+   `constraint_penalty` must be non-negative. Non-finite or negative-penalty
+   evidence returns `EVO_ERROR_EVALUATION`, releases provisional records, and
+   preserves the initialized population as unevaluated.
+7. Validity is a hard gate. Shared fitness-comparison policy version 1 selects
+   the higher consumer-computed `fitness.total`, with the lower population
+   index winning an exact generation-local tie. EVO records but does not
+   independently rank or reapply the other fitness components.
 8. A completed all-invalid population returns `EVO_SUCCESS`, records zero
    valid candidates, and has no best-candidate index.
 9. Repeated evaluation is rejected with `EVO_ERROR_STATE` without modifying
@@ -294,8 +320,9 @@ The selection lifecycle is:
 6. Each tournament draw uses unbiased bounded sampling over the number of valid
    candidates, then maps the sampled valid ordinal to its ascending population
    index. Invalid candidates are never eligible.
-7. Sampling is with replacement. Higher `fitness.total` wins, and an exact tie
-   selects the lower population index.
+7. Sampling is with replacement. Shared fitness-comparison policy version 1
+   selects higher `fitness.total`, and an exact tie selects the lower
+   population index.
 8. The operator performs no allocation and never changes population storage or
    evaluation evidence. It assigns the output index only after every draw
    succeeds.
@@ -567,16 +594,19 @@ The child-evaluation lifecycle is:
    missing validator means every candidate is valid.
 8. Only valid candidates are passed to the evaluator, also in ascending index
    order. Invalid candidates retain zero fitness and an unevaluated record.
-9. All seven returned fitness fields must be finite. A non-finite value
-   releases every provisional record and preserves the child object and output
-   evidence, although callback-context side effects cannot be rolled back.
-10. Higher `fitness.total` wins. Exact ties retain the lower candidate index.
+9. All seven returned fitness fields must satisfy fitness-comparison policy
+   version 1. A non-finite value or negative penalty releases every provisional
+   record and preserves the child object and output evidence, although
+   callback-context side effects cannot be rolled back.
+10. Shared comparison selects higher `fitness.total`. Exact ties retain the
+    lower candidate index.
 11. Success commits the complete record allocation, valid count, stable best
     evidence, and evaluated state while preserving every genome byte and all
     production provenance. An all-invalid child completes with no best.
 12. Output evidence records population and evaluation sizes, valid count,
-    stable best, source generation, production-policy versions, child-
-    evaluation policy version 1, and completion.
+    stable best, source generation, production-policy versions, fitness-
+    comparison policy version 1, child-evaluation policy version 2, and
+    completion.
 13. Repeated evaluation and every malformed, incomplete, mismatched, resource,
     allocation, or detectable callback-output failure preserve caller-owned
     evidence and library-owned child state.
@@ -621,7 +651,8 @@ The generation-advancement lifecycle is:
    generation equals `current_generation`.
 10. Output evidence is prepared with population size, valid count, stable-best
     state, previous generation, completed generation, production-policy
-    versions, and generation-advancement policy version 1.
+    versions, fitness-comparison policy version 1, and generation-advancement
+    policy version 2.
 11. After all fallible checks, EVO moves the child structure into the parent
     handle, resets the child handle to the complete zero state, releases the
     former parent allocations, and commits evidence.
@@ -666,9 +697,9 @@ The bounded-run lifecycle is:
 5. EVO atomically promotes the evaluated child before changing the result.
    Promotion increments the completed-transition count and releases the former
    parent.
-6. A later candidate replaces the existing result bytes and complete fitness
-   only when its `fitness.total` is strictly greater. Exact cross-generation
-   ties retain the earlier winner.
+6. Shared comparison policy version 1 lets a later candidate replace the
+   existing result bytes and complete fitness only when its `fitness.total` is
+   strictly greater. Exact cross-generation ties retain the earlier winner.
 7. A promoted all-invalid child terminates the loop successfully and retains
    the earlier valid winner. Its promotion is included in
    `generations_completed`.
@@ -685,7 +716,9 @@ stop classification, version 0.18.0 retains one constant-space statistics
 record for the most recently committed generation, and version 0.19.0 can
 deliver each committed record synchronously without retaining history.
 Version 0.20.0 can stop on an application decision after a committed
-generation. The bounded run does not define convergence, stagnation,
+generation. Version 0.21.0 advances bounded-run policy to version 3 and records
+fitness-comparison policy version 1 plus the winning generation and population
+index. The bounded run does not define convergence, stagnation,
 generalized elitism, adaptive mutation, old-slab recycling, checkpointing,
 parallelism, or secure erasure.
 
@@ -745,7 +778,7 @@ reviewed erasure boundary.
 | `EVO_ERROR_RESULT_ACTIVE` | The result already owns a genome and is preserved unchanged. |
 | `EVO_ERROR_RESOURCE_LIMIT` | A required size is zero, arithmetic overflows, or a caller budget is exceeded. |
 | `EVO_ERROR_STATE` | A private lifecycle operation received inactive, initialized, or inconsistent state. |
-| `EVO_ERROR_EVALUATION` | A fitness callback returned a non-finite component, or a fixed-order statistics component sum became non-finite. |
+| `EVO_ERROR_EVALUATION` | A fitness callback returned a non-finite component or negative penalty, or a fixed-order statistics component sum became non-finite. |
 | `EVO_ERROR_NO_VALID_CANDIDATE` | Generation-zero evaluation completed, but every candidate was invalid, so no public winner exists. |
 
 ### Termination reasons
@@ -766,12 +799,12 @@ transition count.
 
 ### Generation statistics
 
-`EVO_GENERATION_STATISTICS_VERSION` is `1`. A successful active result retains
+`EVO_GENERATION_STATISTICS_VERSION` is `2`. A successful active result retains
 one `evo_generation_statistics_t` for the most recently committed generation:
 
 | Field | Meaning |
 |---|---|
-| `version` | Statistics schema and aggregation-policy version. Zero exists only in an empty result. |
+| `version` | Statistics schema version. Version 2 identifies the 0.21.0 layout; zero exists only in an empty result. |
 | `generation_index` | Zero for the initialized baseline; otherwise the promoted child generation. |
 | `population_size` | Exact number of candidates in the committed population. |
 | `valid_count` | Candidates admitted by `is_valid` and evaluated. |
@@ -780,6 +813,7 @@ one `evo_generation_statistics_t` for the most recently committed generation:
 | `best_fitness` | Complete generation-local stable-best fitness, or all zeros when no best exists. |
 | `fitness_sums` | Component-wise sums over valid evaluated candidates only. |
 | `has_best` | Whether the generation contains a valid evaluated candidate. |
+| `fitness_comparison_policy_version` | Policy that admitted and ordered the generation's fitness evidence; version 1 for every 0.21.0 success and zero only in an empty result. |
 
 Aggregation policy version 1 traverses candidates in ascending index. Invalid
 records contribute only to `invalid_count`; their fitness payloads are never
@@ -797,6 +831,10 @@ best while the separate result allocation retains the earlier global winner.
 Only the latest record is retained. Version 0.19.0 may deliver every committed
 record to the synchronous observer, and version 0.20.0 may present it to a
 synchronous stop decision. Neither callback defines history ownership.
+
+Schema version 2 appends only the comparison-policy identity. The fixed-order
+component aggregation remains policy version 1 and byte-for-logical-value
+compatible with schema version 1 for every pre-existing field.
 
 ### Generation observer
 
@@ -988,7 +1026,19 @@ array stride change, so consumers must rebuild. No installed function
 signature, result layout, symbol, allocation class, or resource budget changes.
 A null stop callback preserves the 0.19.0 execution and observation surface.
 
-## Current 0.20.0 Conformance Boundary
+Version 0.21.0 adds the public
+`EVO_FITNESS_COMPARISON_POLICY_VERSION` macro and appends
+`fitness_comparison_policy_version` to
+`evo_generation_statistics_t`. Every pre-0.21.0 statistics member retains its
+offset, but the statistics schema advances to version 2. Depending on ABI
+padding, `sizeof(evo_generation_statistics_t)`, `sizeof(evo_result_t)`, and
+their array strides may remain unchanged or increase; binary layout
+compatibility is not assumed, so consumers must rebuild. `evo_fitness_t`,
+problem and config layouts, and public function signatures do not change. The
+implementation adds internal comparison-helper symbols declared only by a
+non-installed header; allocation classes and resource budgets do not change.
+
+## Current 0.21.0 Conformance Boundary
 
 The current implementation exposes generation-zero compatibility plus bounded
 multi-generation execution:
@@ -997,8 +1047,11 @@ multi-generation execution:
   the three generation-zero memory budgets;
 - successful execution constructs, initializes, validates, and evaluates a
   private population in deterministic order;
-- invalid candidates are never evaluated;
-- finite consumer totals select a stable winner with lower-index tie-breaking;
+- hard-invalid candidates are never evaluated, aggregated, selected, or
+  ranked;
+- comparison policy version 1 requires finite fitness, a non-negative soft-
+  penalty magnitude, and selects the stable greatest caller total using
+  earlier-generation/lower-index ties without reapplying the penalty;
 - success transfers one independent global-best genome copy and complete
   fitness evidence;
 - all-invalid completion has a distinct public status;
@@ -1041,8 +1094,8 @@ multi-generation execution:
   stable best valid parent without RNG or callbacks, records policy version 1,
   and preserves every object on rejection;
 - private produced-child evaluation accepts complete even and odd production
-  provenance, commits deterministic valid-only finite-fitness evidence, and
-  promotes the child to shared completed-population authority;
+  provenance, commits deterministic valid-only policy-valid fitness evidence,
+  and promotes the child to shared completed-population authority;
 - private generation advancement validates current/child lineage and all
   ownership ranges, moves the evaluated child into the parent handle, empties
   the child handle, releases the former parent, and records the next generation
@@ -1058,8 +1111,8 @@ multi-generation execution:
   statistics over valid records, with the terminal record retained in constant
   result space;
 - invalid fitness payloads are excluded from statistics, finite component sums
-  are checked, and statistics never change stable-best or global-winner
-  selection;
+  are checked, schema version 2 records the comparison-policy identity, and
+  statistics never change stable-best or global-winner selection;
 - an optional synchronous observer receives independent read-only result and
   statistics snapshots after generation zero and every promoted child;
 - an optional synchronous application stop decision receives independent
@@ -1080,7 +1133,7 @@ count. They may inspect `generation_statistics` for the final committed
 population, which is distinct from the global winner on all-invalid
 termination. When configured, they may copy each callback-lifetime observation
 into their own bounded storage. They may also configure deterministic stopping
-over committed snapshots. Version 0.20.0 defines no convergence or stagnation
+over committed snapshots. Version 0.21.0 defines no convergence or stagnation
 reason, statistics history, asynchronous cancellation, or retained callback
 delivery.
 
@@ -1105,6 +1158,14 @@ failure preservation, and single-draw behavior. A separate Linux-only
 static-link test uses the GNU-compatible `--wrap=calloc` linker facility to
 prove failure and cleanup at the population, evaluation-record, and
 result-transfer allocations.
+
+The fitness-policy test locks comparison policy version 1, hard-valid and
+evaluated rankability, non-negative finite penalty evidence, caller-total
+authority without double application, earlier-generation/lower-index ties,
+atomic malformed-penalty failure, public statistics policy evidence, and
+total-only replay compatibility. Population-evaluation tests independently
+prove negative-penalty rollback and deterministic retry, while selection tests
+reject missing comparison-policy evidence before consuming RNG.
 
 The crossover test proves pointer and policy validation, exact alias rejection,
 rate endpoints, exact RNG consumption, callback and identity-clone paths,
@@ -1141,7 +1202,7 @@ and terminal policy metadata.
 The child-evaluation test proves even, odd, and one-member production
 provenance; deterministic validation-before-evaluation ordering; invalid-
 candidate suppression; stable ties; all-invalid completion; byte, record, and
-evidence replay; budget and non-finite-fitness rollback; repeated-evaluation
+evidence replay; budget and malformed-fitness rollback; repeated-evaluation
 rejection; completed-population validation; and next-child authorization. The
 allocation-failure test separately proves that a failed child-evaluation record
 allocation preserves the fully produced child unchanged.
@@ -1217,6 +1278,7 @@ evaluation allocation failure.
 - `docs/adr/ADR-0018-bounded-generation-statistics.md`
 - `docs/adr/ADR-0019-read-only-generation-observer.md`
 - `docs/adr/ADR-0020-deterministic-application-requested-stopping.md`
+- `docs/adr/ADR-0021-versioned-fitness-comparison-policy.md`
 - `docs/architecture.md`
 - `docs/algorithms.md`
 - `docs/benchmarks.md`
@@ -1242,4 +1304,5 @@ evaluation allocation failure.
 - `https://github.com/dlworrell/evo/issues/40`
 - `https://github.com/dlworrell/evo/issues/41`
 - `https://github.com/dlworrell/evo/issues/42`
+- `https://github.com/dlworrell/evo/issues/43`
 - `https://github.com/dlworrell/AEMS/issues/18`

@@ -17,6 +17,15 @@ _Static_assert(offsetof(evo_result_t, generation_statistics) >=
                "generation statistics must remain appended to evo_result_t");
 _Static_assert(EVO_GENERATION_RESULT_VIEW_VERSION == UINT32_C(1),
                "the initial observer result-view schema must remain stable");
+_Static_assert(EVO_FITNESS_COMPARISON_POLICY_VERSION == UINT32_C(1),
+               "the initial fitness-comparison policy must remain stable");
+_Static_assert(EVO_GENERATION_STATISTICS_VERSION == UINT32_C(2),
+               "statistics schema 2 must carry comparison-policy evidence");
+_Static_assert(offsetof(evo_generation_statistics_t,
+                        fitness_comparison_policy_version) >=
+                   offsetof(evo_generation_statistics_t, has_best) +
+                       sizeof(bool),
+               "comparison-policy evidence must remain appended");
 _Static_assert(offsetof(evo_config_t, generation_observer) >=
                    offsetof(evo_config_t, max_child_population_bytes) +
                        sizeof(size_t),
@@ -79,6 +88,8 @@ static void assert_completely_empty(const evo_result_t *result)
     assert(result->generation_statistics.fitness_sums.correctness == 0.0);
     assert(result->generation_statistics.fitness_sums.total == 0.0);
     assert(!result->generation_statistics.has_best);
+    assert(result->generation_statistics
+               .fitness_comparison_policy_version == 0);
 }
 
 static void assert_results_equal(const evo_result_t *actual,
@@ -119,6 +130,10 @@ static void assert_results_equal(const evo_result_t *actual,
            expected->generation_statistics.fitness_sums.total);
     assert(actual->generation_statistics.has_best ==
            expected->generation_statistics.has_best);
+    assert(actual->generation_statistics
+               .fitness_comparison_policy_version ==
+           expected->generation_statistics
+               .fitness_comparison_policy_version);
 }
 
 static void record_event(lifecycle_context_t *context,
@@ -347,6 +362,9 @@ static void test_generation_zero_execution_and_winner_transfer(void)
     assert(result.termination_reason == EVO_TERMINATION_GENERATION_LIMIT);
     assert(result.generation_statistics.version ==
            EVO_GENERATION_STATISTICS_VERSION);
+    assert(result.generation_statistics
+               .fitness_comparison_policy_version ==
+           EVO_FITNESS_COMPARISON_POLICY_VERSION);
     assert(result.generation_statistics.generation_index == 0);
     assert(result.generation_statistics.population_size == 4);
     assert(result.generation_statistics.valid_count == 3);

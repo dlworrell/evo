@@ -1,6 +1,6 @@
 #include "internal/statistics.h"
+#include "internal/fitness.h"
 
-#include <math.h>
 #include <stdint.h>
 
 static bool checked_size_multiply(size_t left,
@@ -77,21 +77,10 @@ static bool population_matches_generation(
                population->source_generation + UINT64_C(1);
 }
 
-static bool fitness_is_finite(const evo_fitness_t *fitness)
-{
-    return isfinite(fitness->correctness) &&
-           isfinite(fitness->performance) &&
-           isfinite(fitness->memory_use) &&
-           isfinite(fitness->reliability) &&
-           isfinite(fitness->maintainability) &&
-           isfinite(fitness->constraint_penalty) &&
-           isfinite(fitness->total);
-}
-
 static bool add_fitness(evo_fitness_t *sums,
                         const evo_fitness_t *fitness)
 {
-    if (!fitness_is_finite(fitness)) {
+    if (!evo_fitness_evidence_is_valid(fitness)) {
         return false;
     }
 
@@ -102,7 +91,7 @@ static bool add_fitness(evo_fitness_t *sums,
     sums->maintainability += fitness->maintainability;
     sums->constraint_penalty += fitness->constraint_penalty;
     sums->total += fitness->total;
-    return fitness_is_finite(sums);
+    return evo_fitness_evidence_is_valid(sums);
 }
 
 evo_status_t evo_generation_statistics_record(
@@ -125,6 +114,8 @@ evo_status_t evo_generation_statistics_record(
     if (population->genomes == NULL || population->evaluations == NULL ||
         population->population_size == 0 || !population->evaluated ||
         population->valid_count > population->population_size ||
+        population->fitness_comparison_policy_version !=
+            EVO_FITNESS_COMPARISON_POLICY_VERSION ||
         !population_matches_generation(population, generation_index) ||
         !checked_size_multiply(population->population_size,
                                sizeof(evo_candidate_evaluation_t),
@@ -134,6 +125,8 @@ evo_status_t evo_generation_statistics_record(
     }
 
     candidate.version = EVO_GENERATION_STATISTICS_VERSION;
+    candidate.fitness_comparison_policy_version =
+        EVO_FITNESS_COMPARISON_POLICY_VERSION;
     candidate.generation_index = generation_index;
     candidate.population_size = population->population_size;
 
@@ -178,7 +171,7 @@ evo_status_t evo_generation_statistics_record(
 
         best = &population->evaluations[population->best_index];
         if (!best->valid || !best->evaluated ||
-            !fitness_is_finite(&best->fitness)) {
+            !evo_fitness_evidence_is_valid(&best->fitness)) {
             return EVO_ERROR_STATE;
         }
 

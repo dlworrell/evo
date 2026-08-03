@@ -58,6 +58,8 @@ static void assert_completely_empty(const evo_result_t *result)
     assert(result->generation_statistics.best_fitness.total == 0.0);
     assert(result->generation_statistics.fitness_sums.total == 0.0);
     assert(!result->generation_statistics.has_best);
+    assert(result->generation_statistics
+               .fitness_comparison_policy_version == 0);
 }
 
 static evo_fitness_t deterministic_evaluator(const void *genome,
@@ -134,6 +136,7 @@ static void assert_population_empty(const evo_population_t *population)
     assert(population->rng_algorithm_version == 0);
     assert(population->operator_seed_schedule_version == 0);
     assert(population->odd_child_policy_version == 0);
+    assert(population->fitness_comparison_policy_version == 0);
     assert(!population->initialized);
     assert(!population->has_best);
     assert(!population->evaluated);
@@ -150,6 +153,7 @@ static void assert_population_evaluation_empty(
     assert(population->source_generation == 0);
     assert(population->operator_seed_schedule_version == 0);
     assert(population->odd_child_policy_version == 0);
+    assert(population->fitness_comparison_policy_version == 0);
     assert(!population->has_best);
     assert(!population->evaluated);
 }
@@ -170,6 +174,7 @@ static void assert_child_evaluation_empty(
     assert(population->operator_seed_schedule_version ==
            EVO_OPERATOR_SEED_SCHEDULE_VERSION);
     assert(population->odd_child_policy_version == 0);
+    assert(population->fitness_comparison_policy_version == 0);
     assert(!population->initialized);
     assert(!population->has_best);
     assert(!population->evaluated);

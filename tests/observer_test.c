@@ -70,7 +70,9 @@ static bool statistics_equal(
            left->best_index == right->best_index &&
            fitness_equal(&left->best_fitness, &right->best_fitness) &&
            fitness_equal(&left->fitness_sums, &right->fitness_sums) &&
-           left->has_best == right->has_best;
+           left->has_best == right->has_best &&
+           left->fitness_comparison_policy_version ==
+               right->fitness_comparison_policy_version;
 }
 
 static evo_fitness_t fitness_from_value(unsigned char value)
@@ -151,6 +153,8 @@ static void observe_generation(
     assert(result->best_genome != NULL);
     assert(result->best_genome_size == 1);
     assert(statistics->version == EVO_GENERATION_STATISTICS_VERSION);
+    assert(statistics->fitness_comparison_policy_version ==
+           EVO_FITNESS_COMPARISON_POLICY_VERSION);
     assert(statistics->generation_index == result->generations_completed);
     assert(log->evolution_context->initialization_calls ==
            TEST_POPULATION_CAPACITY);

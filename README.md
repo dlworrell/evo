@@ -89,7 +89,7 @@ repository.
 - `docs/` — architecture, theory, algorithms, and evidence guidance
 
 The source-optimizer implementation directories will be introduced only by
-their dependency-ordered roadmap issues. Their absence in version 0.20.0 is an
+their dependency-ordered roadmap issues. Their absence in version 0.21.0 is an
 explicit current boundary, not an implicit feature claim.
 
 ## Authoritative Native Builds
@@ -129,7 +129,7 @@ declared Clang/LLVM and GNU profiles.
 
 ## Status
 
-**Current implementation boundary:** EVO 0.20.0 implements the deterministic
+**Current implementation boundary:** EVO 0.21.0 implements the deterministic
 evolutionary-search core. It does not yet ingest a C project, build a Clang AST
 or LLVM IR model, transform source, compile evolved candidates, or emit an
 optimized source patch. Those product boundaries are tracked in the 1.0
@@ -180,6 +180,15 @@ do not invoke the stop callback. When both callbacks are configured, stopping
 is decided first and the observer receives a fresh snapshot containing the
 final reason.
 
+EVO 0.21.0 formalizes hard validity and soft-penalty evidence under public
+fitness-comparison policy version 1. `is_valid` remains the non-tradeable gate;
+hard-invalid candidates are never evaluated or ranked. For valid candidates,
+`constraint_penalty` is a finite non-negative magnitude and `fitness.total`
+remains the caller-computed scalar that already reflects any desired penalty.
+EVO never subtracts it again. One comparison authority maximizes `total` and
+resolves exact ties by earlier generation and lower population index.
+Generation-statistics schema version 2 records that comparison-policy version.
+
 Version 0.3.0 added the independently tested private population-storage
 foundation: checked `population_size * genome_size` arithmetic, a
 caller-provided total slab budget, contiguous zero-initialized storage, bounded
@@ -201,12 +210,14 @@ evaluate, select, mutate, cross over, or iterate candidates.
 Version 0.5.0 adds a private generation-zero validation and evaluation phase.
 An optional validator is applied to every candidate in ascending order, and
 only valid candidates are evaluated. Every returned fitness field must be
-finite. Higher consumer-computed `fitness.total` wins, with the lower
-population index breaking exact ties. An all-invalid population is a completed
-evaluation state without a winner.
+finite; from version 0.21.0, `constraint_penalty` must also be non-negative.
+Higher consumer-computed `fitness.total` wins, with the lower population index
+breaking exact ties. EVO records the penalty but never independently applies
+it to `total`. An all-invalid population is a completed evaluation state
+without a winner.
 
 Evaluation records have a separate caller-provided byte budget and remain
-private. Resource, allocation, or non-finite-fitness failure preserves the
+private. Resource, allocation, or malformed-fitness failure preserves the
 initialized genome slab as unevaluated within the private phase.
 
 Version 0.6.0 connects those private lifecycle stages to `evo_run`. A missing
@@ -365,7 +376,8 @@ as `EVO_TERMINATION_NONE`.
 result. It describes the last committed population, which may be an all-invalid
 terminal child even while `best_genome` retains an earlier valid global winner.
 The component sums include only valid evaluated candidates. Result destruction
-resets the complete record to zero.
+resets the complete record to zero. Schema version 2 also identifies the
+fitness-comparison policy that established the generation-local winner.
 
 `generation_observer` is optional. When present, it receives the updated
 global winner, latest generation statistics, and the stop reason applicable at

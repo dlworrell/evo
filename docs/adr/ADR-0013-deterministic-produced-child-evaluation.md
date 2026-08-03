@@ -62,6 +62,11 @@ The operation consumes no RNG state and does not invoke initialization,
 selection, crossover, or mutation callbacks. It remains private and is not
 called by `evo_run`.
 
+ADR-0021 advances child-evaluation policy to version 2 in EVO 0.21.0. The
+operation now records fitness-comparison policy version 1 and rejects negative
+soft-penalty evidence in addition to non-finite evidence. Callback ordering,
+allocation, and atomic commit semantics remain unchanged.
+
 ## Consequences
 
 - Generation-zero and child evaluation cannot drift in ordering, finite-

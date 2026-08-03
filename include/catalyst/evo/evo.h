@@ -10,7 +10,7 @@ extern "C" {
 #endif
 
 #define EVO_VERSION_MAJOR 0
-#define EVO_VERSION_MINOR 20
+#define EVO_VERSION_MINOR 21
 #define EVO_VERSION_PATCH 0
 
 typedef enum evo_status {
@@ -31,6 +31,17 @@ typedef enum evo_termination_reason {
     EVO_TERMINATION_APPLICATION_REQUESTED = 3
 } evo_termination_reason_t;
 
+#define EVO_FITNESS_COMPARISON_POLICY_VERSION UINT32_C(1)
+
+/*
+ * Fitness components are caller-owned evidence. constraint_penalty is a
+ * finite, non-negative soft-constraint penalty magnitude. total is the
+ * caller-computed scalar objective: callers account for any penalty they want
+ * applied before returning it, and EVO never subtracts or reweights the
+ * penalty independently. Hard-invalid candidates are excluded before
+ * evaluation. Among evaluated hard-valid candidates, comparison policy 1
+ * maximizes total and resolves an exact tie by stable generation/index order.
+ */
 typedef struct evo_fitness {
     double correctness;
     double performance;
@@ -41,13 +52,14 @@ typedef struct evo_fitness {
     double total;
 } evo_fitness_t;
 
-#define EVO_GENERATION_STATISTICS_VERSION UINT32_C(1)
+#define EVO_GENERATION_STATISTICS_VERSION UINT32_C(2)
 
 /*
  * Constant-space evidence for one committed generation. fitness_sums is the
  * component-wise sum of valid evaluated candidates in ascending population
  * index. Invalid fitness payloads are excluded. has_best is false, best_index
- * is zero, and best_fitness is zero when valid_count is zero.
+ * is zero, and best_fitness is zero when valid_count is zero. Successful
+ * schema-2 records identify the comparison policy that established best_index.
  */
 typedef struct evo_generation_statistics {
     uint32_t version;
@@ -59,6 +71,7 @@ typedef struct evo_generation_statistics {
     evo_fitness_t best_fitness;
     evo_fitness_t fitness_sums;
     bool has_best;
+    uint32_t fitness_comparison_policy_version;
 } evo_generation_statistics_t;
 
 #define EVO_GENERATION_RESULT_VIEW_VERSION UINT32_C(1)
@@ -173,10 +186,11 @@ typedef struct evo_result {
  * Generation zero is always initialized and evaluated. generation_limit is
  * the maximum number of completed child-generation transitions after that
  * baseline; zero preserves generation-zero-only execution. A successful call
- * transfers an independent copy of the highest-total valid candidate observed
- * across the run together with its complete fitness evidence. Exact ties
- * preserve the earlier generation, while ties within one generation preserve
- * the lower population index.
+ * transfers an independent copy of the highest-total hard-valid candidate
+ * observed across the run together with its complete fitness evidence. Soft
+ * constraint_penalty is a finite non-negative magnitude already accounted for
+ * by the caller in total; EVO never applies it again. Exact ties preserve the
+ * earlier generation, then the lower population index.
  *
  * An active result is rejected without modification. Other failures,
  * including completion with no valid candidate, leave a non-null, inactive

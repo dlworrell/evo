@@ -1,4 +1,5 @@
 #include "internal/selection.h"
+#include "internal/fitness.h"
 
 static bool valid_index_from_ordinal(
     const evo_population_t *population,
@@ -72,23 +73,41 @@ evo_status_t evo_population_select_tournament(
             return EVO_ERROR_STATE;
         }
 
-        const bool lower_index = candidate_index < winner_index;
-        const double candidate_total =
-            population->evaluations[candidate_index].fitness.total;
         bool candidate_wins = !has_winner;
 
         if (has_winner) {
-            double winner_total = 0.0;
+            const evo_candidate_evaluation_t *candidate_evaluation =
+                &population->evaluations[candidate_index];
+            const evo_candidate_evaluation_t *winner_evaluation = NULL;
+            evo_fitness_candidate_view_t candidate_view = {0};
+            evo_fitness_candidate_view_t winner_view = {0};
+            evo_fitness_order_t order = EVO_FITNESS_ORDER_EQUAL;
 
             if (winner_index >= population->population_size) {
                 return EVO_ERROR_STATE;
             }
 
-            winner_total =
-                population->evaluations[winner_index].fitness.total;
-            candidate_wins =
-                candidate_total > winner_total ||
-                (lower_index && candidate_total == winner_total);
+            winner_evaluation = &population->evaluations[winner_index];
+            candidate_view = (evo_fitness_candidate_view_t){
+                .fitness = &candidate_evaluation->fitness,
+                .generation = UINT64_C(0),
+                .population_index = candidate_index,
+                .hard_valid = candidate_evaluation->valid,
+                .evaluated = candidate_evaluation->evaluated,
+            };
+            winner_view = (evo_fitness_candidate_view_t){
+                .fitness = &winner_evaluation->fitness,
+                .generation = UINT64_C(0),
+                .population_index = winner_index,
+                .hard_valid = winner_evaluation->valid,
+                .evaluated = winner_evaluation->evaluated,
+            };
+            if (!evo_fitness_compare_candidates(&candidate_view,
+                                                &winner_view,
+                                                &order)) {
+                return EVO_ERROR_STATE;
+            }
+            candidate_wins = order == EVO_FITNESS_ORDER_LEFT;
         }
 
         if (candidate_wins) {
