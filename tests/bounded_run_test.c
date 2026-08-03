@@ -604,6 +604,9 @@ static void test_private_bounded_run_evidence(void)
     assert(evidence.final_valid_count == 2);
     assert(evidence.final_has_best);
     assert(!evidence.stopped_all_invalid);
+    assert(!evidence.stopped_application_requested);
+    assert(evidence.termination_reason ==
+           EVO_TERMINATION_GENERATION_LIMIT);
     assert(evidence.operator_seed_schedule_version ==
            EVO_OPERATOR_SEED_SCHEDULE_VERSION);
     assert(evidence.child_evaluation_policy_version ==

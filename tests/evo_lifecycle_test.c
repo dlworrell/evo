@@ -6,6 +6,8 @@
 
 _Static_assert(EVO_TERMINATION_NONE == 0,
                "the termination zero value must remain the empty state");
+_Static_assert(EVO_TERMINATION_APPLICATION_REQUESTED == 3,
+               "application stopping must retain its public value");
 _Static_assert(offsetof(evo_result_t, termination_reason) >=
                    offsetof(evo_result_t, random_seed) + sizeof(uint64_t),
                "termination evidence must remain appended to evo_result_t");
@@ -23,6 +25,14 @@ _Static_assert(offsetof(evo_config_t, generation_observer_context) >=
                    offsetof(evo_config_t, generation_observer) +
                        sizeof(evo_generation_observer_fn),
                "the observer context must follow its callback");
+_Static_assert(offsetof(evo_config_t, generation_stop) >=
+                   offsetof(evo_config_t, generation_observer_context) +
+                       sizeof(void *),
+               "the generation stop callback must remain appended");
+_Static_assert(offsetof(evo_config_t, generation_stop_context) >=
+                   offsetof(evo_config_t, generation_stop) +
+                       sizeof(evo_generation_stop_fn),
+               "the generation stop context must follow its callback");
 
 enum {
     TEST_POPULATION_CAPACITY = 8,

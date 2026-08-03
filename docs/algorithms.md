@@ -2,7 +2,7 @@
 
 This document distinguishes algorithms implemented by the reusable
 `catalyst_evo` core from the structured program transformations and evaluation
-algorithm required by the EVO 1.0 source optimizer. Version 0.19.0 implements
+algorithm required by the EVO 1.0 source optimizer. Version 0.20.0 implements
 only the core boundary described below.
 
 ## EVO Core Initial Release
@@ -384,7 +384,9 @@ generation pipeline through public `evo_run`:
    Only after promotion may a strict improvement overwrite the existing result
    buffer and fitness evidence.
 8. Record the completed transition. If the promoted population is all-invalid,
-   stop successfully; otherwise continue until the requested limit is met.
+   stop successfully. If the hard limit is now met, stop successfully.
+   Otherwise, consult the optional application stop decision and continue only
+   when it returns false.
 
 The result buffer is never reallocated during a run. Exact total-fitness ties
 across generations retain the earlier winner, so deterministic replay is not
@@ -396,7 +398,7 @@ This algorithm has a bounded sequential working set of one current population,
 one child population, one result genome, and the current population's
 evaluation records plus provisional child evaluation records during child
 evaluation. It does not recycle slabs, run callbacks concurrently, infer
-convergence, or infer any stop beyond the two existing conditions.
+convergence, or infer any stop beyond the three explicit conditions.
 
 Version 0.17.0 maps successful completion to explicit result evidence after
 all fallible run work succeeds. Exhausting the configured transition bound
@@ -440,12 +442,36 @@ replace the previous record, and any strict global winner improvement is
 copied. The observer therefore sees the global best-so-far together with the
 generation-local record. Delivery also follows stop classification: continuing
 events use `EVO_TERMINATION_NONE`, while the final event identifies generation-
-limit or all-invalid termination.
+limit, all-invalid, or application-requested termination.
 
 The observer has no return value. Its invocation cannot add a stop decision,
 retry a failed generation, or change winner selection. A provisional child
 that fails evaluation, statistics, or promotion emits no event. No observer
 delivery allocates, consumes RNG state, runs concurrently, or retains history.
+
+## Application-Requested Stopping
+
+Version 0.20.0 adds bounded-run policy version 2 and an optional synchronous
+stop decision. After generation `g` is committed, its statistics and global
+winner are updated, and natural termination is classified. If no natural
+reason exists and another child transition remains available, EVO constructs
+fresh callback-lifetime result and statistics snapshots and invokes
+`generation_stop`.
+
+The stop snapshot always carries `EVO_TERMINATION_NONE`. Returning false leaves
+the deterministic 0.19.0 transition sequence unchanged. Returning true ends
+successfully at generation `g`, preserves the committed winner and statistics,
+and ultimately publishes `EVO_TERMINATION_APPLICATION_REQUESTED`. When an
+observer is also configured, EVO creates separate snapshots after the stop
+decision; the observer therefore sees the final application reason before the
+run returns.
+
+Natural terminal reasons suppress the application decision. A zero-limit run
+and the final hard-limit generation use `EVO_TERMINATION_GENERATION_LIMIT`; a
+promoted all-invalid child uses `EVO_TERMINATION_ALL_INVALID`. No stop decision
+is made for those states, nor for provisional or failed children. The callback
+allocates no engine storage, consumes no RNG, owns no view, and may not mutate
+EVO state. A null callback is replay-equivalent to 0.19.0.
 
 ## Structured C Source Evolution
 

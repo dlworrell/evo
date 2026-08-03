@@ -1,28 +1,64 @@
 #include "internal/observer.h"
 
-void evo_generation_observer_notify(const evo_problem_t *problem,
-                                    const evo_config_t *config,
-                                    const evo_result_t *result,
-                                    evo_termination_reason_t termination_reason)
+static void make_views(const evo_problem_t *problem,
+                       const evo_result_t *result,
+                       evo_termination_reason_t termination_reason,
+                       evo_generation_result_view_t *result_view,
+                       evo_generation_statistics_t *statistics_view)
 {
-    evo_generation_result_view_t result_view = {0};
-    evo_generation_statistics_t statistics_view = {0};
+    *result_view = (evo_generation_result_view_t){
+        .version = EVO_GENERATION_RESULT_VIEW_VERSION,
+        .best_genome = result->best_genome,
+        .best_genome_size = problem->genome_size,
+        .best_fitness = result->best_fitness,
+        .generations_completed = result->generations_completed,
+        .random_seed = result->random_seed,
+        .termination_reason = termination_reason,
+    };
+    *statistics_view = result->generation_statistics;
+}
 
-    if (problem == NULL || config == NULL || result == NULL ||
-        config->generation_observer == NULL) {
-        return;
+evo_termination_reason_t evo_generation_callbacks_notify(
+    const evo_problem_t *problem,
+    const evo_config_t *config,
+    const evo_result_t *result,
+    evo_termination_reason_t natural_reason)
+{
+    evo_generation_result_view_t stop_result_view = {0};
+    evo_generation_statistics_t stop_statistics_view = {0};
+    evo_termination_reason_t final_reason = natural_reason;
+
+    if (problem == NULL || config == NULL || result == NULL) {
+        return natural_reason;
     }
 
-    result_view.version = EVO_GENERATION_RESULT_VIEW_VERSION;
-    result_view.best_genome = result->best_genome;
-    result_view.best_genome_size = problem->genome_size;
-    result_view.best_fitness = result->best_fitness;
-    result_view.generations_completed = result->generations_completed;
-    result_view.random_seed = result->random_seed;
-    result_view.termination_reason = termination_reason;
-    statistics_view = result->generation_statistics;
+    if (natural_reason == EVO_TERMINATION_NONE &&
+        config->generation_stop != NULL) {
+        make_views(problem,
+                   result,
+                   natural_reason,
+                   &stop_result_view,
+                   &stop_statistics_view);
+        if (config->generation_stop(&stop_result_view,
+                                    &stop_statistics_view,
+                                    config->generation_stop_context)) {
+            final_reason = EVO_TERMINATION_APPLICATION_REQUESTED;
+        }
+    }
 
-    config->generation_observer(&result_view,
-                                &statistics_view,
-                                config->generation_observer_context);
+    if (config->generation_observer != NULL) {
+        evo_generation_result_view_t observer_result_view = {0};
+        evo_generation_statistics_t observer_statistics_view = {0};
+
+        make_views(problem,
+                   result,
+                   final_reason,
+                   &observer_result_view,
+                   &observer_statistics_view);
+        config->generation_observer(&observer_result_view,
+                                    &observer_statistics_view,
+                                    config->generation_observer_context);
+    }
+
+    return final_reason;
 }

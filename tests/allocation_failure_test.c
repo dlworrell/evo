@@ -14,6 +14,7 @@ static size_t allocation_calls;
 static size_t fail_allocation_call;
 static size_t observation_calls;
 static size_t release_calls;
+static size_t stop_calls;
 
 void *__wrap_calloc(size_t count, size_t size)
 {
@@ -81,6 +82,23 @@ static void count_observation(
     ++*count;
 }
 
+static bool request_immediate_stop(
+    const evo_generation_result_view_t *result,
+    const evo_generation_statistics_t *statistics,
+    void *context)
+{
+    size_t *count = context;
+
+    assert(result != NULL);
+    assert(statistics != NULL);
+    assert(count == &stop_calls);
+    assert(result->generations_completed == 0);
+    assert(result->termination_reason == EVO_TERMINATION_NONE);
+    assert(statistics->generation_index == 0);
+    ++*count;
+    return true;
+}
+
 static void assert_population_empty(const evo_population_t *population)
 {
     assert(population->genomes == NULL);
@@ -143,6 +161,7 @@ static void reset_allocation_injection(size_t failure_call)
     allocation_calls = 0;
     fail_allocation_call = failure_call;
     observation_calls = 0;
+    stop_calls = 0;
 }
 
 static void assert_run_allocation_failure(const evo_problem_t *problem,
@@ -204,6 +223,33 @@ int main(void)
     assert_run_allocation_failure(&problem, &config, 1);
     assert_run_allocation_failure(&problem, &config, 2);
     assert_run_allocation_failure(&problem, &config, 3);
+
+    run_config = config;
+    run_config.generation_limit = 2;
+    run_config.tournament_size = 2;
+    run_config.crossover_rate = 0.0;
+    run_config.mutation_rate = 0.0;
+    run_config.generation_stop = request_immediate_stop;
+    run_config.generation_stop_context = &stop_calls;
+
+    reset_allocation_injection(0);
+    {
+        const size_t releases_before_run = release_calls;
+
+        assert(evo_run(&problem, &run_config, NULL, &result) ==
+               EVO_SUCCESS);
+        assert(allocation_calls == 3);
+        assert(stop_calls == 1);
+        assert(observation_calls == 1);
+        assert(release_calls == releases_before_run + 2);
+        assert(result.best_genome != NULL);
+        assert(result.generations_completed == 0);
+        assert(result.termination_reason ==
+               EVO_TERMINATION_APPLICATION_REQUESTED);
+        evo_result_destroy(&result);
+        assert(release_calls == releases_before_run + 3);
+        assert_completely_empty(&result);
+    }
 
     run_config = config;
     run_config.generation_limit = 1;

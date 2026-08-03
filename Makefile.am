@@ -79,6 +79,7 @@ check_PROGRAMS = \
 	tests/evo_bounded_run_test \
 	tests/evo_statistics_test \
 	tests/evo_observer_test \
+	tests/evo_application_stop_test \
 	tests/evo_seed_schedule_research_test \
 	tests/evo_seed_schedule_experiment \
 	tests/evo_allocation_failure_test
@@ -143,6 +144,9 @@ tests_evo_statistics_test_LDADD = libcatalyst_evo.la -lm
 
 tests_evo_observer_test_SOURCES = tests/observer_test.c
 tests_evo_observer_test_LDADD = libcatalyst_evo.la -lm
+
+tests_evo_application_stop_test_SOURCES = tests/application_stop_test.c
+tests_evo_application_stop_test_LDADD = libcatalyst_evo.la -lm
 
 tests_evo_seed_schedule_research_test_SOURCES = \
 	tests/seed_schedule_research_test.c
