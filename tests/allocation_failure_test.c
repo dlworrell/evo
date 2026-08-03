@@ -218,6 +218,7 @@ int main(void)
         .max_evaluation_bytes =
             10 * sizeof(evo_candidate_evaluation_t),
         .max_child_population_bytes = 320,
+        .max_diversity_work = SIZE_MAX,
         .generation_observer = count_observation,
         .generation_observer_context = &observation_calls,
     };

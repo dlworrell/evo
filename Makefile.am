@@ -52,6 +52,7 @@ noinst_HEADERS = \
 	src/internal/child_evaluation.h \
 	src/internal/generation_advancement.h \
 	src/internal/bounded_run.h \
+	src/internal/diversity.h \
 	src/internal/statistics.h \
 	src/internal/observer.h \
 	tests/research/seed_schedule_research.h
@@ -80,6 +81,7 @@ check_PROGRAMS = \
 	tests/evo_generation_advancement_test \
 	tests/evo_bounded_run_test \
 	tests/evo_statistics_test \
+	tests/evo_diversity_test \
 	tests/evo_observer_test \
 	tests/evo_application_stop_test \
 	tests/evo_seed_schedule_research_test \
@@ -146,6 +148,9 @@ tests_evo_bounded_run_test_LDADD = libcatalyst_evo.la -lm
 
 tests_evo_statistics_test_SOURCES = tests/statistics_test.c
 tests_evo_statistics_test_LDADD = libcatalyst_evo.la -lm
+
+tests_evo_diversity_test_SOURCES = tests/diversity_test.c
+tests_evo_diversity_test_LDADD = libcatalyst_evo.la -lm
 
 tests_evo_observer_test_SOURCES = tests/observer_test.c
 tests_evo_observer_test_LDADD = libcatalyst_evo.la -lm

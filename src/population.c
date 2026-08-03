@@ -98,7 +98,8 @@ evo_status_t evo_run(const evo_problem_t *problem, const evo_config_t *config, v
         return destroy_population_with_status(&population, status);
     }
 
-    status = evo_generation_statistics_record(&population,
+    status = evo_generation_statistics_record(config,
+                                              &population,
                                               UINT64_C(0),
                                               &generation_statistics);
     if (status != EVO_SUCCESS) {

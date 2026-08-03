@@ -61,6 +61,12 @@ static bool child_progress_is_valid(
         children->rng_algorithm_version != 0 ||
         children->odd_child_policy_version != 0 ||
         children->fitness_comparison_policy_version != 0 ||
+        children->diversity_policy_version != 0 ||
+        children->diversity_metric_version != 0 ||
+        children->diversity_pair_count != 0 ||
+        children->diversity_work_units != 0 ||
+        children->diversity != 0.0 ||
+        children->diversity_uses_domain_distance ||
         children->initialized || children->has_best ||
         children->evaluated ||
         !checked_size_multiply(children->population_size,

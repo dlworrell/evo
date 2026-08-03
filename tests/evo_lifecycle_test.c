@@ -19,17 +19,35 @@ _Static_assert(EVO_GENERATION_RESULT_VIEW_VERSION == UINT32_C(1),
                "the initial observer result-view schema must remain stable");
 _Static_assert(EVO_FITNESS_COMPARISON_POLICY_VERSION == UINT32_C(1),
                "the initial fitness-comparison policy must remain stable");
-_Static_assert(EVO_GENERATION_STATISTICS_VERSION == UINT32_C(2),
-               "statistics schema 2 must carry comparison-policy evidence");
+_Static_assert(EVO_DIVERSITY_POLICY_VERSION == UINT32_C(1),
+               "the initial diversity policy must remain stable");
+_Static_assert(EVO_BYTE_DIVERSITY_METRIC_VERSION == UINT32_C(1),
+               "the initial byte-diversity metric must remain stable");
+_Static_assert(EVO_GENERATION_STATISTICS_VERSION == UINT32_C(3),
+               "statistics schema 3 must carry diversity evidence");
 _Static_assert(offsetof(evo_generation_statistics_t,
                         fitness_comparison_policy_version) >=
                    offsetof(evo_generation_statistics_t, has_best) +
                        sizeof(bool),
                "comparison-policy evidence must remain appended");
+_Static_assert(offsetof(evo_generation_statistics_t,
+                        diversity_policy_version) >=
+                   offsetof(evo_generation_statistics_t,
+                            fitness_comparison_policy_version) +
+                       sizeof(uint32_t),
+               "diversity evidence must follow the schema-2 prefix");
 _Static_assert(offsetof(evo_config_t, generation_observer) >=
                    offsetof(evo_config_t, max_child_population_bytes) +
                        sizeof(size_t),
                "the generation observer must remain appended to evo_config_t");
+_Static_assert(offsetof(evo_problem_t, genome_distance) >=
+                   offsetof(evo_problem_t, is_valid) +
+                       sizeof(((evo_problem_t *)0)->is_valid),
+               "the domain-distance callback must follow the old problem prefix");
+_Static_assert(offsetof(evo_problem_t, genome_distance_version) >=
+                   offsetof(evo_problem_t, genome_distance) +
+                       sizeof(evo_genome_distance_fn),
+               "the domain-distance version must follow its callback");
 _Static_assert(offsetof(evo_config_t, generation_observer_context) >=
                    offsetof(evo_config_t, generation_observer) +
                        sizeof(evo_generation_observer_fn),
@@ -42,6 +60,10 @@ _Static_assert(offsetof(evo_config_t, generation_stop_context) >=
                    offsetof(evo_config_t, generation_stop) +
                        sizeof(evo_generation_stop_fn),
                "the generation stop context must follow its callback");
+_Static_assert(offsetof(evo_config_t, max_diversity_work) >=
+                   offsetof(evo_config_t, generation_stop_context) +
+                       sizeof(void *),
+               "the diversity budget must remain appended to evo_config_t");
 
 enum {
     TEST_POPULATION_CAPACITY = 8,
@@ -90,6 +112,13 @@ static void assert_completely_empty(const evo_result_t *result)
     assert(!result->generation_statistics.has_best);
     assert(result->generation_statistics
                .fitness_comparison_policy_version == 0);
+    assert(result->generation_statistics.diversity_policy_version == 0);
+    assert(result->generation_statistics.diversity_metric_version == 0);
+    assert(result->generation_statistics.diversity_pair_count == 0);
+    assert(result->generation_statistics.diversity_work_units == 0);
+    assert(result->generation_statistics.diversity == 0.0);
+    assert(!result->generation_statistics
+                .diversity_uses_domain_distance);
 }
 
 static void assert_results_equal(const evo_result_t *actual,
@@ -134,6 +163,19 @@ static void assert_results_equal(const evo_result_t *actual,
                .fitness_comparison_policy_version ==
            expected->generation_statistics
                .fitness_comparison_policy_version);
+    assert(actual->generation_statistics.diversity_policy_version ==
+           expected->generation_statistics.diversity_policy_version);
+    assert(actual->generation_statistics.diversity_metric_version ==
+           expected->generation_statistics.diversity_metric_version);
+    assert(actual->generation_statistics.diversity_pair_count ==
+           expected->generation_statistics.diversity_pair_count);
+    assert(actual->generation_statistics.diversity_work_units ==
+           expected->generation_statistics.diversity_work_units);
+    assert(actual->generation_statistics.diversity ==
+           expected->generation_statistics.diversity);
+    assert(actual->generation_statistics.diversity_uses_domain_distance ==
+           expected->generation_statistics
+               .diversity_uses_domain_distance);
 }
 
 static void record_event(lifecycle_context_t *context,
@@ -228,6 +270,7 @@ static evo_config_t test_config(size_t population_size,
         .max_genome_bytes = genome_size,
         .max_population_bytes = population_size * genome_size,
         .max_evaluation_bytes = SIZE_MAX,
+        .max_diversity_work = SIZE_MAX,
     };
     return config;
 }
@@ -365,6 +408,10 @@ static void test_generation_zero_execution_and_winner_transfer(void)
     assert(result.generation_statistics
                .fitness_comparison_policy_version ==
            EVO_FITNESS_COMPARISON_POLICY_VERSION);
+    assert(result.generation_statistics.diversity_policy_version ==
+           EVO_DIVERSITY_POLICY_VERSION);
+    assert(result.generation_statistics.diversity_metric_version ==
+           EVO_BYTE_DIVERSITY_METRIC_VERSION);
     assert(result.generation_statistics.generation_index == 0);
     assert(result.generation_statistics.population_size == 4);
     assert(result.generation_statistics.valid_count == 3);

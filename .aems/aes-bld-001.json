@@ -215,6 +215,12 @@
         "autotools": "tests/evo_statistics_test"
       },
       {
+        "id": "diversity",
+        "source": "tests/diversity_test.c",
+        "cmake": "evo_diversity_test",
+        "autotools": "tests/evo_diversity_test"
+      },
+      {
         "id": "observer",
         "source": "tests/observer_test.c",
         "cmake": "evo_observer_test",

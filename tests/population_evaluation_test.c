@@ -43,6 +43,7 @@ static evo_config_t test_config(size_t population_size,
     config.max_population_bytes = population_size * genome_size;
     config.max_evaluation_bytes =
         population_size * sizeof(evo_candidate_evaluation_t);
+    config.max_diversity_work = SIZE_MAX;
     return config;
 }
 
@@ -231,6 +232,7 @@ static void test_evaluation_size_overflow_rejection(void)
         .max_genome_bytes = 1,
         .max_population_bytes = population_size,
         .max_evaluation_bytes = SIZE_MAX,
+        .max_diversity_work = SIZE_MAX,
     };
     evo_population_t population = {
         .genomes = &placeholder_genome,
