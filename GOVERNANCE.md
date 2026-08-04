@@ -56,8 +56,12 @@ Changes shall:
    process;
 8. avoid direct mutation of downstream repositories or production systems;
 9. describe optimization results as bounded measured findings rather than
-   global-optimality or universal-correctness proofs; and
-10. address all unresolved review findings before merge.
+   global-optimality or universal-correctness proofs;
+10. preserve explicit reference semantics and deterministic human-readable
+    audit projections for compressed, cached, indexed, probabilistic, or
+    accelerated structures, with probabilistic structures limited to
+    non-authoritative prechecks; and
+11. address all unresolved review findings before merge.
 
 ## Project Zero Certification
 
