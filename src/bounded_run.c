@@ -7,6 +7,7 @@
 #include "internal/elite.h"
 #include "internal/fitness.h"
 #include "internal/observer.h"
+#include "internal/selection.h"
 #include "internal/statistics.h"
 #include "internal/stopping.h"
 
@@ -54,6 +55,7 @@ static bool transition_configuration_is_valid(
     bool singleton_operator_policy_is_valid = false;
 
     if (evo_elite_validate_config(config) != EVO_SUCCESS ||
+        evo_selection_validate_config(config) != EVO_SUCCESS ||
         problem->genome_size == 0 || config->population_size == 0 ||
         config->max_genome_bytes == 0 ||
         problem->genome_size > config->max_genome_bytes ||
@@ -73,8 +75,7 @@ static bool transition_configuration_is_valid(
 #endif
 
     singleton_operator_policy_is_valid =
-        config->tournament_size != 0 &&
-        config->tournament_size <= config->population_size &&
+        evo_selection_validate_active_config(config) == EVO_SUCCESS &&
         isfinite(config->mutation_rate) &&
         config->mutation_rate >= 0.0 &&
         config->mutation_rate <= 1.0;
@@ -470,6 +471,9 @@ evo_status_t evo_bounded_run_advance(
     candidate.best_population_index = parents->best_index;
     candidate.operator_seed_schedule_version =
         EVO_OPERATOR_SEED_SCHEDULE_VERSION;
+    candidate.selection_policy_version =
+        EVO_SELECTION_POLICY_VERSION;
+    candidate.selection_policy = config->selection_policy;
     candidate.elite_policy_version = EVO_ELITE_POLICY_VERSION;
     candidate.fitness_comparison_policy_version =
         EVO_FITNESS_COMPARISON_POLICY_VERSION;
@@ -578,6 +582,10 @@ evo_status_t evo_bounded_run_advance(
         candidate.final_has_best = advancement_evidence.has_best;
         candidate.odd_child_policy_version =
             advancement_evidence.odd_child_policy_version;
+        candidate.selection_policy_version =
+            advancement_evidence.selection_policy_version;
+        candidate.selection_policy =
+            advancement_evidence.selection_policy;
         candidate.elite_policy_version =
             advancement_evidence.elite_policy_version;
         candidate.singleton_child_policy_version =

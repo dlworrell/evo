@@ -124,6 +124,16 @@ static void fixture_initialize(selection_fixture_t *fixture,
     fixture_finalize(fixture);
 }
 
+static void fixture_use_rank_selection(selection_fixture_t *fixture,
+                                       size_t base_weight,
+                                       size_t step_weight)
+{
+    fixture->config.tournament_size = 0;
+    fixture->config.selection_policy = EVO_SELECTION_RANK;
+    fixture->config.rank_base_weight = base_weight;
+    fixture->config.rank_step_weight = step_weight;
+}
+
 static void assert_rng_equal(const evo_rng_t *left,
                              const evo_rng_t *right)
 {
@@ -159,6 +169,10 @@ static void assert_fixture_core_unchanged(
            before->rng_algorithm_version);
     assert(fixture->population.operator_seed_schedule_version ==
            before->operator_seed_schedule_version);
+    assert(fixture->population.selection_policy_version ==
+           before->selection_policy_version);
+    assert(fixture->population.selection_policy ==
+           before->selection_policy);
     assert(fixture->population.odd_child_policy_version ==
            before->odd_child_policy_version);
     assert(fixture->population.elite_policy_version ==
@@ -205,6 +219,26 @@ static void test_invalid_arguments_preserve_state(void)
                &fixture.population,
                &rng,
                NULL) == EVO_ERROR_INVALID_ARGUMENT);
+    assert(evo_population_select(NULL,
+                                 &fixture.population,
+                                 &rng,
+                                 &selected_index) ==
+           EVO_ERROR_INVALID_ARGUMENT);
+    assert(evo_population_select(&fixture.config,
+                                 NULL,
+                                 &rng,
+                                 &selected_index) ==
+           EVO_ERROR_INVALID_ARGUMENT);
+    assert(evo_population_select(&fixture.config,
+                                 &fixture.population,
+                                 NULL,
+                                 &selected_index) ==
+           EVO_ERROR_INVALID_ARGUMENT);
+    assert(evo_population_select(&fixture.config,
+                                 &fixture.population,
+                                 &rng,
+                                 NULL) ==
+           EVO_ERROR_INVALID_ARGUMENT);
 
     assert(selected_index == 41);
     assert_rng_equal(&rng, &before_rng);
@@ -446,6 +480,209 @@ static void test_exact_tie_uses_lower_population_index(void)
     assert(selected_index == 1);
 }
 
+static void test_selection_policy_validation(void)
+{
+    selection_fixture_t fixture = {0};
+    evo_rng_t rng = {0};
+    size_t selected_index = 71;
+
+    fixture_initialize(&fixture, 2, 1, 73);
+    assert(evo_selection_validate_config(NULL) ==
+           EVO_ERROR_INVALID_ARGUMENT);
+    assert(evo_selection_validate_config(&fixture.config) == EVO_SUCCESS);
+    assert(evo_selection_validate_active_config(&fixture.config) ==
+           EVO_SUCCESS);
+
+    fixture.config.tournament_size = 0;
+    assert(evo_selection_validate_config(&fixture.config) == EVO_SUCCESS);
+    assert(evo_selection_validate_active_config(&fixture.config) ==
+           EVO_ERROR_RESOURCE_LIMIT);
+    fixture.config.tournament_size = 1;
+
+    fixture.config.rank_base_weight = 1;
+    assert(evo_selection_validate_config(&fixture.config) ==
+           EVO_ERROR_RESOURCE_LIMIT);
+    fixture.config.rank_base_weight = 0;
+
+    fixture.config.selection_policy = (evo_selection_policy_t)2;
+    assert(evo_selection_validate_config(&fixture.config) ==
+           EVO_ERROR_RESOURCE_LIMIT);
+
+    fixture_use_rank_selection(&fixture, 1, SIZE_MAX - 2);
+    assert(evo_selection_validate_config(&fixture.config) == EVO_SUCCESS);
+    assert(evo_selection_validate_active_config(&fixture.config) ==
+           EVO_SUCCESS);
+
+    fixture.config.tournament_size = 1;
+    assert(evo_selection_validate_config(&fixture.config) ==
+           EVO_ERROR_RESOURCE_LIMIT);
+    fixture.config.tournament_size = 0;
+
+    fixture.config.rank_base_weight = 0;
+    assert(evo_selection_validate_config(&fixture.config) ==
+           EVO_ERROR_RESOURCE_LIMIT);
+    fixture.config.rank_base_weight = 1;
+
+    fixture.config.rank_step_weight = SIZE_MAX - 1;
+    assert(evo_selection_validate_config(&fixture.config) ==
+           EVO_ERROR_RESOURCE_LIMIT);
+    fixture.config.rank_step_weight = 0;
+    fixture.config.rank_base_weight = SIZE_MAX;
+    assert(evo_selection_validate_config(&fixture.config) ==
+           EVO_ERROR_RESOURCE_LIMIT);
+
+    assert(evo_rng_seed(&rng, 79));
+    const evo_rng_t before_rng = rng;
+    assert(evo_population_select(&fixture.config,
+                                 &fixture.population,
+                                 &rng,
+                                 &selected_index) ==
+           EVO_ERROR_RESOURCE_LIMIT);
+    assert(selected_index == 71);
+    assert_rng_equal(&rng, &before_rng);
+}
+
+static void test_dispatch_preserves_tournament_replay(void)
+{
+    selection_fixture_t fixture = {0};
+    evo_rng_t direct = {0};
+    evo_rng_t dispatched = {0};
+
+    fixture_initialize(&fixture, 5, 3, 83);
+    assert(EVO_SELECTION_POLICY_VERSION == UINT32_C(1));
+    assert(fixture.config.selection_policy == EVO_SELECTION_TOURNAMENT);
+    assert(evo_rng_seed(&direct, 42));
+    assert(evo_rng_seed(&dispatched, 42));
+
+    for (size_t draw = 0; draw < 32; ++draw) {
+        size_t direct_index = SIZE_MAX;
+        size_t dispatched_index = SIZE_MAX;
+
+        assert(evo_population_select_tournament(&fixture.config,
+                                                &fixture.population,
+                                                &direct,
+                                                &direct_index) ==
+               EVO_SUCCESS);
+        assert(evo_population_select(&fixture.config,
+                                     &fixture.population,
+                                     &dispatched,
+                                     &dispatched_index) ==
+               EVO_SUCCESS);
+        assert(direct_index == dispatched_index);
+    }
+    assert_rng_equal(&direct, &dispatched);
+}
+
+static void test_rank_golden_ties_invalid_and_replay(void)
+{
+    static const size_t expected[] = {
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        1,
+        3,
+        1,
+        1,
+        3,
+        3,
+    };
+    selection_fixture_t fixture = {0};
+    evo_rng_t first = {0};
+    evo_rng_t replay = {0};
+
+    fixture_initialize(&fixture, 5, 3, 89);
+    fixture_set_candidate(&fixture, 0, false, 0.0);
+    fixture_set_candidate(&fixture, 1, true, 10.0);
+    fixture_set_candidate(&fixture, 2, true, 5.0);
+    fixture_set_candidate(&fixture, 3, true, 10.0);
+    fixture_set_candidate(&fixture, 4, false, 0.0);
+    fixture_finalize(&fixture);
+    fixture_use_rank_selection(&fixture, 1, 2);
+
+    assert(evo_rng_seed(&first, 42));
+    assert(evo_rng_seed(&replay, 42));
+    for (size_t draw = 0;
+         draw < sizeof(expected) / sizeof(expected[0]);
+         ++draw) {
+        size_t first_index = SIZE_MAX;
+        size_t replay_index = SIZE_MAX;
+
+        assert(evo_population_select(&fixture.config,
+                                     &fixture.population,
+                                     &first,
+                                     &first_index) == EVO_SUCCESS);
+        assert(evo_population_select(&fixture.config,
+                                     &fixture.population,
+                                     &replay,
+                                     &replay_index) == EVO_SUCCESS);
+        assert(first_index == expected[draw]);
+        assert(replay_index == first_index);
+    }
+    assert_rng_equal(&first, &replay);
+}
+
+static void test_rank_one_member_and_extreme_weights(void)
+{
+    selection_fixture_t single = {0};
+    selection_fixture_t extreme = {0};
+    evo_rng_t rng = {0};
+    size_t selected_index = SIZE_MAX;
+
+    fixture_initialize(&single, 1, 1, 97);
+    fixture_use_rank_selection(&single, SIZE_MAX, SIZE_MAX);
+    assert(evo_selection_validate_config(&single.config) == EVO_SUCCESS);
+    assert(evo_rng_seed(&rng, 42));
+    assert(evo_population_select(&single.config,
+                                 &single.population,
+                                 &rng,
+                                 &selected_index) == EVO_SUCCESS);
+    assert(selected_index == 0);
+
+    fixture_initialize(&extreme, 2, 1, 101);
+    fixture_use_rank_selection(&extreme, 1, SIZE_MAX - 2);
+    assert(evo_selection_validate_config(&extreme.config) == EVO_SUCCESS);
+    assert(evo_rng_seed(&rng, 42));
+    selected_index = SIZE_MAX;
+    assert(evo_population_select(&extreme.config,
+                                 &extreme.population,
+                                 &rng,
+                                 &selected_index) == EVO_SUCCESS);
+    assert(selected_index == 1);
+}
+
+static void test_rank_fixed_seed_statistical_sanity(void)
+{
+    selection_fixture_t fixture = {0};
+    evo_rng_t rng = {0};
+    size_t counts[4] = {0};
+
+    fixture_initialize(&fixture, 4, 2, 103);
+    fixture_use_rank_selection(&fixture, 1, 1);
+    assert(evo_rng_seed(&rng, UINT64_C(20260803)));
+
+    for (size_t draw = 0; draw < 10000; ++draw) {
+        size_t selected_index = SIZE_MAX;
+
+        assert(evo_population_select(&fixture.config,
+                                     &fixture.population,
+                                     &rng,
+                                     &selected_index) == EVO_SUCCESS);
+        assert(selected_index < 4);
+        ++counts[selected_index];
+    }
+
+    assert(counts[0] >= 900 && counts[0] <= 1100);
+    assert(counts[1] >= 1850 && counts[1] <= 2150);
+    assert(counts[2] >= 2850 && counts[2] <= 3150);
+    assert(counts[3] >= 3800 && counts[3] <= 4200);
+    assert(counts[0] < counts[1]);
+    assert(counts[1] < counts[2]);
+    assert(counts[2] < counts[3]);
+}
+
 int main(void)
 {
     test_invalid_arguments_preserve_state();
@@ -455,5 +692,10 @@ int main(void)
     test_valid_only_selection_and_replay();
     test_fixed_vector_and_single_draw();
     test_exact_tie_uses_lower_population_index();
+    test_selection_policy_validation();
+    test_dispatch_preserves_tournament_replay();
+    test_rank_golden_ties_invalid_and_replay();
+    test_rank_one_member_and_extreme_weights();
+    test_rank_fixed_seed_statistical_sanity();
     return 0;
 }

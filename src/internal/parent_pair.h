@@ -12,16 +12,18 @@ typedef struct evo_parent_pair {
     size_t pair_index;
     uint64_t source_generation;
     uint32_t seed_schedule_version;
+    uint32_t selection_policy_version;
+    evo_selection_policy_t selection_policy;
 } evo_parent_pair_t;
 
 /*
  * Plan one complete pair of child slots without writing child storage.
  *
  * The planner derives a selection-domain stream from the master seed, source
- * generation, and pair ordinal, then performs two tournaments with
- * replacement. Only the complete pairs in the resolved non-elite prefix are
- * in scope. A possible singleton and the stable elite suffix remain
- * unassigned. Rejection preserves the parent population and output object.
+ * generation, and pair ordinal, then performs two configured policy draws.
+ * Only the complete pairs in the resolved non-elite prefix are in scope. A
+ * possible singleton and the stable elite suffix remain unassigned. Rejection
+ * preserves the parent population and output object.
  */
 evo_status_t evo_parent_pair_plan(
     const evo_config_t *config,

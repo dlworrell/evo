@@ -128,6 +128,8 @@ static bool child_state_is_valid(const evo_problem_t *problem,
         children->elite_source_valid_count != 0 ||
         children->initialization_seed != 0 ||
         children->rng_algorithm_version != 0 ||
+        (children->selection_policy_version == 0 &&
+         children->selection_policy != EVO_SELECTION_TOURNAMENT) ||
         children->odd_child_policy_version != 0 ||
         children->elite_policy_version != 0 ||
         children->singleton_child_policy_version != 0 ||
@@ -150,12 +152,17 @@ static bool child_state_is_valid(const evo_problem_t *problem,
 
     if (child_index == 0) {
         return children->source_generation == 0 &&
-               children->operator_seed_schedule_version == 0;
+               children->operator_seed_schedule_version == 0 &&
+               children->selection_policy_version == 0 &&
+               children->selection_policy == EVO_SELECTION_TOURNAMENT;
     }
 
     return children->source_generation == source_generation &&
            children->operator_seed_schedule_version ==
-               EVO_OPERATOR_SEED_SCHEDULE_VERSION;
+               EVO_OPERATOR_SEED_SCHEDULE_VERSION &&
+           children->selection_policy_version ==
+               EVO_SELECTION_POLICY_VERSION &&
+           children->selection_policy == config->selection_policy;
 }
 
 static bool size_index_to_u64(size_t index, uint64_t *converted)
@@ -209,9 +216,12 @@ evo_status_t evo_child_single_produce(
         return EVO_ERROR_INVALID_ARGUMENT;
     }
 
-    if (problem->genome_size == 0 || config->population_size == 0 ||
-        config->tournament_size == 0 ||
-        config->tournament_size > config->population_size ||
+    status = evo_selection_validate_active_config(config);
+    if (status != EVO_SUCCESS) {
+        return status;
+    }
+
+    if (problem->genome_size == 0 ||
         config->max_genome_bytes == 0 ||
         problem->genome_size > config->max_genome_bytes ||
         config->max_child_population_bytes == 0 ||
@@ -274,10 +284,10 @@ evo_status_t evo_child_single_produce(
         return EVO_ERROR_STATE;
     }
 
-    status = evo_population_select_tournament(config,
-                                              parents,
-                                              &selection_rng,
-                                              &candidate.parent_index);
+    status = evo_population_select(config,
+                                   parents,
+                                   &selection_rng,
+                                   &candidate.parent_index);
     if (status != EVO_SUCCESS) {
         return status;
     }
@@ -303,6 +313,9 @@ evo_status_t evo_child_single_produce(
     children->source_generation = source_generation;
     children->operator_seed_schedule_version =
         EVO_OPERATOR_SEED_SCHEDULE_VERSION;
+    children->selection_policy_version =
+        EVO_SELECTION_POLICY_VERSION;
+    children->selection_policy = config->selection_policy;
     children->singleton_child_policy_version =
         EVO_SINGLETON_CHILD_POLICY_VERSION;
 
@@ -311,6 +324,9 @@ evo_status_t evo_child_single_produce(
     candidate.rng_algorithm_version = EVO_RNG_ALGORITHM_VERSION;
     candidate.operator_seed_schedule_version =
         EVO_OPERATOR_SEED_SCHEDULE_VERSION;
+    candidate.selection_policy_version =
+        EVO_SELECTION_POLICY_VERSION;
+    candidate.selection_policy = config->selection_policy;
     candidate.policy_version = EVO_SINGLETON_CHILD_POLICY_VERSION;
     candidate.complete = true;
     *evidence = candidate;

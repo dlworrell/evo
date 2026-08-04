@@ -24,10 +24,9 @@ evo_status_t evo_parent_pair_plan(
         return EVO_ERROR_INVALID_ARGUMENT;
     }
 
-    if (config->population_size == 0 ||
-        config->tournament_size == 0 ||
-        config->tournament_size > config->population_size) {
-        return EVO_ERROR_RESOURCE_LIMIT;
+    status = evo_selection_validate_active_config(config);
+    if (status != EVO_SUCCESS) {
+        return status;
     }
 
     if (!evo_population_validate_completed(
@@ -68,7 +67,7 @@ evo_status_t evo_parent_pair_plan(
         return EVO_ERROR_STATE;
     }
 
-    status = evo_population_select_tournament(
+    status = evo_population_select(
         config,
         parents,
         &selection_rng,
@@ -77,7 +76,7 @@ evo_status_t evo_parent_pair_plan(
         return status;
     }
 
-    status = evo_population_select_tournament(
+    status = evo_population_select(
         config,
         parents,
         &selection_rng,
@@ -92,6 +91,9 @@ evo_status_t evo_parent_pair_plan(
     candidate.source_generation = source_generation;
     candidate.seed_schedule_version =
         EVO_OPERATOR_SEED_SCHEDULE_VERSION;
+    candidate.selection_policy_version =
+        EVO_SELECTION_POLICY_VERSION;
+    candidate.selection_policy = config->selection_policy;
 
     *pair = candidate;
     return EVO_SUCCESS;

@@ -4,6 +4,7 @@
 #include "internal/elite.h"
 #include "internal/fitness.h"
 #include "internal/rng.h"
+#include "internal/selection.h"
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -43,6 +44,10 @@ static bool completed_population_provenance_is_valid(
     uint32_t expected_odd_child_policy_version = 0;
     uint32_t expected_singleton_child_policy_version = 0;
 
+    if (evo_selection_validate_config(config) != EVO_SUCCESS) {
+        return false;
+    }
+
     if (population->initialized) {
         return population->initialization_seed == config->random_seed &&
                population->rng_algorithm_version ==
@@ -52,6 +57,9 @@ static bool completed_population_provenance_is_valid(
                population->elite_source_valid_count == 0 &&
                population->source_generation == 0 &&
                population->operator_seed_schedule_version == 0 &&
+               population->selection_policy_version == 0 &&
+               population->selection_policy ==
+                   EVO_SELECTION_TOURNAMENT &&
                population->odd_child_policy_version == 0 &&
                population->elite_policy_version == 0 &&
                population->singleton_child_policy_version == 0 &&
@@ -86,6 +94,9 @@ static bool completed_population_provenance_is_valid(
            population->elite_count == expected_elite_count &&
            population->operator_seed_schedule_version ==
                EVO_OPERATOR_SEED_SCHEDULE_VERSION &&
+           population->selection_policy_version ==
+               EVO_SELECTION_POLICY_VERSION &&
+           population->selection_policy == config->selection_policy &&
            population->odd_child_policy_version ==
                expected_odd_child_policy_version &&
            population->elite_policy_version ==

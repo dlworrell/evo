@@ -43,6 +43,9 @@ static bool produced_child_ready_for_evaluation(
         children->source_generation != source_generation ||
         children->operator_seed_schedule_version !=
             EVO_OPERATOR_SEED_SCHEDULE_VERSION ||
+        children->selection_policy_version !=
+            EVO_SELECTION_POLICY_VERSION ||
+        children->selection_policy != config->selection_policy ||
         children->fitness_comparison_policy_version != 0 ||
         children->diversity_policy_version != 0 ||
         children->diversity_metric_version != 0 ||
@@ -140,6 +143,9 @@ evo_status_t evo_child_population_evaluate(
     candidate.source_generation = children->source_generation;
     candidate.operator_seed_schedule_version =
         children->operator_seed_schedule_version;
+    candidate.selection_policy_version =
+        children->selection_policy_version;
+    candidate.selection_policy = children->selection_policy;
     candidate.odd_child_policy_version =
         children->odd_child_policy_version;
     candidate.elite_policy_version = children->elite_policy_version;

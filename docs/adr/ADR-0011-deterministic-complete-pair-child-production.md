@@ -1,6 +1,6 @@
 # ADR-0011: Deterministic Complete-Pair Child Production
 
-Status: Accepted
+Status: Accepted (selection provenance extended by ADR-0025)
 Date: 2026-07-31
 Decision owner: EVO
 
@@ -63,6 +63,11 @@ candidate evidence empty. For an odd population, the trailing child remains
 outside the committed complete-pair prefix.
 
 The operation is private and is not called by `evo_run`.
+
+ADR-0025 adds selection-policy version and enum provenance to pair plans and
+produced child state in EVO 0.25.0. It also generalizes preflight from
+tournament-only validation to the configured selection dispatch while leaving
+crossover, mutation, callback order, and child-slot ownership unchanged.
 
 ## Consequences
 

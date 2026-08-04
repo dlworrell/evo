@@ -192,6 +192,9 @@ static void assert_population_metadata_equal(
     assert(left->rng_algorithm_version == right->rng_algorithm_version);
     assert(left->operator_seed_schedule_version ==
            right->operator_seed_schedule_version);
+    assert(left->selection_policy_version ==
+           right->selection_policy_version);
+    assert(left->selection_policy == right->selection_policy);
     assert(left->odd_child_policy_version ==
            right->odd_child_policy_version);
     assert(left->elite_policy_version == right->elite_policy_version);
@@ -250,9 +253,11 @@ static evo_child_pair_evidence_t sentinel_evidence(void)
             .pair_index = 23,
             .source_generation = 29,
             .seed_schedule_version = 31,
+            .selection_policy_version = 37,
+            .selection_policy = EVO_SELECTION_RANK,
         },
-        .produced_count = 37,
-        .rng_algorithm_version = 41,
+        .produced_count = 41,
+        .rng_algorithm_version = 43,
         .complete = true,
     };
 }
@@ -269,6 +274,9 @@ static void assert_evidence_equal(
     assert(left->plan.source_generation == right->plan.source_generation);
     assert(left->plan.seed_schedule_version ==
            right->plan.seed_schedule_version);
+    assert(left->plan.selection_policy_version ==
+           right->plan.selection_policy_version);
+    assert(left->plan.selection_policy == right->plan.selection_policy);
     assert(left->produced_count == right->produced_count);
     assert(left->rng_algorithm_version == right->rng_algorithm_version);
     assert(left->complete == right->complete);
@@ -312,6 +320,9 @@ static void assert_child_progress(const evo_population_t *children,
     assert(children->rng_algorithm_version == 0);
     assert(children->operator_seed_schedule_version ==
            EVO_OPERATOR_SEED_SCHEDULE_VERSION);
+    assert(children->selection_policy_version ==
+           EVO_SELECTION_POLICY_VERSION);
+    assert(children->selection_policy == EVO_SELECTION_TOURNAMENT);
     assert(children->odd_child_policy_version == 0);
     assert(children->elite_policy_version == 0);
     assert(children->singleton_child_policy_version == 0);
@@ -603,6 +614,9 @@ static void test_fixed_pairs_replay_and_odd_tail(void)
     assert(first_pair.plan.source_generation == 7);
     assert(first_pair.plan.seed_schedule_version ==
            EVO_OPERATOR_SEED_SCHEDULE_VERSION);
+    assert(first_pair.plan.selection_policy_version ==
+           EVO_SELECTION_POLICY_VERSION);
+    assert(first_pair.plan.selection_policy == EVO_SELECTION_TOURNAMENT);
     assert(first_pair.produced_count == 2);
     assert(first_pair.rng_algorithm_version ==
            EVO_RNG_ALGORITHM_VERSION);

@@ -1,6 +1,6 @@
 # ADR-0013: Deterministic Produced-Child Evaluation
 
-Status: Accepted
+Status: Accepted (selection provenance extended by ADR-0025)
 Date: 2026-08-01
 Decision owner: EVO
 
@@ -78,6 +78,11 @@ elite policy version, explicit-versus-compatibility mode, and singleton policy
 version. Evaluation ordering, allocation, byte immutability, and rollback are
 unchanged.
 
+ADR-0025 advances child-evaluation policy to version 5 in EVO 0.25.0. Produced
+children and output evidence must preserve selection-policy version 1 and the
+enum matching the active configuration. Evaluation ordering, allocation, byte
+immutability, and rollback remain unchanged.
+
 ## Consequences
 
 - Generation-zero and child evaluation cannot drift in ordering, finite-
@@ -89,7 +94,7 @@ unchanged.
 - Callback-context side effects after validation or evaluation dispatch begins
   cannot be rolled back; this remains part of the consumer callback contract.
 - All-invalid children are completed evaluated populations but cannot supply a
-  tournament winner.
+  selection winner.
 - A subsequent child slab can be allocated from an evaluated child without a
   population swap.
 - Parent/child swapping, generation-number advancement and overflow,

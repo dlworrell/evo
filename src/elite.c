@@ -3,6 +3,7 @@
 #include "internal/child_tail.h"
 #include "internal/fitness.h"
 #include "internal/rng.h"
+#include "internal/selection.h"
 
 #include <stdint.h>
 
@@ -365,6 +366,10 @@ evo_status_t evo_elite_population_complete(
     if (status != EVO_SUCCESS) {
         return status;
     }
+    status = evo_selection_validate_config(config);
+    if (status != EVO_SUCCESS) {
+        return status;
+    }
     if (problem->genome_size == 0 || config->max_genome_bytes == 0 ||
         problem->genome_size > config->max_genome_bytes ||
         config->max_child_population_bytes == 0) {
@@ -409,6 +414,8 @@ evo_status_t evo_elite_population_complete(
         children->elite_source_valid_count != 0 ||
         children->initialization_seed != 0 ||
         children->rng_algorithm_version != 0 ||
+        (children->selection_policy_version == 0 &&
+         children->selection_policy != EVO_SELECTION_TOURNAMENT) ||
         children->odd_child_policy_version != 0 ||
         children->elite_policy_version != 0 ||
         children->singleton_child_policy_version !=
@@ -432,11 +439,16 @@ evo_status_t evo_elite_population_complete(
 
     if ((offspring_count == 0 &&
          (children->source_generation != 0 ||
-          children->operator_seed_schedule_version != 0)) ||
+          children->operator_seed_schedule_version != 0 ||
+          children->selection_policy_version != 0 ||
+          children->selection_policy != EVO_SELECTION_TOURNAMENT)) ||
         (offspring_count != 0 &&
          (children->source_generation != source_generation ||
           children->operator_seed_schedule_version !=
-              EVO_OPERATOR_SEED_SCHEDULE_VERSION))) {
+              EVO_OPERATOR_SEED_SCHEDULE_VERSION ||
+          children->selection_policy_version !=
+              EVO_SELECTION_POLICY_VERSION ||
+          children->selection_policy != config->selection_policy))) {
         return EVO_ERROR_STATE;
     }
 
@@ -461,6 +473,9 @@ evo_status_t evo_elite_population_complete(
     children->source_generation = source_generation;
     children->operator_seed_schedule_version =
         EVO_OPERATOR_SEED_SCHEDULE_VERSION;
+    children->selection_policy_version =
+        EVO_SELECTION_POLICY_VERSION;
+    children->selection_policy = config->selection_policy;
     children->odd_child_policy_version =
         !config->elite_count_enabled &&
                 config->population_size % 2 != 0
@@ -476,6 +491,9 @@ evo_status_t evo_elite_population_complete(
     candidate.source_generation = source_generation;
     candidate.operator_seed_schedule_version =
         EVO_OPERATOR_SEED_SCHEDULE_VERSION;
+    candidate.selection_policy_version =
+        EVO_SELECTION_POLICY_VERSION;
+    candidate.selection_policy = config->selection_policy;
     candidate.odd_child_policy_version =
         children->odd_child_policy_version;
     candidate.elite_policy_version = EVO_ELITE_POLICY_VERSION;

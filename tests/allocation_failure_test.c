@@ -138,6 +138,8 @@ static void assert_population_empty(const evo_population_t *population)
     assert(population->source_generation == 0);
     assert(population->rng_algorithm_version == 0);
     assert(population->operator_seed_schedule_version == 0);
+    assert(population->selection_policy_version == 0);
+    assert(population->selection_policy == EVO_SELECTION_TOURNAMENT);
     assert(population->odd_child_policy_version == 0);
     assert(population->elite_policy_version == 0);
     assert(population->singleton_child_policy_version == 0);
@@ -160,6 +162,8 @@ static void assert_population_evaluation_empty(
     assert(population->elite_source_valid_count == 0);
     assert(population->source_generation == 0);
     assert(population->operator_seed_schedule_version == 0);
+    assert(population->selection_policy_version == 0);
+    assert(population->selection_policy == EVO_SELECTION_TOURNAMENT);
     assert(population->odd_child_policy_version == 0);
     assert(population->elite_policy_version == 0);
     assert(population->singleton_child_policy_version == 0);
@@ -187,6 +191,9 @@ static void assert_child_evaluation_empty(
     assert(population->rng_algorithm_version == 0);
     assert(population->operator_seed_schedule_version ==
            EVO_OPERATOR_SEED_SCHEDULE_VERSION);
+    assert(population->selection_policy_version ==
+           EVO_SELECTION_POLICY_VERSION);
+    assert(population->selection_policy == EVO_SELECTION_TOURNAMENT);
     assert(population->odd_child_policy_version == 0);
     assert(population->elite_policy_version == EVO_ELITE_POLICY_VERSION);
     assert(population->singleton_child_policy_version == 0);
@@ -268,6 +275,18 @@ int main(void)
     assert_run_allocation_failure(&problem, &config, 1);
     assert_run_allocation_failure(&problem, &config, 2);
     assert_run_allocation_failure(&problem, &config, 3);
+
+    run_config = config;
+    run_config.generation_limit = 1;
+    run_config.selection_policy = EVO_SELECTION_RANK;
+    run_config.rank_base_weight = SIZE_MAX;
+    reset_allocation_injection(0);
+    assert(evo_run(&problem, &run_config, NULL, &result) ==
+           EVO_ERROR_RESOURCE_LIMIT);
+    assert(allocation_calls == 0);
+    assert(observation_calls == 0);
+    assert(stop_calls == 0);
+    assert_completely_empty(&result);
 
     run_config = config;
     run_config.generation_limit = 2;

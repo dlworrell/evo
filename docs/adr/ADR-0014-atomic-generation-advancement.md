@@ -1,6 +1,6 @@
 # ADR-0014: Atomic Generation Advancement
 
-Status: Accepted
+Status: Accepted (selection provenance extended by ADR-0025)
 Date: 2026-08-01
 Decision owner: EVO
 
@@ -65,6 +65,10 @@ ADR-0024 advances generation-advancement policy to version 4 in EVO 0.24.0 so
 the output also preserves elite count, source valid count, elite policy,
 singleton policy, and explicit-versus-compatibility provenance. The ownership
 move and lineage rules remain unchanged.
+
+ADR-0025 advances generation-advancement policy to version 5 in EVO 0.25.0 so
+the output also preserves selection-policy version 1 and the active enum. The
+ownership move and lineage rules remain unchanged.
 
 ## Consequences
 

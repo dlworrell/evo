@@ -48,6 +48,9 @@ evo_status_t evo_child_tail_produce(
     candidate.source_generation = source_generation;
     candidate.operator_seed_schedule_version =
         EVO_OPERATOR_SEED_SCHEDULE_VERSION;
+    candidate.selection_policy_version =
+        elite_evidence.selection_policy_version;
+    candidate.selection_policy = elite_evidence.selection_policy;
     candidate.policy_version = EVO_ODD_CHILD_POLICY_VERSION;
     candidate.complete = true;
     *evidence = candidate;

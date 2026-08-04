@@ -277,10 +277,12 @@ static evo_child_evaluation_evidence_t sentinel_evidence(void)
         .elite_source_valid_count = 46,
         .source_generation = 47,
         .operator_seed_schedule_version = 53,
-        .odd_child_policy_version = 59,
-        .elite_policy_version = 60,
-        .singleton_child_policy_version = 61,
-        .policy_version = 67,
+        .selection_policy_version = 59,
+        .selection_policy = EVO_SELECTION_RANK,
+        .odd_child_policy_version = 61,
+        .elite_policy_version = 67,
+        .singleton_child_policy_version = 71,
+        .policy_version = 73,
         .has_best = true,
         .elite_count_explicit = true,
         .complete = true,
@@ -301,6 +303,9 @@ static void assert_evidence_equal(
     assert(left->source_generation == right->source_generation);
     assert(left->operator_seed_schedule_version ==
            right->operator_seed_schedule_version);
+    assert(left->selection_policy_version ==
+           right->selection_policy_version);
+    assert(left->selection_policy == right->selection_policy);
     assert(left->odd_child_policy_version ==
            right->odd_child_policy_version);
     assert(left->elite_policy_version == right->elite_policy_version);
@@ -355,6 +360,9 @@ static void assert_unevaluated_unchanged(
            before->rng_algorithm_version);
     assert(population->operator_seed_schedule_version ==
            before->operator_seed_schedule_version);
+    assert(population->selection_policy_version ==
+           before->selection_policy_version);
+    assert(population->selection_policy == before->selection_policy);
     assert(population->odd_child_policy_version ==
            before->odd_child_policy_version);
     assert(population->elite_policy_version ==
@@ -425,6 +433,9 @@ static void assert_completed_unchanged(
            before->rng_algorithm_version);
     assert(population->operator_seed_schedule_version ==
            before->operator_seed_schedule_version);
+    assert(population->selection_policy_version ==
+           before->selection_policy_version);
+    assert(population->selection_policy == before->selection_policy);
     assert(population->odd_child_policy_version ==
            before->odd_child_policy_version);
     assert(population->elite_policy_version ==
@@ -533,6 +544,9 @@ static void test_odd_child_order_tie_and_completed_authority(void)
     assert(fixture.children.rng_algorithm_version == 0);
     assert(fixture.children.operator_seed_schedule_version ==
            EVO_OPERATOR_SEED_SCHEDULE_VERSION);
+    assert(fixture.children.selection_policy_version ==
+           EVO_SELECTION_POLICY_VERSION);
+    assert(fixture.children.selection_policy == EVO_SELECTION_TOURNAMENT);
     assert(fixture.children.odd_child_policy_version ==
            EVO_ODD_CHILD_POLICY_VERSION);
     assert(fixture.children.elite_count == 1);
@@ -560,6 +574,9 @@ static void test_odd_child_order_tie_and_completed_authority(void)
     assert(evidence.source_generation == 7);
     assert(evidence.operator_seed_schedule_version ==
            EVO_OPERATOR_SEED_SCHEDULE_VERSION);
+    assert(evidence.selection_policy_version ==
+           EVO_SELECTION_POLICY_VERSION);
+    assert(evidence.selection_policy == EVO_SELECTION_TOURNAMENT);
     assert(evidence.odd_child_policy_version ==
            EVO_ODD_CHILD_POLICY_VERSION);
     assert(evidence.elite_count == 1);
@@ -660,6 +677,9 @@ static void test_one_member_child_is_evaluated(void)
     assert(fixture.children.produced_count == 1);
     assert(fixture.children.operator_seed_schedule_version ==
            EVO_OPERATOR_SEED_SCHEDULE_VERSION);
+    assert(fixture.children.selection_policy_version ==
+           EVO_SELECTION_POLICY_VERSION);
+    assert(fixture.children.selection_policy == EVO_SELECTION_TOURNAMENT);
     assert(fixture.children.odd_child_policy_version ==
            EVO_ODD_CHILD_POLICY_VERSION);
     assert(fixture.children.elite_count == 1);
@@ -683,6 +703,9 @@ static void test_one_member_child_is_evaluated(void)
     assert(fixture.children.fitness_comparison_policy_version ==
            EVO_FITNESS_COMPARISON_POLICY_VERSION);
     assert(evidence.source_generation == 0);
+    assert(evidence.selection_policy_version ==
+           EVO_SELECTION_POLICY_VERSION);
+    assert(evidence.selection_policy == EVO_SELECTION_TOURNAMENT);
     assert(evidence.elite_count == 1);
     assert(evidence.elite_source_valid_count == 1);
     assert(evidence.elite_policy_version == EVO_ELITE_POLICY_VERSION);
@@ -889,6 +912,25 @@ static void test_preflight_and_budget_rejections_preserve_state(void)
                                          &evidence) == EVO_ERROR_STATE);
     fixture.children.operator_seed_schedule_version =
         EVO_OPERATOR_SEED_SCHEDULE_VERSION;
+
+    fixture.children.selection_policy_version = 0;
+    assert(evo_child_population_evaluate(&fixture.problem,
+                                         &fixture.config,
+                                         &fixture,
+                                         13,
+                                         &fixture.children,
+                                         &evidence) == EVO_ERROR_STATE);
+    fixture.children.selection_policy_version =
+        EVO_SELECTION_POLICY_VERSION;
+
+    fixture.children.selection_policy = EVO_SELECTION_RANK;
+    assert(evo_child_population_evaluate(&fixture.problem,
+                                         &fixture.config,
+                                         &fixture,
+                                         13,
+                                         &fixture.children,
+                                         &evidence) == EVO_ERROR_STATE);
+    fixture.children.selection_policy = EVO_SELECTION_TOURNAMENT;
 
     fixture.children.odd_child_policy_version = 0;
     assert(evo_child_population_evaluate(&fixture.problem,

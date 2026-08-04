@@ -85,6 +85,8 @@ static void assert_population_empty(const evo_population_t *population)
     assert(population->source_generation == 0);
     assert(population->rng_algorithm_version == 0);
     assert(population->operator_seed_schedule_version == 0);
+    assert(population->selection_policy_version == 0);
+    assert(population->selection_policy == EVO_SELECTION_TOURNAMENT);
     assert(population->odd_child_policy_version == 0);
     assert(population->elite_policy_version == 0);
     assert(population->singleton_child_policy_version == 0);
@@ -112,6 +114,8 @@ static void assert_child_storage(const evo_population_t *children)
     assert(children->source_generation == 0);
     assert(children->rng_algorithm_version == 0);
     assert(children->operator_seed_schedule_version == 0);
+    assert(children->selection_policy_version == 0);
+    assert(children->selection_policy == EVO_SELECTION_TOURNAMENT);
     assert(children->odd_child_policy_version == 0);
     assert(children->elite_policy_version == 0);
     assert(children->singleton_child_policy_version == 0);
@@ -168,6 +172,9 @@ static void assert_parent_unchanged(const evo_population_t *parents,
     assert(parents->rng_algorithm_version == before->rng_algorithm_version);
     assert(parents->operator_seed_schedule_version ==
            before->operator_seed_schedule_version);
+    assert(parents->selection_policy_version ==
+           before->selection_policy_version);
+    assert(parents->selection_policy == before->selection_policy);
     assert(parents->odd_child_policy_version ==
            before->odd_child_policy_version);
     assert(parents->elite_policy_version ==

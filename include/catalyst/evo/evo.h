@@ -10,7 +10,7 @@ extern "C" {
 #endif
 
 #define EVO_VERSION_MAJOR 0
-#define EVO_VERSION_MINOR 24
+#define EVO_VERSION_MINOR 25
 #define EVO_VERSION_PATCH 0
 
 typedef enum evo_status {
@@ -33,11 +33,17 @@ typedef enum evo_termination_reason {
     EVO_TERMINATION_STAGNATED = 5
 } evo_termination_reason_t;
 
+typedef enum evo_selection_policy {
+    EVO_SELECTION_TOURNAMENT = 0,
+    EVO_SELECTION_RANK = 1
+} evo_selection_policy_t;
+
 #define EVO_FITNESS_COMPARISON_POLICY_VERSION UINT32_C(1)
 #define EVO_DIVERSITY_POLICY_VERSION UINT32_C(1)
 #define EVO_BYTE_DIVERSITY_METRIC_VERSION UINT32_C(1)
 #define EVO_STOPPING_POLICY_VERSION UINT32_C(1)
 #define EVO_ELITE_POLICY_VERSION UINT32_C(1)
+#define EVO_SELECTION_POLICY_VERSION UINT32_C(1)
 
 /*
  * Fitness components are caller-owned evidence. constraint_penalty is a
@@ -232,6 +238,17 @@ typedef struct evo_config {
      */
     bool elite_count_enabled;
     size_t elite_count;
+    /*
+     * Selection policy version 1 uses tournament selection for the zero-valued
+     * compatibility default. Rank mode requires tournament_size to be zero
+     * and gives stable rank r among n valid candidates the exact integer
+     * weight rank_base_weight + (n - 1 - r) * rank_step_weight. The base
+     * weight must be positive. Both rank weights must be zero in tournament
+     * mode, and the worst-case configured total must fit in size_t.
+     */
+    evo_selection_policy_t selection_policy;
+    size_t rank_base_weight;
+    size_t rank_step_weight;
 } evo_config_t;
 
 typedef struct evo_result {

@@ -31,6 +31,8 @@ population-diversity evidence, and version 0.23.0 adds deterministic
 convergence and stagnation classification over committed evidence. Version
 0.24.0 adds caller-bounded deterministic elite preservation with an explicit
 ordinary-singleton path and compatibility-stable operator scheduling.
+Version 0.25.0 adds versioned tournament/rank parent-selection dispatch with
+exact integer weights and stable comparison-derived ranks.
 
 ### Source analysis and transformation
 
@@ -70,7 +72,7 @@ project patch automatically.
 
 ## Current Conformance Boundary
 
-Only the evolutionary-search core exists in version 0.24.0. Source ingestion,
+Only the evolutionary-search core exists in version 0.25.0. Source ingestion,
 analysis, transformation, candidate materialization, external-process
 isolation, target-code measurement, product commands, and optimized-patch
 artifacts are planned by issues #58 through #69. Documentation of those
@@ -79,7 +81,7 @@ planned boundaries is not an implementation claim.
 ## Core Modules
 
 - Population management
-- Selection
+- Versioned tournament and stable rank-based selection
 - Crossover
 - Mutation
 - Deterministic elite preservation and ordinary singleton production
@@ -195,6 +197,16 @@ commits its output only after all draws succeed. It does not define stream
 derivation or persistence. Version 0.11.0 supplies that ownership separately
 for complete parent pairs without changing the selection operator.
 
+Version 0.25.0 places the existing operator behind selection-policy version 1
+as the zero-valued compatibility dispatch and adds stable rank mode. Rank mode
+uses the common fitness comparator to assign unique ranks, including lower-
+index ordering for exact ties. It maps exact caller-configured linear integer
+weights to one unbiased bounded ticket; invalid candidates own no interval.
+All-valid worst-case arithmetic is checked before a positive-limit run can
+allocate or invoke callbacks, and each actual rank distribution is dry-resolved
+before its selection stream advances. Rank selection remains allocation-free,
+with constant auxiliary storage.
+
 ## Private Crossover Boundary
 
 Version 0.8.0 adds a private representation-neutral crossover dispatcher. It
@@ -244,7 +256,7 @@ schedules remain future work.
 
 Version 0.10.0 adds one independently owned child-population genome slab. The
 operation accepts a completed parent population, validates its structure using
-the same internal authority as tournament selection, and allocates matching
+the same internal authority as parent selection, and allocates matching
 child dimensions under `max_child_population_bytes`.
 
 The child slab is contiguous and zero-initialized. It has no evaluation
@@ -273,9 +285,11 @@ unchanged.
 
 The private parent-pair planner owns selection-stream derivation. For complete
 pair ordinal `i`, it derives the selection-domain stream at tuple index `i`,
-runs two tournaments with replacement, and maps the output to child indexes
-`2i` and `2i + 1`. The plan records its source generation and seed-schedule
-version and is committed only after both selections succeed.
+runs two draws through the configured selection dispatch, and maps the output
+to child indexes `2i` and `2i + 1`. Tournament mode retains with-replacement
+semantics. The plan records its source generation, seed-schedule version, and
+selection-policy provenance and is committed only after both selections
+succeed.
 
 The completed parent remains read-only, and no child pointer is accepted or
 written. Through 0.23.0 exactly `population_size / 2` complete pairs were
@@ -289,7 +303,8 @@ mutation streams keep child indexes.
 Version 0.12.0 composes parent planning, operator-stream derivation, crossover,
 mutation, and child ownership for one complete pair at a time. The private
 child object records a contiguous produced count, source generation, and
-operator seed-schedule version.
+operator seed-schedule version. From 0.25.0 it also records selection-policy
+version and enum.
 
 Pair `i` is accepted only when `2i` children have already been committed. EVO
 validates child ownership and lifecycle state, plans the parents, derives one
@@ -341,6 +356,11 @@ records effective elite count, source valid count, elite and singleton policy
 versions, and explicit-versus-compatibility mode so later lifecycle validation
 can reconstruct the slot layout.
 
+From 0.25.0, the ordinary singleton uses the configured selection dispatch on
+the same next-unused selection stream and every completed slab records matching
+selection-policy provenance. Elite ordering itself remains comparison-based,
+RNG-free, and independent of parent-selection mode.
+
 ## Private Produced-Child Evaluation Boundary
 
 Version 0.14.0 adds a private evaluation operation for a fully produced child
@@ -349,6 +369,10 @@ optional singleton, and stable elite suffix, including the old version-1
 stable-best tail compatibility form. It requires matching source-generation,
 operator-schedule, elite, and singleton provenance before allocating
 provisional evaluation records.
+
+From 0.25.0 it also requires selection-policy version 1 and the enum matching
+the active configuration. Child-evaluation policy version 5 preserves that
+identity without changing validation or evaluator callback order.
 
 The existing evaluation engine is now shared by generation-zero and produced-
 child lifecycle preflights. It validates all candidates first, evaluates only
@@ -413,8 +437,8 @@ derived complete pairs, an optional ordinary singleton, and the stable elite
 suffix, evaluates the full child, and atomically promotes it. Compatibility or
 explicit one-elite mode completes a one-member population directly and does
 not require operator policy that cannot be exercised. One-member explicit-zero
-mode exercises only tournament selection and mutation, so its crossover policy
-is likewise unused.
+mode exercises only configured parent selection and mutation, so its crossover
+policy is likewise unused.
 
 The independent result genome is allocated once after generation zero. It is
 a global best-so-far snapshot, not a view into either working population. A
@@ -480,7 +504,7 @@ then receives an independent snapshot with the final post-decision reason. No
 callback runs for provisional or failed child state.
 
 Version 0.21.0 centralizes rankability and comparison in `src/fitness.c`.
-Evaluation, completed-population validation, tournament selection, odd-tail
+Evaluation, completed-population validation, parent selection, odd-tail
 elite validation, and global-best replacement therefore share one policy:
 hard-valid and evaluated evidence only, greatest caller total, then earlier
 generation and lower index. Evaluated populations and private transition
@@ -526,6 +550,11 @@ elite count, source valid count, elite policy, singleton policy, and explicit-
 mode flag. Child-evaluation and generation-advancement policies advance to
 version 4 so the same provenance survives evaluation and ownership transfer.
 
+Version 0.25.0 advances bounded-run policy to version 7 and child-evaluation
+and generation-advancement policies to version 5. Each records selection-policy
+version 1 and the active enum, while operator domain identities and public
+result layout remain unchanged.
+
 ## EVO Core Execution Flow
 
 1. Initialize a population.
@@ -536,7 +565,7 @@ version 4 so the same provenance survives evaluation and ownership transfer.
 6. Record statistics and evidence.
 7. Stop on convergence, stagnation, generation limit, or an application-defined condition.
 
-Version 0.24.0 publicly implements steps 1 through 5 for at most
+Version 0.25.0 publicly implements steps 1 through 5 for at most
 `generation_limit` bounded transitions, with caller-bounded elite policy
 version 1 and bounded diversity measurement in step 5. It implements the
 constant-space

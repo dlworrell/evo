@@ -235,6 +235,9 @@ static void assert_population_metadata_equal(
     assert(left->rng_algorithm_version == right->rng_algorithm_version);
     assert(left->operator_seed_schedule_version ==
            right->operator_seed_schedule_version);
+    assert(left->selection_policy_version ==
+           right->selection_policy_version);
+    assert(left->selection_policy == right->selection_policy);
     assert(left->odd_child_policy_version ==
            right->odd_child_policy_version);
     assert(left->elite_policy_version == right->elite_policy_version);
@@ -302,7 +305,9 @@ static evo_child_tail_evidence_t sentinel_evidence(void)
         .produced_count = 17,
         .source_generation = 19,
         .operator_seed_schedule_version = 23,
-        .policy_version = 29,
+        .selection_policy_version = 29,
+        .selection_policy = EVO_SELECTION_RANK,
+        .policy_version = 31,
         .complete = true,
     };
 }
@@ -317,6 +322,9 @@ static void assert_evidence_equal(
     assert(left->source_generation == right->source_generation);
     assert(left->operator_seed_schedule_version ==
            right->operator_seed_schedule_version);
+    assert(left->selection_policy_version ==
+           right->selection_policy_version);
+    assert(left->selection_policy == right->selection_policy);
     assert(left->policy_version == right->policy_version);
     assert(left->complete == right->complete);
 }
@@ -342,6 +350,9 @@ static void assert_completed_child(const evo_population_t *children,
     assert(children->rng_algorithm_version == 0);
     assert(children->operator_seed_schedule_version ==
            EVO_OPERATOR_SEED_SCHEDULE_VERSION);
+    assert(children->selection_policy_version ==
+           EVO_SELECTION_POLICY_VERSION);
+    assert(children->selection_policy == EVO_SELECTION_TOURNAMENT);
     assert(children->odd_child_policy_version ==
            EVO_ODD_CHILD_POLICY_VERSION);
     assert(children->elite_policy_version == EVO_ELITE_POLICY_VERSION);
@@ -396,6 +407,9 @@ static void test_complete_odd_population_clones_stable_best(void)
     assert(evidence.source_generation == 7);
     assert(evidence.operator_seed_schedule_version ==
            EVO_OPERATOR_SEED_SCHEDULE_VERSION);
+    assert(evidence.selection_policy_version ==
+           EVO_SELECTION_POLICY_VERSION);
+    assert(evidence.selection_policy == EVO_SELECTION_TOURNAMENT);
     assert(evidence.policy_version == EVO_ODD_CHILD_POLICY_VERSION);
     assert(evidence.complete);
     assert_population_unchanged(&fixture.parents, &parent_before);
