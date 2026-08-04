@@ -12,6 +12,9 @@ Describe the change and why it is needed.
 - [ ] Interface and versioning impact is addressed.
 - [ ] Failure modes and recovery behavior are addressed where applicable.
 - [ ] Observability and diagnostic impact are addressed where applicable.
+- [ ] Any accelerated structure has exact reference semantics, a deterministic
+      human-readable audit projection, and equivalence evidence, or this PR
+      states why ADR-0026 is not applicable.
 - [ ] Major architectural decisions have an ADR.
 - [ ] The change is one logical, reviewable unit suitable for revert and `git bisect`.
 
@@ -31,6 +34,16 @@ Describe the change and why it is needed.
 ## Evidence
 
 List commands, test results, workflow runs, benchmark results, and relevant documentation or ADR paths.
+
+## Human-Readable Abstraction
+
+List every compressed, cached, indexed, probabilistic, or otherwise accelerated
+structure changed by this PR. For each one, identify its exact authority,
+reference semantics, audit projection, stable order and completeness boundary,
+source identity and invalidation behavior, exact fallback, and differential
+test evidence. Explain how false positives or approximations are prevented from
+changing committed results. Write `Not applicable` with a reason when no such
+structure is involved.
 
 ## Security and Recovery Notes
 

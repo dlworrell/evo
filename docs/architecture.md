@@ -70,6 +70,42 @@ replay evidence.
 EVO never applies, commits, pushes, merges, deploys, or publishes a target-
 project patch automatically.
 
+## Human-Readable Abstraction Boundary
+
+Efficiency does not replace domain architecture. When EVO introduces a
+compressed, cached, indexed, probabilistic, or otherwise accelerated structure,
+the implementation must retain explicit reference semantics and provide a
+deterministic human-readable audit projection:
+
+```text
+Machine-optimized structure
+    +
+Human-readable audit projection
+```
+
+The accelerated representation remains behind a domain interface. Its
+projection uses stable identifiers and order and exposes logical registries,
+result sets, relationships, ranges, event or generation windows, work
+assignments, or decision traces rather than buckets, compressed words, pointer
+graphs, or allocator metadata.
+
+Projections may be caller-bounded, paginated, or windowed. Each view states its
+scope, completeness, continuation, source identity, representation version,
+and reconstruction order so a complete traversal cannot hide gaps,
+duplication, or reordering.
+
+Exact accelerators must be differentially equivalent to an explicit reference
+path. Caches are derived state with source identity, freshness, invalidation,
+and exact fallback or recomputation. Probabilistic structures are prechecks
+only and never commit acceptance, rejection, ranking, selection, publication,
+suppression, or termination; exact authority confirms every such result.
+
+Canonical machine-readable evidence remains authoritative for replay and
+automated verification, but its logical contents must be projectable and
+reconcilable. Missing, stale, corrupt, incompatible, or unreconcilable
+accelerated state fails closed or falls back to the bounded reference path.
+ADR-0026 defines the complete rule.
+
 ## Current Conformance Boundary
 
 Only the evolutionary-search core exists in version 0.25.0. Source ingestion,
@@ -77,6 +113,12 @@ analysis, transformation, candidate materialization, external-process
 isolation, target-code measurement, product commands, and optimized-patch
 artifacts are planned by issues #58 through #69. Documentation of those
 planned boundaries is not an implementation claim.
+
+The reviewed 0.25.0 core uses explicit bounded arrays and direct deterministic
+scans rather than compressed, probabilistic, cached, or indexed run authority.
+It therefore has no current accelerated structure requiring remediation. This
+audit does not pre-approve later checkpoint, recycling, parallelism, analysis,
+recipe, orchestration, or artifact implementations.
 
 ## Core Modules
 

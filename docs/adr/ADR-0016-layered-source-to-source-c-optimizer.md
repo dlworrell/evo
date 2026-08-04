@@ -1,6 +1,6 @@
 # ADR-0016: Layered Source-to-Source C Optimizer
 
-Status: Accepted
+Status: Accepted (human-readable acceleration clarified by ADR-0026)
 Date: 2026-08-02
 Decision owner: EVO
 Scope: Supersedes ADR-0001 as the repository-wide product boundary while
@@ -105,6 +105,9 @@ optimality or universal semantic equivalence.
   invariants.
 - Benchmark evidence must separate deterministic logical replay from
   platform-tolerant runtime measurement.
+- Compressed, cached, indexed, probabilistic, or accelerated structures retain
+  exact reference semantics and deterministic human-readable audit projections;
+  ADR-0026 governs that repository-wide invariant.
 - A compiler-option search example remains useful core evidence but cannot
   satisfy the source-to-source product mission.
 
@@ -146,4 +149,3 @@ and publishing source changes.
 - Issues #58 through #69 implement the product layers and end-to-end proof.
 - Issue #56 may stabilize 1.0 only after #69 demonstrates an actual verified C
   source improvement and reproducible patch artifact.
-

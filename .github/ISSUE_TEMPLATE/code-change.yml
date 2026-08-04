@@ -36,6 +36,13 @@ body:
     validations:
       required: true
   - type: textarea
+    id: human_readable_abstraction
+    attributes:
+      label: Human-readable abstraction
+      description: Identify every compressed, cached, indexed, probabilistic, or accelerated structure. Define exact authority, reference semantics, the deterministic audit projection, stable ordering and completeness, source identity and invalidation, fallback behavior, and differential tests. State why ADR-0026 is not applicable when none is involved.
+    validations:
+      required: true
+  - type: textarea
     id: observability
     attributes:
       label: Observability and diagnostics

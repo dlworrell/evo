@@ -3,7 +3,7 @@
 Status: Draft 1.0 target
 Version: 0.1
 Owner: EVO
-Governing ADR: ADR-0016
+Governing ADRs: ADR-0016 and ADR-0026
 
 ## Purpose
 
@@ -52,6 +52,59 @@ Every report must retain those qualifiers.
 - **Champion**: the highest-ranked finalist that passed the complete gate.
 - **Artifact bundle**: the champion patch or source tree and all evidence
   required to review, verify, and replay it.
+
+## Human-Readable Abstraction Contract
+
+EVO preserves human-readable architecture even when it uses machine-optimized
+data structures. Every compressed, cached, indexed, probabilistic, or otherwise
+accelerated structure must have both explicit reference semantics and a
+deterministic human-readable audit projection. No such representation may
+become opaque authority.
+
+An audit projection expresses logical domain facts rather than implementation
+layout. It must:
+
+- identify the canonical source state, construction policy, representation
+  version, and relevant provenance;
+- use stable domain identifiers and deterministic ordering;
+- expose the logical members, mappings, ranges, relationships, or decisions in
+  its declared scope;
+- state whether it is complete; and
+- for bounded pages or windows, declare bounds, continuation, total when known,
+  and a stable reconstruction order.
+
+Representative obligations are:
+
+- a runtime hash table projects to a stable registry view;
+- a bitmap projects to an explicit ordered result set;
+- an Elias-Fano or other monotone index projects to an ordered event or
+  generation window;
+- a cache projects its logical result together with source identity,
+  freshness, invalidation, and exact fallback evidence; and
+- a membership filter reports its precheck result and the exact authority that
+  confirmed the committed outcome.
+
+Exact accelerators require differential verification against an explicit
+reference representation. Stale, corrupt, incompatible, or unreconcilable
+state must fail closed or rebuild from exact authority. Caches are derived
+state and may not become the sole canonical source.
+
+Probabilistic structures are prechecks only. They may prioritize or batch exact
+work, but may not independently accept, reject, rank, select, publish,
+suppress, or terminate a candidate or result. False positives and other
+approximations must be tested and must not change committed evidence.
+
+Canonical machine-readable evidence remains authoritative for checksums,
+schema validation, replay, and automated comparison. Human-readable reports
+and audit projections derive from it, must be regenerable, and must reconcile
+with it. Inability to produce or reconcile the required projection is a
+conformance failure; readability does not turn a drifting summary into a
+second authority.
+
+Issues and pull requests must identify every accelerated structure, reference
+authority, audit projection, resource budget, failure behavior, and
+equivalence evidence, or explicitly state that this rule is not applicable.
+ADR-0026 governs the complete contract.
 
 ## Optimization Manifest
 
@@ -222,8 +275,10 @@ bundle contains at least:
 - checksums and schema versions; and
 - replay instructions and required external dependencies.
 
-Machine-readable evidence is authoritative. Human-readable reports derive
-from it. EVO does not automatically apply or publish the patch.
+Canonical machine-readable evidence is authoritative for verification and
+replay. Human-readable reports derive from it and must satisfy the audit-
+projection contract above. EVO does not automatically apply or publish the
+patch.
 
 ## Replay Contract
 
@@ -271,8 +326,10 @@ that proof passes and all non-deferred roadmap requirements are reconciled.
 - `docs/specs/EVO-001-library-contract.md`
 - `docs/adr/ADR-0001-library-boundary-and-build-system.md`
 - `docs/adr/ADR-0016-layered-source-to-source-c-optimizer.md`
+- `docs/adr/ADR-0026-human-readable-abstraction-and-audit-projection.md`
 - `docs/architecture.md`
 - `docs/algorithms.md`
 - `docs/benchmarks.md`
+- `docs/engineering/reports/EVO-HRA-001-human-readable-abstraction-audit.md`
 - `docs/roadmap.md`
-- GitHub issues #38 and #56 through #69
+- GitHub issues #38, #56 through #69, and #83

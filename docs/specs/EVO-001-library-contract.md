@@ -24,6 +24,48 @@ optimization. Consumers define genomes and problem-specific operations through
 callbacks; EVO owns orchestration, reproducibility, and evidence without
 embedding consumer policy in the library.
 
+## Human-Readable Abstraction Contract
+
+EVO Core follows the Human-Readable Abstraction Rule defined by ADR-0026:
+
+```text
+Machine-optimized structure
+    +
+Human-readable audit projection
+```
+
+An implementation may use a compressed, cached, indexed, probabilistic, or
+otherwise accelerated internal representation only when it also defines the
+exact reference semantics and exposes a deterministic projection in EVO domain
+terms. The accelerated layout may not become opaque authority.
+
+The projection must use stable identifiers and ordering; identify the source
+state, construction policy, and representation version; state its complete or
+bounded scope; and expose the logical members, ranges, mappings, or decisions
+within that scope. A large structure may use caller-bounded pages or windows
+only when their bounds, continuation, completeness, and reconstruction order
+are explicit.
+
+Exact accelerators require differential tests against an explicit reference
+path. A cache is derived state and requires source identity, freshness,
+invalidation, and an exact fallback or recomputation path. A probabilistic
+structure is a precheck only: it may not independently accept, reject, rank,
+select, suppress, terminate, or publish a committed result. Exact authority
+must confirm the decision.
+
+If an accelerator is stale, corrupt, incompatible, over budget, or cannot
+produce a projection reconcilable with exact authority, EVO must reject it or
+fall back to the bounded reference path. It may not silently publish a partial
+or plausible answer. A version containing no accelerated structure satisfies
+this section without adding an artificial projection API, but its design
+record must state that determination.
+
+The audited 0.25.0 core uses explicit bounded genome and evaluation arrays plus
+direct deterministic scans. It contains no compressed, probabilistic, cached,
+or indexed accelerator that controls a run; stable rank selection specifically
+does not introduce a rank cache. This finding does not pre-approve later
+checkpoint, storage-recycling, parallel-evaluation, or integration work.
+
 ## Public Interface
 
 The public API is declared in `include/catalyst/evo/evo.h`.
@@ -1599,10 +1641,12 @@ public failure after child-slab or child-evaluation allocation failure.
 - `docs/adr/ADR-0023-deterministic-convergence-and-stagnation.md`
 - `docs/adr/ADR-0024-generalized-deterministic-elite-preservation.md`
 - `docs/adr/ADR-0025-stable-rank-based-parent-selection.md`
+- `docs/adr/ADR-0026-human-readable-abstraction-and-audit-projection.md`
 - `docs/architecture.md`
 - `docs/algorithms.md`
 - `docs/benchmarks.md`
 - `docs/engineering/AES-DEV-001-development-principles.md`
+- `docs/engineering/reports/EVO-HRA-001-human-readable-abstraction-audit.md`
 - `docs/engineering/SECURE-C-CXX.md`
 - `docs/engineering/AES-SEC-001-review-dispositions.json`
 - `https://github.com/dlworrell/evo/issues/4`

@@ -37,6 +37,9 @@ dlworrell/AES/standards/AES-DEV-001-development-principles-and-check-in-discipli
 7. Security-sensitive changes identify trust boundaries and authority crossings.
 8. Major architectural decisions require an ADR.
 9. Changes must be understandable, reviewable, testable, reversible, and suitable for `git bisect`.
+10. Every compressed, cached, indexed, probabilistic, or accelerated structure
+    retains exact reference semantics and a deterministic human-readable audit
+    projection; no such structure may become opaque authority.
 
 ## Review Evidence
 
@@ -48,6 +51,8 @@ Every code-change issue and pull request must explicitly address:
 - interface/versioning impact;
 - failure and recovery impact;
 - observability impact;
+- accelerated-structure, exact-authority, and human-readable audit-projection
+  impact, or an explicit not-applicable rationale;
 - security and trust-boundary impact;
 - ADR requirement.
 

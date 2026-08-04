@@ -29,6 +29,7 @@ The governing product records are:
 - `docs/adr/ADR-0023-deterministic-convergence-and-stagnation.md`
 - `docs/adr/ADR-0024-generalized-deterministic-elite-preservation.md`
 - `docs/adr/ADR-0025-stable-rank-based-parent-selection.md`
+- `docs/adr/ADR-0026-human-readable-abstraction-and-audit-projection.md`
 - `docs/specs/EVO-001-library-contract.md`
 - `docs/specs/EVO-002-source-optimizer-contract.md`
 - `docs/roadmap.md`
@@ -48,6 +49,29 @@ Opaque byte genomes remain valid for the generic core. C source is never
 evolved by splicing raw text or crossing over arbitrary source bytes. One
 source-optimization genome represents a versioned structured transformation
 recipe whose application produces an actual reviewable C source candidate.
+
+## Human-Readable Architecture
+
+EVO may use machine-optimized structures, but it may not make them opaque
+authority. Every compressed, cached, indexed, probabilistic, or accelerated
+representation must retain explicit reference semantics and provide a stable
+human-readable audit projection in domain terms.
+
+Runtime hash tables project to registry views, bitmaps to explicit result
+sets, compact monotone indexes to ordered windows, and work queues to stable
+assignment and commit views. Caches identify their canonical source,
+freshness, invalidation, and exact fallback. Membership filters and other
+probabilistic structures are prechecks only; exact authority confirms every
+committed decision.
+
+Large projections may be bounded or paginated when scope, completeness,
+continuation, and reconstruction order are explicit. Canonical machine-readable
+evidence remains authoritative for replay and verification, while its logical
+contents must remain deterministically projectable and reconcilable. See
+ADR-0026 and EVO-001/EVO-002 for the normative contract. The retained
+EVO-HRA-001 audit records why the implemented 0.25.0 core has no current
+accelerated structure requiring remediation and where later work must recheck
+the rule.
 
 ## Roadmap Scope
 
