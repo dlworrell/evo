@@ -20,6 +20,8 @@ static void assert_population_empty(const evo_population_t *population)
     assert(population->source_generation == 0);
     assert(population->rng_algorithm_version == 0);
     assert(population->operator_seed_schedule_version == 0);
+    assert(population->selection_policy_version == 0);
+    assert(population->selection_policy == EVO_SELECTION_TOURNAMENT);
     assert(population->odd_child_policy_version == 0);
     assert(population->elite_policy_version == 0);
     assert(population->singleton_child_policy_version == 0);
@@ -205,6 +207,9 @@ static void test_active_rejection_and_destruction_idempotency(void)
     assert(population.rng_algorithm_version == active.rng_algorithm_version);
     assert(population.operator_seed_schedule_version ==
            active.operator_seed_schedule_version);
+    assert(population.selection_policy_version ==
+           active.selection_policy_version);
+    assert(population.selection_policy == active.selection_policy);
     assert(population.odd_child_policy_version ==
            active.odd_child_policy_version);
     assert(population.elite_count == active.elite_count);

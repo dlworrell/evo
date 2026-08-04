@@ -156,6 +156,8 @@ static void assert_population_empty(const evo_population_t *population)
     assert(population->source_generation == 0);
     assert(population->rng_algorithm_version == 0);
     assert(population->operator_seed_schedule_version == 0);
+    assert(population->selection_policy_version == 0);
+    assert(population->selection_policy == EVO_SELECTION_TOURNAMENT);
     assert(population->odd_child_policy_version == 0);
     assert(population->elite_policy_version == 0);
     assert(population->singleton_child_policy_version == 0);
@@ -215,6 +217,9 @@ static void assert_population_matches_snapshot(
            before->rng_algorithm_version);
     assert(population->operator_seed_schedule_version ==
            before->operator_seed_schedule_version);
+    assert(population->selection_policy_version ==
+           before->selection_policy_version);
+    assert(population->selection_policy == before->selection_policy);
     assert(population->odd_child_policy_version ==
            before->odd_child_policy_version);
     assert(population->elite_policy_version ==
@@ -270,10 +275,12 @@ static evo_generation_advancement_evidence_t sentinel_evidence(void)
         .previous_generation = 41,
         .completed_generation = 43,
         .operator_seed_schedule_version = 47,
-        .odd_child_policy_version = 53,
-        .elite_policy_version = 55,
-        .singleton_child_policy_version = 57,
-        .policy_version = 59,
+        .selection_policy_version = 53,
+        .selection_policy = EVO_SELECTION_RANK,
+        .odd_child_policy_version = 59,
+        .elite_policy_version = 61,
+        .singleton_child_policy_version = 67,
+        .policy_version = 71,
         .has_best = true,
         .elite_count_explicit = true,
         .complete = true,
@@ -294,6 +301,9 @@ static void assert_evidence_equal(
     assert(left->completed_generation == right->completed_generation);
     assert(left->operator_seed_schedule_version ==
            right->operator_seed_schedule_version);
+    assert(left->selection_policy_version ==
+           right->selection_policy_version);
+    assert(left->selection_policy == right->selection_policy);
     assert(left->odd_child_policy_version ==
            right->odd_child_policy_version);
     assert(left->elite_policy_version == right->elite_policy_version);
@@ -481,6 +491,9 @@ static void test_generation_zero_promotion_preserves_child_ownership(void)
     assert(evidence.completed_generation == 1);
     assert(evidence.operator_seed_schedule_version ==
            EVO_OPERATOR_SEED_SCHEDULE_VERSION);
+    assert(evidence.selection_policy_version ==
+           EVO_SELECTION_POLICY_VERSION);
+    assert(evidence.selection_policy == EVO_SELECTION_TOURNAMENT);
     assert(evidence.odd_child_policy_version ==
            EVO_ODD_CHILD_POLICY_VERSION);
     assert(evidence.elite_count == 1);

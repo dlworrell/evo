@@ -1,13 +1,13 @@
 # EVO-001: Evolutionary Optimization Library Contract
 
 Status: Baseline
-Version: 0.24.0
+Version: 0.25.0
 Owner: EVO
 
 ## Scope Boundary
 
 This specification governs the reusable deterministic C17 evolutionary-search
-core implemented through version 0.24.0. It does not define C-project
+core implemented through version 0.25.0. It does not define C-project
 ingestion, Clang/LLVM analysis, structured source transformations, isolated
 candidate builds, baseline-versus-candidate measurement, optimized patches, or
 product-level replay artifacts.
@@ -77,7 +77,8 @@ crossover rate, mutation rate, random seed, `max_genome_bytes`,
 independent caller-owned `generation_stop_context`, followed by
 `max_diversity_work`, then the disabled-by-default fitness-target,
 tolerance/patience, and diversity-floor stopping controls, then
-`elite_count_enabled` and `elite_count`.
+`elite_count_enabled` and `elite_count`, then selection-policy version 1's
+`selection_policy`, `rank_base_weight`, and `rank_step_weight`.
 
 `max_genome_bytes` is trusted caller policy for the largest individual genome
 allocation accepted by `evo_run`. It avoids a platform-specific hard-coded
@@ -169,6 +170,38 @@ child policy version 1 uses the next unused pair-selection stream to select one
 valid parent, clones it, and runs the standard child-indexed mutation stream.
 The singleton invokes no crossover and allocates no scratch sibling. Elite
 ranking and copies allocate nothing, consume no RNG, and invoke no callback.
+
+### Parent-selection policy
+
+`EVO_SELECTION_POLICY_VERSION` is `1`.
+
+`EVO_SELECTION_TOURNAMENT == 0` is the canonical compatibility default. Both
+rank weights must be zero. Whenever an ordinary parent draw is required,
+`tournament_size` must be in `[1, population_size]`; a transition with no
+ordinary child may leave it zero because selection is unused.
+
+`EVO_SELECTION_RANK` requires `tournament_size == 0`,
+`rank_base_weight > 0`, and any non-negative `rank_step_weight`. For `n` valid
+candidates, stable rank zero is best and rank `r` receives exact weight:
+
+```text
+rank_base_weight + (n - 1 - r) * rank_step_weight
+```
+
+Configuration is accepted only when the all-valid total
+`n * rank_base_weight + n * (n - 1) / 2 * rank_step_weight` for configured
+population size `n` is representable as `size_t`. Positive-limit preflight
+performs this check before allocation or callback dispatch. Invalid enum
+values, conflicting fields, zero rank base, and overflowing totals return
+`EVO_ERROR_RESOURCE_LIMIT`. A zero generation limit does not validate unused
+transition policy.
+
+Ranks use fitness-comparison policy version 1 and are therefore stable on exact
+ties by lower population index. Invalid candidates have no rank or selection
+weight. Each rank draw dry-resolves every actual weight before RNG consumption,
+then samples one unbiased bounded ticket. Ticket intervals are traversed in
+ascending population-index order. Tournament and rank modes share the existing
+selection-domain streams; crossover and mutation domains are unchanged.
 
 ### Diversity policy
 
@@ -415,7 +448,7 @@ This version 0.6.0 boundary proves that a valid initialized candidate was
 evaluated and transferred. A zero-limit version 0.16.0 call retains that exact
 meaning; positive limits invoke the separately specified bounded loop.
 
-### Private deterministic tournament selection
+### Private versioned deterministic parent selection
 
 Version 0.7.0 adds a private tournament-selection boundary after completed
 population evaluation. The normative decision is recorded in
@@ -451,6 +484,29 @@ The caller supplies an already seeded private RNG stream. Version 0.7.0 does
 not derive a selection seed, split initialization streams, or alter RNG
 algorithm version 1. Version 0.11.0 separately defines pair-local selection-
 stream ownership, and version 0.16.0 invokes that composition from `evo_run`.
+
+Version 0.25.0 retains that tournament lifecycle unchanged as selection-policy
+version 1's zero-valued compatibility dispatch and adds rank mode through
+ADR-0025. Rank selection follows this lifecycle:
+
+1. Common pointer, active-policy, completed-population, all-invalid, and seeded-
+   RNG rules match tournament selection.
+2. EVO resolves every hard-valid candidate's unique rank through fitness-
+   comparison policy version 1. Exact total ties place the lower population
+   index first; invalid candidates are excluded.
+3. Rank `r` among `n` valid candidates receives exact weight
+   `base + (n - 1 - r) * step`.
+4. Before RNG consumption, checked arithmetic proves every weight, the
+   observed participant count, and the exact total
+   `n * base + n * (n - 1) / 2 * step`.
+5. One existing unbiased bounded-index sample draws a ticket in
+   `[0, total)`. EVO visits valid candidates in ascending population-index
+   order and assigns the ticket to the corresponding rank-weight interval.
+6. The operation allocates no memory and assigns the output only after a
+   candidate interval is resolved.
+
+The dispatch consumes the caller-supplied selection stream only. It neither
+derives a new domain nor changes crossover or mutation stream identity.
 
 ### Private deterministic crossover dispatch
 
@@ -544,7 +600,7 @@ The child-storage lifecycle is:
 3. EVO validates the parent's dimensions, allocation sizes, budgets,
    initialization seed, RNG version, evaluations, finite fitness evidence,
    valid count, best-candidate state, and stable tie handling through the same
-   private validator used by tournament selection.
+   private validator used by parent selection.
 4. An incomplete or inconsistent parent, or a parent genome size that differs
    from the supplied problem, returns `EVO_ERROR_STATE` before allocation.
 5. EVO proves `config->population_size * problem->genome_size` is
@@ -579,9 +635,10 @@ The planning lifecycle is:
 
 1. Configuration, completed parent population, and output plan must be
    non-null.
-2. `population_size` and `tournament_size` must be nonzero, and tournament size
-   must not exceed population size; otherwise planning returns
-   `EVO_ERROR_RESOURCE_LIMIT`.
+2. Population size and the active selection-policy fields must be valid.
+   Tournament mode requires size in `[1, population_size]`; rank mode requires
+   canonical rank fields and representable configured weight arithmetic.
+   Rejection returns `EVO_ERROR_RESOURCE_LIMIT`.
 3. Through 0.23.0 exactly `floor(population_size / 2)` complete pair ordinals
    were valid. Version 0.24.0 resolves elite policy first; exactly
    `floor(ordinary_offspring / 2)` pair ordinals are valid. An out-of-range
@@ -594,12 +651,12 @@ The planning lifecycle is:
    results are in range by construction.
 6. EVO derives one selection-domain schedule-version-1 stream from the
    configured master seed, source generation, and pair ordinal.
-7. Two deterministic tournaments execute sequentially on the pair-local
-   stream. Sampling remains with replacement, so both outputs may identify the
-   same parent.
+7. Two deterministic configured-policy draws execute sequentially on the pair-
+   local stream. Tournament sampling remains with replacement, and either mode
+   may identify the same parent twice.
 8. The plan records both parent indexes, both child indexes, pair ordinal,
-   source generation, and seed-schedule version only after both tournaments
-   succeed.
+   source generation, seed-schedule version, selection-policy version, and
+   selection enum only after both draws succeed.
 9. Every rejection preserves the output object and the complete parent
    population.
 10. If the ordinary-offspring prefix is odd, its final index is not part of a
@@ -620,17 +677,18 @@ The production lifecycle is:
 1. Problem, configuration, completed parents, active child storage, and output
    evidence must be non-null. Parent and child objects and genome slabs must be
    distinct.
-2. Genome dimensions, child allocation size, child budget, tournament policy,
+2. Genome dimensions, child allocation size, child budget, selection policy,
    crossover rate, and mutation rate must be internally consistent.
 3. Child evaluation, generation-zero initialization, validity, fitness, and
    best-candidate evidence must remain empty.
 4. The child records a contiguous `produced_count`. Pair `i` is accepted only
    when `produced_count == 2i`; repeated or skipped pairs return
    `EVO_ERROR_STATE` unchanged.
-5. The first successful pair records the supplied source generation and
-   operator seed-schedule version 1. Every later pair must match both values.
-6. EVO invokes the complete parent-pair planner and preserves its valid-only,
-   tournament-with-replacement semantics.
+5. The first successful pair records the supplied source generation, operator
+   seed-schedule version 1, selection-policy version 1, and active selection
+   enum. Every later pair must match all four values.
+6. EVO invokes the complete parent-pair planner and preserves the configured
+   policy's valid-only semantics.
 7. EVO derives the crossover-domain stream from the pair ordinal and derives
    one mutation-domain stream from each child index.
 8. EVO resolves the two parent and two child views and completes every
@@ -639,8 +697,8 @@ The production lifecycle is:
    dispatcher once for each child. Given the completed preflight and seeded
    streams, this suffix contains no expected library rejection.
 10. Success commits both child genomes, advances `produced_count` by exactly
-    two, records source generation and schedule version, and commits output
-    evidence with RNG algorithm version 1.
+    two, records source generation plus schedule and selection provenance, and
+    commits output evidence with RNG algorithm version 1.
 11. Rejection before callback dispatch preserves the child bytes, child
     metadata, output evidence, and complete parent population.
 12. Consumer callbacks retain their existing bounded deterministic contract
@@ -680,8 +738,9 @@ The generalized lifecycle is:
    contiguous prefix with matching source generation and operator schedule.
 8. If `ordinary_offspring` is odd, singleton policy version 1 derives the
    selection stream at index `floor(ordinary_offspring / 2)`, selects one valid
-   parent by tournament, clones it into `ordinary_offspring - 1`, and invokes
-   the standard mutation dispatcher with that child index's mutation stream.
+   parent through the configured selection dispatch, clones it into
+   `ordinary_offspring - 1`, and invokes the standard mutation dispatcher with
+   that child index's mutation stream.
    It invokes no crossover and allocates no scratch storage.
 9. Before elite output, EVO performs a complete stable ranking dry pass through
    fitness-comparison policy version 1 and resolves bounded source and
@@ -690,9 +749,9 @@ The generalized lifecycle is:
     indexes `ordinary_offspring + rank`, best-to-worst. Ranking and copies
     consume no RNG and invoke no callback.
 11. Success records full produced count, source generation, operator schedule,
-    effective elite count, source valid count, elite policy version 1,
-    singleton policy version when used, explicit-versus-compatibility mode, and
-    complete output evidence.
+    selection-policy version 1 and enum, effective elite count, source valid
+    count, elite policy version 1, singleton policy version when used,
+    explicit-versus-compatibility mode, and complete output evidence.
 12. Only disabled odd compatibility records odd-tail policy version 1. Disabled
     even and every explicit configuration record no odd-tail marker.
 13. Every detectable rejection before consumer singleton dispatch preserves
@@ -717,7 +776,8 @@ The child-evaluation lifecycle is:
 2. Genome and population dimensions, per-genome policy, child-slab budget,
    exact checked storage size, and evaluation budget must be consistent.
 3. The child must record `produced_count == population_size`, the supplied
-   source generation, and operator seed-schedule version 1.
+   source generation, operator seed-schedule version 1, selection-policy
+   version 1, and the selection enum matching the active configuration.
 4. The child must record elite policy version 1, effective elite count, source
    valid count, explicit-versus-compatibility mode, and singleton policy
    version exactly when the ordinary prefix is odd. Only disabled odd
@@ -742,7 +802,7 @@ The child-evaluation lifecycle is:
     production provenance. An all-invalid child completes with no best.
 12. Output evidence records population and evaluation sizes, valid count,
     stable best, source generation, production-policy versions, fitness-
-    comparison policy version 1, child-evaluation policy version 4, and
+    comparison policy version 1, child-evaluation policy version 5, and
     completion.
 13. Repeated evaluation and every malformed, incomplete, mismatched, resource,
     allocation, or detectable callback-output failure preserve caller-owned
@@ -751,7 +811,7 @@ The child-evaluation lifecycle is:
 The operation consumes no RNG word and invokes no initialization, selection,
 crossover, or mutation callback. The shared completed-population validator
 accepts either generation-zero or evaluated-child provenance. An evaluated
-child can therefore authorize tournament selection and the next independently
+child can therefore authorize parent selection and the next independently
 owned child allocation without first changing object ownership.
 
 This boundary does not itself swap parent and child objects, increment a
@@ -788,8 +848,9 @@ The generation-advancement lifecycle is:
    generation equals `current_generation`.
 10. Output evidence is prepared with population size, valid count, stable-best
     state, previous generation, completed generation, elite count and source-
-    valid count, production-policy versions, fitness-comparison policy version
-    1, and generation-advancement policy version 4.
+    valid count, production-policy versions including selection policy,
+    fitness-comparison policy version 1, and generation-advancement policy
+    version 5.
 11. After all fallible checks, EVO moves the child structure into the parent
     handle, resets the child handle to the complete zero state, releases the
     former parent allocations, and commits evidence.
@@ -824,12 +885,12 @@ The bounded-run lifecycle is:
    generation zero. Zero retains the version 0.6.0 generation-zero behavior.
 2. For a positive limit, EVO validates the child slab budget and every
    transition policy before allocation or callback dispatch. Populations above
-   one require valid tournament size and finite crossover and mutation rates in
-   `[0, 1]`. A one-member compatibility population or explicit one-elite
-   population uses elite cloning directly and does not require unused operator
-   policy. A one-member explicit-zero population uses one singleton, requires
-   valid tournament and mutation policy, and does not validate unused
-   crossover policy.
+   one require valid configured selection fields and finite crossover and
+   mutation rates in `[0, 1]`. A one-member compatibility population or
+   explicit one-elite population uses elite cloning directly and does not
+   require unused operator policy. A one-member explicit-zero population uses
+   one singleton, requires valid selection and mutation policy, and does not
+   validate unused crossover policy.
 3. EVO constructs, initializes, and evaluates generation zero and transfers its
    stable valid winner into one independent result allocation.
 4. For each source generation in ascending order, EVO creates one child slab,
@@ -869,8 +930,11 @@ advances it to version 5 and records stopping policy version 1, the
 significant-best reference, stagnant generation count, and distinct final
 classification flags. Version 0.24.0 advances it to version 6 and records final
 elite count, source valid count, elite and singleton policy versions, and
-explicit-versus-compatibility mode. The bounded run does not define adaptive
-mutation, old-slab recycling, checkpointing, parallelism, or secure erasure.
+explicit-versus-compatibility mode. Version 0.25.0 advances it to version 7 and
+records selection-policy version 1 and the configured enum. Child-evaluation
+and generation-advancement policies advance to version 5 for the same
+provenance. The bounded run does not define adaptive mutation, old-slab
+recycling, checkpointing, parallelism, or secure erasure.
 
 ### Result lifecycle
 
@@ -1233,7 +1297,16 @@ signatures, installed symbols, statistics schema, allocation classes, and
 resource budgets do not change. Disabled zero payload preserves pre-0.24.0
 positive-limit behavior; explicit mode changes child composition as requested.
 
-## Current 0.24.0 Conformance Boundary
+Version 0.25.0 adds `evo_selection_policy_t`,
+`EVO_SELECTION_POLICY_VERSION`, `EVO_SELECTION_TOURNAMENT`, and
+`EVO_SELECTION_RANK`; then appends `selection_policy`,
+`rank_base_weight`, and `rank_step_weight` after the complete pre-0.25.0
+`evo_config_t` prefix. Existing member offsets and the zero-valued tournament
+enum are preserved, but configuration size and array stride may change, so
+consumers must rebuild. Public function signatures, installed symbols,
+statistics schema, allocation classes, and resource budgets do not change.
+
+## Current 0.25.0 Conformance Boundary
 
 The current implementation exposes generation-zero compatibility plus bounded
 multi-generation execution:
@@ -1270,7 +1343,13 @@ multi-generation execution:
 - optional initializers run exactly once in ascending genome order;
 - private validation and evaluation run in deterministic ascending passes;
 - private tournament selection samples valid evaluated candidates with
-  replacement and deterministic tie handling;
+  replacement and deterministic tie handling, with byte-for-byte pre-0.25.0
+  replay through the zero-valued dispatch;
+- private stable rank selection uses the common comparator, exact linear
+  integer weights, unbiased tickets, ascending-index interval traversal, and
+  no allocation;
+- selection-policy configuration and worst-case rank arithmetic reject before
+  positive-limit allocation or callbacks;
 - private crossover dispatch consumes a fixed one-word probability decision,
   invokes the representation-aware callback or clones parents, and preserves
   child output on precondition failure;
@@ -1281,11 +1360,13 @@ multi-generation execution:
   enforces a separate checked budget, and creates independently owned empty
   output storage;
 - private complete-pair planning derives a pair-local selection stream, runs
-  two tournaments with replacement, maps consecutive ordinary-prefix slots,
-  and preserves output and parent evidence on rejection;
+  two configured selection draws, maps consecutive ordinary-prefix slots,
+  records selection provenance, and preserves output and parent evidence on
+  rejection;
 - private complete-pair production preflights the combined boundary, derives
   pair- and child-indexed operator streams, dispatches crossover and both
-  mutations, records a contiguous child prefix, and preserves parent evidence;
+  mutations, records a contiguous child prefix with selection provenance, and
+  preserves parent evidence;
 - private elite policy resolves explicit or compatibility requests, caps them
   at distinct hard-valid parents, lays stable best-to-worst clones in a suffix,
   consumes no RNG or callbacks for elites, and preserves every object on
@@ -1295,11 +1376,12 @@ multi-generation execution:
   crossover or scratch allocation;
 - private produced-child evaluation accepts complete even and odd production
   provenance, commits deterministic valid-only policy-valid fitness evidence,
-  and promotes the child to shared completed-population authority;
+  preserves selection-policy identity, and promotes the child to shared
+  completed-population authority;
 - private generation advancement validates current/child lineage and all
   ownership ranges, moves the evaluated child into the parent handle, empties
   the child handle, releases the former parent, and records the next generation
-  without allocation, copying, RNG, or callbacks;
+  plus selection provenance without allocation, copying, RNG, or callbacks;
 - public bounded execution validates transition-only policy before callbacks,
   runs ascending transitions, allocates the result once, retains earlier exact
   ties, counts completed promotions, and stops successfully after promoting a
@@ -1344,7 +1426,7 @@ count. They may inspect `generation_statistics` for the final committed
 population, which is distinct from the global winner on all-invalid
 termination. When configured, they may copy each callback-lifetime observation
 into their own bounded storage. They may also configure deterministic stopping
-over committed snapshots. Version 0.24.0 defines no statistics history,
+over committed snapshots. Version 0.25.0 defines no statistics history,
 asynchronous cancellation, or retained callback delivery.
 
 ## Verification
@@ -1363,11 +1445,14 @@ all-invalid mapping, non-finite rejection, active-result preservation, and
 reuse. Population-storage, RNG-vector, population-initialization, and
 population-evaluation tests continue to verify each private phase
 independently. The selection test proves completed-state validation, tournament
-bounds, all-invalid handling, valid-only sampling, fixed replay, exact ties,
-failure preservation, and single-draw behavior. A separate Linux-only
+bounds and exact compatibility replay, rank-policy arithmetic, golden rank
+vectors, stable ties, invalid exclusion, one-member and extreme weights,
+fixed-seed statistical sanity, all-invalid handling, and failure preservation.
+A separate Linux-only
 static-link test uses the GNU-compatible `--wrap=calloc` linker facility to
 prove failure and cleanup at the population, evaluation-record, and
-result-transfer allocations.
+result-transfer allocations; it also proves overflowing rank configuration is
+rejected before the first allocation attempt.
 
 The fitness-policy test locks comparison policy version 1, hard-valid and
 evaluated rankability, non-negative finite penalty evidence, caller-total
@@ -1513,6 +1598,7 @@ public failure after child-slab or child-evaluation allocation failure.
 - `docs/adr/ADR-0022-bounded-deterministic-diversity.md`
 - `docs/adr/ADR-0023-deterministic-convergence-and-stagnation.md`
 - `docs/adr/ADR-0024-generalized-deterministic-elite-preservation.md`
+- `docs/adr/ADR-0025-stable-rank-based-parent-selection.md`
 - `docs/architecture.md`
 - `docs/algorithms.md`
 - `docs/benchmarks.md`
@@ -1542,4 +1628,5 @@ public failure after child-slab or child-evaluation allocation failure.
 - `https://github.com/dlworrell/evo/issues/44`
 - `https://github.com/dlworrell/evo/issues/45`
 - `https://github.com/dlworrell/evo/issues/46`
+- `https://github.com/dlworrell/evo/issues/47`
 - `https://github.com/dlworrell/AEMS/issues/18`

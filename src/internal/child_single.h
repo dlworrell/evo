@@ -12,6 +12,8 @@ typedef struct evo_child_single_evidence {
     uint64_t source_generation;
     uint32_t rng_algorithm_version;
     uint32_t operator_seed_schedule_version;
+    uint32_t selection_policy_version;
+    evo_selection_policy_t selection_policy;
     uint32_t policy_version;
     bool complete;
 } evo_child_single_evidence_t;

@@ -28,6 +28,7 @@ The governing product records are:
 - `docs/adr/ADR-0022-bounded-deterministic-diversity.md`
 - `docs/adr/ADR-0023-deterministic-convergence-and-stagnation.md`
 - `docs/adr/ADR-0024-generalized-deterministic-elite-preservation.md`
+- `docs/adr/ADR-0025-stable-rank-based-parent-selection.md`
 - `docs/specs/EVO-001-library-contract.md`
 - `docs/specs/EVO-002-source-optimizer-contract.md`
 - `docs/roadmap.md`
@@ -92,7 +93,7 @@ repository.
 - `docs/` — architecture, theory, algorithms, and evidence guidance
 
 The source-optimizer implementation directories will be introduced only by
-their dependency-ordered roadmap issues. Their absence in version 0.24.0 is an
+their dependency-ordered roadmap issues. Their absence in version 0.25.0 is an
 explicit current boundary, not an implicit feature claim.
 
 ## Authoritative Native Builds
@@ -132,7 +133,7 @@ declared Clang/LLVM and GNU profiles.
 
 ## Status
 
-**Current implementation boundary:** EVO 0.24.0 implements the deterministic
+**Current implementation boundary:** EVO 0.25.0 implements the deterministic
 evolutionary-search core. It does not yet ingest a C project, build a Clang AST
 or LLVM IR model, transform source, compile evolved candidates, or emit an
 optimized source patch. Those product boundaries are tracked in the 1.0
@@ -224,6 +225,16 @@ Elite copies consume no RNG and invoke no callback. Leaving the new fields zero
 preserves the pre-0.24.0 sequence exactly: odd populations retain one stable-
 best tail and even populations retain none.
 
+EVO 0.25.0 appends versioned parent-selection policy 1. A zero-initialized
+configuration remains tournament selection and replays the pre-0.25.0 parent
+sequence byte-for-byte. Rank mode assigns every hard-valid parent one stable
+rank through the common fitness comparator, then samples one unbiased integer
+ticket from exact caller-configured linear rank weights. Invalid parents have
+no rank or interval; exact fitness ties retain lower population indexes. Rank
+arithmetic is checked against the configured all-valid worst case before child
+allocation or callbacks, and selection provenance is carried through child
+production, evaluation, promotion, and bounded-run evidence.
+
 Version 0.3.0 added the independently tested private population-storage
 foundation: checked `population_size * genome_size` arithmetic, a
 caller-provided total slab budget, contiguous zero-initialized storage, bounded
@@ -274,9 +285,11 @@ before consuming RNG state, performs no allocation, and preserves its output
 on failure.
 
 Selection accepts an explicitly seeded private RNG stream. Version 0.11.0 adds
-the separate owner that derives a selection stream for each complete pair; the
-selection operator itself remains unchanged. Version 0.16.0 invokes that
-composition from the bounded public loop.
+the separate owner that derives a selection stream for each complete pair.
+Version 0.25.0 retains tournament as the compatibility dispatch and adds stable
+rank-based selection without changing stream derivation or the crossover and
+mutation domains. Version 0.16.0 invokes the composed selection boundary from
+the bounded public loop.
 
 Version 0.8.0 adds a private probability gate and crossover pair dispatcher.
 The gate quantizes `crossover_rate` to a 32-bit threshold and consumes exactly
@@ -305,7 +318,7 @@ specific helpers or adaptive schedules, or advance a generation.
 
 Version 0.10.0 adds an independently owned, zero-initialized child-population
 slab. A completed parent population is validated through the same invariant
-authority used by tournament selection before a separate child allocation is
+authority used by parent selection before a separate child allocation is
 made. Parent genomes, evaluations, and lifecycle evidence remain read-only.
 
 The appended `max_child_population_bytes` field is a caller-controlled policy
@@ -322,9 +335,10 @@ algorithm version 1 and every generation-zero initialization vector remain
 unchanged.
 
 The private parent-pair planner maps each complete pair ordinal to consecutive
-child slots and performs two deterministic tournaments with replacement using
-that pair's selection-domain stream. It commits no output until both parents
-are selected, leaves the completed parent read-only, and writes no child bytes.
+child slots and performs two deterministic draws through the configured
+selection-policy dispatch using that pair's selection-domain stream. It commits
+no output until both parents are selected, leaves the completed parent
+read-only, and writes no child bytes.
 Through 0.23.0, `population_size / 2` complete pairs were planned. Version
 0.24.0 instead plans `floor(ordinary_offspring_count / 2)` pairs after resolving
 the effective elite suffix; a remaining ordinary slot belongs to the

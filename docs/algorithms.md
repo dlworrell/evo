@@ -2,7 +2,7 @@
 
 This document distinguishes algorithms implemented by the reusable
 `catalyst_evo` core from the structured program transformations and evaluation
-algorithm required by the EVO 1.0 source optimizer. Version 0.24.0 implements
+algorithm required by the EVO 1.0 source optimizer. Version 0.25.0 implements
 only the core boundary described below.
 
 ## EVO Core Initial Release
@@ -140,7 +140,7 @@ policy-valid fitness evidence, then orders them by:
 2. earlier generation on an exact total tie; and
 3. lower population index within the same generation.
 
-Evaluation, completed-population validation, tournament selection, odd-tail
+Evaluation, completed-population validation, parent selection, odd-tail
 elite validation, and global-best replacement all use this authority. Policy
 version 1 is recorded in completed private populations and propagated through
 child-evaluation, generation-advancement, bounded-run, and public statistics
@@ -166,7 +166,7 @@ mutation, elitism, diversity processing, or generation transition. A
 successful zero-limit call still records `generations_completed == 0`;
 version 0.16.0 composes later private boundaries when the limit is positive.
 
-## Deterministic Tournament Selection
+## Versioned Deterministic Parent Selection
 
 Version 0.7.0 implements tournament selection as a private operator over a
 completed evaluation population.
@@ -187,6 +187,36 @@ stream for complete parent pairs while keeping selection semantics independent.
 The operator performs no crossover, mutation, elitism, or generation
 advancement itself. Version 0.16.0 invokes it through complete-pair production
 from `evo_run`.
+
+Version 0.25.0 publishes selection-policy version 1. Tournament is enum value
+zero and retains the complete behavior and exact RNG sequence above. Rank mode
+requires a zero tournament size, a positive integer base weight, and a
+non-negative integer step weight. If `n` candidates are hard-valid, stable
+rank `r` receives:
+
+```text
+weight(r) = rank_base_weight
+          + (n - 1 - r) * rank_step_weight
+```
+
+Rank zero is the stable best under fitness-comparison policy version 1. Exact
+fitness ties therefore rank the lower population index first. Invalid
+candidates receive no rank and no interval.
+
+The configured all-valid total
+`n * base + n * (n - 1) / 2 * step` must fit in `size_t`. EVO checks that
+arithmetic before a positive-limit run allocates or invokes a callback. At
+selection time it validates the completed population, resolves every rank and
+weight, and proves the actual total before consuming RNG state. One unbiased
+bounded-index ticket is then drawn from the exact total. Candidate intervals
+are traversed in ascending population-index order; this traversal is normative
+for fixed-seed replay.
+
+Rank selection uses constant auxiliary storage and performs no allocation.
+The same pair-local selection streams are used in both modes, while crossover
+and mutation remain in their existing independent domains. Selection policy
+and version provenance accompany produced children through evaluation,
+promotion, and bounded-run evidence.
 
 ## Deterministic Crossover Dispatch
 
@@ -264,9 +294,11 @@ Version 0.11.0 adds a read-only private planner over completed parent evidence.
 - Pair `i` owns child indexes `2i` and `2i + 1`.
 - The selection stream is derived from the master seed, source generation,
   pair ordinal, and selection domain.
-- Two tournaments run sequentially on that pair-local stream, with replacement.
+- Two configured selection-policy draws run sequentially on that pair-local
+  stream. Tournament mode retains its with-replacement semantics.
 - Both parents must be selected before the output plan is committed.
-- The plan records pair ordinal, source generation, and seed-schedule version.
+- The plan records pair ordinal, source generation, seed-schedule version, and
+  selection-policy provenance.
 - Null, policy, lifecycle, all-invalid, and pair-bound failures preserve parent
   evidence and the output object.
 - A trailing ordinary child index is outside complete-pair planning and belongs
@@ -367,7 +399,7 @@ RNG state or changing any genome byte.
 - An all-invalid child completes without a best candidate.
 - Success preserves production metadata and commits evaluation records,
   valid count, stable best, comparison and diversity policy, and child-
-  evaluation policy version 4 evidence exactly once.
+  evaluation policy version 5 evidence exactly once.
 - Preflight, resource, allocation, and malformed-fitness failures preserve
   child-owned bytes and metadata plus caller-owned evidence. Consumer callback
   side effects after dispatch begins cannot be rolled back.
@@ -417,6 +449,9 @@ Version 0.24.0 advances generation-advancement policy to version 4 and copies
 elite count, source-valid count, elite policy, singleton policy, and explicit-
 mode evidence without changing ownership transfer.
 
+Version 0.25.0 advances generation-advancement policy to version 5 and copies
+selection-policy version and enum evidence without changing ownership transfer.
+
 ## Bounded Multi-Generation Execution
 
 Version 0.16.0 adds bounded-run policy version 1 and composes the complete
@@ -449,7 +484,7 @@ affected by allocation addresses or later equal candidates. Failure at any
 transition destroys all internal owners and the result allocation; no partial
 winner or completion count escapes the public call.
 
-Through version 0.24.0, this algorithm has a bounded sequential working set of
+Through version 0.25.0, this algorithm has a bounded sequential working set of
 one current population, one child population, one result genome, and the
 current population's evaluation records plus provisional child evaluation
 records during child evaluation. It does not recycle slabs or run callbacks
@@ -618,6 +653,11 @@ final classification flags in constant-space private evidence.
 Version 0.24.0 advances bounded-run policy to version 6 and records final
 elite and singleton provenance. Elite copies do not perturb operator streams;
 disabled mode remains byte- and callback-replay compatible with 0.23.0.
+
+Version 0.25.0 advances bounded-run policy to version 7 and records final
+selection-policy version and enum. Child-evaluation and generation-advancement
+policies advance to version 5 so the same provenance survives evaluation and
+ownership transfer.
 
 ## Structured C Source Evolution
 

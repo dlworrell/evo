@@ -1,6 +1,6 @@
 # ADR-0006: Deterministic Tournament Selection
 
-Status: Accepted
+Status: Accepted (0.25.0 tournament compatibility mode; extended by ADR-0025)
 Date: 2026-07-31
 Decision owner: EVO
 
@@ -59,6 +59,11 @@ does not perform a generation transition and does not change public success or
 ADR-0021 preserves these draw and tie semantics in EVO 0.21.0 but routes
 rankability and ordering through fitness-comparison policy version 1. A
 completed population must record that policy before selection consumes RNG.
+
+ADR-0025 retains this operator unchanged in EVO 0.25.0 as the zero-valued
+compatibility mode behind selection-policy version 1. It adds stable rank-based
+dispatch without changing any tournament draw, bounded-sampling rule, or RNG
+consumption vector.
 
 ## Consequences
 

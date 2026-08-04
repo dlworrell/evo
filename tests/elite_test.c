@@ -418,6 +418,9 @@ static void assert_explicit_policy(size_t population_size,
     assert(elite_evidence.source_generation == UINT64_C(9));
     assert(elite_evidence.operator_seed_schedule_version ==
            EVO_OPERATOR_SEED_SCHEDULE_VERSION);
+    assert(elite_evidence.selection_policy_version ==
+           EVO_SELECTION_POLICY_VERSION);
+    assert(elite_evidence.selection_policy == EVO_SELECTION_TOURNAMENT);
     assert(elite_evidence.odd_child_policy_version == 0);
     assert(elite_evidence.elite_policy_version ==
            EVO_ELITE_POLICY_VERSION);
@@ -430,6 +433,9 @@ static void assert_explicit_policy(size_t population_size,
     assert(children.produced_count == population_size);
     assert(children.elite_count == requested_count);
     assert(children.elite_source_valid_count == population_size);
+    assert(children.selection_policy_version ==
+           EVO_SELECTION_POLICY_VERSION);
+    assert(children.selection_policy == EVO_SELECTION_TOURNAMENT);
     assert(children.elite_policy_version == EVO_ELITE_POLICY_VERSION);
     assert(children.singleton_child_policy_version ==
            elite_evidence.singleton_child_policy_version);
@@ -590,6 +596,9 @@ static void test_singleton_schedule_and_replay(void)
            EVO_RNG_ALGORITHM_VERSION);
     assert(first_single.operator_seed_schedule_version ==
            EVO_OPERATOR_SEED_SCHEDULE_VERSION);
+    assert(first_single.selection_policy_version ==
+           EVO_SELECTION_POLICY_VERSION);
+    assert(first_single.selection_policy == EVO_SELECTION_TOURNAMENT);
     assert(first_single.policy_version ==
            EVO_SINGLETON_CHILD_POLICY_VERSION);
     assert(first_single.complete);
@@ -713,9 +722,11 @@ static evo_elite_evidence_t sentinel_elite_evidence(void)
         .worst_elite_parent_index = 17,
         .source_generation = 19,
         .operator_seed_schedule_version = 23,
-        .odd_child_policy_version = 29,
-        .elite_policy_version = 31,
-        .singleton_child_policy_version = 37,
+        .selection_policy_version = 29,
+        .selection_policy = EVO_SELECTION_RANK,
+        .odd_child_policy_version = 31,
+        .elite_policy_version = 37,
+        .singleton_child_policy_version = 41,
         .elite_count_explicit = true,
         .complete = true,
     };

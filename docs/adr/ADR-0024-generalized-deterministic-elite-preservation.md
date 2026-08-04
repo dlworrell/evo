@@ -1,6 +1,6 @@
 # ADR-0024: Generalized Deterministic Elite Preservation
 
-Status: Accepted
+Status: Accepted (selection dispatch extended by ADR-0025)
 Date: 2026-08-03
 Decision owner: EVO
 
@@ -96,6 +96,13 @@ independent. Library-detectable configuration, lifecycle, provenance, bounds,
 ranking, and alias failures occur before callback dispatch or elite copying and
 preserve parent state, child state, and caller evidence. Consumer mutation
 callbacks retain their existing no-rollback contract after dispatch begins.
+
+ADR-0025 routes the ordinary singleton's parent draw through selection-policy
+version 1 in EVO 0.25.0. Tournament mode preserves the sequence specified
+above; rank mode uses the same next-unused selection stream. Elite ranking and
+copying remain deterministic, RNG-free, and independent of the parent-
+selection policy. Selection provenance is added to produced and completion
+evidence.
 
 ## Consequences
 

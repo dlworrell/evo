@@ -1,6 +1,6 @@
 # ADR-0010: Versioned Operator Substreams and Parent-Pair Planning
 
-Status: Accepted
+Status: Accepted (selection dispatch extended by ADR-0025)
 Date: 2026-07-31
 Decision owner: EVO
 
@@ -64,6 +64,12 @@ For an odd population, the final child slot is deliberately not assigned; a
 later singleton or elitism decision owns that policy.
 
 The planner is private and is not called by `evo_run`.
+
+ADR-0025 changes the two tournament-specific calls in EVO 0.25.0 to two calls
+through selection-policy version 1. Tournament mode retains the exact sequence
+above. Rank mode interprets the same selection-domain stream without changing
+tuple ownership, crossover domains, or mutation domains, and the plan records
+the selected policy.
 
 ## Consequences
 

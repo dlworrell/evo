@@ -48,6 +48,8 @@ static void assert_population_empty(const evo_population_t *population)
     assert(population->source_generation == 0);
     assert(population->rng_algorithm_version == 0);
     assert(population->operator_seed_schedule_version == 0);
+    assert(population->selection_policy_version == 0);
+    assert(population->selection_policy == EVO_SELECTION_TOURNAMENT);
     assert(population->odd_child_policy_version == 0);
     assert(population->elite_policy_version == 0);
     assert(population->singleton_child_policy_version == 0);
@@ -111,6 +113,9 @@ static void assert_populations_equal(const evo_population_t *left,
     assert(left->rng_algorithm_version == right->rng_algorithm_version);
     assert(left->operator_seed_schedule_version ==
            right->operator_seed_schedule_version);
+    assert(left->selection_policy_version ==
+           right->selection_policy_version);
+    assert(left->selection_policy == right->selection_policy);
     assert(left->odd_child_policy_version ==
            right->odd_child_policy_version);
     assert(left->elite_policy_version == right->elite_policy_version);

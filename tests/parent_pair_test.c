@@ -132,6 +132,8 @@ static evo_parent_pair_t sentinel_pair(void)
         .pair_index = 47,
         .source_generation = 53,
         .seed_schedule_version = 59,
+        .selection_policy_version = 61,
+        .selection_policy = EVO_SELECTION_RANK,
     };
 }
 
@@ -146,6 +148,9 @@ static void assert_pair_equal(const evo_parent_pair_t *left,
     assert(left->source_generation == right->source_generation);
     assert(left->seed_schedule_version ==
            right->seed_schedule_version);
+    assert(left->selection_policy_version ==
+           right->selection_policy_version);
+    assert(left->selection_policy == right->selection_policy);
 }
 
 static void assert_parent_unchanged(const pair_fixture_t *fixture,
@@ -176,6 +181,10 @@ static void assert_parent_unchanged(const pair_fixture_t *fixture,
            before->rng_algorithm_version);
     assert(fixture->population.operator_seed_schedule_version ==
            before->operator_seed_schedule_version);
+    assert(fixture->population.selection_policy_version ==
+           before->selection_policy_version);
+    assert(fixture->population.selection_policy ==
+           before->selection_policy);
     assert(fixture->population.odd_child_policy_version ==
            before->odd_child_policy_version);
     assert(fixture->population.elite_policy_version ==
@@ -312,6 +321,9 @@ static void test_fixed_complete_pair_vector_and_replay(void)
     assert(first.source_generation == 7);
     assert(first.seed_schedule_version ==
            EVO_OPERATOR_SEED_SCHEDULE_VERSION);
+    assert(first.selection_policy_version ==
+           EVO_SELECTION_POLICY_VERSION);
+    assert(first.selection_policy == EVO_SELECTION_TOURNAMENT);
 
     assert(evo_parent_pair_plan(
                &fixture.config,
@@ -371,11 +383,42 @@ static void test_valid_only_parent_domain(void)
     }
 }
 
+static void test_rank_policy_plan_and_replay(void)
+{
+    pair_fixture_t fixture = {0};
+    evo_parent_pair_t first = {0};
+    evo_parent_pair_t replay = {0};
+
+    fixture_initialize(&fixture, 5, 3, 107);
+    fixture.config.tournament_size = 0;
+    fixture.config.selection_policy = EVO_SELECTION_RANK;
+    fixture.config.rank_base_weight = 1;
+    fixture.config.rank_step_weight = 2;
+
+    assert(evo_parent_pair_plan(&fixture.config,
+                                &fixture.population,
+                                13,
+                                0,
+                                &first) == EVO_SUCCESS);
+    assert(evo_parent_pair_plan(&fixture.config,
+                                &fixture.population,
+                                13,
+                                0,
+                                &replay) == EVO_SUCCESS);
+    assert_pair_equal(&first, &replay);
+    assert(first.parent_a_index < fixture.population.population_size);
+    assert(first.parent_b_index < fixture.population.population_size);
+    assert(first.selection_policy_version ==
+           EVO_SELECTION_POLICY_VERSION);
+    assert(first.selection_policy == EVO_SELECTION_RANK);
+}
+
 int main(void)
 {
     test_invalid_arguments_and_bounds_preserve_output();
     test_incomplete_and_all_invalid_parent_rejection();
     test_fixed_complete_pair_vector_and_replay();
     test_valid_only_parent_domain();
+    test_rank_policy_plan_and_replay();
     return 0;
 }

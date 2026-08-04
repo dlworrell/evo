@@ -3,6 +3,7 @@
 #include "internal/crossover.h"
 #include "internal/elite.h"
 #include "internal/mutation.h"
+#include "internal/selection.h"
 
 #include <math.h>
 #include <stdint.h>
@@ -24,8 +25,7 @@ static bool operator_policy_is_valid(const evo_problem_t *problem,
 {
     return problem->genome_size != 0 &&
            config->population_size != 0 &&
-           config->tournament_size != 0 &&
-           config->tournament_size <= config->population_size &&
+           evo_selection_validate_active_config(config) == EVO_SUCCESS &&
            config->max_genome_bytes != 0 &&
            problem->genome_size <= config->max_genome_bytes &&
            config->max_child_population_bytes != 0 &&
@@ -65,6 +65,8 @@ static bool child_progress_is_valid(
         children->elite_source_valid_count != 0 ||
         children->initialization_seed != 0 ||
         children->rng_algorithm_version != 0 ||
+        (children->selection_policy_version == 0 &&
+         children->selection_policy != EVO_SELECTION_TOURNAMENT) ||
         children->odd_child_policy_version != 0 ||
         children->elite_policy_version != 0 ||
         children->singleton_child_policy_version != 0 ||
@@ -108,12 +110,17 @@ static bool child_progress_is_valid(
 
     if (children->produced_count == 0) {
         return children->source_generation == 0 &&
-               children->operator_seed_schedule_version == 0;
+               children->operator_seed_schedule_version == 0 &&
+               children->selection_policy_version == 0 &&
+               children->selection_policy == EVO_SELECTION_TOURNAMENT;
     }
 
     return children->source_generation == source_generation &&
            children->operator_seed_schedule_version ==
-               EVO_OPERATOR_SEED_SCHEDULE_VERSION;
+               EVO_OPERATOR_SEED_SCHEDULE_VERSION &&
+           children->selection_policy_version ==
+               EVO_SELECTION_POLICY_VERSION &&
+           children->selection_policy == config->selection_policy;
 }
 
 static bool size_index_to_u64(size_t index, uint64_t *converted)
@@ -270,6 +277,9 @@ evo_status_t evo_child_pair_produce(
     children->source_generation = source_generation;
     children->operator_seed_schedule_version =
         EVO_OPERATOR_SEED_SCHEDULE_VERSION;
+    children->selection_policy_version =
+        EVO_SELECTION_POLICY_VERSION;
+    children->selection_policy = config->selection_policy;
 
     candidate.produced_count = children->produced_count;
     candidate.rng_algorithm_version = EVO_RNG_ALGORITHM_VERSION;

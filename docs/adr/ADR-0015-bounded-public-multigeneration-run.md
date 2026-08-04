@@ -1,6 +1,6 @@
 # ADR-0015: Bounded Public Multi-Generation Run
 
-Status: Accepted
+Status: Accepted (selection dispatch extended by ADR-0025)
 Date: 2026-08-02
 Decision owner: EVO
 
@@ -71,6 +71,12 @@ ADR-0023 advances bounded-run policy to version 5 in EVO 0.23.0. ADR-0024 then
 advances it to version 6 in EVO 0.24.0 and replaces the fixed pair/odd-tail
 composition with an ordinary-offspring prefix, optional singleton, and stable
 elite suffix. Disabled elite configuration preserves the version-1 sequence.
+
+ADR-0025 advances bounded-run policy to version 7 in EVO 0.25.0 and composes
+selection-policy version 1. Tournament mode preserves every prior parent draw;
+rank mode interprets the same pair-local selection streams. Child-evaluation
+and generation-advancement policies advance to version 5 so the configured
+selection identity survives completion.
 
 ## Consequences
 

@@ -1,7 +1,7 @@
 AC_PREREQ([2.69])
 AC_INIT(
   [catalyst-evo],
-  [0.24.0],
+  [0.25.0],
   [https://github.com/dlworrell/evo/issues]
 )
 AC_CONFIG_SRCDIR([src/population.c])

@@ -187,6 +187,9 @@ evo_status_t evo_population_advance_generation(
     candidate.completed_generation = current_generation + UINT64_C(1);
     candidate.operator_seed_schedule_version =
         evaluated_children->operator_seed_schedule_version;
+    candidate.selection_policy_version =
+        evaluated_children->selection_policy_version;
+    candidate.selection_policy = evaluated_children->selection_policy;
     candidate.odd_child_policy_version =
         evaluated_children->odd_child_policy_version;
     candidate.elite_policy_version =
