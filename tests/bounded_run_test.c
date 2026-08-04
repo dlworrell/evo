@@ -281,6 +281,8 @@ static void test_zero_limit_preserves_generation_zero(void)
     config.selection_policy = (evo_selection_policy_t)99;
     config.rank_base_weight = SIZE_MAX;
     config.rank_step_weight = SIZE_MAX;
+    config.crossover_operator = (evo_crossover_operator_t)99;
+    config.mutation_operator = (evo_mutation_operator_t)99;
 
     assert(evo_run(&problem, &config, &context, &result) == EVO_SUCCESS);
     assert_result(&result,
@@ -563,6 +565,20 @@ static void test_transition_preflight_and_active_result(void)
     assert(context.initialization_calls == 0);
 
     config = make_config(4, 4, 1, 109);
+    config.crossover_operator = (evo_crossover_operator_t)99;
+    assert(evo_run(&problem, &config, &context, &result) ==
+           EVO_ERROR_RESOURCE_LIMIT);
+    assert_result_empty(&result);
+    assert(context.initialization_calls == 0);
+
+    config = make_config(4, 4, 1, 109);
+    config.mutation_operator = (evo_mutation_operator_t)99;
+    assert(evo_run(&problem, &config, &context, &result) ==
+           EVO_ERROR_RESOURCE_LIMIT);
+    assert_result_empty(&result);
+    assert(context.initialization_calls == 0);
+
+    config = make_config(4, 4, 1, 109);
     config.tournament_size = 0;
     config.selection_policy = EVO_SELECTION_RANK;
     config.rank_base_weight = SIZE_MAX;
@@ -617,6 +633,51 @@ static void test_rank_selection_run_replay(void)
                   2,
                   EVO_TERMINATION_GENERATION_LIMIT,
                   117);
+    assert(first_context.event_count == replay_context.event_count);
+    for (size_t index = 0; index < first_context.event_count; ++index) {
+        assert(first_context.events[index].operation ==
+               replay_context.events[index].operation);
+        assert(first_context.events[index].value ==
+               replay_context.events[index].value);
+    }
+
+    evo_result_destroy(&replay);
+    evo_result_destroy(&first);
+}
+
+static void test_reference_operator_run_replay(void)
+{
+    evo_problem_t problem = make_problem(4);
+    evo_config_t config = make_config(4, 4, 2, 118);
+    run_context_t first_context = make_context(4, 4);
+    run_context_t replay_context = make_context(4, 4);
+    evo_result_t first = {0};
+    evo_result_t replay = {0};
+
+    config.crossover_rate = 1.0;
+    config.crossover_operator = EVO_CROSSOVER_BYTE_UNIFORM;
+    config.mutation_operator = EVO_MUTATION_BYTE_XOR;
+
+    assert(evo_run(&problem, &config, &first_context, &first) ==
+           EVO_SUCCESS);
+    assert(evo_run(&problem, &config, &replay_context, &replay) ==
+           EVO_SUCCESS);
+    assert(first_context.mutation_calls == 0);
+    assert(replay_context.mutation_calls == 0);
+    assert(first.best_genome != replay.best_genome);
+    for (size_t offset = 0; offset < config.max_genome_bytes; ++offset) {
+        assert(((const unsigned char *)first.best_genome)[offset] ==
+               ((const unsigned char *)replay.best_genome)[offset]);
+    }
+    assert(first.best_fitness.total == replay.best_fitness.total);
+    assert(first.generations_completed == replay.generations_completed);
+    assert(first.generations_completed == 2);
+    assert(first.termination_reason == replay.termination_reason);
+    assert(first.termination_reason == EVO_TERMINATION_GENERATION_LIMIT);
+    assert(first.generation_statistics.generation_index ==
+           replay.generation_statistics.generation_index);
+    assert(first.generation_statistics.best_index ==
+           replay.generation_statistics.best_index);
     assert(first_context.event_count == replay_context.event_count);
     for (size_t index = 0; index < first_context.event_count; ++index) {
         assert(first_context.events[index].operation ==
@@ -747,6 +808,10 @@ static void test_private_bounded_run_evidence(void)
     assert(evidence.selection_policy_version ==
            EVO_SELECTION_POLICY_VERSION);
     assert(evidence.selection_policy == EVO_SELECTION_RANK);
+    assert(evidence.byte_operator_policy_version ==
+           EVO_BYTE_OPERATOR_POLICY_VERSION);
+    assert(evidence.crossover_operator == EVO_CROSSOVER_CONSUMER);
+    assert(evidence.mutation_operator == EVO_MUTATION_CONSUMER);
     assert(evidence.odd_child_policy_version == 0);
     assert(evidence.elite_policy_version == EVO_ELITE_POLICY_VERSION);
     assert(evidence.singleton_child_policy_version ==
@@ -793,6 +858,7 @@ int main(void)
     test_generation_zero_all_invalid_remains_error();
     test_transition_preflight_and_active_result();
     test_rank_selection_run_replay();
+    test_reference_operator_run_replay();
     test_private_bounded_run_evidence();
     return 0;
 }

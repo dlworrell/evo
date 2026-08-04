@@ -147,6 +147,12 @@ only to the reviewed 0.25.0 boundary and does not grant automatic conformance to
 later storage recycling, checkpoint, parallelism, analysis, recipe, or artifact
 work.
 
+ADR-0027 performs the next change-specific assessment for EVO 0.26.0. Its
+reference byte operators act directly on explicit bounded arrays and introduce
+no accelerated structure, so the rule is explicitly not applicable to a new
+projection API for that change. The operator decisions and affected ranges are
+nevertheless specified and golden-vector tested for reviewability.
+
 ## Consequences
 
 - EVO may use efficient internal data structures without exposing their

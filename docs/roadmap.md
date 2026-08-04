@@ -11,15 +11,15 @@ codebases. It emits the highest-ranked fully verified source candidate found
 within a recorded bounded search as a reviewable patch and reproducibility
 package.
 
-The completed EVO 0.25.0 code is the deterministic C17 evolutionary-search
+The completed EVO 0.26.0 code is the deterministic C17 evolutionary-search
 core. It is necessary infrastructure, not the completed source optimizer.
 
-Core issues #39 through #47 are represented in that boundary, including
+Core issues #39 through #48 are represented in that boundary, including
 versioned constraints, diversity, convergence/stagnation, and caller-bounded
-deterministic elite preservation plus stable rank-based parent selection.
-Issues #48 through #55 remain the next core operator, durability, performance,
-evidence, and integration work;
-the source-optimizer dependency spine remains unchanged.
+deterministic elite preservation, stable rank-based parent selection, and
+explicit reference byte-genome crossover/mutation operators. Issues #49
+through #55 remain the next core adaptation, durability, performance, evidence,
+and integration work. The source-optimizer dependency spine remains unchanged.
 
 ## Cross-Cutting Human-Readable Abstraction Gate
 

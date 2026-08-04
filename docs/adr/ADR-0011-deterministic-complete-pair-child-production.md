@@ -1,6 +1,6 @@
 # ADR-0011: Deterministic Complete-Pair Child Production
 
-Status: Accepted (selection provenance extended by ADR-0025)
+Status: Accepted (operator provenance extended by ADR-0025 and ADR-0027)
 Date: 2026-07-31
 Decision owner: EVO
 
@@ -68,6 +68,11 @@ ADR-0025 adds selection-policy version and enum provenance to pair plans and
 produced child state in EVO 0.25.0. It also generalizes preflight from
 tournament-only validation to the configured selection dispatch while leaving
 crossover, mutation, callback order, and child-slot ownership unchanged.
+
+ADR-0027 adds byte-operator policy version and both operator enums to pair
+evidence and produced child state in EVO 0.26.0. Explicit byte modes use the
+same pair- and child-indexed streams, bypass consumer callbacks, and retain the
+crossover-then-child-A-mutation-then-child-B-mutation order.
 
 ## Consequences
 

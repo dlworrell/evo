@@ -1,6 +1,6 @@
 # ADR-0024: Generalized Deterministic Elite Preservation
 
-Status: Accepted (selection dispatch extended by ADR-0025)
+Status: Accepted (operator dispatch extended by ADR-0025 and ADR-0027)
 Date: 2026-08-03
 Decision owner: EVO
 
@@ -103,6 +103,12 @@ above; rank mode uses the same next-unused selection stream. Elite ranking and
 copying remain deterministic, RNG-free, and independent of the parent-
 selection policy. Selection provenance is added to produced and completion
 evidence.
+
+ADR-0027 routes that singleton's mutation through byte-operator policy version
+1 in EVO 0.26.0. Consumer mode preserves its exact callback sequence; byte-XOR
+mode uses the same child-indexed mutation stream and bypasses the callback.
+Elite copies remain operator-free, while completion evidence preserves both
+configured operator selectors for lifecycle validation.
 
 ## Consequences
 

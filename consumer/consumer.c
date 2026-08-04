@@ -8,6 +8,8 @@ _Static_assert(EVO_ELITE_POLICY_VERSION == UINT32_C(1),
                "unsupported EVO elite policy");
 _Static_assert(EVO_SELECTION_POLICY_VERSION == UINT32_C(1),
                "unsupported EVO selection policy");
+_Static_assert(EVO_BYTE_OPERATOR_POLICY_VERSION == UINT32_C(1),
+               "unsupported EVO byte-operator policy");
 
 typedef struct callback_state {
     size_t observer_calls;

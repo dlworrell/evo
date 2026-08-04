@@ -17,6 +17,9 @@ static bool population_matches_inputs(const evo_problem_t *problem,
         population->elite_source_valid_count != 0 ||
         population->source_generation != 0 ||
         population->operator_seed_schedule_version != 0 ||
+        population->byte_operator_policy_version != 0 ||
+        population->crossover_operator != EVO_CROSSOVER_CONSUMER ||
+        population->mutation_operator != EVO_MUTATION_CONSUMER ||
         population->odd_child_policy_version != 0 ||
         population->elite_policy_version != 0 ||
         population->singleton_child_policy_version != 0 ||

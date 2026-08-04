@@ -51,6 +51,10 @@ evo_status_t evo_child_tail_produce(
     candidate.selection_policy_version =
         elite_evidence.selection_policy_version;
     candidate.selection_policy = elite_evidence.selection_policy;
+    candidate.byte_operator_policy_version =
+        elite_evidence.byte_operator_policy_version;
+    candidate.crossover_operator = elite_evidence.crossover_operator;
+    candidate.mutation_operator = elite_evidence.mutation_operator;
     candidate.policy_version = EVO_ODD_CHILD_POLICY_VERSION;
     candidate.complete = true;
     *evidence = candidate;

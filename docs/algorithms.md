@@ -2,7 +2,7 @@
 
 This document distinguishes algorithms implemented by the reusable
 `catalyst_evo` core from the structured program transformations and evaluation
-algorithm required by the EVO 1.0 source optimizer. Version 0.25.0 implements
+algorithm required by the EVO 1.0 source optimizer. Version 0.26.0 implements
 only the core boundary described below.
 
 ## EVO Core Initial Release
@@ -13,7 +13,8 @@ only the core boundary described below.
 - One-point crossover
 - Two-point crossover
 - Uniform crossover
-- Bit, integer, floating-point, and permutation mutation helpers
+- Reference byte-XOR mutation
+- Typed bit, integer, floating-point, and permutation mutation helpers
 - Adaptive mutation
 - Diversity measurement
 - Stagnation detection
@@ -237,8 +238,24 @@ child views are supplied by the private caller.
 
 The operator does not choose parents, allocate a child population, mutate
 children, or execute a generation transition. Version 0.12.0 composes it with
-those separate private boundaries for complete pairs. Representation-specific
-one-point, two-point, and uniform helpers remain later algorithm-library work.
+those separate private boundaries for complete pairs.
+
+Version 0.26.0 publishes byte-operator policy version 1. The zero-valued
+consumer selector preserves the complete behavior and RNG sequence above.
+Explicit byte modes bypass the callback after the same one-word gate:
+
+- one-point crossover samples an unbiased internal cut in `[1, n - 1]` and
+  swaps `[cut, n)`; a one-byte genome clones without a cut draw;
+- two-point crossover samples two distinct boundaries uniformly without
+  replacement from `[0, n]`, sorts them, and swaps `[lower, upper)`; and
+- uniform crossover consumes one 32-bit mask per group of up to 32 ascending
+  bytes, using least-significant bit first to choose corresponding or swapped
+  parents.
+
+Both children are complementary and fully initialized over `[0, n)`. Bounded
+samples retain the version-1 two-word rejection schedule; uniform mode consumes
+exactly `ceil(n / 32)` words after a selected gate. The direct byte arrays are
+the exact reference representation and no operator allocates scratch storage.
 
 ## Deterministic Mutation Dispatch
 
@@ -259,10 +276,17 @@ over one bounded writable genome.
 - The callback owns no storage, retains no genome view, uses no unrecorded
   entropy, and has no failure or rollback channel.
 
-The operator does not allocate a child population, define built-in bit,
-integer, floating-point, or permutation mutations, adapt the rate, or execute
-a generation transition. Version 0.12.0 composes the dispatcher for complete
-child pairs; the other capabilities remain later work.
+The operator does not allocate a child population, adapt the rate, or execute a
+generation transition. Version 0.12.0 composes the dispatcher for complete
+child pairs.
+
+Version 0.26.0 retains consumer mode as enum value zero and adds reference
+byte-XOR mode. After a selected one-word probability gate, it draws one
+unbiased index in `[0, n - 1]`, draws one unbiased nonzero mask in `[1, 255]`,
+and XORs exactly that byte. The selected event therefore always changes one
+in-bounds byte. Each bounded draw uses the existing two-word rejection schedule.
+The reference mode bypasses the callback and allocates no state. Typed bit,
+integer, floating-point, permutation, and adaptive policies remain later work.
 
 ## Child-Population Storage
 
@@ -323,8 +347,9 @@ boundaries.
   before callback dispatch or child output.
 - Crossover executes once, followed by one mutation decision for child A and
   one for child B.
-- Success records produced count, source generation, schedule version, and
-  pair evidence.
+- Success records produced count, source generation, schedule version,
+  selection provenance, byte-operator policy version, both operator selectors,
+  and pair evidence.
 - Repeated, skipped, mismatched-generation, and invalid requests preserve
   child bytes and output evidence before callback dispatch.
 - Parent genomes and completed fitness evidence remain unchanged.
@@ -399,7 +424,7 @@ RNG state or changing any genome byte.
 - An all-invalid child completes without a best candidate.
 - Success preserves production metadata and commits evaluation records,
   valid count, stable best, comparison and diversity policy, and child-
-  evaluation policy version 5 evidence exactly once.
+  evaluation policy version 6 evidence exactly once.
 - Preflight, resource, allocation, and malformed-fitness failures preserve
   child-owned bytes and metadata plus caller-owned evidence. Consumer callback
   side effects after dispatch begins cannot be rolled back.
@@ -452,6 +477,10 @@ mode evidence without changing ownership transfer.
 Version 0.25.0 advances generation-advancement policy to version 5 and copies
 selection-policy version and enum evidence without changing ownership transfer.
 
+Version 0.26.0 advances generation-advancement policy to version 6 and copies
+byte-operator policy version plus crossover and mutation selector evidence
+without changing ownership transfer.
+
 ## Bounded Multi-Generation Execution
 
 Version 0.16.0 adds bounded-run policy version 1 and composes the complete
@@ -484,7 +513,7 @@ affected by allocation addresses or later equal candidates. Failure at any
 transition destroys all internal owners and the result allocation; no partial
 winner or completion count escapes the public call.
 
-Through version 0.25.0, this algorithm has a bounded sequential working set of
+Through version 0.26.0, this algorithm has a bounded sequential working set of
 one current population, one child population, one result genome, and the
 current population's evaluation records plus provisional child evaluation
 records during child evaluation. It does not recycle slabs or run callbacks
@@ -658,6 +687,12 @@ Version 0.25.0 advances bounded-run policy to version 7 and records final
 selection-policy version and enum. Child-evaluation and generation-advancement
 policies advance to version 5 so the same provenance survives evaluation and
 ownership transfer.
+
+Version 0.26.0 advances bounded-run policy to version 8 and records byte-
+operator policy version 1 plus both selected operator enums. Child-evaluation
+and generation-advancement policies advance to version 6 for the same
+provenance. The reference operators introduce no accelerated structure; their
+bounded byte arrays and direct scans remain exact authority under ADR-0026.
 
 ## Structured C Source Evolution
 

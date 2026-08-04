@@ -1,8 +1,10 @@
 #include "internal/population_storage.h"
 #include "internal/child_tail.h"
+#include "internal/crossover.h"
 #include "internal/diversity.h"
 #include "internal/elite.h"
 #include "internal/fitness.h"
+#include "internal/mutation.h"
 #include "internal/rng.h"
 #include "internal/selection.h"
 
@@ -44,7 +46,9 @@ static bool completed_population_provenance_is_valid(
     uint32_t expected_odd_child_policy_version = 0;
     uint32_t expected_singleton_child_policy_version = 0;
 
-    if (evo_selection_validate_config(config) != EVO_SUCCESS) {
+    if (evo_selection_validate_config(config) != EVO_SUCCESS ||
+        !evo_crossover_operator_is_valid(config->crossover_operator) ||
+        !evo_mutation_operator_is_valid(config->mutation_operator)) {
         return false;
     }
 
@@ -60,6 +64,10 @@ static bool completed_population_provenance_is_valid(
                population->selection_policy_version == 0 &&
                population->selection_policy ==
                    EVO_SELECTION_TOURNAMENT &&
+               population->byte_operator_policy_version == 0 &&
+               population->crossover_operator ==
+                   EVO_CROSSOVER_CONSUMER &&
+               population->mutation_operator == EVO_MUTATION_CONSUMER &&
                population->odd_child_policy_version == 0 &&
                population->elite_policy_version == 0 &&
                population->singleton_child_policy_version == 0 &&
@@ -97,6 +105,10 @@ static bool completed_population_provenance_is_valid(
            population->selection_policy_version ==
                EVO_SELECTION_POLICY_VERSION &&
            population->selection_policy == config->selection_policy &&
+           population->byte_operator_policy_version ==
+               EVO_BYTE_OPERATOR_POLICY_VERSION &&
+           population->crossover_operator == config->crossover_operator &&
+           population->mutation_operator == config->mutation_operator &&
            population->odd_child_policy_version ==
                expected_odd_child_policy_version &&
            population->elite_policy_version ==

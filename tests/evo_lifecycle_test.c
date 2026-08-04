@@ -12,6 +12,18 @@ _Static_assert(EVO_TERMINATION_CONVERGED == 4,
                "convergence must retain its public value");
 _Static_assert(EVO_TERMINATION_STAGNATED == 5,
                "stagnation must retain its public value");
+_Static_assert(EVO_CROSSOVER_CONSUMER == 0,
+               "consumer crossover must remain the zero-value default");
+_Static_assert(EVO_CROSSOVER_BYTE_ONE_POINT == 1,
+               "one-point crossover must retain its public value");
+_Static_assert(EVO_CROSSOVER_BYTE_TWO_POINT == 2,
+               "two-point crossover must retain its public value");
+_Static_assert(EVO_CROSSOVER_BYTE_UNIFORM == 3,
+               "uniform crossover must retain its public value");
+_Static_assert(EVO_MUTATION_CONSUMER == 0,
+               "consumer mutation must remain the zero-value default");
+_Static_assert(EVO_MUTATION_BYTE_XOR == 1,
+               "byte-XOR mutation must retain its public value");
 _Static_assert(offsetof(evo_result_t, termination_reason) >=
                    offsetof(evo_result_t, random_seed) + sizeof(uint64_t),
                "termination evidence must remain appended to evo_result_t");
@@ -29,6 +41,8 @@ _Static_assert(EVO_BYTE_DIVERSITY_METRIC_VERSION == UINT32_C(1),
                "the initial byte-diversity metric must remain stable");
 _Static_assert(EVO_STOPPING_POLICY_VERSION == UINT32_C(1),
                "the initial stopping policy must remain stable");
+_Static_assert(EVO_BYTE_OPERATOR_POLICY_VERSION == UINT32_C(1),
+               "the initial byte-operator policy must remain stable");
 _Static_assert(EVO_GENERATION_STATISTICS_VERSION == UINT32_C(3),
                "statistics schema 3 must carry diversity evidence");
 _Static_assert(offsetof(evo_generation_statistics_t,
@@ -97,6 +111,14 @@ _Static_assert(offsetof(evo_config_t, diversity_floor) >=
                    offsetof(evo_config_t, diversity_floor_enabled) +
                        sizeof(bool),
                "the diversity floor value must follow its enable control");
+_Static_assert(offsetof(evo_config_t, crossover_operator) >=
+                   offsetof(evo_config_t, rank_step_weight) +
+                       sizeof(size_t),
+               "operator dispatch must follow the 0.25 configuration prefix");
+_Static_assert(offsetof(evo_config_t, mutation_operator) >=
+                   offsetof(evo_config_t, crossover_operator) +
+                       sizeof(evo_crossover_operator_t),
+               "mutation dispatch must follow crossover dispatch");
 
 enum {
     TEST_POPULATION_CAPACITY = 8,

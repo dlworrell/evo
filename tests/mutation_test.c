@@ -58,6 +58,15 @@ static void assert_bytes_equal(const unsigned char *actual,
     }
 }
 
+static void assert_bytes_equal_count(const unsigned char *actual,
+                                     const unsigned char *expected,
+                                     size_t count)
+{
+    for (size_t index = 0; index < count; ++index) {
+        assert(actual[index] == expected[index]);
+    }
+}
+
 static void assert_rng_equal(const evo_rng_t *left,
                              const evo_rng_t *right)
 {
@@ -319,6 +328,163 @@ static void test_deterministic_replay(void)
     assert_rng_equal(&first, &replay);
 }
 
+static void test_invalid_reference_operator_preserves_state(void)
+{
+    static const unsigned char genome_before[TEST_GENOME_SIZE] = {
+        1, 2, 3, 4};
+    unsigned char genome[TEST_GENOME_SIZE] = {1, 2, 3, 4};
+    mutation_evidence_t evidence = {
+        .xor_mask = 0x10};
+    evo_problem_t problem = test_problem();
+    evo_config_t config = test_config(1.0);
+    evo_rng_t rng = {0};
+
+    config.mutation_operator = (evo_mutation_operator_t)99;
+    assert(evo_rng_seed(&rng, 42));
+    const evo_rng_t before_rng = rng;
+
+    assert(evo_mutate_genome(&problem,
+                             &config,
+                             &evidence,
+                             &rng,
+                             genome) == EVO_ERROR_RESOURCE_LIMIT);
+    assert(evidence.calls == 0);
+    assert_rng_equal(&rng, &before_rng);
+    assert_bytes_equal(genome, genome_before);
+}
+
+static void test_reference_mutation_golden_vector(void)
+{
+    static const unsigned char expected[TEST_GENOME_SIZE] = {
+        1, 0xec, 3, 4};
+    unsigned char genome[TEST_GENOME_SIZE] = {1, 2, 3, 4};
+    mutation_evidence_t evidence = {
+        .xor_mask = 0x10};
+    evo_problem_t problem = test_problem();
+    evo_config_t config = test_config(1.0);
+    evo_rng_t rng = {0};
+    uint32_t next_value = 0;
+
+    config.mutation_operator = EVO_MUTATION_BYTE_XOR;
+    assert(evo_rng_seed(&rng, 42));
+    assert(evo_mutate_genome(&problem,
+                             &config,
+                             &evidence,
+                             &rng,
+                             genome) == EVO_SUCCESS);
+    assert(evidence.calls == 0);
+    assert_bytes_equal(genome, expected);
+    assert(evo_rng_next_u32(&rng, &next_value));
+    assert(next_value == UINT32_C(0x68beb632));
+}
+
+static void test_reference_boundary_guard_and_rate_zero(void)
+{
+    static const unsigned char initial[TEST_GENOME_SIZE] = {
+        1, 2, 3, 4};
+    unsigned char guarded[TEST_GENOME_SIZE + 2] = {
+        0xa5, 1, 2, 3, 4, 0x5a};
+    unsigned char one = 0x11;
+    mutation_evidence_t evidence = {
+        .xor_mask = 0x10};
+    evo_problem_t problem = test_problem();
+    evo_config_t config = test_config(1.0);
+    evo_rng_t rng = {0};
+    uint32_t next_value = 0;
+
+    config.mutation_operator = EVO_MUTATION_BYTE_XOR;
+    assert(evo_rng_seed(&rng, 42));
+    assert(evo_mutate_genome(&problem,
+                             &config,
+                             &evidence,
+                             &rng,
+                             guarded + 1) == EVO_SUCCESS);
+    assert(evidence.calls == 0);
+    assert(guarded[0] == 0xa5);
+    assert(guarded[TEST_GENOME_SIZE + 1] == 0x5a);
+
+    problem.genome_size = 1;
+    config.max_genome_bytes = 1;
+    assert(evo_rng_seed(&rng, 42));
+    assert(evo_mutate_genome(&problem,
+                             &config,
+                             &evidence,
+                             &rng,
+                             &one) == EVO_SUCCESS);
+    assert(one == 0xff);
+    assert(evo_rng_next_u32(&rng, &next_value));
+    assert(next_value == UINT32_C(0x68beb632));
+
+    problem.genome_size = TEST_GENOME_SIZE;
+    config.max_genome_bytes = TEST_GENOME_SIZE;
+    config.mutation_rate = 0.0;
+    for (size_t index = 0; index < TEST_GENOME_SIZE; ++index) {
+        guarded[index + 1] = initial[index];
+    }
+    assert(evo_rng_seed(&rng, 42));
+    assert(evo_mutate_genome(&problem,
+                             &config,
+                             &evidence,
+                             &rng,
+                             guarded + 1) == EVO_SUCCESS);
+    assert_bytes_equal_count(guarded + 1, initial, TEST_GENOME_SIZE);
+    assert(evo_rng_next_u32(&rng, &next_value));
+    assert(next_value == UINT32_C(0x6b07c4a9));
+}
+
+static void test_reference_position_coverage_and_replay(void)
+{
+    bool positions_seen[TEST_GENOME_SIZE] = {false};
+    evo_problem_t problem = test_problem();
+    evo_config_t config = test_config(1.0);
+    unsigned char first_genome[TEST_GENOME_SIZE] = {3, 5, 7, 11};
+    unsigned char replay_genome[TEST_GENOME_SIZE] = {3, 5, 7, 11};
+    evo_rng_t first = {0};
+    evo_rng_t replay = {0};
+
+    config.mutation_operator = EVO_MUTATION_BYTE_XOR;
+    for (uint64_t seed = 0; seed < UINT64_C(4096); ++seed) {
+        unsigned char genome[TEST_GENOME_SIZE] = {0};
+        evo_rng_t rng = {0};
+        size_t changed_count = 0;
+
+        assert(evo_rng_seed(&rng, seed));
+        assert(evo_mutate_genome(&problem,
+                                 &config,
+                                 NULL,
+                                 &rng,
+                                 genome) == EVO_SUCCESS);
+        for (size_t index = 0; index < TEST_GENOME_SIZE; ++index) {
+            if (genome[index] != 0) {
+                positions_seen[index] = true;
+                ++changed_count;
+            }
+        }
+        assert(changed_count == 1);
+    }
+    for (size_t index = 0; index < TEST_GENOME_SIZE; ++index) {
+        assert(positions_seen[index]);
+    }
+
+    config.mutation_rate = 0.375;
+    assert(evo_rng_seed(&first, UINT64_C(20260804)));
+    assert(evo_rng_seed(&replay, UINT64_C(20260804)));
+    for (size_t attempt = 0; attempt < 32; ++attempt) {
+        assert(evo_mutate_genome(&problem,
+                                 &config,
+                                 NULL,
+                                 &first,
+                                 first_genome) == EVO_SUCCESS);
+        assert(evo_mutate_genome(&problem,
+                                 &config,
+                                 NULL,
+                                 &replay,
+                                 replay_genome) == EVO_SUCCESS);
+        assert_bytes_equal(first_genome, replay_genome);
+    }
+    assert_rng_equal(&first, &replay);
+}
+
 int main(void)
 {
     test_invalid_input_preserves_state();
@@ -327,5 +493,9 @@ int main(void)
     test_fixed_gate_and_callback_dispatch();
     test_rate_one_dispatches_once();
     test_deterministic_replay();
+    test_invalid_reference_operator_preserves_state();
+    test_reference_mutation_golden_vector();
+    test_reference_boundary_guard_and_rate_zero();
+    test_reference_position_coverage_and_replay();
     return 0;
 }

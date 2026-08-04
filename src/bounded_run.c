@@ -3,15 +3,16 @@
 #include "internal/child_evaluation.h"
 #include "internal/child_pair.h"
 #include "internal/child_single.h"
+#include "internal/crossover.h"
 #include "internal/diversity.h"
 #include "internal/elite.h"
 #include "internal/fitness.h"
 #include "internal/observer.h"
+#include "internal/mutation.h"
 #include "internal/selection.h"
 #include "internal/statistics.h"
 #include "internal/stopping.h"
 
-#include <math.h>
 #include <stdint.h>
 
 static bool checked_size_multiply(size_t left,
@@ -56,6 +57,8 @@ static bool transition_configuration_is_valid(
 
     if (evo_elite_validate_config(config) != EVO_SUCCESS ||
         evo_selection_validate_config(config) != EVO_SUCCESS ||
+        !evo_crossover_operator_is_valid(config->crossover_operator) ||
+        !evo_mutation_operator_is_valid(config->mutation_operator) ||
         problem->genome_size == 0 || config->population_size == 0 ||
         config->max_genome_bytes == 0 ||
         problem->genome_size > config->max_genome_bytes ||
@@ -76,9 +79,7 @@ static bool transition_configuration_is_valid(
 
     singleton_operator_policy_is_valid =
         evo_selection_validate_active_config(config) == EVO_SUCCESS &&
-        isfinite(config->mutation_rate) &&
-        config->mutation_rate >= 0.0 &&
-        config->mutation_rate <= 1.0;
+        evo_mutation_validate_config(problem, config) == EVO_SUCCESS;
 
     if (config->population_size == 1) {
         if (!config->elite_count_enabled || config->elite_count == 1) {
@@ -88,9 +89,7 @@ static bool transition_configuration_is_valid(
     }
 
     return singleton_operator_policy_is_valid &&
-           isfinite(config->crossover_rate) &&
-           config->crossover_rate >= 0.0 &&
-           config->crossover_rate <= 1.0;
+           evo_crossover_validate_config(problem, config) == EVO_SUCCESS;
 }
 
 evo_status_t evo_bounded_run_validate_config(
@@ -474,6 +473,10 @@ evo_status_t evo_bounded_run_advance(
     candidate.selection_policy_version =
         EVO_SELECTION_POLICY_VERSION;
     candidate.selection_policy = config->selection_policy;
+    candidate.byte_operator_policy_version =
+        EVO_BYTE_OPERATOR_POLICY_VERSION;
+    candidate.crossover_operator = config->crossover_operator;
+    candidate.mutation_operator = config->mutation_operator;
     candidate.elite_policy_version = EVO_ELITE_POLICY_VERSION;
     candidate.fitness_comparison_policy_version =
         EVO_FITNESS_COMPARISON_POLICY_VERSION;
@@ -586,6 +589,12 @@ evo_status_t evo_bounded_run_advance(
             advancement_evidence.selection_policy_version;
         candidate.selection_policy =
             advancement_evidence.selection_policy;
+        candidate.byte_operator_policy_version =
+            advancement_evidence.byte_operator_policy_version;
+        candidate.crossover_operator =
+            advancement_evidence.crossover_operator;
+        candidate.mutation_operator =
+            advancement_evidence.mutation_operator;
         candidate.elite_policy_version =
             advancement_evidence.elite_policy_version;
         candidate.singleton_child_policy_version =

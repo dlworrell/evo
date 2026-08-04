@@ -1,6 +1,6 @@
 # ADR-0010: Versioned Operator Substreams and Parent-Pair Planning
 
-Status: Accepted (selection dispatch extended by ADR-0025)
+Status: Accepted (operator dispatch extended by ADR-0025 and ADR-0027)
 Date: 2026-07-31
 Decision owner: EVO
 
@@ -70,6 +70,11 @@ through selection-policy version 1. Tournament mode retains the exact sequence
 above. Rank mode interprets the same selection-domain stream without changing
 tuple ownership, crossover domains, or mutation domains, and the plan records
 the selected policy.
+
+ADR-0027 adds explicit reference byte operators in EVO 0.26.0 without changing
+any tuple identity or domain value. Selected modes consume only their existing
+pair-indexed crossover or child-indexed mutation stream, so their additional
+draws cannot shift another pair, child, or operation domain.
 
 ## Consequences
 

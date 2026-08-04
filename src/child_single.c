@@ -1,8 +1,8 @@
 #include "internal/child_single.h"
 
+#include "internal/crossover.h"
 #include "internal/mutation.h"
 
-#include <math.h>
 #include <stdint.h>
 
 static bool checked_size_multiply(size_t left,
@@ -130,6 +130,9 @@ static bool child_state_is_valid(const evo_problem_t *problem,
         children->rng_algorithm_version != 0 ||
         (children->selection_policy_version == 0 &&
          children->selection_policy != EVO_SELECTION_TOURNAMENT) ||
+        (children->byte_operator_policy_version == 0 &&
+         (children->crossover_operator != EVO_CROSSOVER_CONSUMER ||
+          children->mutation_operator != EVO_MUTATION_CONSUMER)) ||
         children->odd_child_policy_version != 0 ||
         children->elite_policy_version != 0 ||
         children->singleton_child_policy_version != 0 ||
@@ -154,7 +157,10 @@ static bool child_state_is_valid(const evo_problem_t *problem,
         return children->source_generation == 0 &&
                children->operator_seed_schedule_version == 0 &&
                children->selection_policy_version == 0 &&
-               children->selection_policy == EVO_SELECTION_TOURNAMENT;
+               children->selection_policy == EVO_SELECTION_TOURNAMENT &&
+               children->byte_operator_policy_version == 0 &&
+               children->crossover_operator == EVO_CROSSOVER_CONSUMER &&
+               children->mutation_operator == EVO_MUTATION_CONSUMER;
     }
 
     return children->source_generation == source_generation &&
@@ -162,7 +168,11 @@ static bool child_state_is_valid(const evo_problem_t *problem,
                EVO_OPERATOR_SEED_SCHEDULE_VERSION &&
            children->selection_policy_version ==
                EVO_SELECTION_POLICY_VERSION &&
-           children->selection_policy == config->selection_policy;
+           children->selection_policy == config->selection_policy &&
+           children->byte_operator_policy_version ==
+               EVO_BYTE_OPERATOR_POLICY_VERSION &&
+           children->crossover_operator == config->crossover_operator &&
+           children->mutation_operator == config->mutation_operator;
 }
 
 static bool size_index_to_u64(size_t index, uint64_t *converted)
@@ -221,12 +231,12 @@ evo_status_t evo_child_single_produce(
         return status;
     }
 
-    if (problem->genome_size == 0 ||
+    if (!evo_crossover_operator_is_valid(config->crossover_operator) ||
+        evo_mutation_validate_config(problem, config) != EVO_SUCCESS ||
+        problem->genome_size == 0 ||
         config->max_genome_bytes == 0 ||
         problem->genome_size > config->max_genome_bytes ||
-        config->max_child_population_bytes == 0 ||
-        !isfinite(config->mutation_rate) ||
-        config->mutation_rate < 0.0 || config->mutation_rate > 1.0) {
+        config->max_child_population_bytes == 0) {
         return EVO_ERROR_RESOURCE_LIMIT;
     }
 
@@ -316,6 +326,10 @@ evo_status_t evo_child_single_produce(
     children->selection_policy_version =
         EVO_SELECTION_POLICY_VERSION;
     children->selection_policy = config->selection_policy;
+    children->byte_operator_policy_version =
+        EVO_BYTE_OPERATOR_POLICY_VERSION;
+    children->crossover_operator = config->crossover_operator;
+    children->mutation_operator = config->mutation_operator;
     children->singleton_child_policy_version =
         EVO_SINGLETON_CHILD_POLICY_VERSION;
 
@@ -327,6 +341,10 @@ evo_status_t evo_child_single_produce(
     candidate.selection_policy_version =
         EVO_SELECTION_POLICY_VERSION;
     candidate.selection_policy = config->selection_policy;
+    candidate.byte_operator_policy_version =
+        EVO_BYTE_OPERATOR_POLICY_VERSION;
+    candidate.crossover_operator = config->crossover_operator;
+    candidate.mutation_operator = config->mutation_operator;
     candidate.policy_version = EVO_SINGLETON_CHILD_POLICY_VERSION;
     candidate.complete = true;
     *evidence = candidate;

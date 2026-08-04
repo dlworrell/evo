@@ -1,6 +1,6 @@
 # ADR-0015: Bounded Public Multi-Generation Run
 
-Status: Accepted (selection dispatch extended by ADR-0025)
+Status: Accepted (operator dispatch extended by ADR-0025 and ADR-0027)
 Date: 2026-08-02
 Decision owner: EVO
 
@@ -77,6 +77,12 @@ selection-policy version 1. Tournament mode preserves every prior parent draw;
 rank mode interprets the same pair-local selection streams. Child-evaluation
 and generation-advancement policies advance to version 5 so the configured
 selection identity survives completion.
+
+ADR-0027 advances bounded-run policy to version 8 in EVO 0.26.0 and composes
+byte-operator policy version 1. Zero-valued consumer modes preserve prior
+callback and RNG behavior; explicit byte modes interpret the same crossover
+and mutation streams. Child-evaluation and generation-advancement policies
+advance to version 6 so both configured operator identities survive completion.
 
 ## Consequences
 

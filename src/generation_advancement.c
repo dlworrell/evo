@@ -190,6 +190,11 @@ evo_status_t evo_population_advance_generation(
     candidate.selection_policy_version =
         evaluated_children->selection_policy_version;
     candidate.selection_policy = evaluated_children->selection_policy;
+    candidate.byte_operator_policy_version =
+        evaluated_children->byte_operator_policy_version;
+    candidate.crossover_operator =
+        evaluated_children->crossover_operator;
+    candidate.mutation_operator = evaluated_children->mutation_operator;
     candidate.odd_child_policy_version =
         evaluated_children->odd_child_policy_version;
     candidate.elite_policy_version =

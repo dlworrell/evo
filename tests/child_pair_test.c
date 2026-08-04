@@ -195,6 +195,10 @@ static void assert_population_metadata_equal(
     assert(left->selection_policy_version ==
            right->selection_policy_version);
     assert(left->selection_policy == right->selection_policy);
+    assert(left->byte_operator_policy_version ==
+           right->byte_operator_policy_version);
+    assert(left->crossover_operator == right->crossover_operator);
+    assert(left->mutation_operator == right->mutation_operator);
     assert(left->odd_child_policy_version ==
            right->odd_child_policy_version);
     assert(left->elite_policy_version == right->elite_policy_version);
@@ -258,6 +262,9 @@ static evo_child_pair_evidence_t sentinel_evidence(void)
         },
         .produced_count = 41,
         .rng_algorithm_version = 43,
+        .byte_operator_policy_version = 47,
+        .crossover_operator = EVO_CROSSOVER_BYTE_TWO_POINT,
+        .mutation_operator = EVO_MUTATION_BYTE_XOR,
         .complete = true,
     };
 }
@@ -279,6 +286,10 @@ static void assert_evidence_equal(
     assert(left->plan.selection_policy == right->plan.selection_policy);
     assert(left->produced_count == right->produced_count);
     assert(left->rng_algorithm_version == right->rng_algorithm_version);
+    assert(left->byte_operator_policy_version ==
+           right->byte_operator_policy_version);
+    assert(left->crossover_operator == right->crossover_operator);
+    assert(left->mutation_operator == right->mutation_operator);
     assert(left->complete == right->complete);
 }
 
@@ -323,6 +334,10 @@ static void assert_child_progress(const evo_population_t *children,
     assert(children->selection_policy_version ==
            EVO_SELECTION_POLICY_VERSION);
     assert(children->selection_policy == EVO_SELECTION_TOURNAMENT);
+    assert(children->byte_operator_policy_version ==
+           EVO_BYTE_OPERATOR_POLICY_VERSION);
+    assert(children->crossover_operator == EVO_CROSSOVER_CONSUMER);
+    assert(children->mutation_operator == EVO_MUTATION_CONSUMER);
     assert(children->odd_child_policy_version == 0);
     assert(children->elite_policy_version == 0);
     assert(children->singleton_child_policy_version == 0);
@@ -620,6 +635,10 @@ static void test_fixed_pairs_replay_and_odd_tail(void)
     assert(first_pair.produced_count == 2);
     assert(first_pair.rng_algorithm_version ==
            EVO_RNG_ALGORITHM_VERSION);
+    assert(first_pair.byte_operator_policy_version ==
+           EVO_BYTE_OPERATOR_POLICY_VERSION);
+    assert(first_pair.crossover_operator == EVO_CROSSOVER_CONSUMER);
+    assert(first_pair.mutation_operator == EVO_MUTATION_CONSUMER);
     assert(first_pair.complete);
     assert_child_progress(&first, 2, 7);
     assert_child_progress(&replay, 2, 7);
@@ -805,6 +824,70 @@ static void test_absent_callbacks_clone_selected_parents(void)
     evo_population_destroy(&children);
 }
 
+static void test_reference_operators_override_callbacks_and_replay(void)
+{
+    pair_fixture_t fixture = {0};
+    evo_population_t first = {0};
+    evo_population_t replay = {0};
+    operator_evidence_t first_callbacks = {0};
+    operator_evidence_t replay_callbacks = {0};
+    evo_child_pair_evidence_t first_evidence = {0};
+    evo_child_pair_evidence_t replay_evidence = {0};
+
+    fixture_initialize(&fixture);
+    fixture.config.crossover_rate = 1.0;
+    fixture.config.mutation_rate = 1.0;
+    fixture.config.crossover_operator = EVO_CROSSOVER_BYTE_ONE_POINT;
+    fixture.config.mutation_operator = EVO_MUTATION_BYTE_XOR;
+    create_children(&fixture, &first);
+    create_children(&fixture, &replay);
+
+    assert(evo_child_pair_produce(&fixture.problem,
+                                  &fixture.config,
+                                  &first_callbacks,
+                                  &fixture.parents,
+                                  7,
+                                  0,
+                                  &first,
+                                  &first_evidence) == EVO_SUCCESS);
+    assert(evo_child_pair_produce(&fixture.problem,
+                                  &fixture.config,
+                                  &replay_callbacks,
+                                  &fixture.parents,
+                                  7,
+                                  0,
+                                  &replay,
+                                  &replay_evidence) == EVO_SUCCESS);
+
+    assert(first_callbacks.crossover_calls == 0);
+    assert(first_callbacks.mutation_calls == 0);
+    assert(replay_callbacks.crossover_calls == 0);
+    assert(replay_callbacks.mutation_calls == 0);
+    assert_bytes_equal(first.genomes,
+                       replay.genomes,
+                       2 * TEST_GENOME_SIZE);
+    for (size_t offset = 2 * TEST_GENOME_SIZE;
+         offset < TEST_STORAGE_BYTES;
+         ++offset) {
+        assert(first.genomes[offset] == 0);
+        assert(replay.genomes[offset] == 0);
+    }
+    assert_evidence_equal(&first_evidence, &replay_evidence);
+    assert(first.byte_operator_policy_version ==
+           EVO_BYTE_OPERATOR_POLICY_VERSION);
+    assert(first.crossover_operator == EVO_CROSSOVER_BYTE_ONE_POINT);
+    assert(first.mutation_operator == EVO_MUTATION_BYTE_XOR);
+    assert(first_evidence.byte_operator_policy_version ==
+           EVO_BYTE_OPERATOR_POLICY_VERSION);
+    assert(first_evidence.crossover_operator ==
+           EVO_CROSSOVER_BYTE_ONE_POINT);
+    assert(first_evidence.mutation_operator == EVO_MUTATION_BYTE_XOR);
+    assert(first_evidence.complete);
+
+    evo_population_destroy(&first);
+    evo_population_destroy(&replay);
+}
+
 int main(void)
 {
     test_invalid_preflight_preserves_every_object();
@@ -813,5 +896,6 @@ int main(void)
     test_order_generation_and_progress_rejections();
     test_source_generation_separates_child_output();
     test_absent_callbacks_clone_selected_parents();
+    test_reference_operators_override_callbacks_and_replay();
     return 0;
 }

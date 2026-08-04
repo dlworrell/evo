@@ -7,6 +7,9 @@ typedef struct evo_child_pair_evidence {
     evo_parent_pair_t plan;
     size_t produced_count;
     uint32_t rng_algorithm_version;
+    uint32_t byte_operator_policy_version;
+    evo_crossover_operator_t crossover_operator;
+    evo_mutation_operator_t mutation_operator;
     bool complete;
 } evo_child_pair_evidence_t;
 

@@ -1,7 +1,9 @@
 #include "internal/elite.h"
 
 #include "internal/child_tail.h"
+#include "internal/crossover.h"
 #include "internal/fitness.h"
+#include "internal/mutation.h"
 #include "internal/rng.h"
 #include "internal/selection.h"
 
@@ -370,7 +372,9 @@ evo_status_t evo_elite_population_complete(
     if (status != EVO_SUCCESS) {
         return status;
     }
-    if (problem->genome_size == 0 || config->max_genome_bytes == 0 ||
+    if (!evo_crossover_operator_is_valid(config->crossover_operator) ||
+        !evo_mutation_operator_is_valid(config->mutation_operator) ||
+        problem->genome_size == 0 || config->max_genome_bytes == 0 ||
         problem->genome_size > config->max_genome_bytes ||
         config->max_child_population_bytes == 0) {
         return EVO_ERROR_RESOURCE_LIMIT;
@@ -416,6 +420,9 @@ evo_status_t evo_elite_population_complete(
         children->rng_algorithm_version != 0 ||
         (children->selection_policy_version == 0 &&
          children->selection_policy != EVO_SELECTION_TOURNAMENT) ||
+        (children->byte_operator_policy_version == 0 &&
+         (children->crossover_operator != EVO_CROSSOVER_CONSUMER ||
+          children->mutation_operator != EVO_MUTATION_CONSUMER)) ||
         children->odd_child_policy_version != 0 ||
         children->elite_policy_version != 0 ||
         children->singleton_child_policy_version !=
@@ -441,14 +448,21 @@ evo_status_t evo_elite_population_complete(
          (children->source_generation != 0 ||
           children->operator_seed_schedule_version != 0 ||
           children->selection_policy_version != 0 ||
-          children->selection_policy != EVO_SELECTION_TOURNAMENT)) ||
+          children->selection_policy != EVO_SELECTION_TOURNAMENT ||
+          children->byte_operator_policy_version != 0 ||
+          children->crossover_operator != EVO_CROSSOVER_CONSUMER ||
+          children->mutation_operator != EVO_MUTATION_CONSUMER)) ||
         (offspring_count != 0 &&
          (children->source_generation != source_generation ||
           children->operator_seed_schedule_version !=
               EVO_OPERATOR_SEED_SCHEDULE_VERSION ||
           children->selection_policy_version !=
               EVO_SELECTION_POLICY_VERSION ||
-          children->selection_policy != config->selection_policy))) {
+          children->selection_policy != config->selection_policy ||
+          children->byte_operator_policy_version !=
+              EVO_BYTE_OPERATOR_POLICY_VERSION ||
+          children->crossover_operator != config->crossover_operator ||
+          children->mutation_operator != config->mutation_operator))) {
         return EVO_ERROR_STATE;
     }
 
@@ -476,6 +490,10 @@ evo_status_t evo_elite_population_complete(
     children->selection_policy_version =
         EVO_SELECTION_POLICY_VERSION;
     children->selection_policy = config->selection_policy;
+    children->byte_operator_policy_version =
+        EVO_BYTE_OPERATOR_POLICY_VERSION;
+    children->crossover_operator = config->crossover_operator;
+    children->mutation_operator = config->mutation_operator;
     children->odd_child_policy_version =
         !config->elite_count_enabled &&
                 config->population_size % 2 != 0
@@ -494,6 +512,10 @@ evo_status_t evo_elite_population_complete(
     candidate.selection_policy_version =
         EVO_SELECTION_POLICY_VERSION;
     candidate.selection_policy = config->selection_policy;
+    candidate.byte_operator_policy_version =
+        EVO_BYTE_OPERATOR_POLICY_VERSION;
+    candidate.crossover_operator = config->crossover_operator;
+    candidate.mutation_operator = config->mutation_operator;
     candidate.odd_child_policy_version =
         children->odd_child_policy_version;
     candidate.elite_policy_version = EVO_ELITE_POLICY_VERSION;
