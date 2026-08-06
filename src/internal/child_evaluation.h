@@ -3,7 +3,7 @@
 
 #include "internal/population_evaluation.h"
 
-#define EVO_CHILD_EVALUATION_POLICY_VERSION UINT32_C(5)
+#define EVO_CHILD_EVALUATION_POLICY_VERSION UINT32_C(6)
 
 typedef struct evo_child_evaluation_evidence {
     size_t population_size;
@@ -16,6 +16,9 @@ typedef struct evo_child_evaluation_evidence {
     uint32_t operator_seed_schedule_version;
     uint32_t selection_policy_version;
     evo_selection_policy_t selection_policy;
+    uint32_t byte_operator_policy_version;
+    evo_crossover_operator_t crossover_operator;
+    evo_mutation_operator_t mutation_operator;
     uint32_t odd_child_policy_version;
     uint32_t elite_policy_version;
     uint32_t singleton_child_policy_version;

@@ -14,6 +14,9 @@ typedef struct evo_child_single_evidence {
     uint32_t operator_seed_schedule_version;
     uint32_t selection_policy_version;
     evo_selection_policy_t selection_policy;
+    uint32_t byte_operator_policy_version;
+    evo_crossover_operator_t crossover_operator;
+    evo_mutation_operator_t mutation_operator;
     uint32_t policy_version;
     bool complete;
 } evo_child_single_evidence_t;

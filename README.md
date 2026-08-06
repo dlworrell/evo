@@ -30,6 +30,7 @@ The governing product records are:
 - `docs/adr/ADR-0024-generalized-deterministic-elite-preservation.md`
 - `docs/adr/ADR-0025-stable-rank-based-parent-selection.md`
 - `docs/adr/ADR-0026-human-readable-abstraction-and-audit-projection.md`
+- `docs/adr/ADR-0027-reference-byte-genome-operators.md`
 - `docs/specs/EVO-001-library-contract.md`
 - `docs/specs/EVO-002-source-optimizer-contract.md`
 - `docs/roadmap.md`
@@ -71,7 +72,9 @@ contents must remain deterministically projectable and reconcilable. See
 ADR-0026 and EVO-001/EVO-002 for the normative contract. The retained
 EVO-HRA-001 audit records why the implemented 0.25.0 core has no current
 accelerated structure requiring remediation and where later work must recheck
-the rule.
+the rule. ADR-0027 separately assesses the 0.26.0 byte operators: their direct
+bounded arrays are the exact reference representation, so no accelerator or
+separate audit projection is introduced.
 
 ## Roadmap Scope
 
@@ -117,7 +120,7 @@ repository.
 - `docs/` — architecture, theory, algorithms, and evidence guidance
 
 The source-optimizer implementation directories will be introduced only by
-their dependency-ordered roadmap issues. Their absence in version 0.25.0 is an
+their dependency-ordered roadmap issues. Their absence in version 0.26.0 is an
 explicit current boundary, not an implicit feature claim.
 
 ## Authoritative Native Builds
@@ -157,7 +160,7 @@ declared Clang/LLVM and GNU profiles.
 
 ## Status
 
-**Current implementation boundary:** EVO 0.25.0 implements the deterministic
+**Current implementation boundary:** EVO 0.26.0 implements the deterministic
 evolutionary-search core. It does not yet ingest a C project, build a Clang AST
 or LLVM IR model, transform source, compile evolved candidates, or emit an
 optimized source patch. Those product boundaries are tracked in the 1.0
@@ -258,6 +261,15 @@ no rank or interval; exact fitness ties retain lower population indexes. Rank
 arithmetic is checked against the configured all-valid worst case before child
 allocation or callbacks, and selection provenance is carried through child
 production, evaluation, promotion, and bounded-run evidence.
+
+EVO 0.26.0 appends byte-operator policy 1 and explicit crossover/mutation
+selectors. Zero-valued consumer modes preserve callback, clone, no-op, and RNG
+compatibility. Opt-in byte modes provide one-point, two-point, and uniform
+crossover plus one-byte nonzero-XOR mutation over the complete bounded genome.
+Built-ins use the existing pair/child operator streams, bypass callbacks,
+allocate no memory, and propagate their selector/version provenance through
+child production, evaluation, promotion, and bounded-run evidence. These are
+generic byte-genome utilities, never raw-C-source transformation mechanisms.
 
 Version 0.3.0 added the independently tested private population-storage
 foundation: checked `population_size * genome_size` arithmetic, a

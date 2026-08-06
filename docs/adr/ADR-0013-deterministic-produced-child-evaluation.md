@@ -1,6 +1,6 @@
 # ADR-0013: Deterministic Produced-Child Evaluation
 
-Status: Accepted (selection provenance extended by ADR-0025)
+Status: Accepted (operator provenance extended by ADR-0025 and ADR-0027)
 Date: 2026-08-01
 Decision owner: EVO
 
@@ -81,6 +81,11 @@ unchanged.
 ADR-0025 advances child-evaluation policy to version 5 in EVO 0.25.0. Produced
 children and output evidence must preserve selection-policy version 1 and the
 enum matching the active configuration. Evaluation ordering, allocation, byte
+immutability, and rollback remain unchanged.
+
+ADR-0027 advances child-evaluation policy to version 6 in EVO 0.26.0. Produced
+children and output evidence must also preserve byte-operator policy version 1
+and both configured operator enums. Evaluation ordering, allocation, byte
 immutability, and rollback remain unchanged.
 
 ## Consequences

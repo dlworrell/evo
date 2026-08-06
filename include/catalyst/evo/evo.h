@@ -10,7 +10,7 @@ extern "C" {
 #endif
 
 #define EVO_VERSION_MAJOR 0
-#define EVO_VERSION_MINOR 25
+#define EVO_VERSION_MINOR 26
 #define EVO_VERSION_PATCH 0
 
 typedef enum evo_status {
@@ -38,12 +38,31 @@ typedef enum evo_selection_policy {
     EVO_SELECTION_RANK = 1
 } evo_selection_policy_t;
 
+/*
+ * The zero-valued operator modes preserve the consumer callback dispatch used
+ * before version 0.26.0. Nonzero modes explicitly select bounded reference
+ * operators over byte genomes; EVO never infers a byte representation from a
+ * callback being absent.
+ */
+typedef enum evo_crossover_operator {
+    EVO_CROSSOVER_CONSUMER = 0,
+    EVO_CROSSOVER_BYTE_ONE_POINT = 1,
+    EVO_CROSSOVER_BYTE_TWO_POINT = 2,
+    EVO_CROSSOVER_BYTE_UNIFORM = 3
+} evo_crossover_operator_t;
+
+typedef enum evo_mutation_operator {
+    EVO_MUTATION_CONSUMER = 0,
+    EVO_MUTATION_BYTE_XOR = 1
+} evo_mutation_operator_t;
+
 #define EVO_FITNESS_COMPARISON_POLICY_VERSION UINT32_C(1)
 #define EVO_DIVERSITY_POLICY_VERSION UINT32_C(1)
 #define EVO_BYTE_DIVERSITY_METRIC_VERSION UINT32_C(1)
 #define EVO_STOPPING_POLICY_VERSION UINT32_C(1)
 #define EVO_ELITE_POLICY_VERSION UINT32_C(1)
 #define EVO_SELECTION_POLICY_VERSION UINT32_C(1)
+#define EVO_BYTE_OPERATOR_POLICY_VERSION UINT32_C(1)
 
 /*
  * Fitness components are caller-owned evidence. constraint_penalty is a
@@ -155,18 +174,20 @@ typedef struct evo_problem {
      */
     void (*initialize)(void *genome, void *context);
     /*
-     * Mutation receives one bounded writable genome after EVO selects the
-     * configured per-genome event. The callback receives mutation_rate
-     * unchanged as its representation-specific intensity, must be
-     * deterministic for fixed bytes, rate, and context, may use no unrecorded
-     * entropy, and may not change ownership or retain the view.
+     * In EVO_MUTATION_CONSUMER mode, mutation receives one bounded writable
+     * genome after EVO selects the configured per-genome event. The callback
+     * receives mutation_rate unchanged as its representation-specific
+     * intensity, must be deterministic for fixed bytes, rate, and context, may
+     * use no unrecorded entropy, and may not change ownership or retain the
+     * view. Explicit built-in modes do not invoke this callback.
      */
     void (*mutate)(void *genome, double mutation_rate, void *context);
     /*
-     * Crossover receives two bounded read-only parents and two distinct,
-     * non-overlapping writable children. It must initialize both children
-     * completely, preserve ownership, retain no view, and remain deterministic
-     * for fixed parents and context.
+     * In EVO_CROSSOVER_CONSUMER mode, crossover receives two bounded read-only
+     * parents and two distinct, non-overlapping writable children. It must
+     * initialize both children completely, preserve ownership, retain no view,
+     * and remain deterministic for fixed parents and context. Explicit
+     * built-in modes do not invoke this callback.
      */
     void (*crossover)(const void *parent_a, const void *parent_b, void *child_a, void *child_b, void *context);
     evo_fitness_t (*evaluate)(const void *genome, void *context);
@@ -249,6 +270,14 @@ typedef struct evo_config {
     evo_selection_policy_t selection_policy;
     size_t rank_base_weight;
     size_t rank_step_weight;
+    /*
+     * Explicit operator dispatch. Zero selects the existing consumer callback
+     * path, including clone/no-op behavior when its callback is NULL. Built-in
+     * crossover and mutation modes operate only on the complete bounded byte
+     * genome and use the existing domain-separated operator streams.
+     */
+    evo_crossover_operator_t crossover_operator;
+    evo_mutation_operator_t mutation_operator;
 } evo_config_t;
 
 typedef struct evo_result {

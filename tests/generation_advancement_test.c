@@ -277,10 +277,13 @@ static evo_generation_advancement_evidence_t sentinel_evidence(void)
         .operator_seed_schedule_version = 47,
         .selection_policy_version = 53,
         .selection_policy = EVO_SELECTION_RANK,
-        .odd_child_policy_version = 59,
-        .elite_policy_version = 61,
-        .singleton_child_policy_version = 67,
-        .policy_version = 71,
+        .byte_operator_policy_version = 59,
+        .crossover_operator = EVO_CROSSOVER_BYTE_TWO_POINT,
+        .mutation_operator = EVO_MUTATION_BYTE_XOR,
+        .odd_child_policy_version = 61,
+        .elite_policy_version = 67,
+        .singleton_child_policy_version = 71,
+        .policy_version = 73,
         .has_best = true,
         .elite_count_explicit = true,
         .complete = true,
@@ -304,6 +307,10 @@ static void assert_evidence_equal(
     assert(left->selection_policy_version ==
            right->selection_policy_version);
     assert(left->selection_policy == right->selection_policy);
+    assert(left->byte_operator_policy_version ==
+           right->byte_operator_policy_version);
+    assert(left->crossover_operator == right->crossover_operator);
+    assert(left->mutation_operator == right->mutation_operator);
     assert(left->odd_child_policy_version ==
            right->odd_child_policy_version);
     assert(left->elite_policy_version == right->elite_policy_version);
@@ -494,6 +501,10 @@ static void test_generation_zero_promotion_preserves_child_ownership(void)
     assert(evidence.selection_policy_version ==
            EVO_SELECTION_POLICY_VERSION);
     assert(evidence.selection_policy == EVO_SELECTION_TOURNAMENT);
+    assert(evidence.byte_operator_policy_version ==
+           EVO_BYTE_OPERATOR_POLICY_VERSION);
+    assert(evidence.crossover_operator == EVO_CROSSOVER_CONSUMER);
+    assert(evidence.mutation_operator == EVO_MUTATION_CONSUMER);
     assert(evidence.odd_child_policy_version ==
            EVO_ODD_CHILD_POLICY_VERSION);
     assert(evidence.elite_count == 1);

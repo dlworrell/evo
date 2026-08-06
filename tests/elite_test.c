@@ -421,6 +421,10 @@ static void assert_explicit_policy(size_t population_size,
     assert(elite_evidence.selection_policy_version ==
            EVO_SELECTION_POLICY_VERSION);
     assert(elite_evidence.selection_policy == EVO_SELECTION_TOURNAMENT);
+    assert(elite_evidence.byte_operator_policy_version ==
+           EVO_BYTE_OPERATOR_POLICY_VERSION);
+    assert(elite_evidence.crossover_operator == EVO_CROSSOVER_CONSUMER);
+    assert(elite_evidence.mutation_operator == EVO_MUTATION_CONSUMER);
     assert(elite_evidence.odd_child_policy_version == 0);
     assert(elite_evidence.elite_policy_version ==
            EVO_ELITE_POLICY_VERSION);
@@ -436,6 +440,10 @@ static void assert_explicit_policy(size_t population_size,
     assert(children.selection_policy_version ==
            EVO_SELECTION_POLICY_VERSION);
     assert(children.selection_policy == EVO_SELECTION_TOURNAMENT);
+    assert(children.byte_operator_policy_version ==
+           EVO_BYTE_OPERATOR_POLICY_VERSION);
+    assert(children.crossover_operator == EVO_CROSSOVER_CONSUMER);
+    assert(children.mutation_operator == EVO_MUTATION_CONSUMER);
     assert(children.elite_policy_version == EVO_ELITE_POLICY_VERSION);
     assert(children.singleton_child_policy_version ==
            elite_evidence.singleton_child_policy_version);
@@ -599,6 +607,10 @@ static void test_singleton_schedule_and_replay(void)
     assert(first_single.selection_policy_version ==
            EVO_SELECTION_POLICY_VERSION);
     assert(first_single.selection_policy == EVO_SELECTION_TOURNAMENT);
+    assert(first_single.byte_operator_policy_version ==
+           EVO_BYTE_OPERATOR_POLICY_VERSION);
+    assert(first_single.crossover_operator == EVO_CROSSOVER_CONSUMER);
+    assert(first_single.mutation_operator == EVO_MUTATION_CONSUMER);
     assert(first_single.policy_version ==
            EVO_SINGLETON_CHILD_POLICY_VERSION);
     assert(first_single.complete);
@@ -677,6 +689,10 @@ static void test_compatibility_mode(void)
            elite_evidence.best_parent_index);
     assert(tail_evidence.child_index == 4);
     assert(tail_evidence.policy_version == EVO_ODD_CHILD_POLICY_VERSION);
+    assert(tail_evidence.byte_operator_policy_version ==
+           EVO_BYTE_OPERATOR_POLICY_VERSION);
+    assert(tail_evidence.crossover_operator == EVO_CROSSOVER_CONSUMER);
+    assert(tail_evidence.mutation_operator == EVO_MUTATION_CONSUMER);
     assert(elite_evidence.requested_count == 1);
     assert(elite_evidence.effective_count == 1);
     assert(elite_evidence.offspring_count == 4);

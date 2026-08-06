@@ -1,13 +1,13 @@
 # EVO-001: Evolutionary Optimization Library Contract
 
 Status: Baseline
-Version: 0.25.0
+Version: 0.26.0
 Owner: EVO
 
 ## Scope Boundary
 
 This specification governs the reusable deterministic C17 evolutionary-search
-core implemented through version 0.25.0. It does not define C-project
+core implemented through version 0.26.0. It does not define C-project
 ingestion, Clang/LLVM analysis, structured source transformations, isolated
 candidate builds, baseline-versus-candidate measurement, optimized patches, or
 product-level replay artifacts.
@@ -21,8 +21,8 @@ optimized C codebase.
 
 EVO provides a reusable C17 interface for deterministic, bounded evolutionary
 optimization. Consumers define genomes and problem-specific operations through
-callbacks; EVO owns orchestration, reproducibility, and evidence without
-embedding consumer policy in the library.
+callbacks and may explicitly select reference byte-genome operators; EVO owns
+orchestration, reproducibility, and evidence without inferring representation.
 
 ## Human-Readable Abstraction Contract
 
@@ -65,6 +65,13 @@ direct deterministic scans. It contains no compressed, probabilistic, cached,
 or indexed accelerator that controls a run; stable rank selection specifically
 does not introduce a rank cache. This finding does not pre-approve later
 checkpoint, storage-recycling, parallel-evaluation, or integration work.
+
+Version 0.26.0 retains that direct exact representation. Reference byte
+operators read and write the bounded genome arrays without a cache, index,
+compressed decision record, probabilistic precheck, or other accelerator.
+ADR-0027 therefore records this change as not requiring a separate projection
+API while defining the selectors, parameters, boundaries or masks, affected
+byte ranges, RNG schedule, and provenance needed for human review.
 
 ## Public Interface
 
@@ -120,7 +127,8 @@ independent caller-owned `generation_stop_context`, followed by
 `max_diversity_work`, then the disabled-by-default fitness-target,
 tolerance/patience, and diversity-floor stopping controls, then
 `elite_count_enabled` and `elite_count`, then selection-policy version 1's
-`selection_policy`, `rank_base_weight`, and `rank_step_weight`.
+`selection_policy`, `rank_base_weight`, and `rank_step_weight`, then byte-
+operator policy version 1's `crossover_operator` and `mutation_operator`.
 
 `max_genome_bytes` is trusted caller policy for the largest individual genome
 allocation accepted by `evo_run`. It avoids a platform-specific hard-coded
@@ -244,6 +252,37 @@ weight. Each rank draw dry-resolves every actual weight before RNG consumption,
 then samples one unbiased bounded ticket. Ticket intervals are traversed in
 ascending population-index order. Tournament and rank modes share the existing
 selection-domain streams; crossover and mutation domains are unchanged.
+
+### Reference byte-operator policy
+
+`EVO_BYTE_OPERATOR_POLICY_VERSION` is `1`.
+
+`EVO_CROSSOVER_CONSUMER == 0` and `EVO_MUTATION_CONSUMER == 0` are the
+canonical compatibility defaults. They preserve the complete pre-0.26.0
+callback, clone, no-op, and RNG behavior. Explicit nonzero selectors opt into
+bounded byte semantics; EVO never infers them from a missing callback. A
+built-in selector takes precedence over a non-null consumer callback and never
+invokes it.
+
+Defined crossover selectors are one-point, two-point, and uniform. Defined
+mutation policy is byte-XOR. Invalid enum values return
+`EVO_ERROR_RESOURCE_LIMIT` before an active transition allocates or invokes a
+callback. A zero generation limit does not validate unused transition policy.
+Every positive-limit run requires defined selector values so provenance is
+canonical. A one-member compatibility or explicit-one-elite path may still
+ignore unused crossover/mutation rates and callbacks; a one-member explicit-
+zero path validates selection and mutation but not the unused crossover rate.
+
+Every produced population and pair, singleton, elite, child-evaluation,
+generation-advancement, and bounded-run evidence record policy version 1 and
+both selected enums. A completed produced population is valid only when that
+provenance matches the active configuration. The helpers add no allocation or
+resource budget and operate on the complete bounded byte genome.
+
+These selectors are EVO Core utilities, not C-source transformation operators.
+Raw source text may not be passed through byte crossover or mutation as a
+substitute for EVO-002's structured transformation recipes and AST-aware
+catalogue.
 
 ### Diversity policy
 
@@ -552,9 +591,10 @@ derives a new domain nor changes crossover or mutation stream identity.
 
 ### Private deterministic crossover dispatch
 
-Version 0.8.0 adds a private representation-neutral crossover boundary. The
-normative decision is recorded in
-`docs/adr/ADR-0007-deterministic-crossover-dispatch.md`.
+Version 0.8.0 adds a private representation-neutral crossover boundary.
+Version 0.26.0 adds explicit reference byte modes without replacing that
+consumer boundary. The normative decisions are recorded in ADR-0007 and
+ADR-0027.
 
 The crossover lifecycle is:
 
@@ -564,35 +604,51 @@ The crossover lifecycle is:
    `config->max_genome_bytes`.
 3. `config->crossover_rate` must be finite and in the inclusive range
    `[0, 1]`.
-4. The two child pointers must be distinct and may not exactly equal either
-   parent pointer. The private caller must additionally provide complete,
-   non-overlapping child spans that do not partially overlap a parent.
+4. The complete child spans must not overlap one another or either complete
+   parent span. Parent spans are read-only and may coincide with one another.
 5. Every preceding check occurs before RNG consumption or child output. Null
-   and exact-alias errors return `EVO_ERROR_INVALID_ARGUMENT`; invalid genome
-   policy or rate returns `EVO_ERROR_RESOURCE_LIMIT`; unseeded state returns
+   and child-span overlap errors return `EVO_ERROR_INVALID_ARGUMENT`; invalid
+   genome policy or rate returns `EVO_ERROR_RESOURCE_LIMIT`; unseeded state returns
    `EVO_ERROR_STATE`.
 6. Every successful pair consumes exactly one probability-event word,
-   including rate endpoints and missing-callback operation.
-7. When the event is selected and `problem->crossover` is non-null, EVO invokes
-   that callback exactly once with two read-only parents, two writable
-   children, and the consumer context.
-8. When the event is not selected or the callback is null, EVO clones parent A
-   to child A and parent B to child B for exactly `genome_size` bytes.
-9. The callback must fully initialize both children, preserve parent bytes and
+   including rate endpoints and every selector.
+7. When the event is not selected, EVO clones parent A to child A and parent B
+   to child B for exactly `genome_size` bytes and consumes no mode-specific
+   draw.
+8. In consumer mode, a selected event invokes `problem->crossover` exactly once
+   when non-null; a null callback selects the same corresponding-parent clone.
+9. In an explicit byte mode, a selected event bypasses the callback and writes
+   both complete children through the selected reference algorithm.
+10. The callback must fully initialize both children, preserve parent bytes and
    ownership, retain no view, and remain deterministic for fixed parents and
    context. The callback returns no status, so EVO cannot roll back a consumer
    contract violation.
 
+Selected byte modes consume and write in this exact form:
+
+- one-point with `n > 1` draws one unbiased value with bound `n - 1`, adds one
+  to form `cut`, and swaps `[cut, n)`; `n == 1` clones with no cut draw;
+- two-point draws one boundary with bound `n + 1`, then one rank with bound
+  `n`, maps around the first boundary, sorts both, and swaps the nonempty
+  half-open range `[lower, upper)`; `n == SIZE_MAX` is rejected because
+  `n + 1` is unrepresentable; and
+- uniform consumes one 32-bit word per group of up to 32 ascending byte
+  offsets, using the least-significant available bit to retain or swap
+  corresponding parents and discarding unused final high bits.
+
+Every bounded sample uses RNG algorithm version 1's two-word unbiased rejection
+schedule. Both children are complementary and fully initialized, including
+equal-parent and endpoint cases.
+
 The operator performs no allocation, does not select parents, and does not own
-child storage. Version 0.8.0 does not implement a next-generation population or
-a generation transition. Version 0.11.0 defines pair-local crossover stream
-derivation, and version 0.16.0 invokes the complete composition from `evo_run`.
+child storage. Version 0.11.0 defines pair-local crossover stream derivation,
+and version 0.16.0 invokes the complete composition from `evo_run`.
 
 ### Private deterministic mutation dispatch
 
-Version 0.9.0 adds a private representation-neutral mutation boundary. The
-normative decision is recorded in
-`docs/adr/ADR-0008-deterministic-mutation-dispatch.md`.
+Version 0.9.0 adds a private representation-neutral mutation boundary. Version
+0.26.0 adds an explicit reference byte mode without replacing that consumer
+boundary. The normative decisions are recorded in ADR-0008 and ADR-0027.
 
 The mutation lifecycle is:
 
@@ -607,25 +663,29 @@ The mutation lifecycle is:
    returns `EVO_ERROR_RESOURCE_LIMIT`; unseeded state returns
    `EVO_ERROR_STATE`.
 5. Every valid attempt consumes exactly one probability-event word, including
-   rate endpoints and missing-callback operation.
-6. When the event is selected and `problem->mutate` is non-null, EVO invokes
-   that callback exactly once with the writable genome, the configured rate,
-   and consumer context.
-7. When the event is not selected or the callback is null, EVO leaves the
-   genome unchanged.
-8. EVO owns `mutation_rate` as the per-genome event probability and forwards
+   rate endpoints and every selector.
+6. When the event is not selected, EVO leaves the genome unchanged and consumes
+   no mode-specific draw.
+7. In consumer mode, a selected event invokes `problem->mutate` exactly once
+   when non-null; a null callback leaves the genome unchanged.
+8. In byte-XOR mode, a selected event bypasses the callback, draws one unbiased
+   byte index with bound `genome_size`, draws one unbiased mask rank with bound
+   `255`, adds one, and XORs exactly the selected byte with that nonzero mask.
+   The two bounded draws retain the existing two-word rejection schedule.
+9. EVO owns `mutation_rate` as the per-genome event probability and forwards
    the same value unchanged as the callback's representation-specific
    mutation intensity.
-9. The callback must mutate only the complete supplied span, preserve
+10. The callback must mutate only the complete supplied span, preserve
    ownership, retain no view, use no unrecorded entropy, and remain
    deterministic for fixed genome bytes, rate, and context. The callback
    returns no status, so EVO cannot roll back a consumer contract violation.
 
-The operator performs no allocation and does not own genome storage. Version
-0.9.0 does not implement built-in representation-specific mutation helpers,
-adaptive mutation, a next-generation population, or a generation transition.
-Version 0.11.0 defines child-indexed mutation stream derivation, and version
-0.16.0 invokes the complete composition from `evo_run`.
+The selected byte-XOR event changes exactly one in-bounds byte, including for a
+one-byte genome. The operator performs no allocation and does not own genome
+storage. It does not define adaptive intensity or typed bit, integer,
+floating-point, or permutation mutation. Version 0.11.0 defines child-indexed
+mutation stream derivation, and version 0.16.0 invokes the complete composition
+from `evo_run`.
 
 ### Private child-population ownership
 
@@ -720,15 +780,17 @@ The production lifecycle is:
    evidence must be non-null. Parent and child objects and genome slabs must be
    distinct.
 2. Genome dimensions, child allocation size, child budget, selection policy,
-   crossover rate, and mutation rate must be internally consistent.
+   crossover and mutation selectors, crossover rate, and mutation rate must be
+   internally consistent.
 3. Child evaluation, generation-zero initialization, validity, fitness, and
    best-candidate evidence must remain empty.
 4. The child records a contiguous `produced_count`. Pair `i` is accepted only
    when `produced_count == 2i`; repeated or skipped pairs return
    `EVO_ERROR_STATE` unchanged.
 5. The first successful pair records the supplied source generation, operator
-   seed-schedule version 1, selection-policy version 1, and active selection
-   enum. Every later pair must match all four values.
+   seed-schedule version 1, selection-policy version 1 and enum, byte-operator
+   policy version 1, and both active operator enums. Every later pair must match
+   that provenance.
 6. EVO invokes the complete parent-pair planner and preserves the configured
    policy's valid-only semantics.
 7. EVO derives the crossover-domain stream from the pair ordinal and derives
@@ -739,8 +801,8 @@ The production lifecycle is:
    dispatcher once for each child. Given the completed preflight and seeded
    streams, this suffix contains no expected library rejection.
 10. Success commits both child genomes, advances `produced_count` by exactly
-    two, records source generation plus schedule and selection provenance, and
-    commits output evidence with RNG algorithm version 1.
+    two, records source generation plus schedule, selection, and byte-operator
+    provenance, and commits output evidence with RNG algorithm version 1.
 11. Rejection before callback dispatch preserves the child bytes, child
     metadata, output evidence, and complete parent population.
 12. Consumer callbacks retain their existing bounded deterministic contract
@@ -791,9 +853,10 @@ The generalized lifecycle is:
     indexes `ordinary_offspring + rank`, best-to-worst. Ranking and copies
     consume no RNG and invoke no callback.
 11. Success records full produced count, source generation, operator schedule,
-    selection-policy version 1 and enum, effective elite count, source valid
-    count, elite policy version 1, singleton policy version when used,
-    explicit-versus-compatibility mode, and complete output evidence.
+    selection-policy version 1 and enum, byte-operator policy version 1 and both
+    operator enums, effective elite count, source valid count, elite policy
+    version 1, singleton policy version when used, explicit-versus-compatibility
+    mode, and complete output evidence.
 12. Only disabled odd compatibility records odd-tail policy version 1. Disabled
     even and every explicit configuration record no odd-tail marker.
 13. Every detectable rejection before consumer singleton dispatch preserves
@@ -819,7 +882,8 @@ The child-evaluation lifecycle is:
    exact checked storage size, and evaluation budget must be consistent.
 3. The child must record `produced_count == population_size`, the supplied
    source generation, operator seed-schedule version 1, selection-policy
-   version 1, and the selection enum matching the active configuration.
+   version 1 and its matching enum, plus byte-operator policy version 1 and both
+   operator enums matching the active configuration.
 4. The child must record elite policy version 1, effective elite count, source
    valid count, explicit-versus-compatibility mode, and singleton policy
    version exactly when the ordinary prefix is odd. Only disabled odd
@@ -844,7 +908,7 @@ The child-evaluation lifecycle is:
     production provenance. An all-invalid child completes with no best.
 12. Output evidence records population and evaluation sizes, valid count,
     stable best, source generation, production-policy versions, fitness-
-    comparison policy version 1, child-evaluation policy version 5, and
+    comparison policy version 1, child-evaluation policy version 6, and
     completion.
 13. Repeated evaluation and every malformed, incomplete, mismatched, resource,
     allocation, or detectable callback-output failure preserve caller-owned
@@ -890,9 +954,9 @@ The generation-advancement lifecycle is:
    generation equals `current_generation`.
 10. Output evidence is prepared with population size, valid count, stable-best
     state, previous generation, completed generation, elite count and source-
-    valid count, production-policy versions including selection policy,
-    fitness-comparison policy version 1, and generation-advancement policy
-    version 5.
+    valid count, production-policy versions including selection and byte-
+    operator policy, fitness-comparison policy version 1, and generation-
+    advancement policy version 6.
 11. After all fallible checks, EVO moves the child structure into the parent
     handle, resets the child handle to the complete zero state, releases the
     former parent allocations, and commits evidence.
@@ -928,11 +992,12 @@ The bounded-run lifecycle is:
 2. For a positive limit, EVO validates the child slab budget and every
    transition policy before allocation or callback dispatch. Populations above
    one require valid configured selection fields and finite crossover and
-   mutation rates in `[0, 1]`. A one-member compatibility population or
+   mutation rates in `[0, 1]`. Every positive-limit run requires defined
+   crossover and mutation selectors. A one-member compatibility population or
    explicit one-elite population uses elite cloning directly and does not
-   require unused operator policy. A one-member explicit-zero population uses
+   validate unused operator rates. A one-member explicit-zero population uses
    one singleton, requires valid selection and mutation policy, and does not
-   validate unused crossover policy.
+   validate the unused crossover rate.
 3. EVO constructs, initializes, and evaluates generation zero and transfers its
    stable valid winner into one independent result allocation.
 4. For each source generation in ascending order, EVO creates one child slab,
@@ -975,7 +1040,10 @@ elite count, source valid count, elite and singleton policy versions, and
 explicit-versus-compatibility mode. Version 0.25.0 advances it to version 7 and
 records selection-policy version 1 and the configured enum. Child-evaluation
 and generation-advancement policies advance to version 5 for the same
-provenance. The bounded run does not define adaptive mutation, old-slab
+provenance. Version 0.26.0 advances it to version 8 and records byte-operator
+policy version 1 plus the configured crossover and mutation enums. Child-
+evaluation and generation-advancement policies advance to version 6 for the
+same provenance. The bounded run does not define adaptive mutation, old-slab
 recycling, checkpointing, parallelism, or secure erasure.
 
 ### Result lifecycle
@@ -1348,7 +1416,18 @@ enum are preserved, but configuration size and array stride may change, so
 consumers must rebuild. Public function signatures, installed symbols,
 statistics schema, allocation classes, and resource budgets do not change.
 
-## Current 0.25.0 Conformance Boundary
+Version 0.26.0 adds `evo_crossover_operator_t`,
+`evo_mutation_operator_t`, `EVO_BYTE_OPERATOR_POLICY_VERSION`, the zero-valued
+consumer compatibility selectors, and the explicit reference byte selectors;
+then appends `crossover_operator` and `mutation_operator` after the complete
+pre-0.26.0 `evo_config_t` prefix. Existing member offsets and zero-initialized
+consumer behavior are preserved, but configuration size and array stride may
+change, so consumers must rebuild. Supported public function signatures and
+symbols, statistics schema, allocation classes, and resource budgets do not
+change. The implementation adds validator symbols declared only by
+non-installed headers.
+
+## Current 0.26.0 Conformance Boundary
 
 The current implementation exposes generation-zero compatibility plus bounded
 multi-generation execution:
@@ -1393,11 +1472,17 @@ multi-generation execution:
 - selection-policy configuration and worst-case rank arithmetic reject before
   positive-limit allocation or callbacks;
 - private crossover dispatch consumes a fixed one-word probability decision,
-  invokes the representation-aware callback or clones parents, and preserves
-  child output on precondition failure;
+  invokes the representation-aware callback or clones parents in zero-valued
+  compatibility mode, and preserves child output on precondition failure;
+- explicit byte crossover bypasses callbacks and provides bounded one-point,
+  distinct-boundary two-point, and least-significant-bit-first uniform modes
+  that completely initialize complementary children;
 - private mutation dispatch consumes a fixed one-word probability decision,
-  invokes the representation-aware callback or preserves the genome, and
-  preserves genome output on precondition failure;
+  invokes the representation-aware callback or preserves the genome in zero-
+  valued compatibility mode, and preserves genome output on precondition
+  failure;
+- explicit byte-XOR mutation bypasses callbacks, selects one bounded byte and
+  one nonzero mask through unbiased draws, and changes exactly that byte;
 - private child-population creation validates completed parent evidence,
   enforces a separate checked budget, and creates independently owned empty
   output storage;
@@ -1407,8 +1492,8 @@ multi-generation execution:
   rejection;
 - private complete-pair production preflights the combined boundary, derives
   pair- and child-indexed operator streams, dispatches crossover and both
-  mutations, records a contiguous child prefix with selection provenance, and
-  preserves parent evidence;
+  mutations, records a contiguous child prefix with selection and byte-operator
+  provenance, and preserves parent evidence;
 - private elite policy resolves explicit or compatibility requests, caps them
   at distinct hard-valid parents, lays stable best-to-worst clones in a suffix,
   consumes no RNG or callbacks for elites, and preserves every object on
@@ -1418,12 +1503,13 @@ multi-generation execution:
   crossover or scratch allocation;
 - private produced-child evaluation accepts complete even and odd production
   provenance, commits deterministic valid-only policy-valid fitness evidence,
-  preserves selection-policy identity, and promotes the child to shared
-  completed-population authority;
+  preserves selection- and byte-operator-policy identity, and promotes the
+  child to shared completed-population authority;
 - private generation advancement validates current/child lineage and all
   ownership ranges, moves the evaluated child into the parent handle, empties
   the child handle, releases the former parent, and records the next generation
-  plus selection provenance without allocation, copying, RNG, or callbacks;
+  plus selection and byte-operator provenance without allocation, copying, RNG,
+  or callbacks;
 - public bounded execution validates transition-only policy before callbacks,
   runs ascending transitions, allocates the result once, retains earlier exact
   ties, counts completed promotions, and stops successfully after promoting a
@@ -1457,7 +1543,10 @@ multi-generation execution:
   are fixed by policy version 1 without time, addresses, RNG, or allocation;
 - observer delivery follows winner update and final stop classification, precedes
   the next generation, allocates no history, and emits nothing for provisional
-  or failed generations; and
+  or failed generations;
+- direct bounded arrays remain exact byte-operator authority, with no
+  compressed, cached, indexed, or probabilistic structure requiring an ADR-0026
+  audit projection; and
 - adaptive mutation, checkpointing, buffer recycling, asynchronous or
   concurrent callbacks, and parallelism are not implemented.
 
@@ -1468,7 +1557,7 @@ count. They may inspect `generation_statistics` for the final committed
 population, which is distinct from the global winner on all-invalid
 termination. When configured, they may copy each callback-lifetime observation
 into their own bounded storage. They may also configure deterministic stopping
-over committed snapshots. Version 0.25.0 defines no statistics history,
+over committed snapshots. Version 0.26.0 defines no statistics history,
 asynchronous cancellation, or retained callback delivery.
 
 ## Verification
@@ -1504,14 +1593,21 @@ total-only replay compatibility. Population-evaluation tests independently
 prove negative-penalty rollback and deterministic retry, while selection tests
 reject missing comparison-policy evidence before consuming RNG.
 
-The crossover test proves pointer and policy validation, exact alias rejection,
-rate endpoints, exact RNG consumption, callback and identity-clone paths,
-parent preservation, output preservation on rejection, and deterministic
-replay. RNG tests separately lock probability thresholds and vectors.
+The crossover test proves pointer and selector validation, complete-span alias
+rejection, rate endpoints, exact callback compatibility, and deterministic
+reference one-point, two-point, and uniform behavior. It covers one-byte and
+equal-parent inputs, every internal one-point cut, every distinct two-point
+boundary pair, a uniform mask crossing 32 bytes, full child writes, guard bytes,
+callback bypass, golden outputs, exact post-operation RNG state, rejection
+preservation, and replay. RNG tests separately lock probability thresholds and
+bounded-sampling vectors.
 
-The mutation test proves pointer and policy validation, rate endpoints, exact
-RNG consumption, callback and no-op paths, rate and context forwarding, genome
-preservation on rejection, and deterministic replay.
+The mutation test proves pointer and selector validation, rate endpoints, exact
+consumer callback/no-op compatibility, rate and context forwarding, and
+deterministic byte-XOR behavior. It covers one-byte genomes, every byte
+position, a guaranteed nonzero mask, exactly one changed byte, guard bytes,
+callback bypass, golden output, exact post-operation RNG state, rejection
+preservation, and replay.
 
 The child-population test proves completed-parent validation, separate budget
 enforcement, zero-initialized distinct storage, parent preservation, active-
@@ -1528,7 +1624,8 @@ plain mixed control.
 
 The child-pair test proves combined preflight preservation, all-invalid parent
 handling, fixed parent and child-byte vectors, replay, sequential progress,
-source-generation separation, callback and identity-clone paths, odd-tail
+source-generation separation, callback and identity-clone paths, built-in
+callback bypass and replay composition, byte-operator provenance, odd-tail
 preservation, parent immutability, and rejection of repeated or skipped pairs.
 
 The child-tail test proves complete-prefix enforcement, stable-best and tie
@@ -1602,8 +1699,10 @@ before callbacks. The installed consumer proves target convergence suppresses
 the application callback and reaches the observer and final public result.
 
 The bounded-run test proves zero-limit compatibility; positive-limit policy
-validation before callbacks; even, odd, and one-member execution; deterministic
-multi-transition replay; strict global improvement; earlier-winner exact ties;
+validation before callbacks, including invalid operator selectors; even, odd,
+and one-member execution; deterministic consumer and reference-operator multi-
+transition replay with built-in callback bypass; strict global improvement;
+earlier-winner exact ties;
 later all-invalid promotion and successful stop; generation-zero all-invalid
 mapping; explicit generation-limit and all-invalid termination reasons;
 active-result preservation; appended result layout; destruction reset; and
@@ -1642,6 +1741,7 @@ public failure after child-slab or child-evaluation allocation failure.
 - `docs/adr/ADR-0024-generalized-deterministic-elite-preservation.md`
 - `docs/adr/ADR-0025-stable-rank-based-parent-selection.md`
 - `docs/adr/ADR-0026-human-readable-abstraction-and-audit-projection.md`
+- `docs/adr/ADR-0027-reference-byte-genome-operators.md`
 - `docs/architecture.md`
 - `docs/algorithms.md`
 - `docs/benchmarks.md`
@@ -1673,4 +1773,5 @@ public failure after child-slab or child-evaluation allocation failure.
 - `https://github.com/dlworrell/evo/issues/45`
 - `https://github.com/dlworrell/evo/issues/46`
 - `https://github.com/dlworrell/evo/issues/47`
+- `https://github.com/dlworrell/evo/issues/48`
 - `https://github.com/dlworrell/AEMS/issues/18`

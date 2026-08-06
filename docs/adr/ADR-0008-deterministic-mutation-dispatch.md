@@ -1,6 +1,6 @@
 # ADR-0008: Deterministic Mutation Dispatch
 
-Status: Accepted
+Status: Accepted (extended by ADR-0027)
 Date: 2026-07-31
 Decision owner: EVO
 
@@ -47,26 +47,34 @@ The callback mutates in place and returns no status. EVO therefore cannot roll
 back a callback contract violation. The operator is private, allocation-free,
 and not called by `evo_run`.
 
+ADR-0027 extends this boundary in EVO 0.26.0. The zero-valued consumer mode
+preserves the callback/no-op behavior and exact RNG schedule above. Explicit
+byte-XOR mode adds two bounded draws after a selected one-word gate, changes
+exactly one byte with a nonzero mask, and bypasses the callback.
+
 ## Consequences
 
 - Mutation decisions are fixed-vector testable and replay stable.
-- Every valid genome attempt advances the supplied stream by one word,
-  independent of endpoint rate or callback presence.
-- Representation semantics remain consumer-owned rather than byte-hard-coded.
+- Every valid consumer-mode genome attempt advances the supplied stream by one
+  word, independent of endpoint rate or callback presence. ADR-0027 defines
+  additional selected built-in consumption.
+- Consumer-mode representation semantics remain consumer-owned; byte semantics
+  require an explicit ADR-0027 selector.
 - A missing callback is a deterministic no-op.
 - Precondition failures preserve genome bytes and RNG state.
 - Public layouts, installed symbols, RNG algorithm version 1, and `evo_run`
   behavior remain unchanged.
-- Built-in mutation helpers, adaptive schedules, child-population ownership,
-  operator sequencing, and the first generation transition remain separate
-  milestones.
+- Other built-in mutation helpers, adaptive schedules, child-population
+  ownership, operator sequencing, and the first generation transition remain
+  separate milestones.
 
 ## Alternatives considered
 
 ### Add generic byte mutation
 
-Rejected because byte positions and bit flips need not preserve structured,
-numeric, or permutation genome validity.
+Rejected for the first boundary because byte positions and bit flips need not
+preserve structured, numeric, or permutation genome validity. ADR-0027 later
+adds an explicit opt-in byte policy without inferring representation.
 
 ### Let each consumer decide whether mutation occurs
 

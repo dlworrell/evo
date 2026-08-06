@@ -1,6 +1,6 @@
 # ADR-0007: Deterministic Crossover Dispatch
 
-Status: Accepted
+Status: Accepted (extended by ADR-0027)
 Date: 2026-07-31
 Decision owner: EVO
 
@@ -58,12 +58,21 @@ The operator is not called by `evo_run`. It neither selects parents nor owns a
 next-generation population. Version 0.8.0 therefore preserves generation-zero
 public behavior and leaves `generations_completed` at zero.
 
+ADR-0027 extends this boundary in EVO 0.26.0. The zero-valued consumer mode
+preserves the callback/clone behavior and exact RNG schedule above. Explicit
+byte modes add operator-specific draws after the same one-word gate and bypass
+the callback. The dispatcher now rejects overlap across the complete bounded
+child and parent spans rather than relying on exact-pointer checks plus a
+private-caller precondition.
+
 ## Consequences
 
 - Crossover-rate decisions are fixed-vector testable and replay stable.
-- Every successful pair advances the supplied stream by one word, independent
-  of the rate endpoint or callback presence.
-- Representation semantics remain consumer-owned rather than byte-hard-coded.
+- Every successful consumer-mode pair advances the supplied stream by one word,
+  independent of the rate endpoint or callback presence. ADR-0027 defines
+  additional selected built-in consumption.
+- Consumer-mode representation semantics remain consumer-owned; byte semantics
+  require an explicit ADR-0027 selector.
 - Missing callbacks have a deterministic identity fallback.
 - Precondition failures preserve parents, children, and RNG state.
 - Callback contract violations cannot be rolled back by EVO because the

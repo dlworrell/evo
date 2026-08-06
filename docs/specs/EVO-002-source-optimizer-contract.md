@@ -15,7 +15,7 @@ search as a reviewable patch and reproducibility package.
 
 This specification defines the product layer above the reusable C17
 evolutionary-search core governed by EVO-001. Nothing in this draft claims that
-the source optimizer is implemented in version 0.25.0.
+the source optimizer is implemented in version 0.26.0.
 
 ## Claim Boundary
 

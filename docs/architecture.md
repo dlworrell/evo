@@ -6,8 +6,8 @@ EVO is a source-to-source evolutionary optimization system for C codebases,
 built on a reusable C17 library for bounded engineering search. The core
 engine remains independent of repository scoring, operating-system policy,
 compiler tuning, FPGA placement, and C source semantics; consumers provide
-problem-specific genome, fitness, validation, mutation, and crossover
-callbacks.
+problem-specific genome, fitness, and validation callbacks plus either
+consumer-defined operators or explicitly selected reference byte operators.
 
 The source-optimizer product is a separate layer over that generic core. It
 owns C-project ingestion, Clang/LLVM analysis, structured transformation
@@ -33,6 +33,8 @@ convergence and stagnation classification over committed evidence. Version
 ordinary-singleton path and compatibility-stable operator scheduling.
 Version 0.25.0 adds versioned tournament/rank parent-selection dispatch with
 exact integer weights and stable comparison-derived ranks.
+Version 0.26.0 adds explicit compatibility-preserving operator dispatch plus
+bounded reference one-point, two-point, uniform, and byte-XOR policies.
 
 ### Source analysis and transformation
 
@@ -108,15 +110,17 @@ ADR-0026 defines the complete rule.
 
 ## Current Conformance Boundary
 
-Only the evolutionary-search core exists in version 0.25.0. Source ingestion,
+Only the evolutionary-search core exists in version 0.26.0. Source ingestion,
 analysis, transformation, candidate materialization, external-process
 isolation, target-code measurement, product commands, and optimized-patch
 artifacts are planned by issues #58 through #69. Documentation of those
 planned boundaries is not an implementation claim.
 
-The reviewed 0.25.0 core uses explicit bounded arrays and direct deterministic
-scans rather than compressed, probabilistic, cached, or indexed run authority.
-It therefore has no current accelerated structure requiring remediation. This
+The 0.26.0 core uses explicit bounded arrays and direct deterministic scans
+rather than compressed, probabilistic, cached, or indexed run authority. Its
+reference byte operators act directly on those exact arrays and introduce no
+accelerated authority or retained compact decision structure. It therefore has
+no current accelerated structure requiring remediation. This
 audit does not pre-approve later checkpoint, recycling, parallelism, analysis,
 recipe, orchestration, or artifact implementations.
 
@@ -124,8 +128,8 @@ recipe, orchestration, or artifact implementations.
 
 - Population management
 - Versioned tournament and stable rank-based selection
-- Crossover
-- Mutation
+- Consumer and reference byte-genome crossover
+- Consumer and reference byte-genome mutation
 - Deterministic elite preservation and ordinary singleton production
 - Diversity evidence and deterministic stagnation handling
 - Fitness and constraint handling
@@ -265,6 +269,15 @@ The callback owns genome representation semantics and must fully initialize
 both children without changing parent bytes, ownership, or retaining any view.
 The dispatcher performs no allocation and has no callback rollback path.
 
+Version 0.26.0 places that callback/clone behavior behind the zero-valued
+`EVO_CROSSOVER_CONSUMER` compatibility selector and adds three explicit byte
+modes. One-point mode selects an internal boundary for genomes larger than one
+byte. Two-point mode selects two distinct boundaries from the inclusive
+boundary set `[0, genome_size]` and swaps the half-open range between them.
+Uniform mode consumes 32-bit masks least-significant bit first across ascending
+byte offsets. Both children are complementary and fully initialized. Built-in
+modes never invoke the callback and add no allocation or scratch owner.
+
 This boundary does not itself select parents or own next-generation storage.
 Child-population ownership and operator stream derivation remain separate
 private boundaries; version 0.12.0 composes them for complete-pair production,
@@ -289,10 +302,17 @@ unrecorded entropy, change storage ownership, or retain the view. Because the
 callback mutates in place and returns no status, the dispatcher has no rollback
 path.
 
+Version 0.26.0 places that callback/no-op behavior behind the zero-valued
+`EVO_MUTATION_CONSUMER` compatibility selector and adds byte-XOR mode. After the
+existing per-genome probability gate, it selects one bounded byte index and one
+nonzero value in `[1, 255]`, then XORs exactly that byte. A selected built-in
+event therefore always changes one in-bounds byte and never invokes the
+consumer callback.
+
 This boundary performs no allocation. Version 0.12.0 composes it for complete
 child pairs, and version 0.16.0 invokes that composition from the bounded
-public loop. Built-in representation-specific mutation helpers and adaptive
-schedules remain future work.
+public loop. Other typed representation-specific mutation helpers and adaptive
+policies remain future work beyond the reference byte-XOR helper.
 
 ## Private Child-Population Ownership Boundary
 
@@ -346,7 +366,8 @@ Version 0.12.0 composes parent planning, operator-stream derivation, crossover,
 mutation, and child ownership for one complete pair at a time. The private
 child object records a contiguous produced count, source generation, and
 operator seed-schedule version. From 0.25.0 it also records selection-policy
-version and enum.
+version and enum. From 0.26.0 it additionally records byte-operator policy
+version and the selected crossover and mutation enums.
 
 Pair `i` is accepted only when `2i` children have already been committed. EVO
 validates child ownership and lifecycle state, plans the parents, derives one
@@ -413,8 +434,10 @@ operator-schedule, elite, and singleton provenance before allocating
 provisional evaluation records.
 
 From 0.25.0 it also requires selection-policy version 1 and the enum matching
-the active configuration. Child-evaluation policy version 5 preserves that
-identity without changing validation or evaluator callback order.
+the active configuration. From 0.26.0 it requires byte-operator policy version
+1 plus both configured operator enums. Child-evaluation policy version 6
+preserves those identities without changing validation or evaluator callback
+order.
 
 The existing evaluation engine is now shared by generation-zero and produced-
 child lifecycle preflights. It validates all candidates first, evaluates only
@@ -478,9 +501,10 @@ private bounded-run owner constructs one child slab, produces the policy-
 derived complete pairs, an optional ordinary singleton, and the stable elite
 suffix, evaluates the full child, and atomically promotes it. Compatibility or
 explicit one-elite mode completes a one-member population directly and does
-not require operator policy that cannot be exercised. One-member explicit-zero
+not validate operator rates that cannot be exercised, although positive-limit
+selector enums remain structurally valid provenance. One-member explicit-zero
 mode exercises only configured parent selection and mutation, so its crossover
-policy is likewise unused.
+rate is likewise unused.
 
 The independent result genome is allocated once after generation zero. It is
 a global best-so-far snapshot, not a view into either working population. A
@@ -597,6 +621,12 @@ and generation-advancement policies to version 5. Each records selection-policy
 version 1 and the active enum, while operator domain identities and public
 result layout remain unchanged.
 
+Version 0.26.0 advances bounded-run policy to version 8 and child-evaluation
+and generation-advancement policies to version 6. Each records byte-operator
+policy version 1 plus the configured crossover and mutation selectors. The
+direct bounded byte arrays remain exact reference state, so this adds no cache,
+index, compressed authority, or projection lifecycle.
+
 ## EVO Core Execution Flow
 
 1. Initialize a population.
@@ -607,9 +637,10 @@ result layout remain unchanged.
 6. Record statistics and evidence.
 7. Stop on convergence, stagnation, generation limit, or an application-defined condition.
 
-Version 0.25.0 publicly implements steps 1 through 5 for at most
+Version 0.26.0 publicly implements steps 1 through 5 for at most
 `generation_limit` bounded transitions, with caller-bounded elite policy
-version 1 and bounded diversity measurement in step 5. It implements the
+version 1, explicit consumer/reference byte-operator policy, and bounded
+diversity measurement in step 5. It implements the
 constant-space
 statistics portion of step 6 for every committed generation, records the global
 winner and completed transition count, and explicitly identifies limit
