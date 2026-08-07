@@ -74,6 +74,10 @@ evidence and produced child state in EVO 0.26.0. Explicit byte modes use the
 same pair- and child-indexed streams, bypass consumer callbacks, and retain the
 crossover-then-child-A-mutation-then-child-B-mutation order.
 
+ADR-0028 adds the exact effective mutation rate to pair evidence and produced
+child state in EVO 0.27.0. Both children use the same committed transition
+rate, which remains unchanged through evaluation and promotion.
+
 ## Consequences
 
 - Complete-pair child bytes replay from parent evidence, configuration,

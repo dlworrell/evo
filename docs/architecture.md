@@ -35,6 +35,8 @@ Version 0.25.0 adds versioned tournament/rank parent-selection dispatch with
 exact integer weights and stable comparison-derived ranks.
 Version 0.26.0 adds explicit compatibility-preserving operator dispatch plus
 bounded reference one-point, two-point, uniform, and byte-XOR policies.
+Version 0.27.0 adds deterministic committed-evidence mutation-rate adaptation
+with a schema-4 human-readable decision projection.
 
 ### Source analysis and transformation
 
@@ -110,14 +112,15 @@ ADR-0026 defines the complete rule.
 
 ## Current Conformance Boundary
 
-Only the evolutionary-search core exists in version 0.26.0. Source ingestion,
+Only the evolutionary-search core exists in version 0.27.0. Source ingestion,
 analysis, transformation, candidate materialization, external-process
 isolation, target-code measurement, product commands, and optimized-patch
 artifacts are planned by issues #58 through #69. Documentation of those
 planned boundaries is not an implementation claim.
 
-The 0.26.0 core uses explicit bounded arrays and direct deterministic scans
-rather than compressed, probabilistic, cached, or indexed run authority. Its
+The 0.27.0 core uses explicit bounded arrays, direct deterministic scans, and
+one direct constant-space adaptive-rate record rather than compressed,
+probabilistic, cached, or indexed run authority. Its
 reference byte operators act directly on those exact arrays and introduce no
 accelerated authority or retained compact decision structure. It therefore has
 no current accelerated structure requiring remediation. This
@@ -130,6 +133,7 @@ recipe, orchestration, or artifact implementations.
 - Versioned tournament and stable rank-based selection
 - Consumer and reference byte-genome crossover
 - Consumer and reference byte-genome mutation
+- Evidence-driven bounded mutation-rate adaptation
 - Deterministic elite preservation and ordinary singleton production
 - Diversity evidence and deterministic stagnation handling
 - Fitness and constraint handling
@@ -311,8 +315,34 @@ consumer callback.
 
 This boundary performs no allocation. Version 0.12.0 composes it for complete
 child pairs, and version 0.16.0 invokes that composition from the bounded
-public loop. Other typed representation-specific mutation helpers and adaptive
-policies remain future work beyond the reference byte-XOR helper.
+public loop. Other typed representation-specific mutation helpers remain
+future work beyond the reference byte-XOR helper. Version 0.27.0 selects the
+effective scalar before this dispatcher is called; dispatch itself does not
+adapt or retain rate history.
+
+## Adaptive-Mutation Boundary
+
+Version 0.27.0 appends mutation-adaptation policy version 1. Its private
+authority is one finite effective rate for the next transition and one
+saturating committed-stagnation count. It is initialized only after generation
+zero commits and updated only after a later evaluated child is atomically
+promoted. Provisional or rolled-back work cannot change it.
+
+The state machine uses the stable strict-global-improvement decision and the
+committed normalized diversity value. It clamps the base rate into caller
+bounds, raises by one bounded step for low initial diversity or later
+stagnation, and optionally resets to the minimum on improvement. An inclusive
+diversity threshold and explicit reset precedence remove hidden tie behavior.
+No RNG word, callback, allocation, clock, process identity, or address enters
+the decision.
+
+Public generation-statistics schema 4 is the human-readable audit projection.
+It exposes prior and next rates, bounds, step, threshold, stagnant count,
+improvement/diversity/clamp/reset facts, and one reason enum in committed
+generation order. Pair, singleton, elite, child-evaluation, generation-
+advancement, and bounded-run evidence carry the rate used so lifecycle
+validation can reject mismatched provenance. A future checkpoint must persist
+this state and projection together; no hidden history may be reconstructed.
 
 ## Private Child-Population Ownership Boundary
 
@@ -598,7 +628,7 @@ validation and observation never repeat a domain callback.
 Version 0.23.0 appends target, tolerance/patience, and diversity-floor controls
 after the complete 0.22.0 configuration prefix. Their zero values are a
 canonical disabled state. Enabled policies inspect the stable global winner
-and the latest committed schema-3 statistics only. A finite target is reached
+and the latest committed statistics only. A finite target is reached
 with global-best total `>= target`. Patience counts committed children that do
 not improve the last significant-best reference by strictly more than the
 finite non-negative tolerance; a significant improvement resets the count.
@@ -608,8 +638,8 @@ Classification is allocation-free and RNG-free. Coincident terminal evidence
 uses the fixed order all-invalid, converged, stagnated, generation limit, then
 application requested. Natural classification suppresses the application stop
 callback, and the observer sees the selected final reason. Bounded-run policy
-version 5 records constant-space stopping evidence privately. Adaptive
-mutation, recycling, checkpointing, and parallelism remain separate decisions.
+version 5 records constant-space stopping evidence privately. Recycling,
+checkpointing, and parallelism remain separate decisions.
 
 Version 0.24.0 advances bounded-run policy to version 6. It records the final
 elite count, source valid count, elite policy, singleton policy, and explicit-
@@ -627,6 +657,13 @@ policy version 1 plus the configured crossover and mutation selectors. The
 direct bounded byte arrays remain exact reference state, so this adds no cache,
 index, compressed authority, or projection lifecycle.
 
+Version 0.27.0 advances bounded-run policy to version 9 and child-evaluation
+and generation-advancement policies to version 7. Each carries the effective
+mutation rate through production, evaluation, promotion, and final evidence.
+Generation-statistics schema 4 publishes the ordered adaptive decision; its
+explicit fields are the ADR-0026 audit projection, not a compressed or cached
+authority.
+
 ## EVO Core Execution Flow
 
 1. Initialize a population.
@@ -637,12 +674,11 @@ index, compressed authority, or projection lifecycle.
 6. Record statistics and evidence.
 7. Stop on convergence, stagnation, generation limit, or an application-defined condition.
 
-Version 0.26.0 publicly implements steps 1 through 5 for at most
+Version 0.27.0 publicly implements steps 1 through 5 for at most
 `generation_limit` bounded transitions, with caller-bounded elite policy
 version 1, explicit consumer/reference byte-operator policy, and bounded
-diversity measurement in step 5. It implements the
-constant-space
-statistics portion of step 6 for every committed generation, records the global
+diversity measurement in step 5. It implements the constant-space statistics
+and adaptive-decision portion of step 6 for every committed generation, records the global
 winner and completed transition count, and explicitly identifies limit
 completion, later all-invalid extinction, convergence, stagnation, or an
 application request after a committed generation. Committed-generation

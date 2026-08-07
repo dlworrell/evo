@@ -1,5 +1,6 @@
 #include "internal/stopping.h"
 
+#include "internal/adaptive_mutation.h"
 #include "internal/fitness.h"
 
 #include <math.h>
@@ -38,7 +39,8 @@ evo_status_t evo_stopping_validate_config(const evo_config_t *config)
     return EVO_SUCCESS;
 }
 
-static bool committed_result_is_valid(const evo_result_t *result,
+static bool committed_result_is_valid(const evo_config_t *config,
+                                      const evo_result_t *result,
                                       bool current_has_best)
 {
     const evo_generation_statistics_t *statistics = NULL;
@@ -73,7 +75,8 @@ static bool committed_result_is_valid(const evo_result_t *result,
            statistics->diversity_metric_version != UINT32_C(0) &&
            isfinite(statistics->diversity) &&
            statistics->diversity >= 0.0 &&
-           statistics->diversity <= 1.0;
+           statistics->diversity <= 1.0 &&
+           evo_adaptive_mutation_statistics_are_valid(config, statistics);
 }
 
 static evo_termination_reason_t classify_policy_evidence(
@@ -109,7 +112,7 @@ evo_status_t evo_stopping_classify_initial(
     evo_termination_reason_t candidate = EVO_TERMINATION_NONE;
 
     if (reason == NULL || evo_stopping_validate_config(config) != EVO_SUCCESS ||
-        !committed_result_is_valid(result, true) ||
+        !committed_result_is_valid(config, result, true) ||
         result->generations_completed != 0) {
         return EVO_ERROR_INVALID_ARGUMENT;
     }
@@ -131,7 +134,7 @@ evo_status_t evo_stopping_state_initialize(
         state->significant_best_total != 0.0 ||
         state->stagnant_generations != 0 ||
         evo_stopping_validate_config(config) != EVO_SUCCESS ||
-        !committed_result_is_valid(result, true) ||
+        !committed_result_is_valid(config, result, true) ||
         result->generations_completed != 0) {
         return EVO_ERROR_INVALID_ARGUMENT;
     }
@@ -175,7 +178,7 @@ evo_status_t evo_stopping_classify_committed(
     if (reason == NULL || state == NULL || !state->initialized ||
         !isfinite(state->significant_best_total) ||
         evo_stopping_validate_config(config) != EVO_SUCCESS ||
-        !committed_result_is_valid(result, !all_invalid) ||
+        !committed_result_is_valid(config, result, !all_invalid) ||
         result->generations_completed == 0) {
         return EVO_ERROR_INVALID_ARGUMENT;
     }

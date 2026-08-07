@@ -92,6 +92,7 @@
       "src/selection.c",
       "src/crossover.c",
       "src/mutation.c",
+      "src/adaptive_mutation.c",
       "src/parent_pair.c",
       "src/child_pair.c",
       "src/child_single.c",
@@ -168,6 +169,12 @@
         "source": "tests/mutation_test.c",
         "cmake": "evo_mutation_test",
         "autotools": "tests/evo_mutation_test"
+      },
+      {
+        "id": "adaptive-mutation",
+        "source": "tests/adaptive_mutation_test.c",
+        "cmake": "evo_adaptive_mutation_test",
+        "autotools": "tests/evo_adaptive_mutation_test"
       },
       {
         "id": "child-population",

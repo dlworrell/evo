@@ -133,6 +133,8 @@ static bool child_state_is_valid(const evo_problem_t *problem,
         (children->byte_operator_policy_version == 0 &&
          (children->crossover_operator != EVO_CROSSOVER_CONSUMER ||
           children->mutation_operator != EVO_MUTATION_CONSUMER)) ||
+        (children->byte_operator_policy_version == 0 &&
+         children->mutation_rate_used != 0.0) ||
         children->odd_child_policy_version != 0 ||
         children->elite_policy_version != 0 ||
         children->singleton_child_policy_version != 0 ||
@@ -160,7 +162,8 @@ static bool child_state_is_valid(const evo_problem_t *problem,
                children->selection_policy == EVO_SELECTION_TOURNAMENT &&
                children->byte_operator_policy_version == 0 &&
                children->crossover_operator == EVO_CROSSOVER_CONSUMER &&
-               children->mutation_operator == EVO_MUTATION_CONSUMER;
+               children->mutation_operator == EVO_MUTATION_CONSUMER &&
+               children->mutation_rate_used == 0.0;
     }
 
     return children->source_generation == source_generation &&
@@ -172,7 +175,8 @@ static bool child_state_is_valid(const evo_problem_t *problem,
            children->byte_operator_policy_version ==
                EVO_BYTE_OPERATOR_POLICY_VERSION &&
            children->crossover_operator == config->crossover_operator &&
-           children->mutation_operator == config->mutation_operator;
+           children->mutation_operator == config->mutation_operator &&
+           children->mutation_rate_used == config->mutation_rate;
 }
 
 static bool size_index_to_u64(size_t index, uint64_t *converted)
@@ -330,6 +334,7 @@ evo_status_t evo_child_single_produce(
         EVO_BYTE_OPERATOR_POLICY_VERSION;
     children->crossover_operator = config->crossover_operator;
     children->mutation_operator = config->mutation_operator;
+    children->mutation_rate_used = config->mutation_rate;
     children->singleton_child_policy_version =
         EVO_SINGLETON_CHILD_POLICY_VERSION;
 
@@ -345,6 +350,7 @@ evo_status_t evo_child_single_produce(
         EVO_BYTE_OPERATOR_POLICY_VERSION;
     candidate.crossover_operator = config->crossover_operator;
     candidate.mutation_operator = config->mutation_operator;
+    candidate.mutation_rate_used = config->mutation_rate;
     candidate.policy_version = EVO_SINGLETON_CHILD_POLICY_VERSION;
     candidate.complete = true;
     *evidence = candidate;

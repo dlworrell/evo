@@ -8,6 +8,7 @@
 #include "internal/rng.h"
 #include "internal/selection.h"
 
+#include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -68,6 +69,7 @@ static bool completed_population_provenance_is_valid(
                population->crossover_operator ==
                    EVO_CROSSOVER_CONSUMER &&
                population->mutation_operator == EVO_MUTATION_CONSUMER &&
+               population->mutation_rate_used == 0.0 &&
                population->odd_child_policy_version == 0 &&
                population->elite_policy_version == 0 &&
                population->singleton_child_policy_version == 0 &&
@@ -109,6 +111,9 @@ static bool completed_population_provenance_is_valid(
                EVO_BYTE_OPERATOR_POLICY_VERSION &&
            population->crossover_operator == config->crossover_operator &&
            population->mutation_operator == config->mutation_operator &&
+           isfinite(population->mutation_rate_used) &&
+           population->mutation_rate_used >= 0.0 &&
+           population->mutation_rate_used <= 1.0 &&
            population->odd_child_policy_version ==
                expected_odd_child_policy_version &&
            population->elite_policy_version ==

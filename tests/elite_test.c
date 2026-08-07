@@ -425,6 +425,7 @@ static void assert_explicit_policy(size_t population_size,
            EVO_BYTE_OPERATOR_POLICY_VERSION);
     assert(elite_evidence.crossover_operator == EVO_CROSSOVER_CONSUMER);
     assert(elite_evidence.mutation_operator == EVO_MUTATION_CONSUMER);
+    assert(elite_evidence.mutation_rate_used == fixture.config.mutation_rate);
     assert(elite_evidence.odd_child_policy_version == 0);
     assert(elite_evidence.elite_policy_version ==
            EVO_ELITE_POLICY_VERSION);
@@ -444,6 +445,7 @@ static void assert_explicit_policy(size_t population_size,
            EVO_BYTE_OPERATOR_POLICY_VERSION);
     assert(children.crossover_operator == EVO_CROSSOVER_CONSUMER);
     assert(children.mutation_operator == EVO_MUTATION_CONSUMER);
+    assert(children.mutation_rate_used == fixture.config.mutation_rate);
     assert(children.elite_policy_version == EVO_ELITE_POLICY_VERSION);
     assert(children.singleton_child_policy_version ==
            elite_evidence.singleton_child_policy_version);
@@ -611,6 +613,7 @@ static void test_singleton_schedule_and_replay(void)
            EVO_BYTE_OPERATOR_POLICY_VERSION);
     assert(first_single.crossover_operator == EVO_CROSSOVER_CONSUMER);
     assert(first_single.mutation_operator == EVO_MUTATION_CONSUMER);
+    assert(first_single.mutation_rate_used == fixture.config.mutation_rate);
     assert(first_single.policy_version ==
            EVO_SINGLETON_CHILD_POLICY_VERSION);
     assert(first_single.complete);

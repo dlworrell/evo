@@ -153,6 +153,13 @@ no accelerated structure, so the rule is explicitly not applicable to a new
 projection API for that change. The operator decisions and affected ranges are
 nevertheless specified and golden-vector tested for reviewability.
 
+ADR-0028 performs the next change-specific assessment for EVO 0.27.0. Adaptive
+mutation uses a direct constant-space rate/count record rather than an
+accelerated substitute. Public schema-4 statistics and their ordered observer
+delivery provide the explicit human-readable decision projection: source
+generation, prior/effective rates, bounds, evidence facts, clamp/reset state,
+and reason. No opaque cache, filter, index, or compressed authority is added.
+
 ## Consequences
 
 - EVO may use efficient internal data structures without exposing their

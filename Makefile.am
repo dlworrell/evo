@@ -21,6 +21,7 @@ libcatalyst_evo_la_SOURCES = \
 	src/selection.c \
 	src/crossover.c \
 	src/mutation.c \
+	src/adaptive_mutation.c \
 	src/parent_pair.c \
 	src/child_pair.c \
 	src/child_single.c \
@@ -47,6 +48,7 @@ noinst_HEADERS = \
 	src/internal/selection.h \
 	src/internal/crossover.h \
 	src/internal/mutation.h \
+	src/internal/adaptive_mutation.h \
 	src/internal/parent_pair.h \
 	src/internal/child_pair.h \
 	src/internal/child_single.h \
@@ -79,6 +81,7 @@ check_PROGRAMS = \
 	tests/evo_selection_test \
 	tests/evo_crossover_test \
 	tests/evo_mutation_test \
+	tests/evo_adaptive_mutation_test \
 	tests/evo_child_population_test \
 	tests/evo_parent_pair_test \
 	tests/evo_child_pair_test \
@@ -129,6 +132,10 @@ tests_evo_crossover_test_LDADD = libcatalyst_evo.la -lm
 
 tests_evo_mutation_test_SOURCES = tests/mutation_test.c
 tests_evo_mutation_test_LDADD = libcatalyst_evo.la -lm
+
+tests_evo_adaptive_mutation_test_SOURCES = \
+	tests/adaptive_mutation_test.c
+tests_evo_adaptive_mutation_test_LDADD = libcatalyst_evo.la -lm
 
 tests_evo_child_population_test_SOURCES = \
 	tests/child_population_test.c

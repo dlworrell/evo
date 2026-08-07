@@ -74,6 +74,10 @@ ADR-0027 advances generation-advancement policy to version 6 in EVO 0.26.0 so
 the output also preserves byte-operator policy version 1 and both configured
 operator enums. The ownership move and lineage rules remain unchanged.
 
+ADR-0028 advances generation-advancement policy to version 7 in EVO 0.27.0 so
+the ownership transfer also preserves the exact effective mutation rate used
+to produce the incoming child.
+
 ## Consequences
 
 - Rejection preserves both population structures, their allocations and

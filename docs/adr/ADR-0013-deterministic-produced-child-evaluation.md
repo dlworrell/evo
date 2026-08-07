@@ -88,6 +88,10 @@ children and output evidence must also preserve byte-operator policy version 1
 and both configured operator enums. Evaluation ordering, allocation, byte
 immutability, and rollback remain unchanged.
 
+ADR-0028 advances child-evaluation policy to version 7 in EVO 0.27.0. Produced
+children and output evidence must additionally preserve the finite effective
+mutation rate that produced the committed generation.
+
 ## Consequences
 
 - Generation-zero and child evaluation cannot drift in ordering, finite-

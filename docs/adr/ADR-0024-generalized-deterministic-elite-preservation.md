@@ -110,6 +110,11 @@ mode uses the same child-indexed mutation stream and bypasses the callback.
 Elite copies remain operator-free, while completion evidence preserves both
 configured operator selectors for lifecycle validation.
 
+ADR-0028 adds effective mutation-rate provenance in EVO 0.27.0. An ordinary
+singleton uses that rate; elite copies still invoke no mutation. A one-member
+compatibility or explicit-one-elite run has no mutation path, so adaptation is
+not applicable and unused mutation/adaptation payload remains uninspected.
+
 ## Consequences
 
 - Counts `0`, `1`, `N - 1`, and `N` have one definition for even and odd

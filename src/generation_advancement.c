@@ -171,6 +171,7 @@ evo_status_t evo_population_advance_generation(
         !evo_population_validate_completed(config,
                                            evaluated_children,
                                            &child_valid_count) ||
+        evaluated_children->mutation_rate_used != config->mutation_rate ||
         !population_matches_generation(parents, current_generation) ||
         evaluated_children->initialized ||
         evaluated_children->source_generation != current_generation) {
@@ -195,6 +196,7 @@ evo_status_t evo_population_advance_generation(
     candidate.crossover_operator =
         evaluated_children->crossover_operator;
     candidate.mutation_operator = evaluated_children->mutation_operator;
+    candidate.mutation_rate_used = evaluated_children->mutation_rate_used;
     candidate.odd_child_policy_version =
         evaluated_children->odd_child_policy_version;
     candidate.elite_policy_version =

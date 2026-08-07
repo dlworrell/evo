@@ -10,6 +10,7 @@ typedef struct evo_child_pair_evidence {
     uint32_t byte_operator_policy_version;
     evo_crossover_operator_t crossover_operator;
     evo_mutation_operator_t mutation_operator;
+    double mutation_rate_used;
     bool complete;
 } evo_child_pair_evidence_t;
 

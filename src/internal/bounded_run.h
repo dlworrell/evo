@@ -3,7 +3,7 @@
 
 #include "internal/generation_advancement.h"
 
-#define EVO_BOUNDED_RUN_POLICY_VERSION UINT32_C(8)
+#define EVO_BOUNDED_RUN_POLICY_VERSION UINT32_C(9)
 
 typedef struct evo_bounded_run_evidence {
     size_t population_size;
@@ -22,6 +22,11 @@ typedef struct evo_bounded_run_evidence {
     uint32_t byte_operator_policy_version;
     evo_crossover_operator_t crossover_operator;
     evo_mutation_operator_t mutation_operator;
+    double final_mutation_rate_used;
+    uint32_t adaptive_mutation_policy_version;
+    double effective_mutation_rate;
+    size_t adaptive_mutation_stagnant_generations;
+    evo_mutation_adaptation_reason_t mutation_adaptation_reason;
     uint32_t odd_child_policy_version;
     uint32_t elite_policy_version;
     uint32_t singleton_child_policy_version;

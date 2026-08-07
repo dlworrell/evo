@@ -98,6 +98,12 @@ ADR-0024 later advances bounded-run policy to version 6 by appending elite and
 singleton provenance; stopping policy version 1 and its classification order
 remain unchanged.
 
+ADR-0028 adds a separate adaptive-mutation stagnant count in EVO 0.27.0. It
+tracks absence of any strict global-best improvement and saturates at
+`SIZE_MAX`; it is not the stopping-policy patience count, which remains based
+on `improvement_tolerance`. Both read the same committed generation but retain
+distinct names, evidence, and authority.
+
 ## ABI Consequences
 
 Existing termination values and all pre-0.23.0 member offsets are preserved.

@@ -16,6 +16,7 @@ typedef struct evo_child_tail_evidence {
     uint32_t byte_operator_policy_version;
     evo_crossover_operator_t crossover_operator;
     evo_mutation_operator_t mutation_operator;
+    double mutation_rate_used;
     uint32_t policy_version;
     bool complete;
 } evo_child_tail_evidence_t;

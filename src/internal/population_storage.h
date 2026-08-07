@@ -30,6 +30,7 @@ typedef struct evo_population {
     uint32_t byte_operator_policy_version;
     evo_crossover_operator_t crossover_operator;
     evo_mutation_operator_t mutation_operator;
+    double mutation_rate_used;
     uint32_t odd_child_policy_version;
     uint32_t elite_policy_version;
     uint32_t singleton_child_policy_version;

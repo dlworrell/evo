@@ -86,6 +86,11 @@ The policy version is 1 for every successful record. The built-in metric
 publishes metric version 1 and a false kind flag. A domain callback publishes
 its configured version and a true flag.
 
+ADR-0028 makes this already-committed normalized value an input to mutation-
+adaptation policy version 1 in EVO 0.27.0. Measurement order, budget, metric
+authority, and RNG neutrality do not change. Schema 4 preserves the complete
+schema-3 diversity prefix and records the inclusive low-diversity decision.
+
 ## ABI Consequences
 
 The new problem fields, configuration budget, and schema-3 statistics fields

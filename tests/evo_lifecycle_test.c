@@ -24,6 +24,12 @@ _Static_assert(EVO_MUTATION_CONSUMER == 0,
                "consumer mutation must remain the zero-value default");
 _Static_assert(EVO_MUTATION_BYTE_XOR == 1,
                "byte-XOR mutation must retain its public value");
+_Static_assert(EVO_MUTATION_ADAPTATION_NOT_APPLICABLE == 0,
+               "not-applicable adaptation must remain the zero value");
+_Static_assert(EVO_MUTATION_ADAPTATION_DISABLED == 1,
+               "disabled adaptation must retain its public value");
+_Static_assert(EVO_MUTATION_ADAPTATION_IMPROVEMENT_HOLD == 7,
+               "adaptation reason values must remain append-only");
 _Static_assert(offsetof(evo_result_t, termination_reason) >=
                    offsetof(evo_result_t, random_seed) + sizeof(uint64_t),
                "termination evidence must remain appended to evo_result_t");
@@ -43,8 +49,10 @@ _Static_assert(EVO_STOPPING_POLICY_VERSION == UINT32_C(1),
                "the initial stopping policy must remain stable");
 _Static_assert(EVO_BYTE_OPERATOR_POLICY_VERSION == UINT32_C(1),
                "the initial byte-operator policy must remain stable");
-_Static_assert(EVO_GENERATION_STATISTICS_VERSION == UINT32_C(3),
-               "statistics schema 3 must carry diversity evidence");
+_Static_assert(EVO_MUTATION_ADAPTATION_POLICY_VERSION == UINT32_C(1),
+               "the initial adaptive-mutation policy must remain stable");
+_Static_assert(EVO_GENERATION_STATISTICS_VERSION == UINT32_C(4),
+               "statistics schema 4 must carry adaptation evidence");
 _Static_assert(offsetof(evo_generation_statistics_t,
                         fitness_comparison_policy_version) >=
                    offsetof(evo_generation_statistics_t, has_best) +
@@ -56,6 +64,12 @@ _Static_assert(offsetof(evo_generation_statistics_t,
                             fitness_comparison_policy_version) +
                        sizeof(uint32_t),
                "diversity evidence must follow the schema-2 prefix");
+_Static_assert(offsetof(evo_generation_statistics_t,
+                        adaptive_mutation_policy_version) >=
+                   offsetof(evo_generation_statistics_t,
+                            diversity_uses_domain_distance) +
+                       sizeof(bool),
+               "adaptation evidence must follow the schema-3 prefix");
 _Static_assert(offsetof(evo_config_t, generation_observer) >=
                    offsetof(evo_config_t, max_child_population_bytes) +
                        sizeof(size_t),
@@ -119,6 +133,20 @@ _Static_assert(offsetof(evo_config_t, mutation_operator) >=
                    offsetof(evo_config_t, crossover_operator) +
                        sizeof(evo_crossover_operator_t),
                "mutation dispatch must follow crossover dispatch");
+_Static_assert(offsetof(evo_config_t, adaptive_mutation_enabled) >=
+                   offsetof(evo_config_t, mutation_operator) +
+                       sizeof(evo_mutation_operator_t),
+               "adaptation must follow the 0.26 configuration prefix");
+_Static_assert(offsetof(evo_config_t, adaptive_mutation_min_rate) >=
+                   offsetof(evo_config_t, adaptive_mutation_enabled) +
+                       sizeof(bool),
+               "the adaptive minimum must follow its enable control");
+_Static_assert(offsetof(evo_config_t,
+                        adaptive_mutation_reset_on_improvement) >=
+                   offsetof(evo_config_t,
+                            adaptive_mutation_diversity_threshold) +
+                       sizeof(double),
+               "the reset choice must follow adaptive numeric controls");
 
 enum {
     TEST_POPULATION_CAPACITY = 8,
@@ -174,6 +202,29 @@ static void assert_completely_empty(const evo_result_t *result)
     assert(result->generation_statistics.diversity == 0.0);
     assert(!result->generation_statistics
                 .diversity_uses_domain_distance);
+    assert(result->generation_statistics
+               .adaptive_mutation_policy_version == 0);
+    assert(result->generation_statistics.mutation_rate_prior == 0.0);
+    assert(result->generation_statistics.mutation_rate_effective == 0.0);
+    assert(result->generation_statistics.adaptive_mutation_min_rate == 0.0);
+    assert(result->generation_statistics.adaptive_mutation_max_rate == 0.0);
+    assert(result->generation_statistics.adaptive_mutation_step == 0.0);
+    assert(result->generation_statistics
+               .adaptive_mutation_diversity_threshold == 0.0);
+    assert(result->generation_statistics
+               .adaptive_mutation_stagnant_generations == 0);
+    assert(result->generation_statistics.mutation_adaptation_reason ==
+           EVO_MUTATION_ADAPTATION_NOT_APPLICABLE);
+    assert(!result->generation_statistics.adaptive_mutation_enabled);
+    assert(!result->generation_statistics.adaptive_mutation_low_diversity);
+    assert(!result->generation_statistics
+                .adaptive_mutation_global_best_improved);
+    assert(!result->generation_statistics
+                .adaptive_mutation_clamped_to_min);
+    assert(!result->generation_statistics
+                .adaptive_mutation_clamped_to_max);
+    assert(!result->generation_statistics
+                .adaptive_mutation_reset_on_improvement);
 }
 
 static void assert_results_equal(const evo_result_t *actual,
@@ -231,6 +282,50 @@ static void assert_results_equal(const evo_result_t *actual,
     assert(actual->generation_statistics.diversity_uses_domain_distance ==
            expected->generation_statistics
                .diversity_uses_domain_distance);
+    assert(actual->generation_statistics
+               .adaptive_mutation_policy_version ==
+           expected->generation_statistics
+               .adaptive_mutation_policy_version);
+    assert(actual->generation_statistics.mutation_rate_prior ==
+           expected->generation_statistics.mutation_rate_prior);
+    assert(actual->generation_statistics.mutation_rate_effective ==
+           expected->generation_statistics.mutation_rate_effective);
+    assert(actual->generation_statistics.adaptive_mutation_min_rate ==
+           expected->generation_statistics.adaptive_mutation_min_rate);
+    assert(actual->generation_statistics.adaptive_mutation_max_rate ==
+           expected->generation_statistics.adaptive_mutation_max_rate);
+    assert(actual->generation_statistics.adaptive_mutation_step ==
+           expected->generation_statistics.adaptive_mutation_step);
+    assert(actual->generation_statistics
+               .adaptive_mutation_diversity_threshold ==
+           expected->generation_statistics
+               .adaptive_mutation_diversity_threshold);
+    assert(actual->generation_statistics
+               .adaptive_mutation_stagnant_generations ==
+           expected->generation_statistics
+               .adaptive_mutation_stagnant_generations);
+    assert(actual->generation_statistics.mutation_adaptation_reason ==
+           expected->generation_statistics.mutation_adaptation_reason);
+    assert(actual->generation_statistics.adaptive_mutation_enabled ==
+           expected->generation_statistics.adaptive_mutation_enabled);
+    assert(actual->generation_statistics.adaptive_mutation_low_diversity ==
+           expected->generation_statistics.adaptive_mutation_low_diversity);
+    assert(actual->generation_statistics
+               .adaptive_mutation_global_best_improved ==
+           expected->generation_statistics
+               .adaptive_mutation_global_best_improved);
+    assert(actual->generation_statistics
+               .adaptive_mutation_clamped_to_min ==
+           expected->generation_statistics
+               .adaptive_mutation_clamped_to_min);
+    assert(actual->generation_statistics
+               .adaptive_mutation_clamped_to_max ==
+           expected->generation_statistics
+               .adaptive_mutation_clamped_to_max);
+    assert(actual->generation_statistics
+               .adaptive_mutation_reset_on_improvement ==
+           expected->generation_statistics
+               .adaptive_mutation_reset_on_improvement);
 }
 
 static void record_event(lifecycle_context_t *context,
