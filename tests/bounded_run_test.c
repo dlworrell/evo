@@ -1,4 +1,5 @@
 #include "catalyst/evo/evo.h"
+#include "internal/adaptive_mutation.h"
 #include "internal/bounded_run.h"
 #include "internal/child_evaluation.h"
 #include "internal/child_pair.h"
@@ -697,6 +698,7 @@ static void snapshot_generation_zero(
     unsigned char *storage,
     evo_result_t *result)
 {
+    evo_adaptive_mutation_state_t adaptive_mutation_state = {0};
     const evo_candidate_evaluation_t *evaluation = NULL;
     const void *genome = NULL;
     size_t best_index = 0;
@@ -717,6 +719,10 @@ static void snapshot_generation_zero(
                                             UINT64_C(0),
                                             &result->generation_statistics) ==
            EVO_SUCCESS);
+    assert(evo_adaptive_mutation_initialize(
+               config,
+               &result->generation_statistics,
+               &adaptive_mutation_state) == EVO_SUCCESS);
 }
 
 static void test_private_bounded_run_evidence(void)
@@ -812,6 +818,13 @@ static void test_private_bounded_run_evidence(void)
            EVO_BYTE_OPERATOR_POLICY_VERSION);
     assert(evidence.crossover_operator == EVO_CROSSOVER_CONSUMER);
     assert(evidence.mutation_operator == EVO_MUTATION_CONSUMER);
+    assert(evidence.final_mutation_rate_used == config.mutation_rate);
+    assert(evidence.adaptive_mutation_policy_version ==
+           EVO_MUTATION_ADAPTATION_POLICY_VERSION);
+    assert(evidence.effective_mutation_rate == config.mutation_rate);
+    assert(evidence.adaptive_mutation_stagnant_generations == 0);
+    assert(evidence.mutation_adaptation_reason ==
+           EVO_MUTATION_ADAPTATION_DISABLED);
     assert(evidence.odd_child_policy_version == 0);
     assert(evidence.elite_policy_version == EVO_ELITE_POLICY_VERSION);
     assert(evidence.singleton_child_policy_version ==

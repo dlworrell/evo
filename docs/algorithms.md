@@ -2,7 +2,7 @@
 
 This document distinguishes algorithms implemented by the reusable
 `catalyst_evo` core from the structured program transformations and evaluation
-algorithm required by the EVO 1.0 source optimizer. Version 0.26.0 implements
+algorithm required by the EVO 1.0 source optimizer. Version 0.27.0 implements
 only the core boundary described below.
 
 ## EVO Core Initial Release
@@ -286,7 +286,9 @@ unbiased index in `[0, n - 1]`, draws one unbiased nonzero mask in `[1, 255]`,
 and XORs exactly that byte. The selected event therefore always changes one
 in-bounds byte. Each bounded draw uses the existing two-word rejection schedule.
 The reference mode bypasses the callback and allocates no state. Typed bit,
-integer, floating-point, permutation, and adaptive policies remain later work.
+integer, floating-point, and permutation policies remain later work. Version
+0.27.0 supplies the committed effective rate to this unchanged dispatch
+boundary; the helper itself does not infer or retain adaptation state.
 
 ## Child-Population Storage
 
@@ -492,7 +494,8 @@ generation pipeline through public `evo_run`:
 2. For a positive limit, validate the child slab budget and all operator
    policy before constructing generation zero or invoking a consumer callback.
 3. Construct, initialize, validate, and evaluate generation zero. Transfer its
-   stable valid winner into one independently owned result allocation.
+   stable valid winner into one independently owned result allocation and
+   initialize the applicable effective mutation rate from committed evidence.
 4. For source generations `g = 0..generation_limit - 1`, allocate one child
    slab and resolve requested, effective, and ordinary-offspring counts.
 5. Produce complete pairs in ascending pair order, an ordinary singleton when
@@ -502,10 +505,11 @@ generation pipeline through public `evo_run`:
 7. Atomically promote the evaluated child to completed generation `g + 1`.
    Only after promotion may a strict improvement overwrite the existing result
    buffer and fitness evidence.
-8. Record the completed transition. If the promoted population is all-invalid,
-   stop successfully. If the hard limit is now met, stop successfully.
-   Otherwise, consult the optional application stop decision and continue only
-   when it returns false.
+8. Record the completed transition and commit the next adaptive rate plus its
+   schema-4 reason projection. If the promoted population is all-invalid, stop
+   successfully. If convergence, stagnation, or the hard limit applies, stop
+   successfully. Otherwise, consult the optional application stop decision and
+   continue only when it returns false.
 
 The result buffer is never reallocated during a run. Exact total-fitness ties
 across generations retain the earlier winner, so deterministic replay is not
@@ -513,7 +517,7 @@ affected by allocation addresses or later equal candidates. Failure at any
 transition destroys all internal owners and the result allocation; no partial
 winner or completion count escapes the public call.
 
-Through version 0.26.0, this algorithm has a bounded sequential working set of
+Through version 0.27.0, this algorithm has a bounded sequential working set of
 one current population, one child population, one result genome, and the
 current population's evaluation records plus provisional child evaluation
 records during child evaluation. It does not recycle slabs or run callbacks
@@ -693,6 +697,54 @@ operator policy version 1 plus both selected operator enums. Child-evaluation
 and generation-advancement policies advance to version 6 for the same
 provenance. The reference operators introduce no accelerated structure; their
 bounded byte arrays and direct scans remain exact authority under ADR-0026.
+
+## Evidence-Driven Adaptive Mutation
+
+Version 0.27.0 defines mutation-adaptation policy version 1 and advances public
+generation statistics to schema 4. The state machine is evaluated only for a
+committed generation and consumes no RNG:
+
+```text
+generation 0:
+    current = clamp(requested_rate, minimum, maximum)
+    next = low_diversity ? bounded_increase(current) : current
+
+later generation with strict global improvement:
+    stagnant_count = 0
+    next = reset_enabled ? minimum
+         : low_diversity ? bounded_increase(current)
+         : current
+
+later generation without strict global improvement:
+    stagnant_count = saturating_increment(stagnant_count)
+    next = bounded_increase(current)
+```
+
+`low_diversity` is the inclusive comparison
+`committed_diversity <= configured_threshold`. `bounded_increase(x)` returns
+the maximum and records a clamp when `step > maximum - x`; otherwise it returns
+`x + step`. An exact addition that reaches the maximum is not a clamp. Reset
+precedence wins over low diversity on an improving generation.
+
+Schema 4 records source generation, prior and next rates, all bounds, stagnant
+count, low-diversity and strict-improvement facts, clamp/reset facts, and a
+reason enum. The prior rate for a later generation is the exact rate used by
+its mutation probability gate and forwarded to a selected consumer callback.
+Reference byte mutation uses the same scalar and bypasses that callback.
+
+Disabled canonical zero policy publishes a static-rate `DISABLED` decision for
+each mutation-applicable positive-limit generation and preserves 0.26.0 replay.
+Generation-zero-only execution and a one-member all-elite path publish the
+zero `NOT_APPLICABLE` projection and ignore unused mutation policy. Pair,
+singleton, elite, evaluation, promotion, and final run evidence carry the rate
+used. Bounded-run policy advances to version 9 and child-evaluation and
+generation-advancement policies to version 7.
+
+The direct state record is canonical, not an accelerator. The ordered observer
+records are its ADR-0026 human-readable audit projection. Future checkpointing
+must persist the effective next rate, stagnant count, schema-4 record, policy
+parameters and versions, committed generation, global winner, and existing RNG
+state together; an incomplete history may not be used to guess a rate.
 
 ## Structured C Source Evolution
 

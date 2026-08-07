@@ -31,6 +31,7 @@ The governing product records are:
 - `docs/adr/ADR-0025-stable-rank-based-parent-selection.md`
 - `docs/adr/ADR-0026-human-readable-abstraction-and-audit-projection.md`
 - `docs/adr/ADR-0027-reference-byte-genome-operators.md`
+- `docs/adr/ADR-0028-evidence-driven-adaptive-mutation.md`
 - `docs/specs/EVO-001-library-contract.md`
 - `docs/specs/EVO-002-source-optimizer-contract.md`
 - `docs/roadmap.md`
@@ -74,7 +75,9 @@ EVO-HRA-001 audit records why the implemented 0.25.0 core has no current
 accelerated structure requiring remediation and where later work must recheck
 the rule. ADR-0027 separately assesses the 0.26.0 byte operators: their direct
 bounded arrays are the exact reference representation, so no accelerator or
-separate audit projection is introduced.
+separate audit projection is introduced. ADR-0028 assesses 0.27.0 adaptive
+mutation: its direct constant-space state is canonical, and schema-4 observer
+records provide the ordered human-readable decision projection.
 
 ## Roadmap Scope
 
@@ -120,7 +123,7 @@ repository.
 - `docs/` — architecture, theory, algorithms, and evidence guidance
 
 The source-optimizer implementation directories will be introduced only by
-their dependency-ordered roadmap issues. Their absence in version 0.26.0 is an
+their dependency-ordered roadmap issues. Their absence in version 0.27.0 is an
 explicit current boundary, not an implicit feature claim.
 
 ## Authoritative Native Builds
@@ -160,7 +163,7 @@ declared Clang/LLVM and GNU profiles.
 
 ## Status
 
-**Current implementation boundary:** EVO 0.26.0 implements the deterministic
+**Current implementation boundary:** EVO 0.27.0 implements the deterministic
 evolutionary-search core. It does not yet ingest a C project, build a Clang AST
 or LLVM IR model, transform source, compile evolved candidates, or emit an
 optimized source patch. Those product boundaries are tracked in the 1.0
@@ -270,6 +273,16 @@ Built-ins use the existing pair/child operator streams, bypass callbacks,
 allocate no memory, and propagate their selector/version provenance through
 child production, evaluation, promotion, and bounded-run evidence. These are
 generic byte-genome utilities, never raw-C-source transformation mechanisms.
+
+EVO 0.27.0 appends disabled-by-default adaptive mutation policy 1. Enabled
+runs clamp the requested base rate into finite caller bounds, then derive each
+next rate from committed strict-improvement and inclusive diversity evidence.
+Rates rise by a bounded step on stagnation, reset to the minimum on improvement
+when configured, and never consume RNG or hidden history. Generation-statistics
+schema 4 records the prior/effective rates, bounds, stagnant count, clamp/reset
+facts, and explainable reason. That same effective rate is carried through
+consumer and reference mutation, evaluation, promotion, and replay. Disabled
+zero payload preserves the 0.26.0 static operator stream exactly.
 
 Version 0.3.0 added the independently tested private population-storage
 foundation: checked `population_size * genome_size` arithmetic, a
@@ -510,8 +523,8 @@ failure-state, alias, compatibility, and secure-erasure boundaries.
 
 The tournament, crossover-dispatch, mutation-dispatch, child-population,
 operator-stream, pair-production, singleton, elite-preservation, child-
-evaluation, and atomic-advancement boundaries remain independently verified
-beneath the bounded public loop. Adaptive mutation, population recycling,
+evaluation, atomic-advancement, and adaptive-mutation boundaries remain
+independently verified beneath the bounded public loop. Population recycling,
 checkpointing, and parallelism remain later boundaries.
 
 ## Project Zero

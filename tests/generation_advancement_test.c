@@ -220,6 +220,7 @@ static void assert_population_matches_snapshot(
     assert(population->selection_policy_version ==
            before->selection_policy_version);
     assert(population->selection_policy == before->selection_policy);
+    assert(population->mutation_rate_used == before->mutation_rate_used);
     assert(population->odd_child_policy_version ==
            before->odd_child_policy_version);
     assert(population->elite_policy_version ==
@@ -280,6 +281,7 @@ static evo_generation_advancement_evidence_t sentinel_evidence(void)
         .byte_operator_policy_version = 59,
         .crossover_operator = EVO_CROSSOVER_BYTE_TWO_POINT,
         .mutation_operator = EVO_MUTATION_BYTE_XOR,
+        .mutation_rate_used = 0.625,
         .odd_child_policy_version = 61,
         .elite_policy_version = 67,
         .singleton_child_policy_version = 71,
@@ -311,6 +313,7 @@ static void assert_evidence_equal(
            right->byte_operator_policy_version);
     assert(left->crossover_operator == right->crossover_operator);
     assert(left->mutation_operator == right->mutation_operator);
+    assert(left->mutation_rate_used == right->mutation_rate_used);
     assert(left->odd_child_policy_version ==
            right->odd_child_policy_version);
     assert(left->elite_policy_version == right->elite_policy_version);
@@ -505,6 +508,7 @@ static void test_generation_zero_promotion_preserves_child_ownership(void)
            EVO_BYTE_OPERATOR_POLICY_VERSION);
     assert(evidence.crossover_operator == EVO_CROSSOVER_CONSUMER);
     assert(evidence.mutation_operator == EVO_MUTATION_CONSUMER);
+    assert(evidence.mutation_rate_used == fixture.config.mutation_rate);
     assert(evidence.odd_child_policy_version ==
            EVO_ODD_CHILD_POLICY_VERSION);
     assert(evidence.elite_count == 1);

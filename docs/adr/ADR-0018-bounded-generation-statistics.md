@@ -56,6 +56,10 @@ ADR-0022 advances the schema to version 3 in EVO 0.22.0 by appending bounded
 diversity value, metric provenance, pair count, and work evidence. The fitness
 aggregation and comparison fields remain unchanged.
 
+ADR-0028 advances the schema to version 4 in EVO 0.27.0 by appending the
+complete adaptive-mutation decision projection. The schema-3 prefix and all
+fitness/diversity arithmetic remain unchanged.
+
 ## Aggregation Policy Version 1
 
 Candidates are visited once in ascending population index. Invalid records are

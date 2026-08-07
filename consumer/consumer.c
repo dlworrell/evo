@@ -10,6 +10,8 @@ _Static_assert(EVO_SELECTION_POLICY_VERSION == UINT32_C(1),
                "unsupported EVO selection policy");
 _Static_assert(EVO_BYTE_OPERATOR_POLICY_VERSION == UINT32_C(1),
                "unsupported EVO byte-operator policy");
+_Static_assert(EVO_MUTATION_ADAPTATION_POLICY_VERSION == UINT32_C(1),
+               "unsupported EVO mutation-adaptation policy");
 
 typedef struct callback_state {
     size_t observer_calls;
@@ -53,6 +55,12 @@ static void observe_generation(
         statistics->diversity_work_units != 0 ||
         statistics->diversity != 0.0 ||
         statistics->diversity_uses_domain_distance ||
+        statistics->adaptive_mutation_policy_version != UINT32_C(0) ||
+        statistics->mutation_rate_prior != 0.0 ||
+        statistics->mutation_rate_effective != 0.0 ||
+        statistics->mutation_adaptation_reason !=
+            EVO_MUTATION_ADAPTATION_NOT_APPLICABLE ||
+        statistics->adaptive_mutation_enabled ||
         statistics->generation_index != 0 ||
         statistics->population_size != 1 ||
         statistics->valid_count != 1 ||
@@ -86,6 +94,12 @@ static bool request_stop(
         statistics->diversity_work_units != 0 ||
         statistics->diversity != 0.0 ||
         statistics->diversity_uses_domain_distance ||
+        statistics->adaptive_mutation_policy_version != UINT32_C(0) ||
+        statistics->mutation_rate_prior != 0.0 ||
+        statistics->mutation_rate_effective != 0.0 ||
+        statistics->mutation_adaptation_reason !=
+            EVO_MUTATION_ADAPTATION_NOT_APPLICABLE ||
+        statistics->adaptive_mutation_enabled ||
         statistics->generation_index != 0 ||
         statistics->population_size != 1 ||
         statistics->valid_count != 1 ||
@@ -144,6 +158,13 @@ int main(void)
         result.generation_statistics.diversity_work_units != 0 ||
         result.generation_statistics.diversity != 0.0 ||
         result.generation_statistics.diversity_uses_domain_distance ||
+        result.generation_statistics.adaptive_mutation_policy_version !=
+            UINT32_C(0) ||
+        result.generation_statistics.mutation_rate_prior != 0.0 ||
+        result.generation_statistics.mutation_rate_effective != 0.0 ||
+        result.generation_statistics.mutation_adaptation_reason !=
+            EVO_MUTATION_ADAPTATION_NOT_APPLICABLE ||
+        result.generation_statistics.adaptive_mutation_enabled ||
         result.generation_statistics.generation_index != 0 ||
         result.generation_statistics.population_size != 1 ||
         result.generation_statistics.valid_count != 1 ||

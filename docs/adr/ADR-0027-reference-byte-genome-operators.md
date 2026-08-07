@@ -91,7 +91,8 @@ index in `[0, n - 1]`, then one unbiased value in `[1, 255]`, and XORs exactly
 that byte with the nonzero value. The selected event therefore changes exactly
 one byte, including when `n == 1`, without writing outside the genome. The
 configured mutation rate remains the per-genome selection probability in this
-policy; adaptive intensity is separate roadmap work.
+policy. ADR-0028 later supplies a committed effective rate in EVO 0.27.0
+without changing byte-XOR's gate or bounded draws.
 
 ### Fixed RNG-consumption schedule
 
@@ -187,9 +188,9 @@ faster, and gives a compact fixed schedule without adding stored state.
 ### Mutate an independently selected bit
 
 Rejected for the initial reference policy because a nonzero byte mask exercises
-all byte bits while guaranteeing one changed byte with two bounded samples. Bit-
-level, integer, floating-point, permutation, and adaptive policies remain
-separate versioned decisions.
+all byte bits while guaranteeing one changed byte with two bounded samples.
+Bit-level, integer, floating-point, and permutation policies remain separate
+versioned decisions; ADR-0028 separately defines adaptive rate selection.
 
 ## Verification
 

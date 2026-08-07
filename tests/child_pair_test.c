@@ -199,6 +199,7 @@ static void assert_population_metadata_equal(
            right->byte_operator_policy_version);
     assert(left->crossover_operator == right->crossover_operator);
     assert(left->mutation_operator == right->mutation_operator);
+    assert(left->mutation_rate_used == right->mutation_rate_used);
     assert(left->odd_child_policy_version ==
            right->odd_child_policy_version);
     assert(left->elite_policy_version == right->elite_policy_version);
@@ -265,6 +266,7 @@ static evo_child_pair_evidence_t sentinel_evidence(void)
         .byte_operator_policy_version = 47,
         .crossover_operator = EVO_CROSSOVER_BYTE_TWO_POINT,
         .mutation_operator = EVO_MUTATION_BYTE_XOR,
+        .mutation_rate_used = 0.625,
         .complete = true,
     };
 }
@@ -290,6 +292,7 @@ static void assert_evidence_equal(
            right->byte_operator_policy_version);
     assert(left->crossover_operator == right->crossover_operator);
     assert(left->mutation_operator == right->mutation_operator);
+    assert(left->mutation_rate_used == right->mutation_rate_used);
     assert(left->complete == right->complete);
 }
 
@@ -338,6 +341,7 @@ static void assert_child_progress(const evo_population_t *children,
            EVO_BYTE_OPERATOR_POLICY_VERSION);
     assert(children->crossover_operator == EVO_CROSSOVER_CONSUMER);
     assert(children->mutation_operator == EVO_MUTATION_CONSUMER);
+    assert(children->mutation_rate_used == 0.5);
     assert(children->odd_child_policy_version == 0);
     assert(children->elite_policy_version == 0);
     assert(children->singleton_child_policy_version == 0);
@@ -639,6 +643,7 @@ static void test_fixed_pairs_replay_and_odd_tail(void)
            EVO_BYTE_OPERATOR_POLICY_VERSION);
     assert(first_pair.crossover_operator == EVO_CROSSOVER_CONSUMER);
     assert(first_pair.mutation_operator == EVO_MUTATION_CONSUMER);
+    assert(first_pair.mutation_rate_used == fixture.config.mutation_rate);
     assert(first_pair.complete);
     assert_child_progress(&first, 2, 7);
     assert_child_progress(&replay, 2, 7);

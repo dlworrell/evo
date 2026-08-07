@@ -1,13 +1,13 @@
 # EVO-001: Evolutionary Optimization Library Contract
 
 Status: Baseline
-Version: 0.26.0
+Version: 0.27.0
 Owner: EVO
 
 ## Scope Boundary
 
 This specification governs the reusable deterministic C17 evolutionary-search
-core implemented through version 0.26.0. It does not define C-project
+core implemented through version 0.27.0. It does not define C-project
 ingestion, Clang/LLVM analysis, structured source transformations, isolated
 candidate builds, baseline-versus-candidate measurement, optimized patches, or
 product-level replay artifacts.
@@ -73,6 +73,12 @@ ADR-0027 therefore records this change as not requiring a separate projection
 API while defining the selectors, parameters, boundaries or masks, affected
 byte ranges, RNG schedule, and provenance needed for human review.
 
+Version 0.27.0 adds no accelerator. Its canonical adaptive-mutation state is
+one explicit next rate plus one saturating committed-stagnation count. Public
+schema-4 statistics expose the corresponding ordered decision projection for
+human audit. ADR-0028 defines the projection and the later checkpoint fields
+required to resume it without hidden history.
+
 ## Public Interface
 
 The public API is declared in `include/catalyst/evo/evo.h`.
@@ -128,7 +134,9 @@ independent caller-owned `generation_stop_context`, followed by
 tolerance/patience, and diversity-floor stopping controls, then
 `elite_count_enabled` and `elite_count`, then selection-policy version 1's
 `selection_policy`, `rank_base_weight`, and `rank_step_weight`, then byte-
-operator policy version 1's `crossover_operator` and `mutation_operator`.
+operator policy version 1's `crossover_operator` and `mutation_operator`, then
+mutation-adaptation policy version 1's enable flag, finite minimum, maximum,
+step, inclusive diversity threshold, and reset-on-improvement flag.
 
 `max_genome_bytes` is trusted caller policy for the largest individual genome
 allocation accepted by `evo_run`. It avoids a platform-specific hard-coded
@@ -284,6 +292,39 @@ Raw source text may not be passed through byte crossover or mutation as a
 substitute for EVO-002's structured transformation recipes and AST-aware
 catalogue.
 
+### Adaptive-mutation policy
+
+`EVO_MUTATION_ADAPTATION_POLICY_VERSION` is `1`. A disabled policy requires
+the complete appended adaptation payload to be zero and preserves the
+configured static `mutation_rate` exactly. An enabled policy requires finite
+minimum, maximum, step, and diversity threshold values; bounds and threshold
+lie in `[0, 1]`, minimum is no greater than maximum, and step lies in `(0, 1]`.
+
+After generation zero commits, EVO clamps the requested base rate into the
+configured interval. Diversity is low at the inclusive boundary
+`diversity <= threshold`; low generation-zero diversity raises the clamped
+rate by one step up to the maximum. After each later committed child, a strict
+global-best improvement resets the consecutive stagnant count. With reset
+enabled it selects the minimum rate. Without reset it holds the rate unless
+diversity is low, in which case it raises one step. A non-improving child
+increments the count, saturating at `SIZE_MAX`, and raises one step whether or
+not diversity is low.
+
+Adaptation occurs only after evaluation and atomic promotion and before stop
+classification or application callbacks. It consumes no RNG, allocation,
+clock, process, address, or new callback input. The effective rate is copied
+unchanged into the next transition configuration, where consumer and reference
+mutation share it as their probability/intensity policy. Pair, singleton,
+elite, child-evaluation, generation-advancement, and bounded-run evidence all
+carry the rate actually used.
+
+Generation-zero-only execution and one-member transitions containing only a
+compatibility or explicit elite do not validate unused mutation/adaptation
+fields and publish a zero not-applicable projection. Every other positive-
+limit run publishes policy version 1, including a disabled static run. ADR-0028
+defines the reason enum, exact clamp semantics, public schema-4 projection,
+replay contract, and checkpoint requirements.
+
 ### Diversity policy
 
 `EVO_DIVERSITY_POLICY_VERSION` and
@@ -334,7 +375,7 @@ crosses the threshold. A count greater than or equal to
 `stagnation_patience` selects stagnation.
 
 Stopping reads only the independently owned global winner and the latest
-committed schema-3 statistics. It allocates no storage, consumes no RNG,
+committed schema-4 statistics. It allocates no storage, consumes no RNG,
 invokes no new callback, and uses no wall clock, process identity, allocation
 address, or unrecorded entropy. Patience counts committed child generations,
 while `generation_limit` remains the hard upper bound on those transitions.
@@ -682,10 +723,11 @@ The mutation lifecycle is:
 
 The selected byte-XOR event changes exactly one in-bounds byte, including for a
 one-byte genome. The operator performs no allocation and does not own genome
-storage. It does not define adaptive intensity or typed bit, integer,
+storage. It does not adapt the rate locally or define typed bit, integer,
 floating-point, or permutation mutation. Version 0.11.0 defines child-indexed
-mutation stream derivation, and version 0.16.0 invokes the complete composition
-from `evo_run`.
+mutation stream derivation, version 0.16.0 invokes the complete composition
+from `evo_run`, and version 0.27.0 supplies the committed effective rate before
+this helper is called.
 
 ### Private child-population ownership
 
@@ -992,7 +1034,8 @@ The bounded-run lifecycle is:
 2. For a positive limit, EVO validates the child slab budget and every
    transition policy before allocation or callback dispatch. Populations above
    one require valid configured selection fields and finite crossover and
-   mutation rates in `[0, 1]`. Every positive-limit run requires defined
+   mutation rates in `[0, 1]` plus canonical applicable adaptation policy.
+   Every positive-limit run requires defined
    crossover and mutation selectors. A one-member compatibility population or
    explicit one-elite population uses elite cloning directly and does not
    validate unused operator rates. A one-member explicit-zero population uses
@@ -1007,19 +1050,22 @@ The bounded-run lifecycle is:
 5. EVO atomically promotes the evaluated child before changing the result.
    Promotion increments the completed-transition count and releases the former
    parent.
-6. Shared comparison policy version 1 lets a later candidate replace the
+6. EVO classifies strict global-best improvement and commits the next adaptive
+   mutation rate plus its schema-4 audit projection. The rate that produced the
+   child remains explicit as `mutation_rate_prior`.
+7. Shared comparison policy version 1 lets a later candidate replace the
    existing result bytes and complete fitness only when its `fitness.total` is
    strictly greater. Exact cross-generation ties retain the earlier winner.
-7. A promoted all-invalid child terminates the loop successfully and retains
+8. A promoted all-invalid child terminates the loop successfully and retains
    the earlier valid winner. Its promotion is included in
    `generations_completed`.
-8. After each commit, enabled target, patience, and diversity-floor policy
+9. After each commit, enabled target, patience, and diversity-floor policy
    classifies only the committed winner and statistics. Natural reasons use
    the fixed all-invalid, converged, stagnated, then generation-limit order.
-9. After any still-nonterminal committed generation, an optional application
+10. After any still-nonterminal committed generation, an optional application
    stop decision may terminate successfully while preserving that exact
    committed winner, statistics, and completed-transition count.
-10. Any other failure destroys every current internal owner and the result
+11. Any other failure destroys every current internal owner and the result
    allocation, returning the inactive result to its complete zero state. No
    partial public progress is retained.
 
@@ -1043,8 +1089,11 @@ and generation-advancement policies advance to version 5 for the same
 provenance. Version 0.26.0 advances it to version 8 and records byte-operator
 policy version 1 plus the configured crossover and mutation enums. Child-
 evaluation and generation-advancement policies advance to version 6 for the
-same provenance. The bounded run does not define adaptive mutation, old-slab
-recycling, checkpointing, parallelism, or secure erasure.
+same provenance. Version 0.27.0 advances bounded-run policy to version 9 and
+child-evaluation and generation-advancement policies to version 7. They record
+the effective mutation rate through production, evaluation, promotion, and
+final run evidence. The bounded run does not define old-slab recycling,
+checkpointing, parallelism, or secure erasure.
 
 ### Result lifecycle
 
@@ -1130,12 +1179,12 @@ earlier reason applies.
 
 ### Generation statistics
 
-`EVO_GENERATION_STATISTICS_VERSION` is `3`. A successful active result retains
+`EVO_GENERATION_STATISTICS_VERSION` is `4`. A successful active result retains
 one `evo_generation_statistics_t` for the most recently committed generation:
 
 | Field | Meaning |
 |---|---|
-| `version` | Statistics schema version. Version 3 identifies the 0.22.0 layout; zero exists only in an empty result. |
+| `version` | Statistics schema version. Version 4 identifies the 0.27.0 layout; zero exists only in an empty result. |
 | `generation_index` | Zero for the initialized baseline; otherwise the promoted child generation. |
 | `population_size` | Exact number of candidates in the committed population. |
 | `valid_count` | Candidates admitted by `is_valid` and evaluated. |
@@ -1151,6 +1200,13 @@ one `evo_generation_statistics_t` for the most recently committed generation:
 | `diversity_work_units` | Byte comparisons for the built-in metric, or domain callback invocations. |
 | `diversity` | Fixed-order arithmetic mean normalized to `[0, 1]`; zero for fewer than two valid candidates. |
 | `diversity_uses_domain_distance` | False for built-in byte distance and true for a caller domain callback. |
+| `adaptive_mutation_policy_version` | Policy version 1 for an applicable positive-limit run; zero when mutation policy is not applicable. |
+| `mutation_rate_prior` | Requested base rate at generation zero; otherwise the exact effective rate used to produce this generation. |
+| `mutation_rate_effective` | Rate selected after this commit for a possible next transition. |
+| `adaptive_mutation_min_rate`, `adaptive_mutation_max_rate`, `adaptive_mutation_step`, `adaptive_mutation_diversity_threshold` | Complete configured numeric policy projection. |
+| `adaptive_mutation_stagnant_generations` | Saturating count of consecutive committed child generations without strict global-best improvement. |
+| `mutation_adaptation_reason` | Explainable not-applicable, disabled, initial, diversity, stagnation, reset, or hold decision. |
+| adaptation booleans | Enabled/reset policy plus low-diversity, strict-improvement, and min/max clamp facts for this commit. |
 
 Aggregation policy version 1 traverses candidates in ascending index. Invalid
 records contribute only to `invalid_count`; their fitness payloads are never
@@ -1176,6 +1232,12 @@ compatible with schema version 1 for every pre-existing field.
 Schema version 3 preserves the complete schema-2 prefix and appends diversity
 evidence governed by ADR-0022. Statistics copy the metric result already
 committed by population evaluation and invoke no consumer callback.
+
+Schema version 4 preserves the complete schema-3 prefix and appends the
+adaptive-mutation projection governed by ADR-0028. Every record is constant-
+space, RNG-neutral, and sufficient to explain the next-rate decision. The
+observer sequence provides the ordered human-readable trace; the owning result
+retains only the latest record.
 
 ### Generation observer
 
@@ -1427,7 +1489,17 @@ symbols, statistics schema, allocation classes, and resource budgets do not
 change. The implementation adds validator symbols declared only by
 non-installed headers.
 
-## Current 0.26.0 Conformance Boundary
+Version 0.27.0 adds `evo_mutation_adaptation_reason_t` and
+`EVO_MUTATION_ADAPTATION_POLICY_VERSION`; appends six adaptive-policy fields
+after the complete pre-0.27.0 `evo_config_t` prefix; and appends the schema-4
+adaptation projection after the complete pre-0.27.0 statistics prefix.
+Existing member offsets and zero-initialized static-rate behavior are
+preserved, but configuration, statistics, and result sizes or array strides
+may change, so consumers must rebuild. Supported public function signatures
+and installed function symbols, allocation classes, resource budgets, and RNG
+domains do not change.
+
+## Current 0.27.0 Conformance Boundary
 
 The current implementation exposes generation-zero compatibility plus bounded
 multi-generation execution:
@@ -1521,8 +1593,8 @@ multi-generation execution:
   statistics over valid records, with the terminal record retained in constant
   result space;
 - invalid fitness payloads are excluded from statistics, finite component sums
-  are checked, schema version 3 records comparison and bounded diversity
-  evidence, and
+  are checked, schema version 4 records comparison, bounded diversity, and
+  adaptive-mutation audit evidence, and
   statistics never change stable-best or global-winner selection;
 - every unordered hard-valid pair is measured in fixed lexicographic order by
   built-in byte metric version 1 or a versioned normalized domain callback;
@@ -1541,13 +1613,20 @@ multi-generation execution:
 - stopping equality boundaries, significant-improvement reset, generation
   counts, and the all-invalid/converged/stagnated/limit/application precedence
   are fixed by policy version 1 without time, addresses, RNG, or allocation;
+- zero-initialized adaptation preserves static-rate replay, while enabled
+  policy clamps and steps within finite bounds from committed strict-
+  improvement and inclusive diversity evidence only;
+- every applicable generation exposes prior/effective rates, policy inputs,
+  saturating stagnant count, clamp/reset facts, and an explainable reason;
+- the effective rate is propagated through consumer and reference mutation,
+  child production, evaluation, promotion, bounded-run evidence, and replay;
 - observer delivery follows winner update and final stop classification, precedes
   the next generation, allocates no history, and emits nothing for provisional
   or failed generations;
 - direct bounded arrays remain exact byte-operator authority, with no
   compressed, cached, indexed, or probabilistic structure requiring an ADR-0026
   audit projection; and
-- adaptive mutation, checkpointing, buffer recycling, asynchronous or
+- checkpointing, buffer recycling, asynchronous or
   concurrent callbacks, and parallelism are not implemented.
 
 Consumers may treat `EVO_SUCCESS` as evidence of a valid global winner and
@@ -1557,7 +1636,7 @@ count. They may inspect `generation_statistics` for the final committed
 population, which is distinct from the global winner on all-invalid
 termination. When configured, they may copy each callback-lifetime observation
 into their own bounded storage. They may also configure deterministic stopping
-over committed snapshots. Version 0.26.0 defines no statistics history,
+over committed snapshots. Version 0.27.0 defines no statistics history,
 asynchronous cancellation, or retained callback delivery.
 
 ## Verification
@@ -1608,6 +1687,15 @@ deterministic byte-XOR behavior. It covers one-byte genomes, every byte
 position, a guaranteed nonzero mask, exactly one changed byte, guard bytes,
 callback bypass, golden output, exact post-operation RNG state, rejection
 preservation, and replay.
+
+The adaptive-mutation test locks dyadic exact traces for initial min/max clamp,
+inclusive diversity equality, stagnation, low diversity, improvement reset,
+improvement hold, bounded increases, and disabled static behavior. It also
+proves malformed and alias rejection are atomic; observer projections are
+ordered and complete; selected consumer callbacks receive the committed
+effective rate unchanged; reference byte mutation bypasses the callback;
+replay is exact; and zero-limit or all-elite one-member runs ignore genuinely
+unused transition policy.
 
 The child-population test proves completed-parent validation, separate budget
 enforcement, zero-initialized distinct storage, parent preservation, active-
@@ -1742,6 +1830,7 @@ public failure after child-slab or child-evaluation allocation failure.
 - `docs/adr/ADR-0025-stable-rank-based-parent-selection.md`
 - `docs/adr/ADR-0026-human-readable-abstraction-and-audit-projection.md`
 - `docs/adr/ADR-0027-reference-byte-genome-operators.md`
+- `docs/adr/ADR-0028-evidence-driven-adaptive-mutation.md`
 - `docs/architecture.md`
 - `docs/algorithms.md`
 - `docs/benchmarks.md`
@@ -1774,4 +1863,5 @@ public failure after child-slab or child-evaluation allocation failure.
 - `https://github.com/dlworrell/evo/issues/46`
 - `https://github.com/dlworrell/evo/issues/47`
 - `https://github.com/dlworrell/evo/issues/48`
+- `https://github.com/dlworrell/evo/issues/49`
 - `https://github.com/dlworrell/AEMS/issues/18`

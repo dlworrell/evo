@@ -52,6 +52,10 @@ preserves the callback/no-op behavior and exact RNG schedule above. Explicit
 byte-XOR mode adds two bounded draws after a selected one-word gate, changes
 exactly one byte with a nonzero mask, and bypasses the callback.
 
+ADR-0028 implements adaptive scheduling in EVO 0.27.0 without changing this
+dispatcher. Bounded orchestration supplies one committed effective rate, and
+this operation uses and forwards that scalar unchanged.
+
 ## Consequences
 
 - Mutation decisions are fixed-vector testable and replay stable.
@@ -64,9 +68,8 @@ exactly one byte with a nonzero mask, and bypasses the callback.
 - Precondition failures preserve genome bytes and RNG state.
 - Public layouts, installed symbols, RNG algorithm version 1, and `evo_run`
   behavior remain unchanged.
-- Other built-in mutation helpers, adaptive schedules, child-population
-  ownership, operator sequencing, and the first generation transition remain
-  separate milestones.
+- Other typed mutation helpers, child-population ownership, operator
+  sequencing, and the first generation transition remain separate milestones.
 
 ## Alternatives considered
 

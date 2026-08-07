@@ -423,6 +423,8 @@ evo_status_t evo_elite_population_complete(
         (children->byte_operator_policy_version == 0 &&
          (children->crossover_operator != EVO_CROSSOVER_CONSUMER ||
           children->mutation_operator != EVO_MUTATION_CONSUMER)) ||
+        (children->byte_operator_policy_version == 0 &&
+         children->mutation_rate_used != 0.0) ||
         children->odd_child_policy_version != 0 ||
         children->elite_policy_version != 0 ||
         children->singleton_child_policy_version !=
@@ -451,7 +453,8 @@ evo_status_t evo_elite_population_complete(
           children->selection_policy != EVO_SELECTION_TOURNAMENT ||
           children->byte_operator_policy_version != 0 ||
           children->crossover_operator != EVO_CROSSOVER_CONSUMER ||
-          children->mutation_operator != EVO_MUTATION_CONSUMER)) ||
+          children->mutation_operator != EVO_MUTATION_CONSUMER ||
+          children->mutation_rate_used != 0.0)) ||
         (offspring_count != 0 &&
          (children->source_generation != source_generation ||
           children->operator_seed_schedule_version !=
@@ -462,7 +465,8 @@ evo_status_t evo_elite_population_complete(
           children->byte_operator_policy_version !=
               EVO_BYTE_OPERATOR_POLICY_VERSION ||
           children->crossover_operator != config->crossover_operator ||
-          children->mutation_operator != config->mutation_operator))) {
+          children->mutation_operator != config->mutation_operator ||
+          children->mutation_rate_used != config->mutation_rate))) {
         return EVO_ERROR_STATE;
     }
 
@@ -494,6 +498,7 @@ evo_status_t evo_elite_population_complete(
         EVO_BYTE_OPERATOR_POLICY_VERSION;
     children->crossover_operator = config->crossover_operator;
     children->mutation_operator = config->mutation_operator;
+    children->mutation_rate_used = config->mutation_rate;
     children->odd_child_policy_version =
         !config->elite_count_enabled &&
                 config->population_size % 2 != 0
@@ -516,6 +521,7 @@ evo_status_t evo_elite_population_complete(
         EVO_BYTE_OPERATOR_POLICY_VERSION;
     candidate.crossover_operator = config->crossover_operator;
     candidate.mutation_operator = config->mutation_operator;
+    candidate.mutation_rate_used = config->mutation_rate;
     candidate.odd_child_policy_version =
         children->odd_child_policy_version;
     candidate.elite_policy_version = EVO_ELITE_POLICY_VERSION;

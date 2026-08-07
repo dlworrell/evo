@@ -10,7 +10,7 @@ extern "C" {
 #endif
 
 #define EVO_VERSION_MAJOR 0
-#define EVO_VERSION_MINOR 26
+#define EVO_VERSION_MINOR 27
 #define EVO_VERSION_PATCH 0
 
 typedef enum evo_status {
@@ -56,6 +56,22 @@ typedef enum evo_mutation_operator {
     EVO_MUTATION_BYTE_XOR = 1
 } evo_mutation_operator_t;
 
+/*
+ * Explainable result of one committed-generation adaptive-mutation decision.
+ * The zero value is reserved for runs where transition mutation cannot occur
+ * and its policy is deliberately not inspected.
+ */
+typedef enum evo_mutation_adaptation_reason {
+    EVO_MUTATION_ADAPTATION_NOT_APPLICABLE = 0,
+    EVO_MUTATION_ADAPTATION_DISABLED = 1,
+    EVO_MUTATION_ADAPTATION_INITIAL = 2,
+    EVO_MUTATION_ADAPTATION_LOW_DIVERSITY = 3,
+    EVO_MUTATION_ADAPTATION_STAGNATION = 4,
+    EVO_MUTATION_ADAPTATION_STAGNATION_LOW_DIVERSITY = 5,
+    EVO_MUTATION_ADAPTATION_IMPROVEMENT_RESET = 6,
+    EVO_MUTATION_ADAPTATION_IMPROVEMENT_HOLD = 7
+} evo_mutation_adaptation_reason_t;
+
 #define EVO_FITNESS_COMPARISON_POLICY_VERSION UINT32_C(1)
 #define EVO_DIVERSITY_POLICY_VERSION UINT32_C(1)
 #define EVO_BYTE_DIVERSITY_METRIC_VERSION UINT32_C(1)
@@ -63,6 +79,7 @@ typedef enum evo_mutation_operator {
 #define EVO_ELITE_POLICY_VERSION UINT32_C(1)
 #define EVO_SELECTION_POLICY_VERSION UINT32_C(1)
 #define EVO_BYTE_OPERATOR_POLICY_VERSION UINT32_C(1)
+#define EVO_MUTATION_ADAPTATION_POLICY_VERSION UINT32_C(1)
 
 /*
  * Fitness components are caller-owned evidence. constraint_penalty is a
@@ -83,15 +100,15 @@ typedef struct evo_fitness {
     double total;
 } evo_fitness_t;
 
-#define EVO_GENERATION_STATISTICS_VERSION UINT32_C(3)
+#define EVO_GENERATION_STATISTICS_VERSION UINT32_C(4)
 
 /*
  * Constant-space evidence for one committed generation. fitness_sums is the
  * component-wise sum of valid evaluated candidates in ascending population
  * index. Invalid fitness payloads are excluded. has_best is false, best_index
  * is zero, and best_fitness is zero when valid_count is zero. Successful
- * schema-3 records identify the comparison policy plus the deterministic
- * diversity policy and metric. Diversity is the arithmetic mean of normalized
+ * schema-4 records identify the comparison policy plus deterministic
+ * diversity and adaptive-mutation policy. Diversity is the arithmetic mean of normalized
  * distances over all unordered pairs of hard-valid candidates in
  * lexicographic index order. Zero or one valid candidate has diversity zero
  * and no pair work.
@@ -113,6 +130,27 @@ typedef struct evo_generation_statistics {
     size_t diversity_work_units;
     double diversity;
     bool diversity_uses_domain_distance;
+    /*
+     * Schema-4 adaptive-mutation audit projection. mutation_rate_prior is the
+     * requested base rate for generation zero and the rate used to produce a
+     * later committed generation. mutation_rate_effective is the rate selected
+     * after that commit for a possible next transition.
+     */
+    uint32_t adaptive_mutation_policy_version;
+    double mutation_rate_prior;
+    double mutation_rate_effective;
+    double adaptive_mutation_min_rate;
+    double adaptive_mutation_max_rate;
+    double adaptive_mutation_step;
+    double adaptive_mutation_diversity_threshold;
+    size_t adaptive_mutation_stagnant_generations;
+    evo_mutation_adaptation_reason_t mutation_adaptation_reason;
+    bool adaptive_mutation_enabled;
+    bool adaptive_mutation_low_diversity;
+    bool adaptive_mutation_global_best_improved;
+    bool adaptive_mutation_clamped_to_min;
+    bool adaptive_mutation_clamped_to_max;
+    bool adaptive_mutation_reset_on_improvement;
 } evo_generation_statistics_t;
 
 #define EVO_GENERATION_RESULT_VIEW_VERSION UINT32_C(1)
@@ -278,6 +316,22 @@ typedef struct evo_config {
      */
     evo_crossover_operator_t crossover_operator;
     evo_mutation_operator_t mutation_operator;
+    /*
+     * Disabled-by-default deterministic mutation-rate adaptation. When
+     * enabled, finite bounds and threshold lie in [0, 1], min <= max, and the
+     * finite step is positive. The requested mutation_rate is clamped into the
+     * configured interval after generation zero commits. Low diversity uses an
+     * inclusive threshold. A strict global-best improvement resets the next
+     * rate to the minimum when requested; otherwise low diversity increases
+     * the rate and a high-diversity improvement holds it. Non-improvement
+     * always increases the rate by one bounded step.
+     */
+    bool adaptive_mutation_enabled;
+    double adaptive_mutation_min_rate;
+    double adaptive_mutation_max_rate;
+    double adaptive_mutation_step;
+    double adaptive_mutation_diversity_threshold;
+    bool adaptive_mutation_reset_on_improvement;
 } evo_config_t;
 
 typedef struct evo_result {
@@ -330,6 +384,10 @@ typedef struct evo_result {
  * Before any run callback, EVO checks max_diversity_work against the
  * all-valid population. Each completed generation records deterministic
  * diversity evidence without consuming operator RNG or changing selection.
+ * For positive-limit runs, schema-4 statistics also expose the complete
+ * adaptive-mutation decision that follows each commit. The decision consumes
+ * no RNG. Its effective rate is passed unchanged to both consumer and
+ * reference mutation dispatch in the next attempted transition.
  *
  * Optional fitness-target, patience, and diversity-floor stopping is disabled
  * by the zero-initialized configuration. Enabled policies inspect only the

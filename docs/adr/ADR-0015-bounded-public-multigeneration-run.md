@@ -84,6 +84,12 @@ callback and RNG behavior; explicit byte modes interpret the same crossover
 and mutation streams. Child-evaluation and generation-advancement policies
 advance to version 6 so both configured operator identities survive completion.
 
+ADR-0028 advances bounded-run policy to version 9 in EVO 0.27.0. The run
+initializes adaptation after generation zero commits, uses the effective rate
+for the next attempted transition, and commits the next rate plus schema-4
+projection after promotion and strict-improvement resolution but before stop
+classification and application callbacks.
+
 ## Consequences
 
 - Public `EVO_SUCCESS` can now represent zero or more completed transitions;

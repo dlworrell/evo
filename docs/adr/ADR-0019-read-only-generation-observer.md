@@ -39,8 +39,10 @@ For each event, EVO constructs two independent stack snapshots. The result
 view contains its schema version, a bounded `const void *` global-best genome
 view, the exact byte bound, complete global-best fitness, completed-generation
 count, run seed, and the stop classification applicable at that generation.
-The statistics snapshot is the complete schema-version-1 record for the
-committed population.
+The statistics snapshot is the complete current schema record for the
+committed population. ADR-0028 advances that record to schema 4 in EVO 0.27.0;
+observer delivery in committed generation order is the human-readable
+adaptive-decision trace.
 
 The snapshot objects and the genome view are valid only until the callback
 returns. The observer must not retain their addresses, cast away `const`, free

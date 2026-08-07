@@ -50,6 +50,7 @@ static bool produced_child_ready_for_evaluation(
             EVO_BYTE_OPERATOR_POLICY_VERSION ||
         children->crossover_operator != config->crossover_operator ||
         children->mutation_operator != config->mutation_operator ||
+        children->mutation_rate_used != config->mutation_rate ||
         children->fitness_comparison_policy_version != 0 ||
         children->diversity_policy_version != 0 ||
         children->diversity_metric_version != 0 ||
@@ -154,6 +155,7 @@ evo_status_t evo_child_population_evaluate(
         children->byte_operator_policy_version;
     candidate.crossover_operator = children->crossover_operator;
     candidate.mutation_operator = children->mutation_operator;
+    candidate.mutation_rate_used = children->mutation_rate_used;
     candidate.odd_child_policy_version =
         children->odd_child_policy_version;
     candidate.elite_policy_version = children->elite_policy_version;

@@ -1,4 +1,5 @@
 #include "catalyst/evo/evo.h"
+#include "internal/adaptive_mutation.h"
 #include "internal/bounded_run.h"
 #include "internal/observer.h"
 #include "internal/population_storage.h"
@@ -60,6 +61,7 @@ static evo_status_t transfer_best_candidate(
 evo_status_t evo_run(const evo_problem_t *problem, const evo_config_t *config, void *context, evo_result_t *result)
 {
     evo_generation_statistics_t generation_statistics = {0};
+    evo_adaptive_mutation_state_t adaptive_mutation_state = {0};
     evo_bounded_run_evidence_t run_evidence = {0};
     evo_population_t population = {0};
     evo_status_t status = EVO_SUCCESS;
@@ -112,6 +114,17 @@ evo_status_t evo_run(const evo_problem_t *problem, const evo_config_t *config, v
         evo_population_destroy(&population);
         *result = (evo_result_t){0};
         return status;
+    }
+    if (evo_adaptive_mutation_is_applicable(config)) {
+        status = evo_adaptive_mutation_initialize(
+            config,
+            &generation_statistics,
+            &adaptive_mutation_state);
+        if (status != EVO_SUCCESS) {
+            evo_population_destroy(&population);
+            evo_result_destroy(result);
+            return EVO_ERROR_STATE;
+        }
     }
     result->generation_statistics = generation_statistics;
 
