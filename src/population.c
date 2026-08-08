@@ -3,6 +3,7 @@
 #include "internal/bounded_run.h"
 #include "internal/checkpoint.h"
 #include "internal/observer.h"
+#include "internal/population_recycling.h"
 #include "internal/population_storage.h"
 #include "internal/result_storage.h"
 #include "internal/secure_erasure.h"
@@ -216,6 +217,9 @@ evo_status_t evo_run(const evo_problem_t *problem, const evo_config_t *config, v
                                                          result,
                                                          termination_reason);
     run_state.termination_reason = termination_reason;
+    evo_population_storage_registry_notify(
+        config,
+        &run_state.population_storage_registry);
     status = evo_checkpoint_emit(problem,
                                  config,
                                  &population,

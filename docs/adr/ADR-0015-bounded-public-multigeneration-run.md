@@ -97,6 +97,12 @@ same remaining-generation loop. The restored generation is not delivered to
 callbacks again, and generation-indexed RNG domains retain their original
 source generation.
 
+ADR-0031 advances bounded-run policy to version 11 and private run-state schema
+to version 2 in EVO 0.30.0. The zero-valued path retains the allocation and
+release sequence above. Enabled execution alternates two fixed run-local owners
+and resets the former active owner before reuse without changing callbacks,
+RNG, committed evidence, stopping, or results.
+
 ## Consequences
 
 - Public `EVO_SUCCESS` can now represent zero or more completed transitions;
@@ -113,8 +119,8 @@ source generation.
 - At the 0.16.0 boundary, convergence, stagnation, application stop or observer
   callbacks, a public termination reason, generalized elitism, adaptive
   mutation, population recycling, checkpointing, parallelism, and secure
-  erasure remained deferred. Later ADRs through ADR-0030 resolve those items
-  except population recycling and parallelism, which remain separate.
+  erasure remained deferred. Later ADRs through ADR-0031 resolve those items
+  except parallelism, which remains separate.
 
 ## Alternatives considered
 

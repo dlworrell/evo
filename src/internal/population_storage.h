@@ -12,12 +12,16 @@ typedef struct evo_candidate_evaluation {
 typedef struct evo_population {
     unsigned char *genomes;
     evo_candidate_evaluation_t *evaluations;
+    evo_candidate_evaluation_t *reusable_evaluations;
     size_t population_size;
     size_t genome_size;
     size_t storage_bytes;
     size_t evaluation_bytes;
+    size_t reusable_evaluation_bytes;
     uint32_t secure_erasure_policy_version;
     evo_secure_erasure_backend_t secure_erasure_backend;
+    uint32_t population_recycling_policy_version;
+    uint64_t storage_owner_identity;
     size_t valid_count;
     size_t best_index;
     size_t produced_count;
@@ -48,6 +52,8 @@ typedef struct evo_population {
     bool elite_count_explicit;
     bool diversity_uses_domain_distance;
     bool secure_erasure_enabled;
+    bool population_recycling_enabled;
+    bool evaluations_recycled;
 } evo_population_t;
 
 /*
@@ -75,6 +81,17 @@ evo_status_t evo_child_population_create(
 
 /* Validate the secure-erasure audit metadata against one configuration. */
 bool evo_population_secure_erasure_is_valid(
+    const evo_config_t *config,
+    const evo_population_t *population);
+
+/* Validate active or detached-reserve recycling ownership metadata. */
+bool evo_population_recycling_completed_is_valid(
+    const evo_config_t *config,
+    const evo_population_t *population);
+bool evo_population_recycling_initial_is_valid(
+    const evo_config_t *config,
+    const evo_population_t *population);
+bool evo_population_recycling_child_is_valid(
     const evo_config_t *config,
     const evo_population_t *population);
 

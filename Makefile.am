@@ -16,6 +16,7 @@ lib_LTLIBRARIES = libcatalyst_evo.la
 libcatalyst_evo_la_SOURCES = \
 	src/population.c \
 	src/population_storage.c \
+	src/population_recycling.c \
 	src/population_initialization.c \
 	src/population_evaluation.c \
 	src/selection.c \
@@ -45,6 +46,7 @@ catalystevoincludedir = $(includedir)/catalyst/evo
 catalystevoinclude_HEADERS = include/catalyst/evo/evo.h
 noinst_HEADERS = \
 	src/internal/population_storage.h \
+	src/internal/population_recycling.h \
 	src/internal/rng.h \
 	src/internal/selection.h \
 	src/internal/crossover.h \
@@ -79,6 +81,7 @@ check_PROGRAMS = \
 	tests/evo_smoke_test \
 	tests/evo_lifecycle_test \
 	tests/evo_population_storage_test \
+	tests/evo_population_recycling_test \
 	tests/evo_rng_test \
 	tests/evo_population_initialization_test \
 	tests/evo_population_evaluation_test \
@@ -117,6 +120,10 @@ tests_evo_lifecycle_test_LDADD = libcatalyst_evo.la -lm
 tests_evo_population_storage_test_SOURCES = \
 	tests/population_storage_test.c
 tests_evo_population_storage_test_LDADD = libcatalyst_evo.la -lm
+
+tests_evo_population_recycling_test_SOURCES = \
+	tests/population_recycling_test.c
+tests_evo_population_recycling_test_LDADD = libcatalyst_evo.la -lm
 
 tests_evo_rng_test_SOURCES = tests/rng_test.c
 tests_evo_rng_test_LDADD = libcatalyst_evo.la -lm

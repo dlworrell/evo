@@ -34,6 +34,7 @@ The governing product records are:
 - `docs/adr/ADR-0028-evidence-driven-adaptive-mutation.md`
 - `docs/adr/ADR-0029-opt-in-secure-erasure-lifecycle.md`
 - `docs/adr/ADR-0030-versioned-checkpoint-and-deterministic-resume.md`
+- `docs/adr/ADR-0031-deterministic-population-storage-recycling.md`
 - `docs/specs/EVO-001-library-contract.md`
 - `docs/specs/EVO-002-source-optimizer-contract.md`
 - `docs/roadmap.md`
@@ -88,7 +89,12 @@ authority because an allocation-free ordered view exposes configuration,
 generation, population, RNG/substream, statistics, adaptation, ownership, and
 resume identities, with explicit per-candidate projection.
 The retained EVO-HRA-002 audit reconciles that projection against the binary
-sections and exact resume authority.
+sections and exact resume authority. ADR-0031 assesses 0.30.0 population-
+storage recycling: exact pointer/count owners remain authority while a fixed,
+address-free registry projects both stable slot identities, lifecycle roles,
+capacities, provenance, handoffs, and reset history. The retained EVO-HRA-003
+audit proves reference-path equivalence and registry reconciliation through
+checkpoint/resume.
 
 ## Roadmap Scope
 
@@ -102,6 +108,7 @@ The core track includes:
 - Diversity measurement and stagnation handling
 - Constraint and penalty handling
 - Checkpointing and reproducible random-number generation
+- Opt-in deterministic population-storage recycling
 - Parallel fitness evaluation
 - Benchmarking and engineering evidence
 
@@ -135,7 +142,7 @@ repository.
 - `docs/` — architecture, theory, algorithms, and evidence guidance
 
 The source-optimizer implementation directories will be introduced only by
-their dependency-ordered roadmap issues. Their absence in version 0.29.0 is an
+their dependency-ordered roadmap issues. Their absence in version 0.30.0 is an
 explicit current boundary, not an implicit feature claim.
 
 ## Authoritative Native Builds
@@ -175,7 +182,7 @@ declared Clang/LLVM and GNU profiles.
 
 ## Status
 
-**Current implementation boundary:** EVO 0.29.0 implements the deterministic
+**Current implementation boundary:** EVO 0.30.0 implements the deterministic
 evolutionary-search core. It does not yet ingest a C project, build a Clang AST
 or LLVM IR model, transform source, compile evolved candidates, or emit an
 optimized source patch. Those product boundaries are tracked in the 1.0
@@ -318,6 +325,19 @@ allocates only after validation, never replays callbacks for the restored
 generation, and reproduces the uninterrupted suffix. The ordered checkpoint
 view and per-candidate accessor are the mandatory human-readable audit
 projection over the binary representation.
+
+EVO 0.30.0 adds disabled-by-default deterministic population-storage
+recycling. Enabled positive-length runs retain exactly two run-local logical
+slots, alternate their active and reusable roles, and reset the complete former
+active ranges before reuse. Stable owner identities are never addresses. The
+allocation-free population-storage registry projects the complete role,
+capacity, provenance, handoff, reset, and erasure history after every committed
+generation, while exact private pointer/count owners remain authority.
+Disabled execution preserves the 0.29.0 allocation path and operator replay;
+differential tests prove identical genomes, fitness, statistics, callback
+traces, stopping, and results. Checkpoint format 2 persists and validates the
+logical registry, and resumed execution reconstructs local owners without
+serializing allocator state.
 
 Version 0.3.0 added the independently tested private population-storage
 foundation: checked `population_size * genome_size` arithmetic, a
@@ -574,7 +594,8 @@ operator-stream, pair-production, singleton, elite-preservation, child-
 evaluation, atomic-advancement, and adaptive-mutation boundaries remain
 independently verified beneath the bounded public loop. Versioned checkpoint
 capture/resume is now composed at committed-generation boundaries. Population
-recycling and parallelism remain later boundaries.
+recycling is now composed at the same boundary; parallelism remains a later
+boundary.
 
 ## Project Zero
 

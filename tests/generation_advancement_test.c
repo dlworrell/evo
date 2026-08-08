@@ -5,6 +5,7 @@
 #include "internal/child_single.h"
 #include "internal/child_tail.h"
 #include "internal/elite.h"
+#include "internal/population_recycling.h"
 
 #include <assert.h>
 
@@ -143,14 +144,20 @@ static void assert_population_empty(const evo_population_t *population)
 {
     assert(population->genomes == NULL);
     assert(population->evaluations == NULL);
+    assert(population->reusable_evaluations == NULL);
     assert(population->population_size == 0);
     assert(population->genome_size == 0);
     assert(population->storage_bytes == 0);
     assert(population->evaluation_bytes == 0);
+    assert(population->reusable_evaluation_bytes == 0);
     assert(population->secure_erasure_policy_version == 0);
     assert(population->secure_erasure_backend ==
            EVO_SECURE_ERASURE_BACKEND_NONE);
     assert(!population->secure_erasure_enabled);
+    assert(population->population_recycling_policy_version == 0);
+    assert(population->storage_owner_identity == 0);
+    assert(!population->population_recycling_enabled);
+    assert(!population->evaluations_recycled);
     assert(population->valid_count == 0);
     assert(population->best_index == 0);
     assert(population->produced_count == 0);
@@ -205,10 +212,22 @@ static void assert_population_matches_snapshot(
 
     assert(population->genomes == before->genomes);
     assert(population->evaluations == before->evaluations);
+    assert(population->reusable_evaluations ==
+           before->reusable_evaluations);
     assert(population->population_size == before->population_size);
     assert(population->genome_size == before->genome_size);
     assert(population->storage_bytes == before->storage_bytes);
     assert(population->evaluation_bytes == before->evaluation_bytes);
+    assert(population->reusable_evaluation_bytes ==
+           before->reusable_evaluation_bytes);
+    assert(population->secure_erasure_policy_version ==
+           before->secure_erasure_policy_version);
+    assert(population->secure_erasure_backend ==
+           before->secure_erasure_backend);
+    assert(population->population_recycling_policy_version ==
+           before->population_recycling_policy_version);
+    assert(population->storage_owner_identity ==
+           before->storage_owner_identity);
     assert(population->valid_count == before->valid_count);
     assert(population->best_index == before->best_index);
     assert(population->produced_count == before->produced_count);
@@ -249,6 +268,12 @@ static void assert_population_matches_snapshot(
     assert(population->evaluated == before->evaluated);
     assert(population->elite_count_explicit ==
            before->elite_count_explicit);
+    assert(population->secure_erasure_enabled ==
+           before->secure_erasure_enabled);
+    assert(population->population_recycling_enabled ==
+           before->population_recycling_enabled);
+    assert(population->evaluations_recycled ==
+           before->evaluations_recycled);
 
     for (size_t index = 0; index < TEST_STORAGE_SIZE; ++index) {
         if (index < population->storage_bytes) {
@@ -289,9 +314,13 @@ static evo_generation_advancement_evidence_t sentinel_evidence(void)
         .odd_child_policy_version = 61,
         .elite_policy_version = 67,
         .singleton_child_policy_version = 71,
+        .population_recycling_policy_version = 72,
+        .active_storage_owner_identity = UINT64_C(73),
+        .reusable_storage_owner_identity = UINT64_C(74),
         .policy_version = 73,
         .has_best = true,
         .elite_count_explicit = true,
+        .population_recycling_enabled = true,
         .complete = true,
     };
 }
@@ -329,10 +358,18 @@ static void assert_evidence_equal(
            right->diversity_policy_version);
     assert(left->diversity_metric_version ==
            right->diversity_metric_version);
+    assert(left->population_recycling_policy_version ==
+           right->population_recycling_policy_version);
+    assert(left->active_storage_owner_identity ==
+           right->active_storage_owner_identity);
+    assert(left->reusable_storage_owner_identity ==
+           right->reusable_storage_owner_identity);
     assert(left->policy_version == right->policy_version);
     assert(left->has_best == right->has_best);
     assert(left->elite_count_explicit ==
            right->elite_count_explicit);
+    assert(left->population_recycling_enabled ==
+           right->population_recycling_enabled);
     assert(left->complete == right->complete);
 }
 
@@ -407,11 +444,21 @@ static void create_evaluated_child(advancement_fixture_t *fixture,
                                          source_generation,
                                          &fixture->children,
                                          &evaluation) == EVO_SUCCESS);
+    assert(evaluation.population_recycling_policy_version ==
+           (fixture->config.population_recycling_enabled
+                ? EVO_POPULATION_RECYCLING_POLICY_VERSION
+                : 0));
+    assert(evaluation.storage_owner_identity ==
+           fixture->children.storage_owner_identity);
+    assert(evaluation.population_recycling_enabled ==
+           fixture->config.population_recycling_enabled);
     fixture->capture_child_evaluation = false;
 }
 
-static void fixture_initialize(advancement_fixture_t *fixture,
-                               bool all_invalid_child)
+static void fixture_initialize_with_recycling(
+    advancement_fixture_t *fixture,
+    bool all_invalid_child,
+    bool recycling)
 {
     *fixture = (advancement_fixture_t){0};
     fixture->problem = (evo_problem_t){
@@ -436,6 +483,7 @@ static void fixture_initialize(advancement_fixture_t *fixture,
             sizeof(evo_candidate_evaluation_t),
         .max_child_population_bytes = TEST_STORAGE_SIZE,
         .max_diversity_work = SIZE_MAX,
+        .population_recycling_enabled = recycling,
     };
 
     assert(evo_population_create(&fixture->problem,
@@ -452,10 +500,197 @@ static void fixture_initialize(advancement_fixture_t *fixture,
     create_evaluated_child(fixture, 0, all_invalid_child);
 }
 
+static void fixture_initialize(advancement_fixture_t *fixture,
+                               bool all_invalid_child)
+{
+    fixture_initialize_with_recycling(fixture,
+                                      all_invalid_child,
+                                      false);
+}
+
 static void fixture_destroy(advancement_fixture_t *fixture)
 {
     evo_population_destroy(&fixture->children);
     evo_population_destroy(&fixture->parents);
+}
+
+static void assert_registry_equal(
+    const evo_population_storage_registry_t *left,
+    const evo_population_storage_registry_t *right)
+{
+    assert(left->version == right->version);
+    assert(left->policy_version == right->policy_version);
+    assert(left->recycling_enabled == right->recycling_enabled);
+    assert(left->entry_count == right->entry_count);
+    assert(left->active_owner_identity == right->active_owner_identity);
+    assert(left->reusable_owner_identity == right->reusable_owner_identity);
+    assert(left->secure_erasure_policy_version ==
+           right->secure_erasure_policy_version);
+    assert(left->secure_erasure_backend == right->secure_erasure_backend);
+    assert(left->secure_erasure_enabled == right->secure_erasure_enabled);
+    for (size_t index = 0;
+         index < EVO_POPULATION_STORAGE_OWNER_SLOTS;
+         ++index) {
+        const evo_population_storage_entry_t *left_entry =
+            &left->entries[index];
+        const evo_population_storage_entry_t *right_entry =
+            &right->entries[index];
+
+        assert(left_entry->owner_identity == right_entry->owner_identity);
+        assert(left_entry->lifecycle == right_entry->lifecycle);
+        assert(left_entry->population_generation ==
+               right_entry->population_generation);
+        assert(left_entry->source_generation ==
+               right_entry->source_generation);
+        assert(left_entry->genome_capacity_bytes ==
+               right_entry->genome_capacity_bytes);
+        assert(left_entry->evaluation_capacity_bytes ==
+               right_entry->evaluation_capacity_bytes);
+        assert(left_entry->handoff_count == right_entry->handoff_count);
+        assert(left_entry->reset_count == right_entry->reset_count);
+        assert(left_entry->genome_erasure_count ==
+               right_entry->genome_erasure_count);
+        assert(left_entry->evaluation_erasure_count ==
+               right_entry->evaluation_erasure_count);
+        assert(left_entry->last_reset_disposition ==
+               right_entry->last_reset_disposition);
+        assert(left_entry->genome_owner_present ==
+               right_entry->genome_owner_present);
+        assert(left_entry->evaluation_owner_present ==
+               right_entry->evaluation_owner_present);
+    }
+}
+
+static void test_recycled_promotion_is_atomic_and_address_free(void)
+{
+    advancement_fixture_t fixture = {0};
+    evo_population_storage_registry_t registry = {0};
+    evo_generation_advancement_evidence_t evidence = sentinel_evidence();
+    const evo_generation_advancement_evidence_t evidence_before = evidence;
+    population_snapshot_t parent_before = {0};
+    population_snapshot_t child_before = {0};
+    unsigned char *former_parent_genomes = NULL;
+    evo_candidate_evaluation_t *former_parent_evaluations = NULL;
+
+    fixture_initialize_with_recycling(&fixture, false, true);
+    assert(evo_population_storage_registry_initialize(&fixture.config,
+                                                      &fixture.parents,
+                                                      &registry) ==
+           EVO_SUCCESS);
+    snapshot_population(&fixture.parents, &parent_before);
+    snapshot_population(&fixture.children, &child_before);
+    former_parent_genomes = fixture.parents.genomes;
+    former_parent_evaluations = fixture.parents.evaluations;
+
+    assert(evo_population_advance_generation(&fixture.problem,
+                                             &fixture.config,
+                                             0,
+                                             &fixture.parents,
+                                             &fixture.children,
+                                             &evidence) ==
+           EVO_ERROR_INVALID_ARGUMENT);
+    assert_population_matches_snapshot(&fixture.parents, &parent_before);
+    assert_population_matches_snapshot(&fixture.children, &child_before);
+    assert_evidence_equal(&evidence, &evidence_before);
+
+    assert(evo_population_advance_generation_with_registry(
+               &fixture.problem,
+               &fixture.config,
+               0,
+               &fixture.parents,
+               &fixture.children,
+               (evo_population_storage_registry_t *)(void *)&evidence,
+               &evidence) == EVO_ERROR_INVALID_ARGUMENT);
+    assert(evo_population_advance_generation_with_registry(
+               &fixture.problem,
+               &fixture.config,
+               0,
+               &fixture.parents,
+               &fixture.children,
+               (evo_population_storage_registry_t *)(void *)&fixture.parents,
+               &evidence) == EVO_ERROR_INVALID_ARGUMENT);
+    assert(evo_population_advance_generation_with_registry(
+               &fixture.problem,
+               &fixture.config,
+               0,
+               &fixture.parents,
+               &fixture.children,
+               (evo_population_storage_registry_t *)(void *)
+                   fixture.children.genomes,
+               &evidence) == EVO_ERROR_INVALID_ARGUMENT);
+    assert_population_matches_snapshot(&fixture.parents, &parent_before);
+    assert_population_matches_snapshot(&fixture.children, &child_before);
+    assert_evidence_equal(&evidence, &evidence_before);
+
+    {
+        const evo_population_storage_registry_t registry_before = registry;
+        evo_population_storage_registry_t stale_registry = {0};
+
+        registry.active_owner_identity = UINT64_C(2);
+        stale_registry = registry;
+        assert(evo_population_advance_generation_with_registry(
+                   &fixture.problem,
+                   &fixture.config,
+                   0,
+                   &fixture.parents,
+                   &fixture.children,
+                   &registry,
+                   &evidence) == EVO_ERROR_STATE);
+        assert_registry_equal(&registry, &stale_registry);
+        registry = registry_before;
+    }
+    assert_population_matches_snapshot(&fixture.parents, &parent_before);
+    assert_population_matches_snapshot(&fixture.children, &child_before);
+    assert_evidence_equal(&evidence, &evidence_before);
+
+    evidence = (evo_generation_advancement_evidence_t){0};
+    assert(evo_population_advance_generation_with_registry(
+               &fixture.problem,
+               &fixture.config,
+               0,
+               &fixture.parents,
+               &fixture.children,
+               &registry,
+               &evidence) == EVO_SUCCESS);
+    assert(fixture.parents.genomes == child_before.metadata.genomes);
+    assert(fixture.parents.evaluations == child_before.metadata.evaluations);
+    assert(fixture.parents.storage_owner_identity == UINT64_C(2));
+    assert(fixture.children.genomes == former_parent_genomes);
+    assert(fixture.children.evaluations == NULL);
+    assert(fixture.children.reusable_evaluations ==
+           former_parent_evaluations);
+    assert(fixture.children.storage_owner_identity == UINT64_C(1));
+    assert(evo_population_recycling_child_is_valid(&fixture.config,
+                                                   &fixture.children));
+    for (size_t index = 0; index < fixture.children.storage_bytes; ++index) {
+        assert(fixture.children.genomes[index] == 0);
+    }
+    {
+        const unsigned char *evaluation_bytes =
+            (const unsigned char *)fixture.children.reusable_evaluations;
+
+        for (size_t index = 0;
+             index < fixture.children.reusable_evaluation_bytes;
+             ++index) {
+            assert(evaluation_bytes[index] == 0);
+        }
+    }
+    assert(registry.active_owner_identity == UINT64_C(2));
+    assert(registry.reusable_owner_identity == UINT64_C(1));
+    assert(registry.entries[0].lifecycle ==
+           EVO_POPULATION_STORAGE_REUSABLE);
+    assert(registry.entries[0].reset_count == 1);
+    assert(registry.entries[0].last_reset_disposition ==
+           EVO_POPULATION_STORAGE_RESET_ZERO_BYTES);
+    assert(registry.entries[1].lifecycle == EVO_POPULATION_STORAGE_ACTIVE);
+    assert(registry.entries[1].handoff_count == 1);
+    assert(evidence.population_recycling_policy_version ==
+           EVO_POPULATION_RECYCLING_POLICY_VERSION);
+    assert(evidence.active_storage_owner_identity == UINT64_C(2));
+    assert(evidence.reusable_storage_owner_identity == UINT64_C(1));
+    assert(evidence.population_recycling_enabled);
+    assert(evidence.complete);
+    fixture_destroy(&fixture);
 }
 
 static void test_generation_zero_promotion_preserves_child_ownership(void)
@@ -820,5 +1055,6 @@ int main(void)
     test_rejections_preserve_both_populations_and_evidence();
     test_repeated_advancement_rejects_empty_child();
     test_explicit_elite_provenance_is_promoted();
+    test_recycled_promotion_is_atomic_and_address_free();
     return 0;
 }

@@ -10,7 +10,7 @@ extern "C" {
 #endif
 
 #define EVO_VERSION_MAJOR 0
-#define EVO_VERSION_MINOR 29
+#define EVO_VERSION_MINOR 30
 #define EVO_VERSION_PATCH 0
 
 typedef enum evo_status {
@@ -97,6 +97,71 @@ typedef enum evo_secure_erasure_backend {
 #define EVO_BYTE_OPERATOR_POLICY_VERSION UINT32_C(1)
 #define EVO_MUTATION_ADAPTATION_POLICY_VERSION UINT32_C(1)
 #define EVO_SECURE_ERASURE_POLICY_VERSION UINT32_C(1)
+#define EVO_POPULATION_RECYCLING_POLICY_VERSION UINT32_C(1)
+#define EVO_POPULATION_STORAGE_REGISTRY_VERSION UINT32_C(1)
+#define EVO_POPULATION_STORAGE_OWNER_SLOTS 2
+
+typedef enum evo_population_storage_lifecycle {
+    EVO_POPULATION_STORAGE_EMPTY = 0,
+    EVO_POPULATION_STORAGE_ACTIVE = 1,
+    EVO_POPULATION_STORAGE_REUSABLE = 2
+} evo_population_storage_lifecycle_t;
+
+typedef enum evo_population_storage_reset_disposition {
+    EVO_POPULATION_STORAGE_RESET_NONE = 0,
+    EVO_POPULATION_STORAGE_RESET_ZERO_BYTES = 1,
+    EVO_POPULATION_STORAGE_RESET_SECURE_ERASE = 2
+} evo_population_storage_reset_disposition_t;
+
+/*
+ * Address-free audit record for one logical population-storage owner. Owner
+ * identities are stable slot identities, never allocator addresses. Entries
+ * are ordered by owner_identity in the enclosing registry.
+ */
+typedef struct evo_population_storage_entry {
+    uint64_t owner_identity;
+    evo_population_storage_lifecycle_t lifecycle;
+    uint64_t population_generation;
+    uint64_t source_generation;
+    size_t genome_capacity_bytes;
+    size_t evaluation_capacity_bytes;
+    size_t handoff_count;
+    size_t reset_count;
+    size_t genome_erasure_count;
+    size_t evaluation_erasure_count;
+    evo_population_storage_reset_disposition_t last_reset_disposition;
+    bool genome_owner_present;
+    bool evaluation_owner_present;
+} evo_population_storage_entry_t;
+
+/*
+ * Human-readable projection of the optional two-slot recycler. Disabled mode
+ * is canonical with entry_count and both owner identities zero. Enabled mode
+ * orders one or two complete entries by stable owner identity; exactly one is
+ * ACTIVE and, after the first transition, exactly one is REUSABLE.
+ */
+typedef struct evo_population_storage_registry {
+    uint32_t version;
+    uint32_t policy_version;
+    bool recycling_enabled;
+    size_t entry_count;
+    uint64_t active_owner_identity;
+    uint64_t reusable_owner_identity;
+    uint32_t secure_erasure_policy_version;
+    evo_secure_erasure_backend_t secure_erasure_backend;
+    bool secure_erasure_enabled;
+    evo_population_storage_entry_t
+        entries[EVO_POPULATION_STORAGE_OWNER_SLOTS];
+} evo_population_storage_registry_t;
+
+/*
+ * Synchronous, non-stopping audit notification after the existing generation
+ * observer and before checkpoint delivery. The registry owns no caller-visible
+ * storage and the callback must not retain its borrowed address.
+ */
+typedef void (*evo_population_storage_observer_fn)(
+    const evo_population_storage_registry_t *registry,
+    void *context);
 
 /*
  * Fitness components are caller-owned evidence. constraint_penalty is a
@@ -198,15 +263,15 @@ typedef void (*evo_generation_observer_fn)(
     const evo_generation_statistics_t *statistics,
     void *context);
 
-#define EVO_CHECKPOINT_FORMAT_VERSION UINT32_C(1)
-#define EVO_CHECKPOINT_VIEW_VERSION UINT32_C(1)
-#define EVO_CHECKPOINT_CONFIGURATION_VIEW_VERSION UINT32_C(1)
+#define EVO_CHECKPOINT_FORMAT_VERSION UINT32_C(2)
+#define EVO_CHECKPOINT_VIEW_VERSION UINT32_C(2)
+#define EVO_CHECKPOINT_CONFIGURATION_VIEW_VERSION UINT32_C(2)
 #define EVO_CHECKPOINT_CANDIDATE_VIEW_VERSION UINT32_C(1)
 #define EVO_CHECKPOINT_INTEGRITY_CRC32 UINT32_C(1)
 
 /*
  * Human-readable projection of every deterministic configuration field bound
- * by checkpoint format 1. Pointer values are never serialized. Callback
+ * by checkpoint format 2. Pointer values are never serialized. Callback
  * presence and caller-declared stable problem/context identities stand in for
  * reattached executable and external state.
  */
@@ -256,6 +321,8 @@ typedef struct evo_checkpoint_configuration_view {
     bool distance_callback_present;
     bool generation_observer_present;
     bool generation_stop_present;
+    bool population_recycling_enabled;
+    bool population_storage_observer_present;
 } evo_checkpoint_configuration_view_t;
 
 /* One explicit candidate in checkpoint population order. */
@@ -318,6 +385,7 @@ typedef struct evo_checkpoint_view {
     size_t population_evaluation_bytes;
     const void *serialized_evaluations;
     size_t serialized_evaluation_record_size;
+    evo_population_storage_registry_t population_storage_registry;
 } evo_checkpoint_view_t;
 
 /*
@@ -491,7 +559,7 @@ typedef struct evo_config {
      */
     bool secure_erasure_enabled;
     /*
-     * Checkpoint format 1 uses a caller-owned scratch buffer and invokes the
+     * Checkpoint format 2 uses a caller-owned scratch buffer and invokes the
      * observer synchronously after each committed generation. A non-NULL
      * observer requires a non-NULL buffer of at least the size reported by
      * evo_checkpoint_size(), bounded by max_checkpoint_bytes. The buffer and
@@ -505,6 +573,16 @@ typedef struct evo_config {
     void *checkpoint_observer_context;
     /* Stable nonzero identity for reattached caller context semantics. */
     uint64_t checkpoint_context_identity;
+    /*
+     * Opt in to bounded two-slot population-storage recycling. The zero value
+     * preserves the pre-0.30.0 allocate/promote/release lifecycle. Enabled
+     * mode reuses only run-local owners and never introduces a global pool.
+     */
+    bool population_recycling_enabled;
+    /* Optional address-free owner-registry audit; NULL disables delivery. */
+    evo_population_storage_observer_fn population_storage_observer;
+    /* Caller-owned audit state, never inspected or retained by EVO. */
+    void *population_storage_observer_context;
 } evo_config_t;
 
 typedef struct evo_result {
@@ -588,7 +666,7 @@ typedef struct evo_result {
  */
 evo_status_t evo_run(const evo_problem_t *problem, const evo_config_t *config, void *context, evo_result_t *result);
 
-/** Compute the exact format-1 byte count for this population configuration. */
+/** Compute the exact format-2 byte count for this population configuration. */
 evo_status_t evo_checkpoint_size(const evo_problem_t *problem,
                                  const evo_config_t *config,
                                  size_t *checkpoint_size);

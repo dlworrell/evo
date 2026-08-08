@@ -1,4 +1,5 @@
 #include "internal/generation_advancement.h"
+#include "internal/population_recycling.h"
 
 #include <stdint.h>
 
@@ -39,7 +40,42 @@ static bool range_overlaps_population_owners(
             byte_ranges_overlap(range,
                                 range_size,
                                 population->evaluations,
-                                population->evaluation_bytes));
+                                population->evaluation_bytes)) ||
+           (population->reusable_evaluations != NULL &&
+            population->reusable_evaluation_bytes != 0 &&
+            byte_ranges_overlap(range,
+                                range_size,
+                                population->reusable_evaluations,
+                                population->reusable_evaluation_bytes));
+}
+
+static bool registry_is_independent(
+    const evo_population_storage_registry_t *registry,
+    const evo_population_t *parents,
+    const evo_population_t *children,
+    const evo_generation_advancement_evidence_t *evidence)
+{
+    if (registry == NULL) {
+        return true;
+    }
+    return !byte_ranges_overlap(registry,
+                                sizeof(*registry),
+                                parents,
+                                sizeof(*parents)) &&
+           !byte_ranges_overlap(registry,
+                                sizeof(*registry),
+                                children,
+                                sizeof(*children)) &&
+           !byte_ranges_overlap(registry,
+                                sizeof(*registry),
+                                evidence,
+                                sizeof(*evidence)) &&
+           !range_overlaps_population_owners(registry,
+                                             sizeof(*registry),
+                                             parents) &&
+           !range_overlaps_population_owners(registry,
+                                             sizeof(*registry),
+                                             children);
 }
 
 static bool transition_objects_are_independent(
@@ -126,15 +162,17 @@ static bool population_matches_generation(
            population->source_generation == generation - UINT64_C(1);
 }
 
-evo_status_t evo_population_advance_generation(
+evo_status_t evo_population_advance_generation_with_registry(
     const evo_problem_t *problem,
     const evo_config_t *config,
     uint64_t current_generation,
     evo_population_t *parents,
     evo_population_t *evaluated_children,
+    evo_population_storage_registry_t *storage_registry,
     evo_generation_advancement_evidence_t *evidence)
 {
     evo_generation_advancement_evidence_t candidate = {0};
+    evo_population_storage_registry_t registry_candidate = {0};
     evo_population_t previous_parents = {0};
     size_t parent_valid_count = 0;
     size_t child_valid_count = 0;
@@ -147,7 +185,15 @@ evo_status_t evo_population_advance_generation(
     if (!transition_objects_are_independent(parents,
                                             evaluated_children,
                                             evidence,
-                                            sizeof(*evidence))) {
+                                            sizeof(*evidence)) ||
+        !registry_is_independent(storage_registry,
+                                 parents,
+                                 evaluated_children,
+                                 evidence)) {
+        return EVO_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (config->population_recycling_enabled && storage_registry == NULL) {
         return EVO_ERROR_INVALID_ARGUMENT;
     }
 
@@ -175,6 +221,19 @@ evo_status_t evo_population_advance_generation(
         !population_matches_generation(parents, current_generation) ||
         evaluated_children->initialized ||
         evaluated_children->source_generation != current_generation) {
+        return EVO_ERROR_STATE;
+    }
+    if (config->population_recycling_enabled &&
+        (!evo_population_storage_registry_is_valid(config,
+                                                   parents,
+                                                   current_generation,
+                                                   storage_registry) ||
+         !evo_population_reusable_reset_is_valid(config, parents) ||
+         !evo_population_storage_registry_prepare_transition(
+             config,
+             current_generation,
+             evaluated_children,
+             &registry_candidate))) {
         return EVO_ERROR_STATE;
     }
 
@@ -209,11 +268,21 @@ evo_status_t evo_population_advance_generation(
         evaluated_children->diversity_policy_version;
     candidate.diversity_metric_version =
         evaluated_children->diversity_metric_version;
+    candidate.population_recycling_policy_version =
+        evaluated_children->population_recycling_policy_version;
+    candidate.active_storage_owner_identity =
+        evaluated_children->storage_owner_identity;
+    candidate.reusable_storage_owner_identity =
+        config->population_recycling_enabled
+            ? parents->storage_owner_identity
+            : UINT64_C(0);
     candidate.policy_version =
         EVO_GENERATION_ADVANCEMENT_POLICY_VERSION;
     candidate.has_best = evaluated_children->has_best;
     candidate.elite_count_explicit =
         evaluated_children->elite_count_explicit;
+    candidate.population_recycling_enabled =
+        config->population_recycling_enabled;
     candidate.complete = true;
 
     /*
@@ -223,8 +292,32 @@ evo_status_t evo_population_advance_generation(
      */
     previous_parents = *parents;
     *parents = *evaluated_children;
-    *evaluated_children = (evo_population_t){0};
-    evo_population_destroy(&previous_parents);
+    if (config->population_recycling_enabled) {
+        *evaluated_children = previous_parents;
+        evo_population_reset_for_reuse(config, evaluated_children);
+        *storage_registry = registry_candidate;
+    } else {
+        *evaluated_children = (evo_population_t){0};
+        evo_population_destroy(&previous_parents);
+    }
     *evidence = candidate;
     return EVO_SUCCESS;
+}
+
+evo_status_t evo_population_advance_generation(
+    const evo_problem_t *problem,
+    const evo_config_t *config,
+    uint64_t current_generation,
+    evo_population_t *parents,
+    evo_population_t *evaluated_children,
+    evo_generation_advancement_evidence_t *evidence)
+{
+    return evo_population_advance_generation_with_registry(
+        problem,
+        config,
+        current_generation,
+        parents,
+        evaluated_children,
+        NULL,
+        evidence);
 }

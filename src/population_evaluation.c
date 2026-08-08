@@ -63,6 +63,7 @@ static bool initialized_population_ready_for_evaluation(
         population->source_generation != 0 ||
         population->operator_seed_schedule_version != 0 ||
         !evo_population_secure_erasure_is_valid(config, population) ||
+        !evo_population_recycling_initial_is_valid(config, population) ||
         population->byte_operator_policy_version != 0 ||
         population->crossover_operator != EVO_CROSSOVER_CONSUMER ||
         population->mutation_operator != EVO_MUTATION_CONSUMER ||
@@ -90,13 +91,39 @@ static bool initialized_population_ready_for_evaluation(
     return expected_storage_bytes == population->storage_bytes;
 }
 
-static evo_status_t discard_provisional_evaluations(
+static void reset_evaluation_bytes(
     evo_candidate_evaluation_t *evaluations,
     size_t evaluation_bytes,
-    bool secure_erasure_enabled,
-    evo_status_t status)
+    bool secure_erasure_enabled)
 {
     if (secure_erasure_enabled) {
+        evo_secure_erase(evaluations, evaluation_bytes);
+    } else {
+        unsigned char *bytes = (unsigned char *)evaluations;
+
+        for (size_t index = 0; index < evaluation_bytes; ++index) {
+            bytes[index] = 0;
+        }
+    }
+}
+
+static evo_status_t discard_provisional_evaluations(
+    evo_population_t *population,
+    evo_candidate_evaluation_t *evaluations,
+    size_t evaluation_bytes,
+    bool reused_storage,
+    evo_status_t status)
+{
+    if (reused_storage) {
+        reset_evaluation_bytes(evaluations,
+                               evaluation_bytes,
+                               population->secure_erasure_enabled);
+        population->reusable_evaluations = evaluations;
+        population->reusable_evaluation_bytes = evaluation_bytes;
+        population->evaluations_recycled = false;
+        return status;
+    }
+    if (population->secure_erasure_enabled) {
         evo_secure_erase(evaluations, evaluation_bytes);
     }
     free(evaluations);
@@ -107,15 +134,28 @@ static evo_status_t rollback_population_evaluations(
     evo_population_t *population,
     evo_status_t status)
 {
-    if (population->secure_erasure_enabled &&
-        evo_secure_erasure_metadata_is_valid(
-            population->secure_erasure_enabled,
-            population->secure_erasure_policy_version,
-            population->secure_erasure_backend)) {
+    const bool preserve_for_reuse =
+        population->population_recycling_enabled &&
+        population->evaluations_recycled;
+
+    if (preserve_for_reuse) {
+        reset_evaluation_bytes(population->evaluations,
+                               population->evaluation_bytes,
+                               population->secure_erasure_enabled);
+        population->reusable_evaluations = population->evaluations;
+        population->reusable_evaluation_bytes =
+            population->evaluation_bytes;
+    } else if (population->secure_erasure_enabled &&
+               evo_secure_erasure_metadata_is_valid(
+                   population->secure_erasure_enabled,
+                   population->secure_erasure_policy_version,
+                   population->secure_erasure_backend)) {
         evo_secure_erase(population->evaluations,
                          population->evaluation_bytes);
     }
-    free(population->evaluations);
+    if (!preserve_for_reuse) {
+        free(population->evaluations);
+    }
     population->evaluations = NULL;
     population->evaluation_bytes = 0;
     population->valid_count = 0;
@@ -129,6 +169,7 @@ static evo_status_t rollback_population_evaluations(
     population->has_best = false;
     population->evaluated = false;
     population->diversity_uses_domain_distance = false;
+    population->evaluations_recycled = false;
     return status;
 }
 
@@ -143,6 +184,7 @@ evo_status_t evo_population_evaluate_ready(
     size_t valid_count = 0;
     size_t best_index = 0;
     bool has_best = false;
+    bool reused_storage = false;
     evo_status_t status = EVO_SUCCESS;
 
     if (problem == NULL || config == NULL || population == NULL ||
@@ -155,12 +197,24 @@ evo_status_t evo_population_evaluate_ready(
         return status;
     }
 
-    status = allocate_evaluation_storage(config,
-                                         population->population_size,
-                                         &evaluations,
-                                         &evaluation_bytes);
-    if (status != EVO_SUCCESS) {
-        return status;
+    if (population->reusable_evaluations != NULL) {
+        if (!config->population_recycling_enabled ||
+            !evo_population_recycling_child_is_valid(config, population)) {
+            return EVO_ERROR_STATE;
+        }
+        evaluations = population->reusable_evaluations;
+        evaluation_bytes = population->reusable_evaluation_bytes;
+        population->reusable_evaluations = NULL;
+        population->reusable_evaluation_bytes = 0;
+        reused_storage = true;
+    } else {
+        status = allocate_evaluation_storage(config,
+                                             population->population_size,
+                                             &evaluations,
+                                             &evaluation_bytes);
+        if (status != EVO_SUCCESS) {
+            return status;
+        }
     }
 
     for (size_t index = 0; index < population->population_size; ++index) {
@@ -168,9 +222,10 @@ evo_status_t evo_population_evaluate_ready(
             evo_population_genome_const(population, index);
 
         if (genome == NULL) {
-            return discard_provisional_evaluations(evaluations,
+            return discard_provisional_evaluations(population,
+                                                   evaluations,
                                                    evaluation_bytes,
-                                                   config->secure_erasure_enabled,
+                                                   reused_storage,
                                                    EVO_ERROR_STATE);
         }
 
@@ -194,9 +249,10 @@ evo_status_t evo_population_evaluate_ready(
 
         genome = evo_population_genome_const(population, index);
         if (genome == NULL) {
-            return discard_provisional_evaluations(evaluations,
+            return discard_provisional_evaluations(population,
+                                                   evaluations,
                                                    evaluation_bytes,
-                                                   config->secure_erasure_enabled,
+                                                   reused_storage,
                                                    EVO_ERROR_STATE);
         }
 
@@ -211,9 +267,10 @@ evo_status_t evo_population_evaluate_ready(
         };
         if (!evo_fitness_candidate_is_rankable(&candidate_view)) {
             return discard_provisional_evaluations(
+                population,
                 evaluations,
                 evaluation_bytes,
-                config->secure_erasure_enabled,
+                reused_storage,
                 EVO_ERROR_EVALUATION);
         }
 
@@ -234,9 +291,10 @@ evo_status_t evo_population_evaluate_ready(
                                             &best_view,
                                             &order)) {
             return discard_provisional_evaluations(
+                population,
                 evaluations,
                 evaluation_bytes,
-                config->secure_erasure_enabled,
+                reused_storage,
                 EVO_ERROR_EVALUATION);
         }
         if (order == EVO_FITNESS_ORDER_LEFT) {
@@ -252,6 +310,7 @@ evo_status_t evo_population_evaluate_ready(
         EVO_FITNESS_COMPARISON_POLICY_VERSION;
     population->has_best = has_best;
     population->evaluated = true;
+    population->evaluations_recycled = reused_storage;
     {
         const evo_status_t diversity_status =
             evo_population_measure_diversity(problem,
@@ -264,6 +323,7 @@ evo_status_t evo_population_evaluate_ready(
                                                    diversity_status);
         }
     }
+    population->evaluations_recycled = false;
 
     return EVO_SUCCESS;
 }
@@ -279,6 +339,8 @@ evo_status_t evo_population_restore_evaluations_allocate(
     if (config == NULL || population == NULL || population->genomes == NULL ||
         population->population_size != config->population_size ||
         population->evaluations != NULL || population->evaluation_bytes != 0 ||
+        population->reusable_evaluations != NULL ||
+        population->reusable_evaluation_bytes != 0 ||
         population->evaluated) {
         return EVO_ERROR_INVALID_ARGUMENT;
     }
@@ -291,6 +353,40 @@ evo_status_t evo_population_restore_evaluations_allocate(
     }
     population->evaluations = evaluations;
     population->evaluation_bytes = evaluation_bytes;
+    return EVO_SUCCESS;
+}
+
+evo_status_t evo_population_reusable_evaluations_allocate(
+    const evo_config_t *config,
+    evo_population_t *population)
+{
+    evo_candidate_evaluation_t *evaluations = NULL;
+    size_t evaluation_bytes = 0;
+    evo_status_t status = EVO_SUCCESS;
+
+    if (config == NULL || population == NULL ||
+        !config->population_recycling_enabled ||
+        population->genomes == NULL ||
+        population->population_size != config->population_size ||
+        population->evaluations != NULL || population->evaluation_bytes != 0 ||
+        population->reusable_evaluations != NULL ||
+        population->reusable_evaluation_bytes != 0 ||
+        population->evaluated ||
+        population->population_recycling_policy_version !=
+            EVO_POPULATION_RECYCLING_POLICY_VERSION ||
+        (population->storage_owner_identity != UINT64_C(1) &&
+         population->storage_owner_identity != UINT64_C(2))) {
+        return EVO_ERROR_INVALID_ARGUMENT;
+    }
+    status = allocate_evaluation_storage(config,
+                                         population->population_size,
+                                         &evaluations,
+                                         &evaluation_bytes);
+    if (status != EVO_SUCCESS) {
+        return status;
+    }
+    population->reusable_evaluations = evaluations;
+    population->reusable_evaluation_bytes = evaluation_bytes;
     return EVO_SUCCESS;
 }
 

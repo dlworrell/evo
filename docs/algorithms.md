@@ -2,7 +2,7 @@
 
 This document distinguishes algorithms implemented by the reusable
 `catalyst_evo` core from the structured program transformations and evaluation
-algorithm required by the EVO 1.0 source optimizer. Version 0.29.0 implements
+algorithm required by the EVO 1.0 source optimizer. Version 0.30.0 implements
 only the core boundary described below.
 
 ## EVO Core Initial Release
@@ -21,6 +21,7 @@ only the core boundary described below.
 - Constraint penalties
 - Opt-in exact secure erasure of EVO-owned genome and evaluation ranges
 - Versioned committed-generation checkpoint and deterministic resume
+- Opt-in deterministic two-slot population-storage recycling
 
 ## Later EVO Core Releases
 
@@ -783,6 +784,11 @@ evaluation rejection, and attached-evaluation rollback. Exact owner counts
 move with child ownership; they are never reconstructed from a later
 configuration object.
 
+Version 0.30.0 also applies the selected erasure backend to both complete
+former-active ranges before an owner is reused. Reset-time erasures are counted
+in the storage registry; the same owner may therefore have several reset
+erasures followed by its one terminal release erasure.
+
 The direct owner/count table is canonical and is not an accelerator under
 ADR-0026. Its named rows, lifecycle disposition, policy version, and backend
 form the stable human-readable registry. The exact-once link-wrapper test
@@ -846,6 +852,59 @@ Capture uses one exact caller-owned buffer and allocates nothing. Restore uses
 only the existing three allocation classes. Caller checkpoint buffers remain
 cleartext external copies and are not erased by EVO. ADR-0030 fixes the format,
 parser, callback order, replay, security limits, and projection contract.
+
+## Deterministic Population-Storage Recycling
+
+Version 0.30.0 defines population-recycling policy version 1 over exactly two
+run-local logical slots. The zero-valued policy executes the complete 0.29.0
+allocate/promote/release path. Enabled execution uses this role algorithm:
+
+```text
+generation zero:
+    construct slot 1 as active
+
+first transition:
+    construct slot 2 genomes and detached evaluations
+    produce and evaluate the child in slot 2
+
+every successful transition:
+    dry-validate both owners, registries, aliases, and next generation
+    move the child slot to active
+    move the former active slot to reusable
+    reset the reusable evaluation and genome ranges in full
+    clear reusable population evidence
+    commit the next registry and advancement evidence
+```
+
+After the first transition, the active identity is `1` for even generations
+and `2` for odd generations. No RNG word, callback, address, allocator result,
+clock, process identity, or entropy source selects a slot. Child evaluation
+moves the detached evaluation reserve into provisional ownership and returns
+it to the same reusable owner after a reset if evaluation or diversity fails.
+
+One successful positive run has five allocation classes: initial genomes,
+initial evaluations, result genome, second-slot genomes, and second-slot
+evaluations. Later transitions allocate nothing. Generation-zero-only runs
+retain the three historical allocations. Disabled and enabled differential
+tests must produce identical algorithm-visible callback traces, genomes,
+evaluations, statistics, adaptive/stopping evidence, winner, generation count,
+termination, and RNG schedule.
+
+`evo_population_storage_registry_t` is the complete ADR-0026 projection. Its
+two stable identities, ordered entries, roles, generations, capacities,
+handoffs, resets, erasures, and owner-presence fields never contain addresses.
+The exact private pointer/count owners remain authority, and every registry is
+reconciled with those owners before reuse or delivery. Bounded-run policy 11,
+child-evaluation and generation-advancement policies 8, and private run-state
+schema 2 carry that lifecycle evidence.
+
+Checkpoint format, checkpoint view, and configuration view advance to version
+2 with magic `EVOCKPT2`. Format 2 persists the complete logical registry and
+recycling disposition. Resume validates it before allocation, constructs new
+local owners, and reattaches the local erasure backend. Format 1 rejects by
+version because it contains no registry or schema-2 continuation state.
+ADR-0031 fixes the lifecycle, replay, checkpoint amendment, and audit contract;
+EVO-HRA-003 retains the human-readable abstraction assessment.
 
 ## Structured C Source Evolution
 

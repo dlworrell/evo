@@ -19,6 +19,8 @@ static size_t release_calls;
 static size_t stop_calls;
 static size_t checkpoint_observation_calls;
 
+static void reset_allocation_injection(size_t failure_call);
+
 enum { ALLOCATION_CHECKPOINT_CAPACITY = 4096 };
 
 static unsigned char allocation_checkpoint_buffer
@@ -158,14 +160,20 @@ static void assert_population_empty(const evo_population_t *population)
 {
     assert(population->genomes == NULL);
     assert(population->evaluations == NULL);
+    assert(population->reusable_evaluations == NULL);
     assert(population->population_size == 0);
     assert(population->genome_size == 0);
     assert(population->storage_bytes == 0);
     assert(population->evaluation_bytes == 0);
+    assert(population->reusable_evaluation_bytes == 0);
     assert(population->secure_erasure_policy_version == 0);
     assert(population->secure_erasure_backend ==
            EVO_SECURE_ERASURE_BACKEND_NONE);
     assert(!population->secure_erasure_enabled);
+    assert(population->population_recycling_policy_version == 0);
+    assert(population->storage_owner_identity == 0);
+    assert(!population->population_recycling_enabled);
+    assert(!population->evaluations_recycled);
     assert(population->valid_count == 0);
     assert(population->best_index == 0);
     assert(population->produced_count == 0);
@@ -208,6 +216,72 @@ static void assert_population_evaluation_empty(
     assert(!population->elite_count_explicit);
     assert(!population->has_best);
     assert(!population->evaluated);
+}
+
+static void test_recycling_allocation_bound_and_failures(
+    const evo_problem_t *problem,
+    const evo_config_t *base_config)
+{
+    evo_config_t config = *base_config;
+    evo_result_t result = {0};
+
+    config.generation_limit = 1;
+    config.tournament_size = 2;
+    config.crossover_rate = 0.0;
+    config.mutation_rate = 0.0;
+    config.elite_count_enabled = true;
+    config.elite_count = 1;
+    config.population_recycling_enabled = true;
+
+    reset_allocation_injection(0);
+    {
+        const size_t releases_before_run = release_calls;
+
+        assert(evo_run(problem, &config, NULL, &result) == EVO_SUCCESS);
+        assert(allocation_calls == 5);
+        assert(observation_calls == 2);
+        assert(release_calls == releases_before_run + 4);
+        evo_result_destroy(&result);
+        assert(release_calls == releases_before_run + 5);
+        assert_completely_empty(&result);
+    }
+
+    config.generation_limit = 7;
+    reset_allocation_injection(0);
+    {
+        const size_t releases_before_run = release_calls;
+
+        assert(evo_run(problem, &config, NULL, &result) == EVO_SUCCESS);
+        assert(allocation_calls == 5);
+        assert(observation_calls == 8);
+        assert(result.generations_completed == 7);
+        assert(release_calls == releases_before_run + 4);
+        evo_result_destroy(&result);
+        assert(release_calls == releases_before_run + 5);
+        assert_completely_empty(&result);
+    }
+
+    config.generation_limit = 4;
+    for (size_t failure_call = 1; failure_call <= 5; ++failure_call) {
+        const size_t releases_before_run = release_calls;
+
+        reset_allocation_injection(failure_call);
+        assert(evo_run(problem, &config, NULL, &result) ==
+               EVO_ERROR_OUT_OF_MEMORY);
+        assert(allocation_calls == failure_call);
+        assert(observation_calls == (failure_call <= 3 ? 0 : 1));
+        assert(release_calls == releases_before_run + failure_call - 1);
+        assert_completely_empty(&result);
+    }
+
+    reset_allocation_injection(6);
+    assert(evo_run(problem, &config, NULL, &result) == EVO_SUCCESS);
+    assert(allocation_calls == 5);
+    assert(observation_calls == 5);
+    assert(result.generations_completed == 4);
+    fail_allocation_call = 0;
+    evo_result_destroy(&result);
+    assert_completely_empty(&result);
 }
 
 static void assert_child_evaluation_empty(
@@ -385,6 +459,7 @@ int main(void)
     assert_run_allocation_failure(&problem, &config, 2);
     assert_run_allocation_failure(&problem, &config, 3);
     test_checkpoint_restore_allocation_failures();
+    test_recycling_allocation_bound_and_failures(&problem, &config);
 
     run_config = config;
     run_config.generation_limit = 1;

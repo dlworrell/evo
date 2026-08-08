@@ -408,12 +408,12 @@ evo_status_t evo_elite_population_complete(
 
     if (children->genomes == NULL ||
         !evo_population_secure_erasure_is_valid(config, children) ||
-        children->evaluations != NULL ||
+        !evo_population_recycling_child_is_valid(config, children) ||
         children->population_size != config->population_size ||
         children->population_size != parents->population_size ||
         children->genome_size != problem->genome_size ||
         children->genome_size != parents->genome_size ||
-        children->evaluation_bytes != 0 || children->valid_count != 0 ||
+        children->valid_count != 0 ||
         children->best_index != 0 ||
         children->produced_count != offspring_count ||
         children->elite_count != 0 ||

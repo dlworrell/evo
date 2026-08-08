@@ -22,4 +22,9 @@ evo_status_t evo_population_restore_evaluations_allocate(
     const evo_config_t *config,
     evo_population_t *population);
 
+/* Allocate a detached zeroed evaluation reserve for one reusable child. */
+evo_status_t evo_population_reusable_evaluations_allocate(
+    const evo_config_t *config,
+    evo_population_t *population);
+
 #endif

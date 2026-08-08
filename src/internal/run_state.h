@@ -4,7 +4,7 @@
 #include "internal/adaptive_mutation.h"
 #include "internal/stopping.h"
 
-#define EVO_RUN_STATE_VERSION UINT32_C(1)
+#define EVO_RUN_STATE_VERSION UINT32_C(2)
 
 /*
  * Complete constant-space continuation authority for one committed run.
@@ -17,6 +17,7 @@ typedef struct evo_run_state {
     size_t best_population_index;
     evo_adaptive_mutation_state_t adaptive_mutation;
     evo_stopping_state_t stopping;
+    evo_population_storage_registry_t population_storage_registry;
     evo_termination_reason_t termination_reason;
     bool adaptive_mutation_applicable;
     bool initialized;

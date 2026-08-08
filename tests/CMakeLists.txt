@@ -11,6 +11,11 @@ target_include_directories(evo_population_storage_test PRIVATE ${PROJECT_SOURCE_
 target_link_libraries(evo_population_storage_test PRIVATE catalyst_evo)
 add_test(NAME evo_population_storage_test COMMAND evo_population_storage_test)
 
+add_executable(evo_population_recycling_test population_recycling_test.c)
+target_include_directories(evo_population_recycling_test PRIVATE ${PROJECT_SOURCE_DIR}/src)
+target_link_libraries(evo_population_recycling_test PRIVATE catalyst_evo)
+add_test(NAME evo_population_recycling_test COMMAND evo_population_recycling_test)
+
 add_executable(evo_rng_test rng_test.c)
 target_include_directories(evo_rng_test PRIVATE ${PROJECT_SOURCE_DIR}/src)
 target_link_libraries(evo_rng_test PRIVATE catalyst_evo)

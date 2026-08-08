@@ -3,7 +3,7 @@
 
 #include "internal/population_storage.h"
 
-#define EVO_GENERATION_ADVANCEMENT_POLICY_VERSION UINT32_C(7)
+#define EVO_GENERATION_ADVANCEMENT_POLICY_VERSION UINT32_C(8)
 
 typedef struct evo_generation_advancement_evidence {
     size_t population_size;
@@ -26,9 +26,13 @@ typedef struct evo_generation_advancement_evidence {
     uint32_t fitness_comparison_policy_version;
     uint32_t diversity_policy_version;
     uint32_t diversity_metric_version;
+    uint32_t population_recycling_policy_version;
+    uint64_t active_storage_owner_identity;
+    uint64_t reusable_storage_owner_identity;
     uint32_t policy_version;
     bool has_best;
     bool elite_count_explicit;
+    bool population_recycling_enabled;
     bool complete;
 } evo_generation_advancement_evidence_t;
 
@@ -47,6 +51,16 @@ evo_status_t evo_population_advance_generation(
     uint64_t current_generation,
     evo_population_t *parents,
     evo_population_t *evaluated_children,
+    evo_generation_advancement_evidence_t *evidence);
+
+/* Registry-aware variant used by opt-in bounded-run recycling. */
+evo_status_t evo_population_advance_generation_with_registry(
+    const evo_problem_t *problem,
+    const evo_config_t *config,
+    uint64_t current_generation,
+    evo_population_t *parents,
+    evo_population_t *evaluated_children,
+    evo_population_storage_registry_t *storage_registry,
     evo_generation_advancement_evidence_t *evidence);
 
 #endif

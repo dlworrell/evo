@@ -68,6 +68,41 @@ _Static_assert(EVO_MUTATION_ADAPTATION_POLICY_VERSION == UINT32_C(1),
                "the initial adaptive-mutation policy must remain stable");
 _Static_assert(EVO_SECURE_ERASURE_POLICY_VERSION == UINT32_C(1),
                "the initial secure-erasure policy must remain stable");
+_Static_assert(EVO_POPULATION_RECYCLING_POLICY_VERSION == UINT32_C(1),
+               "the initial population-recycling policy must remain stable");
+_Static_assert(EVO_POPULATION_STORAGE_REGISTRY_VERSION == UINT32_C(1),
+               "the initial storage-registry schema must remain stable");
+_Static_assert(EVO_POPULATION_STORAGE_EMPTY == 0,
+               "empty storage must remain the zero lifecycle value");
+_Static_assert(EVO_POPULATION_STORAGE_ACTIVE == 1,
+               "active storage must retain its public lifecycle value");
+_Static_assert(EVO_POPULATION_STORAGE_REUSABLE == 2,
+               "reusable storage must retain its public lifecycle value");
+_Static_assert(EVO_POPULATION_STORAGE_RESET_NONE == 0,
+               "no reset must remain the zero disposition");
+_Static_assert(EVO_POPULATION_STORAGE_RESET_ZERO_BYTES == 1,
+               "ordinary reset must retain its public value");
+_Static_assert(EVO_POPULATION_STORAGE_RESET_SECURE_ERASE == 2,
+               "secure reset must retain its public value");
+_Static_assert(EVO_CHECKPOINT_FORMAT_VERSION == UINT32_C(2),
+               "recycler checkpoints require format schema 2");
+_Static_assert(EVO_CHECKPOINT_VIEW_VERSION == UINT32_C(2),
+               "recycler checkpoint views require schema 2");
+_Static_assert(EVO_CHECKPOINT_CONFIGURATION_VIEW_VERSION == UINT32_C(2),
+               "recycler configuration views require schema 2");
+_Static_assert(
+    offsetof(evo_checkpoint_configuration_view_t,
+             population_recycling_enabled) >=
+        offsetof(evo_checkpoint_configuration_view_t,
+                 generation_stop_present) +
+            sizeof(bool),
+    "recycling must follow the checkpoint configuration version-1 prefix");
+_Static_assert(
+    offsetof(evo_checkpoint_view_t, population_storage_registry) >=
+        offsetof(evo_checkpoint_view_t,
+                 serialized_evaluation_record_size) +
+            sizeof(size_t),
+    "the storage registry must follow the checkpoint view version-1 prefix");
 _Static_assert(EVO_GENERATION_STATISTICS_VERSION == UINT32_C(4),
                "statistics schema 4 must carry adaptation evidence");
 _Static_assert(offsetof(evo_generation_statistics_t,
@@ -169,6 +204,19 @@ _Static_assert(offsetof(evo_config_t, secure_erasure_enabled) >=
                             adaptive_mutation_reset_on_improvement) +
                        sizeof(bool),
                "secure erasure must follow the 0.27 configuration prefix");
+_Static_assert(offsetof(evo_config_t, population_recycling_enabled) >=
+                   offsetof(evo_config_t, checkpoint_context_identity) +
+                       sizeof(uint64_t),
+               "population recycling must follow the 0.29 configuration prefix");
+_Static_assert(offsetof(evo_config_t, population_storage_observer) >=
+                   offsetof(evo_config_t, population_recycling_enabled) +
+                       sizeof(bool),
+               "the storage observer must follow its enable control");
+_Static_assert(offsetof(evo_config_t,
+                        population_storage_observer_context) >=
+                   offsetof(evo_config_t, population_storage_observer) +
+                       sizeof(evo_population_storage_observer_fn),
+               "the storage observer context must follow its callback");
 
 enum {
     TEST_POPULATION_CAPACITY = 8,

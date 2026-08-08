@@ -11,6 +11,7 @@
 #include "internal/fitness.h"
 #include "internal/observer.h"
 #include "internal/mutation.h"
+#include "internal/population_recycling.h"
 #include "internal/selection.h"
 #include "internal/secure_erasure.h"
 #include "internal/statistics.h"
@@ -582,6 +583,13 @@ evo_status_t evo_run_state_initialize(
     if (status != EVO_SUCCESS) {
         return EVO_ERROR_STATE;
     }
+    status = evo_population_storage_registry_initialize(
+        config,
+        population,
+        &candidate.population_storage_registry);
+    if (status != EVO_SUCCESS) {
+        return EVO_ERROR_STATE;
+    }
     candidate.initialized = true;
     *state = candidate;
     return EVO_SUCCESS;
@@ -620,7 +628,12 @@ static bool continuation_state_is_valid(
            evo_population_validate_completed(config,
                                              parents,
                                              &valid_count) &&
-           valid_count == parents->valid_count && parents->has_best;
+           valid_count == parents->valid_count && parents->has_best &&
+           evo_population_storage_registry_is_valid(
+               config,
+               parents,
+               state->current_generation,
+               &state->population_storage_registry);
 }
 
 evo_status_t evo_bounded_run_continue(
@@ -692,6 +705,16 @@ evo_status_t evo_bounded_run_continue(
     candidate.diversity_metric_version =
         parents->diversity_metric_version;
     candidate.stopping_policy_version = EVO_STOPPING_POLICY_VERSION;
+    candidate.population_recycling_policy_version =
+        config->population_recycling_enabled
+            ? EVO_POPULATION_RECYCLING_POLICY_VERSION
+            : 0;
+    candidate.population_recycling_enabled =
+        config->population_recycling_enabled;
+    candidate.final_active_storage_owner_identity =
+        state->population_storage_registry.active_owner_identity;
+    candidate.final_reusable_storage_owner_identity =
+        state->population_storage_registry.reusable_owner_identity;
     candidate.policy_version = EVO_BOUNDED_RUN_POLICY_VERSION;
 
     candidate.significant_best_total =
@@ -720,11 +743,19 @@ evo_status_t evo_bounded_run_continue(
                 ? state->adaptive_mutation.effective_rate
                 : 0.0;
 
-        status = evo_child_population_create(problem,
-                                             &transition_config,
-                                             parents,
-                                             &children);
-        if (status != EVO_SUCCESS) {
+        if (children.genomes == NULL) {
+            status = evo_child_population_create(problem,
+                                                 &transition_config,
+                                                 parents,
+                                                 &children);
+            if (status != EVO_SUCCESS) {
+                break;
+            }
+        } else if (!config->population_recycling_enabled ||
+                   !evo_population_recycling_child_is_valid(
+                       &transition_config,
+                       &children)) {
+            status = EVO_ERROR_STATE;
             break;
         }
 
@@ -770,12 +801,14 @@ evo_status_t evo_bounded_run_continue(
             break;
         }
 
-        status = evo_population_advance_generation(problem,
-                                                   &transition_config,
-                                                   source_generation,
-                                                   parents,
-                                                   &children,
-                                                   &advancement_evidence);
+        status = evo_population_advance_generation_with_registry(
+            problem,
+            &transition_config,
+            source_generation,
+            parents,
+            &children,
+            &state->population_storage_registry,
+            &advancement_evidence);
         if (status != EVO_SUCCESS) {
             break;
         }
@@ -809,6 +842,14 @@ evo_status_t evo_bounded_run_continue(
             advancement_evidence.singleton_child_policy_version;
         candidate.elite_count_explicit =
             advancement_evidence.elite_count_explicit;
+        candidate.population_recycling_policy_version =
+            advancement_evidence.population_recycling_policy_version;
+        candidate.population_recycling_enabled =
+            advancement_evidence.population_recycling_enabled;
+        candidate.final_active_storage_owner_identity =
+            advancement_evidence.active_storage_owner_identity;
+        candidate.final_reusable_storage_owner_identity =
+            advancement_evidence.reusable_storage_owner_identity;
         best_result->generations_completed =
             candidate.completed_transitions;
         state->current_generation = candidate.final_generation;
@@ -884,6 +925,10 @@ evo_status_t evo_bounded_run_continue(
                 termination_reason ==
                 EVO_TERMINATION_APPLICATION_REQUESTED;
         }
+
+        evo_population_storage_registry_notify(
+            config,
+            &state->population_storage_registry);
 
         status = evo_checkpoint_emit(problem,
                                      config,

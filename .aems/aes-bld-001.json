@@ -87,6 +87,7 @@
     "production_sources": [
       "src/population.c",
       "src/population_storage.c",
+      "src/population_recycling.c",
       "src/population_initialization.c",
       "src/population_evaluation.c",
       "src/selection.c",
@@ -128,6 +129,12 @@
         "source": "tests/population_storage_test.c",
         "cmake": "evo_population_storage_test",
         "autotools": "tests/evo_population_storage_test"
+      },
+      {
+        "id": "population-recycling",
+        "source": "tests/population_recycling_test.c",
+        "cmake": "evo_population_recycling_test",
+        "autotools": "tests/evo_population_recycling_test"
       },
       {
         "id": "rng",

@@ -65,3 +65,24 @@ implemented by ADR-0030.
 Core checkpoint bytes remain untrusted unless separately authenticated by the
 consumer. ADR-0030, EVO-001, and EVO-HRA-002 define the parser, ownership,
 security, and explainable-projection boundaries.
+
+## EVO 0.30.0 Population-Recycling Amendment (2026-08-08)
+
+Population recycling reuses only two fixed run-local owners. It introduces no
+global pool, address-keyed lookup, concurrent free list, unbounded allocation,
+or new raw allocation primitive. The existing checked genome and evaluation
+constructors materialize the second slot; later transitions allocate nothing.
+
+| Requirement | 0.30.0 status | Retained evidence |
+|---|---|---|
+| Exact ownership | Pass | Pointer/count owners remain authority; registry evidence is reconciled and cannot select an owner; advancement rejects object, owner-range, evidence, and registry aliases before mutation |
+| Bounded allocation | Pass | `tests/allocation_failure_test.c` proves five allocations for one or seven transitions, cleanup at each allocation failure, and absence of a sixth allocation |
+| Reset before reuse | Pass | Ordinary mode zeros both complete ranges; secure mode invokes the reviewed erasure wrapper over both exact ranges before role handoff completes |
+| Failure cleanup | Pass | Recycled provisional-evaluation failures reset and return the reserve; enclosing failure releases every acquired owner once through its retained policy |
+| Replay neutrality | Pass | `tests/population_recycling_test.c` compares complete callback traces, results, statistics, events, stopping, termination, and algorithm-visible RNG evidence with the explicit allocation path |
+| Explainability | Pass | The fixed address-free registry exposes lifecycle, generations, capacities, handoffs, resets, erasures, and owner presence; EVO-HRA-003 retains the ADR-0026 audit |
+| Checkpoint trust boundary | Pass | Format 2 validates the complete source registry before allocation, reconstructs local owners, and reattaches only the restoring build's erasure backend |
+
+ADR-0031, EVO-001, and EVO-HRA-003 define the lifecycle, security, replay, and
+human-readable projection boundaries. Shared pools, cross-run caches, lazy
+reset, and parallel owner access remain outside this assessment.
