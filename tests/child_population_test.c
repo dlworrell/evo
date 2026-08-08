@@ -76,6 +76,10 @@ static void assert_population_empty(const evo_population_t *population)
     assert(population->genome_size == 0);
     assert(population->storage_bytes == 0);
     assert(population->evaluation_bytes == 0);
+    assert(population->secure_erasure_policy_version == 0);
+    assert(population->secure_erasure_backend ==
+           EVO_SECURE_ERASURE_BACKEND_NONE);
+    assert(!population->secure_erasure_enabled);
     assert(population->valid_count == 0);
     assert(population->best_index == 0);
     assert(population->produced_count == 0);
@@ -105,6 +109,11 @@ static void assert_child_storage(const evo_population_t *children)
     assert(children->genome_size == TEST_GENOME_SIZE);
     assert(children->storage_bytes == TEST_STORAGE_BYTES);
     assert(children->evaluation_bytes == 0);
+    assert(children->secure_erasure_policy_version ==
+           EVO_SECURE_ERASURE_POLICY_VERSION);
+    assert(children->secure_erasure_backend ==
+           EVO_SECURE_ERASURE_BACKEND_NONE);
+    assert(!children->secure_erasure_enabled);
     assert(children->valid_count == 0);
     assert(children->best_index == 0);
     assert(children->produced_count == 0);

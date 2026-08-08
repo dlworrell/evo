@@ -16,6 +16,8 @@ typedef struct evo_population {
     size_t genome_size;
     size_t storage_bytes;
     size_t evaluation_bytes;
+    uint32_t secure_erasure_policy_version;
+    evo_secure_erasure_backend_t secure_erasure_backend;
     size_t valid_count;
     size_t best_index;
     size_t produced_count;
@@ -45,6 +47,7 @@ typedef struct evo_population {
     bool evaluated;
     bool elite_count_explicit;
     bool diversity_uses_domain_distance;
+    bool secure_erasure_enabled;
 } evo_population_t;
 
 /*
@@ -69,6 +72,11 @@ evo_status_t evo_child_population_create(
     const evo_config_t *config,
     const evo_population_t *parents,
     evo_population_t *children);
+
+/* Validate the secure-erasure audit metadata against one configuration. */
+bool evo_population_secure_erasure_is_valid(
+    const evo_config_t *config,
+    const evo_population_t *population);
 
 /*
  * Validate structurally complete evaluated population evidence without
@@ -135,8 +143,10 @@ bool evo_population_best_index(const evo_population_t *population,
 
 /*
  * Release the population storage and reset the complete object to zero.
- * This operation is null-safe and repeatable for initialized objects.
- * It releases ordinary genome storage without securely erasing its bytes.
+ * This operation is null-safe and repeatable for initialized objects. An
+ * enabled canonical policy erases the exact evaluation and genome byte ranges
+ * once immediately before their respective releases. Disabled policy uses
+ * ordinary release and makes no scrubbing claim.
  */
 void evo_population_destroy(evo_population_t *population);
 

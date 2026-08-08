@@ -12,6 +12,8 @@ _Static_assert(EVO_BYTE_OPERATOR_POLICY_VERSION == UINT32_C(1),
                "unsupported EVO byte-operator policy");
 _Static_assert(EVO_MUTATION_ADAPTATION_POLICY_VERSION == UINT32_C(1),
                "unsupported EVO mutation-adaptation policy");
+_Static_assert(EVO_SECURE_ERASURE_POLICY_VERSION == UINT32_C(1),
+               "unsupported EVO secure-erasure policy");
 
 typedef struct callback_state {
     size_t observer_calls;
@@ -143,6 +145,12 @@ int main(void)
     }
 
     if (result.best_genome == NULL ||
+        result.best_genome_size != 8 ||
+        result.secure_erasure_policy_version !=
+            EVO_SECURE_ERASURE_POLICY_VERSION ||
+        result.secure_erasure_backend !=
+            EVO_SECURE_ERASURE_BACKEND_NONE ||
+        result.secure_erasure_enabled ||
         result.best_fitness.correctness != 1.0 ||
         result.best_fitness.total != 1.0 ||
         result.termination_reason != EVO_TERMINATION_CONVERGED ||
@@ -181,6 +189,11 @@ int main(void)
 
     evo_result_destroy(&result);
     return result.best_genome == NULL &&
+                   result.best_genome_size == 0 &&
+                   result.secure_erasure_policy_version == 0 &&
+                   result.secure_erasure_backend ==
+                       EVO_SECURE_ERASURE_BACKEND_NONE &&
+                   !result.secure_erasure_enabled &&
                    result.termination_reason == EVO_TERMINATION_NONE &&
                    result.generation_statistics.version == 0
                ? 0

@@ -2,6 +2,7 @@
 #include "internal/diversity.h"
 #include "internal/fitness.h"
 #include "internal/rng.h"
+#include "internal/secure_erasure.h"
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -39,6 +40,7 @@ static bool initialized_population_ready_for_evaluation(
         population->elite_source_valid_count != 0 ||
         population->source_generation != 0 ||
         population->operator_seed_schedule_version != 0 ||
+        !evo_population_secure_erasure_is_valid(config, population) ||
         population->byte_operator_policy_version != 0 ||
         population->crossover_operator != EVO_CROSSOVER_CONSUMER ||
         population->mutation_operator != EVO_MUTATION_CONSUMER ||
@@ -68,8 +70,13 @@ static bool initialized_population_ready_for_evaluation(
 
 static evo_status_t discard_provisional_evaluations(
     evo_candidate_evaluation_t *evaluations,
+    size_t evaluation_bytes,
+    bool secure_erasure_enabled,
     evo_status_t status)
 {
+    if (secure_erasure_enabled) {
+        evo_secure_erase(evaluations, evaluation_bytes);
+    }
     free(evaluations);
     return status;
 }
@@ -78,6 +85,14 @@ static evo_status_t rollback_population_evaluations(
     evo_population_t *population,
     evo_status_t status)
 {
+    if (population->secure_erasure_enabled &&
+        evo_secure_erasure_metadata_is_valid(
+            population->secure_erasure_enabled,
+            population->secure_erasure_policy_version,
+            population->secure_erasure_backend)) {
+        evo_secure_erase(population->evaluations,
+                         population->evaluation_bytes);
+    }
     free(population->evaluations);
     population->evaluations = NULL;
     population->evaluation_bytes = 0;
@@ -136,6 +151,8 @@ evo_status_t evo_population_evaluate_ready(
 
         if (genome == NULL) {
             return discard_provisional_evaluations(evaluations,
+                                                   evaluation_bytes,
+                                                   config->secure_erasure_enabled,
                                                    EVO_ERROR_STATE);
         }
 
@@ -160,6 +177,8 @@ evo_status_t evo_population_evaluate_ready(
         genome = evo_population_genome_const(population, index);
         if (genome == NULL) {
             return discard_provisional_evaluations(evaluations,
+                                                   evaluation_bytes,
+                                                   config->secure_erasure_enabled,
                                                    EVO_ERROR_STATE);
         }
 
@@ -174,7 +193,10 @@ evo_status_t evo_population_evaluate_ready(
         };
         if (!evo_fitness_candidate_is_rankable(&candidate_view)) {
             return discard_provisional_evaluations(
-                evaluations, EVO_ERROR_EVALUATION);
+                evaluations,
+                evaluation_bytes,
+                config->secure_erasure_enabled,
+                EVO_ERROR_EVALUATION);
         }
 
         if (!has_best) {
@@ -194,7 +216,10 @@ evo_status_t evo_population_evaluate_ready(
                                             &best_view,
                                             &order)) {
             return discard_provisional_evaluations(
-                evaluations, EVO_ERROR_EVALUATION);
+                evaluations,
+                evaluation_bytes,
+                config->secure_erasure_enabled,
+                EVO_ERROR_EVALUATION);
         }
         if (order == EVO_FITNESS_ORDER_LEFT) {
             best_index = index;

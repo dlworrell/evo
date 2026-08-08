@@ -32,6 +32,7 @@ static bool produced_child_ready_for_evaluation(
     uint32_t expected_singleton_child_policy_version = 0;
 
     if (children->genomes == NULL || children->evaluations != NULL ||
+        !evo_population_secure_erasure_is_valid(config, children) ||
         children->population_size == 0 || children->genome_size == 0 ||
         children->storage_bytes == 0 ||
         children->population_size != config->population_size ||

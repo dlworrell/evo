@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.20)
-project(catalyst_evo VERSION 0.27.0 LANGUAGES C)
+project(catalyst_evo VERSION 0.28.0 LANGUAGES C)
 
 include(CTest)
+include(CheckSymbolExists)
 include(GNUInstallDirs)
 
 set(CMAKE_C_STANDARD 17)
@@ -11,6 +12,14 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(EVO_WARNINGS_AS_ERRORS "Treat project warnings as errors" ON)
 option(EVO_ENABLE_SANITIZERS "Enable AddressSanitizer and UBSan" OFF)
+
+set(CMAKE_REQUIRED_DEFINITIONS "-D_DEFAULT_SOURCE=1")
+check_symbol_exists(
+    explicit_bzero
+    "string.h"
+    EVO_HAVE_EXPLICIT_BZERO
+)
+unset(CMAKE_REQUIRED_DEFINITIONS)
 
 if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
     add_compile_options(
@@ -42,6 +51,7 @@ add_library(catalyst_evo STATIC
     src/crossover.c
     src/mutation.c
     src/adaptive_mutation.c
+    src/secure_erasure.c
     src/parent_pair.c
     src/child_pair.c
     src/child_single.c
@@ -68,6 +78,13 @@ target_include_directories(catalyst_evo
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 target_compile_features(catalyst_evo PUBLIC c_std_17)
+
+if(EVO_HAVE_EXPLICIT_BZERO)
+    target_compile_definitions(
+        catalyst_evo
+        PRIVATE EVO_HAVE_EXPLICIT_BZERO=1
+    )
+endif()
 
 if(NOT MSVC)
     target_link_libraries(catalyst_evo PUBLIC m)

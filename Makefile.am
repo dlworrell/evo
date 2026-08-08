@@ -22,6 +22,7 @@ libcatalyst_evo_la_SOURCES = \
 	src/crossover.c \
 	src/mutation.c \
 	src/adaptive_mutation.c \
+	src/secure_erasure.c \
 	src/parent_pair.c \
 	src/child_pair.c \
 	src/child_single.c \
@@ -49,6 +50,7 @@ noinst_HEADERS = \
 	src/internal/crossover.h \
 	src/internal/mutation.h \
 	src/internal/adaptive_mutation.h \
+	src/internal/secure_erasure.h \
 	src/internal/parent_pair.h \
 	src/internal/child_pair.h \
 	src/internal/child_single.h \
@@ -97,6 +99,7 @@ check_PROGRAMS = \
 	tests/evo_stopping_test \
 	tests/evo_seed_schedule_research_test \
 	tests/evo_seed_schedule_experiment \
+	tests/evo_secure_erasure_test \
 	tests/evo_allocation_failure_test
 TESTS = $(check_PROGRAMS)
 
@@ -188,6 +191,13 @@ tests_evo_seed_schedule_experiment_SOURCES = \
 	tests/seed_schedule_experiment.c
 tests_evo_seed_schedule_experiment_LDADD = \
 	libevo_seed_schedule_research.la libcatalyst_evo.la -lm
+
+tests_evo_secure_erasure_test_SOURCES = \
+	tests/secure_erasure_test.c
+tests_evo_secure_erasure_test_LDADD = libcatalyst_evo.la -lm
+tests_evo_secure_erasure_test_LDFLAGS = \
+	-Wl,--wrap=calloc -Wl,--wrap=free \
+	-Wl,--wrap=evo_secure_erase
 
 tests_evo_allocation_failure_test_SOURCES = \
 	tests/allocation_failure_test.c

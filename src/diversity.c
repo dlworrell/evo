@@ -137,6 +137,7 @@ evo_status_t evo_population_measure_diversity(
     }
 
     if (population->genomes == NULL || population->evaluations == NULL ||
+        !evo_population_secure_erasure_is_valid(config, population) ||
         !population->evaluated ||
         population->population_size != config->population_size ||
         population->genome_size != problem->genome_size ||

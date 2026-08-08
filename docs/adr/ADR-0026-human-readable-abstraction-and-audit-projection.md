@@ -160,6 +160,14 @@ delivery provide the explicit human-readable decision projection: source
 generation, prior/effective rates, bounds, evidence facts, clamp/reset state,
 and reason. No opaque cache, filter, index, or compressed authority is added.
 
+ADR-0029 performs the change-specific assessment for EVO 0.28.0. Secure
+erasure uses direct owner fields and retained exact allocation counts, not an
+accelerated, pooled, cached, or address-keyed substitute. Its stable ownership-
+and-erasure registry names each logical range, lifecycle disposition, policy
+version, and backend. The accelerator-equivalence requirement is therefore not
+applicable, while exact-once event tests reconcile the registry with actual
+erase-before-release behavior.
+
 ## Consequences
 
 - EVO may use efficient internal data structures without exposing their

@@ -2,7 +2,7 @@
 
 This document distinguishes algorithms implemented by the reusable
 `catalyst_evo` core from the structured program transformations and evaluation
-algorithm required by the EVO 1.0 source optimizer. Version 0.27.0 implements
+algorithm required by the EVO 1.0 source optimizer. Version 0.28.0 implements
 only the core boundary described below.
 
 ## EVO Core Initial Release
@@ -19,6 +19,7 @@ only the core boundary described below.
 - Diversity measurement
 - Stagnation detection
 - Constraint penalties
+- Opt-in exact secure erasure of EVO-owned genome and evaluation ranges
 
 ## Later EVO Core Releases
 
@@ -517,7 +518,7 @@ affected by allocation addresses or later equal candidates. Failure at any
 transition destroys all internal owners and the result allocation; no partial
 winner or completion count escapes the public call.
 
-Through version 0.27.0, this algorithm has a bounded sequential working set of
+Through version 0.28.0, this algorithm has a bounded sequential working set of
 one current population, one child population, one result genome, and the
 current population's evaluation records plus provisional child evaluation
 records during child evaluation. It does not recycle slabs or run callbacks
@@ -745,6 +746,50 @@ records are its ADR-0026 human-readable audit projection. Future checkpointing
 must persist the effective next rate, stagnant count, schema-4 record, policy
 parameters and versions, committed generation, global winner, and existing RNG
 state together; an incomplete history may not be used to guess a rate.
+
+## Opt-In Secure Erasure
+
+Version 0.28.0 defines secure-erasure policy version 1 over a fixed logical
+owner registry:
+
+```text
+public result genome          -> best_genome_size
+population genome slab       -> storage_bytes
+population evaluation array  -> evaluation_bytes
+provisional evaluation array -> checked local evaluation_bytes
+```
+
+Each active owner records policy version 1. Disabled owners select ordinary
+release and backend `NONE`. Enabled owners select the build-detected backend
+and execute this terminal algorithm:
+
+```text
+require non-null sole owner and exact nonzero byte count
+erase every byte in the complete range once
+release the allocation once
+reset the owner and all lifecycle evidence to zero
+```
+
+CMake and GNU Autotools detect `explicit_bzero` independently and define the
+same internal capability macro. When unavailable, the wrapper writes zero in
+ascending order through a volatile-byte view. The wrapper uses no generic
+`memset`, allocation, callback, RNG, clock, process identity, or address as
+decision input.
+
+The same algorithm handles public success destruction, run failure, partial
+allocation, former-parent disposal after child promotion, provisional
+evaluation rejection, and attached-evaluation rollback. Exact owner counts
+move with child ownership; they are never reconstructed from a later
+configuration object.
+
+The direct owner/count table is canonical and is not an accelerator under
+ADR-0026. Its named rows, lifecycle disposition, policy version, and backend
+form the stable human-readable registry. The exact-once link-wrapper test
+observes the transient erase and release events without retaining allocator
+addresses as evidence. The guarantee ends at live EVO-owned process memory and
+does not extend to consumer copies, swap, crash artifacts, or persistent media.
+ADR-0029 fixes the complete owner registry, portability boundary, and cleanup
+contract.
 
 ## Structured C Source Evolution
 

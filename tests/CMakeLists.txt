@@ -147,6 +147,18 @@ add_test(NAME evo_seed_schedule_experiment COMMAND evo_seed_schedule_experiment)
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux"
    AND CMAKE_C_COMPILER_ID MATCHES "GNU|Clang"
    AND NOT BUILD_SHARED_LIBS)
+    add_executable(evo_secure_erasure_test secure_erasure_test.c)
+    target_include_directories(evo_secure_erasure_test PRIVATE ${PROJECT_SOURCE_DIR}/src)
+    target_link_libraries(evo_secure_erasure_test PRIVATE catalyst_evo)
+    target_link_options(
+        evo_secure_erasure_test
+        PRIVATE
+            "-Wl,--wrap=calloc"
+            "-Wl,--wrap=free"
+            "-Wl,--wrap=evo_secure_erase"
+    )
+    add_test(NAME evo_secure_erasure_test COMMAND evo_secure_erasure_test)
+
     add_executable(evo_allocation_failure_test allocation_failure_test.c)
     target_include_directories(evo_allocation_failure_test PRIVATE ${PROJECT_SOURCE_DIR}/src)
     target_link_libraries(evo_allocation_failure_test PRIVATE catalyst_evo)

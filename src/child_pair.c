@@ -48,6 +48,7 @@ static bool child_progress_is_valid(
     size_t complete_pair_count = 0;
 
     if (parents == children || children->genomes == NULL ||
+        !evo_population_secure_erasure_is_valid(config, children) ||
         children->genomes == parents->genomes ||
         children->evaluations != NULL ||
         children->population_size != config->population_size ||

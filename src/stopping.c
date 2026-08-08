@@ -2,6 +2,7 @@
 
 #include "internal/adaptive_mutation.h"
 #include "internal/fitness.h"
+#include "internal/secure_erasure.h"
 
 #include <math.h>
 #include <stdint.h>
@@ -46,6 +47,14 @@ static bool committed_result_is_valid(const evo_config_t *config,
     const evo_generation_statistics_t *statistics = NULL;
 
     if (result == NULL || result->best_genome == NULL ||
+        result->best_genome_size == 0 ||
+        result->best_genome_size > config->max_genome_bytes ||
+        result->secure_erasure_enabled !=
+            config->secure_erasure_enabled ||
+        !evo_secure_erasure_metadata_is_valid(
+            result->secure_erasure_enabled,
+            result->secure_erasure_policy_version,
+            result->secure_erasure_backend) ||
         result->termination_reason != EVO_TERMINATION_NONE ||
         !evo_fitness_evidence_is_valid(&result->best_fitness)) {
         return false;

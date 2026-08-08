@@ -346,6 +346,11 @@ static void assert_result_empty(const evo_result_t *result)
     assert(result->termination_reason == EVO_TERMINATION_NONE);
     assert(statistics_equal(&result->generation_statistics,
                             &empty_statistics));
+    assert(result->best_genome_size == 0);
+    assert(result->secure_erasure_policy_version == 0);
+    assert(result->secure_erasure_backend ==
+           EVO_SECURE_ERASURE_BACKEND_NONE);
+    assert(!result->secure_erasure_enabled);
 }
 
 static void assert_trace_event(const callback_trace_t *trace,
@@ -438,6 +443,13 @@ static void assert_results_equal(const evo_result_t *left,
     assert(left->termination_reason == right->termination_reason);
     assert(statistics_equal(&left->generation_statistics,
                             &right->generation_statistics));
+    assert(left->best_genome_size == right->best_genome_size);
+    assert(left->secure_erasure_policy_version ==
+           right->secure_erasure_policy_version);
+    assert(left->secure_erasure_backend ==
+           right->secure_erasure_backend);
+    assert(left->secure_erasure_enabled ==
+           right->secure_erasure_enabled);
 }
 
 static void assert_observers_equal(const observer_context_t *left,

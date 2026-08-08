@@ -104,6 +104,10 @@ static void fixture_initialize(selection_fixture_t *fixture,
     fixture->population.storage_bytes = population_size;
     fixture->population.evaluation_bytes =
         fixture->config.max_evaluation_bytes;
+    fixture->population.secure_erasure_policy_version =
+        EVO_SECURE_ERASURE_POLICY_VERSION;
+    fixture->population.secure_erasure_backend =
+        EVO_SECURE_ERASURE_BACKEND_NONE;
     fixture->population.initialization_seed = seed;
     fixture->population.rng_algorithm_version =
         EVO_RNG_ALGORITHM_VERSION;

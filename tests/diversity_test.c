@@ -416,6 +416,11 @@ static void assert_result_empty(const evo_result_t *result)
     assert(result->generation_statistics.diversity_work_units == 0);
     assert(result->generation_statistics.diversity == 0.0);
     assert(!result->generation_statistics.diversity_uses_domain_distance);
+    assert(result->best_genome_size == 0);
+    assert(result->secure_erasure_policy_version == 0);
+    assert(result->secure_erasure_backend ==
+           EVO_SECURE_ERASURE_BACKEND_NONE);
+    assert(!result->secure_erasure_enabled);
 }
 
 static void test_budget_and_arithmetic_preflight(void)

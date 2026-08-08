@@ -32,6 +32,7 @@ The governing product records are:
 - `docs/adr/ADR-0026-human-readable-abstraction-and-audit-projection.md`
 - `docs/adr/ADR-0027-reference-byte-genome-operators.md`
 - `docs/adr/ADR-0028-evidence-driven-adaptive-mutation.md`
+- `docs/adr/ADR-0029-opt-in-secure-erasure-lifecycle.md`
 - `docs/specs/EVO-001-library-contract.md`
 - `docs/specs/EVO-002-source-optimizer-contract.md`
 - `docs/roadmap.md`
@@ -77,7 +78,10 @@ the rule. ADR-0027 separately assesses the 0.26.0 byte operators: their direct
 bounded arrays are the exact reference representation, so no accelerator or
 separate audit projection is introduced. ADR-0028 assesses 0.27.0 adaptive
 mutation: its direct constant-space state is canonical, and schema-4 observer
-records provide the ordered human-readable decision projection.
+records provide the ordered human-readable decision projection. ADR-0029
+assesses 0.28.0 secure erasure: direct owner fields and exact byte counts are
+canonical, and its stable registry names every range, lifecycle disposition,
+and backend without an accelerated or address-keyed authority.
 
 ## Roadmap Scope
 
@@ -87,6 +91,7 @@ The core track includes:
 - Tournament and rank-based selection
 - One-point, two-point, and uniform crossover
 - Mutation and adaptive mutation
+- Opt-in secure erasure for EVO-owned genomes and evaluation evidence
 - Diversity measurement and stagnation handling
 - Constraint and penalty handling
 - Checkpointing and reproducible random-number generation
@@ -123,7 +128,7 @@ repository.
 - `docs/` — architecture, theory, algorithms, and evidence guidance
 
 The source-optimizer implementation directories will be introduced only by
-their dependency-ordered roadmap issues. Their absence in version 0.27.0 is an
+their dependency-ordered roadmap issues. Their absence in version 0.28.0 is an
 explicit current boundary, not an implicit feature claim.
 
 ## Authoritative Native Builds
@@ -163,7 +168,7 @@ declared Clang/LLVM and GNU profiles.
 
 ## Status
 
-**Current implementation boundary:** EVO 0.27.0 implements the deterministic
+**Current implementation boundary:** EVO 0.28.0 implements the deterministic
 evolutionary-search core. It does not yet ingest a C project, build a Clang AST
 or LLVM IR model, transform source, compile evolved candidates, or emit an
 optimized source patch. Those product boundaries are tracked in the 1.0
@@ -283,6 +288,15 @@ schema 4 records the prior/effective rates, bounds, stagnant count, clamp/reset
 facts, and explainable reason. That same effective rate is carried through
 consumer and reference mutation, evaluation, promotion, and replay. Disabled
 zero payload preserves the 0.26.0 static operator stream exactly.
+
+EVO 0.28.0 appends disabled-by-default secure-erasure policy 1. Every live
+result and private population owner retains its exact allocation size plus a
+stable policy/backend disposition. Enabled cleanup erases each complete genome
+or evaluation range exactly once immediately before its sole release on both
+success and failure paths. CMake and GNU Autotools independently detect
+`explicit_bzero`; unsupported platforms use the reviewed volatile-byte
+fallback. Disabled cleanup invokes no erasure primitive and preserves ordinary
+release without claiming that freed bytes were scrubbed.
 
 Version 0.3.0 added the independently tested private population-storage
 foundation: checked `population_size * genome_size` arithmetic, a
@@ -470,8 +484,13 @@ result. No partial run result is exposed.
 
 Callers must zero-initialize an `evo_result_t` before first use. A successful
 run transfers exclusive ownership of `best_genome` to that result. Reusing an
-active result is rejected; `evo_result_destroy` releases the allocation,
-resets the full result to zero, and makes it immediately reusable.
+active result is rejected. The result retains `best_genome_size`, policy
+version, backend, and enabled state beside that sole owner.
+`evo_result_destroy` applies the retained ordinary or erase-before-release
+disposition, resets the full result to zero, and makes it immediately reusable.
+The enabled guarantee covers only the exact live EVO allocation, not consumer
+copies, aliases, swap, crash artifacts, allocator internals, or persistent
+media.
 
 `termination_reason` is nonzero only after `EVO_SUCCESS`. It reports whether
 the configured generation limit completed, a later all-invalid generation
