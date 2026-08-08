@@ -43,6 +43,8 @@ typedef struct evo_population {
     uint32_t fitness_comparison_policy_version;
     uint32_t diversity_policy_version;
     uint32_t diversity_metric_version;
+    uint32_t parallel_evaluation_policy_version;
+    size_t evaluation_worker_count;
     size_t diversity_pair_count;
     size_t diversity_work_units;
     double diversity;

@@ -247,6 +247,59 @@
       "reviewed_at": "2026-07-30",
       "reassess_after": "2027-07-30",
       "resolution_commit": null
+    },
+    {
+      "finding_id": "aes-sec-001:5280da8af1582167a04398e5c16add72a0cff3c9b7975feeca8a016529722599",
+      "source_fingerprint": "sha256:2dd62530b4202e2b01c4279c346e3e0106ff605e3b7a7549786ec2b920acb531",
+      "path": "src/evaluation_workers.c",
+      "line": 358,
+      "symbol": "calloc",
+      "classification": "approved-invariant",
+      "rationale": "The worker scheduler computes one exact scratch range before starting any thread or invoking any consumer callback. scratch_layout_size requires nonzero bounded population and worker counts, checks the worker-array multiplication, alignment padding, assignment-array multiplication, and final addition against SIZE_MAX, and public preflight independently requires the resulting size to fit the caller's explicit worker-scratch budget. calloc receives one element of that already proven nonzero byte count; its result is checked before either interior view is formed.",
+      "invariant": "calloc(1, scratch_size) executes only after scratch_size is proven to contain the aligned worker array and every candidate assignment without overlap or overflow and no greater than config->max_evaluation_worker_scratch_bytes. A null result starts no thread, invokes no consumer callback or observer, attaches no population owner, and returns EVO_ERROR_OUT_OF_MEMORY. A successful result remains the scheduler's sole local owner; workers and assignments are bounded non-owning interior views.",
+      "evidence": [
+        "include/catalyst/evo/evo.h",
+        "src/internal/evaluation_workers.h",
+        "src/evaluation_workers.c",
+        "tests/evaluation_workers_test.c::test_scratch_size_and_configuration_boundaries",
+        "tests/evaluation_workers_test.c::test_worker_counts_match_serial_reference",
+        "tests/allocation_failure_test.c::test_parallel_evaluation_allocation_failure",
+        "docs/adr/ADR-0032-deterministic-bounded-parallel-evaluation.md",
+        "docs/engineering/reports/EVO-HRA-004-parallel-evaluation-audit.md",
+        "https://github.com/dlworrell/evo/issues/53"
+      ],
+      "owner": "dlworrell",
+      "reviewer": "dlworrell",
+      "reviewed_at": "2026-08-08",
+      "reassess_after": "2027-08-08",
+      "resolution_commit": null
+    },
+    {
+      "finding_id": "aes-sec-001:eeecc7983ec3348849327f1b741830d9e7bc7193daba24e0884e8b7854936445",
+      "source_fingerprint": "sha256:4beb437004a952ae6e2837c6d9642c3a87c3aa27711190d59848ab51e5903674",
+      "path": "src/evaluation_workers.c",
+      "line": 284,
+      "symbol": "free",
+      "classification": "approved-invariant",
+      "rationale": "The scheduler retains sole ownership of the checked scratch allocation for one population-evaluation attempt. All worker and assignment pointers are bounded interior views; none is attached to the population or returned to the caller. Every started worker is joined; after an injected join failure, the worker is observed terminated and a recovery join reaps it, with detach reserved for a second join failure. This completes before observer delivery and release. The synchronous observer may inspect the assignment projection only during its call and returns before the complete scratch range is zeroed and freed.",
+      "invariant": "Each successful worker-scratch allocation reaches clear_and_release_scratch exactly once on worker-start failure or after all started workers have terminated on the ordinary and failure paths. The helper zeros exactly scratch_size bytes and then calls free through the sole owner. No worker, observer, population, checkpoint, or public result retains an owning or non-owning scratch alias after release; allocation failure never reaches the helper.",
+      "evidence": [
+        "include/catalyst/evo/evo.h",
+        "src/internal/evaluation_workers.h",
+        "src/evaluation_workers.c",
+        "tests/evaluation_workers_test.c::test_non_finite_wave_cancels_later_work",
+        "tests/evaluation_workers_test.c::test_worker_start_failure_joins_without_callbacks",
+        "tests/evaluation_workers_test.c::test_worker_join_failure_terminates_before_rollback",
+        "tests/allocation_failure_test.c::test_parallel_evaluation_allocation_failure",
+        "docs/adr/ADR-0032-deterministic-bounded-parallel-evaluation.md",
+        "docs/engineering/reports/EVO-HRA-004-parallel-evaluation-audit.md",
+        "https://github.com/dlworrell/evo/issues/53"
+      ],
+      "owner": "dlworrell",
+      "reviewer": "dlworrell",
+      "reviewed_at": "2026-08-08",
+      "reassess_after": "2027-08-08",
+      "resolution_commit": null
     }
   ]
 }

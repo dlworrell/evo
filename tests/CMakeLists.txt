@@ -31,6 +31,11 @@ target_include_directories(evo_population_evaluation_test PRIVATE ${PROJECT_SOUR
 target_link_libraries(evo_population_evaluation_test PRIVATE catalyst_evo)
 add_test(NAME evo_population_evaluation_test COMMAND evo_population_evaluation_test)
 
+add_executable(evo_evaluation_workers_test evaluation_workers_test.c)
+target_include_directories(evo_evaluation_workers_test PRIVATE ${PROJECT_SOURCE_DIR}/src)
+target_link_libraries(evo_evaluation_workers_test PRIVATE catalyst_evo)
+add_test(NAME evo_evaluation_workers_test COMMAND evo_evaluation_workers_test)
+
 add_executable(evo_fitness_test fitness_test.c)
 target_include_directories(evo_fitness_test PRIVATE ${PROJECT_SOURCE_DIR}/src)
 target_link_libraries(evo_fitness_test PRIVATE catalyst_evo)

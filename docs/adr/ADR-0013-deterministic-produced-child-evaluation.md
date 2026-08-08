@@ -92,6 +92,17 @@ ADR-0028 advances child-evaluation policy to version 7 in EVO 0.27.0. Produced
 children and output evidence must additionally preserve the finite effective
 mutation rate that produced the committed generation.
 
+ADR-0031 advances child-evaluation policy to version 8 in EVO 0.30.0. Completed
+children and output evidence additionally preserve population-recycling policy
+version 1, the enabled state, and the stable storage-owner identity. Evaluation
+ordering, fitness, and commit semantics remain independent of storage reuse.
+
+ADR-0032 advances child-evaluation policy to version 9 in EVO 0.31.0. Completed
+children and output evidence additionally preserve parallel-evaluation policy
+version 1 and the configured worker count. Positive worker counts use the
+stable assignment and commit schedule defined by ADR-0032; zero preserves the
+serial callback and commit path.
+
 ## Consequences
 
 - Generation-zero and child evaluation cannot drift in ordering, finite-

@@ -284,6 +284,50 @@ static void test_recycling_allocation_bound_and_failures(
     assert_completely_empty(&result);
 }
 
+static void test_parallel_evaluation_allocation_failure(
+    const evo_problem_t *base_problem,
+    const evo_config_t *base_config)
+{
+    evo_problem_t problem = *base_problem;
+    evo_config_t config = *base_config;
+    evo_result_t result = {0};
+    size_t scratch_size = 0;
+
+    problem.evaluation_callback_thread_safety =
+        EVO_EVALUATION_CALLBACK_THREAD_SAFE;
+    config.evaluation_worker_count = 1;
+    assert(evo_evaluation_worker_scratch_size(
+               config.population_size,
+               config.evaluation_worker_count,
+               &scratch_size) == EVO_SUCCESS);
+    config.max_evaluation_worker_scratch_bytes = scratch_size;
+
+    reset_allocation_injection(3);
+    {
+        const size_t releases_before_run = release_calls;
+
+        assert(evo_run(&problem, &config, NULL, &result) ==
+               EVO_ERROR_OUT_OF_MEMORY);
+        assert(allocation_calls == 3);
+        assert(release_calls == releases_before_run + 2);
+        assert(observation_calls == 0);
+        assert_completely_empty(&result);
+    }
+
+    reset_allocation_injection(0);
+    {
+        const size_t releases_before_run = release_calls;
+
+        assert(evo_run(&problem, &config, NULL, &result) == EVO_SUCCESS);
+        assert(allocation_calls == 4);
+        assert(release_calls == releases_before_run + 3);
+        assert(observation_calls == 1);
+        evo_result_destroy(&result);
+        assert(release_calls == releases_before_run + 4);
+        assert_completely_empty(&result);
+    }
+}
+
 static void assert_child_evaluation_empty(
     const evo_population_t *population,
     uint64_t source_generation)
@@ -460,6 +504,7 @@ int main(void)
     assert_run_allocation_failure(&problem, &config, 3);
     test_checkpoint_restore_allocation_failures();
     test_recycling_allocation_bound_and_failures(&problem, &config);
+    test_parallel_evaluation_allocation_failure(&problem, &config);
 
     run_config = config;
     run_config.generation_limit = 1;

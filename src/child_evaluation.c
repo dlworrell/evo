@@ -56,6 +56,8 @@ static bool produced_child_ready_for_evaluation(
         children->fitness_comparison_policy_version != 0 ||
         children->diversity_policy_version != 0 ||
         children->diversity_metric_version != 0 ||
+        children->parallel_evaluation_policy_version != 0 ||
+        children->evaluation_worker_count != 0 ||
         children->diversity_pair_count != 0 ||
         children->diversity_work_units != 0 ||
         children->diversity != 0.0 ||
@@ -169,6 +171,10 @@ evo_status_t evo_child_population_evaluate(
         children->diversity_policy_version;
     candidate.diversity_metric_version =
         children->diversity_metric_version;
+    candidate.parallel_evaluation_policy_version =
+        children->parallel_evaluation_policy_version;
+    candidate.evaluation_worker_count =
+        children->evaluation_worker_count;
     candidate.population_recycling_policy_version =
         children->population_recycling_policy_version;
     candidate.storage_owner_identity =

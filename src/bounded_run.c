@@ -8,6 +8,7 @@
 #include "internal/crossover.h"
 #include "internal/diversity.h"
 #include "internal/elite.h"
+#include "internal/evaluation_workers.h"
 #include "internal/fitness.h"
 #include "internal/observer.h"
 #include "internal/mutation.h"
@@ -103,6 +104,15 @@ evo_status_t evo_bounded_run_validate_config(
 {
     if (problem == NULL || config == NULL) {
         return EVO_ERROR_INVALID_ARGUMENT;
+    }
+
+    {
+        const evo_status_t evaluation_status =
+            evo_evaluation_workers_validate_config(problem, config);
+
+        if (evaluation_status != EVO_SUCCESS) {
+            return evaluation_status;
+        }
     }
 
     {
@@ -704,6 +714,12 @@ evo_status_t evo_bounded_run_continue(
     candidate.diversity_policy_version = EVO_DIVERSITY_POLICY_VERSION;
     candidate.diversity_metric_version =
         parents->diversity_metric_version;
+    candidate.parallel_evaluation_policy_version =
+        config->evaluation_worker_count == 0
+            ? 0
+            : EVO_PARALLEL_EVALUATION_POLICY_VERSION;
+    candidate.evaluation_worker_count =
+        config->evaluation_worker_count;
     candidate.stopping_policy_version = EVO_STOPPING_POLICY_VERSION;
     candidate.population_recycling_policy_version =
         config->population_recycling_enabled
@@ -844,6 +860,10 @@ evo_status_t evo_bounded_run_continue(
             advancement_evidence.elite_count_explicit;
         candidate.population_recycling_policy_version =
             advancement_evidence.population_recycling_policy_version;
+        candidate.parallel_evaluation_policy_version =
+            advancement_evidence.parallel_evaluation_policy_version;
+        candidate.evaluation_worker_count =
+            advancement_evidence.evaluation_worker_count;
         candidate.population_recycling_enabled =
             advancement_evidence.population_recycling_enabled;
         candidate.final_active_storage_owner_identity =

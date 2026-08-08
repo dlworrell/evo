@@ -168,6 +168,22 @@ version, and backend. The accelerator-equivalence requirement is therefore not
 applicable, while exact-once event tests reconcile the registry with actual
 erase-before-release behavior.
 
+ADR-0030 performs the change-specific assessment for EVO 0.29.0. Its canonical
+binary checkpoint has an allocation-free ordered view plus per-candidate
+projection; CRC-32, the configuration fingerprint, and section offsets remain
+diagnostics rather than authority. EVO-HRA-002 retains that reconciliation.
+
+ADR-0031 performs the change-specific assessment for EVO 0.30.0. The optional
+two-slot recycler is an exact allocation accelerator whose complete address-
+free owner registry is reconciled against private pointer/count authority.
+EVO-HRA-003 retains the reference-equivalence and lifecycle audit.
+
+ADR-0032 performs the change-specific assessment for EVO 0.31.0. The bounded
+worker scheduler retains serial evaluation as its exact reference and projects
+every candidate's stable logical worker, wave, completion/cancellation
+disposition, and commit order independent of runtime threads and timing.
+EVO-HRA-004 retains the differential and concurrency audit.
+
 ## Consequences
 
 - EVO may use efficient internal data structures without exposing their
@@ -227,5 +243,7 @@ reconstructable pages and windows satisfy the audit contract.
   the invariant into later work.
 - `docs/engineering/reports/EVO-HRA-001-human-readable-abstraction-audit.md`
   records the implemented 0.25.0 audit and its limitations.
+- EVO-HRA-002, EVO-HRA-003, and EVO-HRA-004 record the checkpoint, recycler,
+  and bounded-worker assessments for later accelerated boundaries.
 - Parent roadmap issue #38 and the affected child issues record the gate.
 - Governance issue: `https://github.com/dlworrell/evo/issues/83`

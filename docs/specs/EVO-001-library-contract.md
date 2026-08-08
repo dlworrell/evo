@@ -1,13 +1,13 @@
 # EVO-001: Evolutionary Optimization Library Contract
 
 Status: Baseline
-Version: 0.30.0
+Version: 0.31.0
 Owner: EVO
 
 ## Scope Boundary
 
 This specification governs the reusable deterministic C17 evolutionary-search
-core implemented through version 0.30.0. It does not define C-project
+core implemented through version 0.31.0. It does not define C-project
 ingestion, Clang/LLVM analysis, structured source transformations, isolated
 candidate builds, baseline-versus-candidate measurement, optimized patches, or
 product-level replay artifacts.
@@ -107,6 +107,15 @@ fails closed. The explicit 0.29.0 allocation path remains executable and is the
 differential oracle. ADR-0031 and the retained EVO-HRA-003 audit define and
 verify this conformance boundary.
 
+Version 0.31.0 adds an exact execution accelerator: bounded worker evaluation.
+The complete serial evaluator remains executable and is the differential
+oracle. `evo_evaluation_schedule_t` projects every candidate in stable index
+order with logical worker, wave, completion/failure/cancellation disposition,
+and commit presence/order. Private evaluation records and completed-population
+validation remain authority; operating-system thread identity, completion
+timing, atomic scheduler state, and the projection cannot commit fitness.
+ADR-0032 and the retained EVO-HRA-004 audit define and verify this boundary.
+
 ## Public Interface
 
 The public API is declared in `include/catalyst/evo/evo.h`.
@@ -119,7 +128,8 @@ The public API is declared in `include/catalyst/evo/evo.h`.
 - initialization, mutation, crossover, and evaluation callbacks;
 - an optional validity callback;
 - an optional versioned normalized genome-distance callback;
-- a stable nonzero semantic problem identity for checkpoint operations; and
+- a stable nonzero semantic problem identity for checkpoint operations;
+- an explicit evaluator callback thread-safety declaration; and
 - an opaque consumer context passed to callbacks.
 
 The consumer owns callback code and context lifetime. Callback behavior must be
@@ -169,6 +179,9 @@ step, inclusive diversity threshold, and reset-on-improvement flag, followed
 by secure-erasure policy version 1's disabled-by-default enable flag, then the
 checkpoint input/output budget, caller-owned delivery buffer, synchronous
 checkpoint observer and context, and stable semantic context identity.
+The complete pre-0.31.0 prefix is followed by population-recycling control,
+its storage observer and context, then parallel evaluation's worker count,
+library scratch budget, schedule observer, and observer context.
 
 `max_genome_bytes` is trusted caller policy for the largest individual genome
 allocation accepted by `evo_run`. It avoids a platform-specific hard-coded
@@ -188,6 +201,14 @@ record array. EVO checks
 `population_size * sizeof(evo_candidate_evaluation_t)` for `size_t` overflow
 before allocation. The field does not authorize future generation buffers,
 operator scratch space, checkpoint state, or parallel-worker storage.
+
+`max_evaluation_worker_scratch_bytes` independently bounds the sole temporary
+library scheduler allocation. For positive worker count it must be at least the
+exact checked value reported by `evo_evaluation_worker_scratch_size`; zero
+workers require a zero budget. This budget does not authorize the candidate-
+evaluation record array, population storage, checkpoints, consumer state, or
+implementation-defined POSIX thread stacks. The number of such runtime thread
+resources is bounded exactly by the worker count.
 
 `max_child_population_bytes` independently bounds one private child-population
 genome slab. EVO checks the same `population_size * genome_size` arithmetic
@@ -1156,7 +1177,13 @@ generation-advancement policies to version 8, and private run-state schema to
 version 2. Enabled recycling carries policy version 1 and stable active and
 reusable owner identities through child evaluation, atomic promotion, registry
 observation, checkpoint capture, and resume. Disabled execution preserves the
-complete version-10 allocation and RNG path. Parallelism remains undefined.
+complete version-10 allocation and RNG path.
+
+Version 0.31.0 advances bounded-run policy to version 12 and child-evaluation
+and generation-advancement policies to version 9. They carry parallel-
+evaluation policy version 1 and the exact configured worker count through
+completed populations, evaluation, promotion, checkpoint/resume, and final run
+evidence. The zero-worker serial path records zero parallel provenance.
 
 ### Result lifecycle
 
@@ -1344,12 +1371,78 @@ events, release timing, reset work, recycler evidence, and recycling-bound
 checkpoint fields may differ. ADR-0031 defines the complete policy and
 EVO-HRA-003 retains its Human-Readable Abstraction audit.
 
+### Deterministic bounded parallel evaluation
+
+`EVO_PARALLEL_EVALUATION_POLICY_VERSION` and
+`EVO_EVALUATION_SCHEDULE_VERSION` are `1`.
+
+`evo_problem_t.evaluation_callback_thread_safety` accepts only
+`EVO_EVALUATION_CALLBACK_SERIAL` or
+`EVO_EVALUATION_CALLBACK_THREAD_SAFE`. The zero value is serial-only. A
+positive `evaluation_worker_count` requires the thread-safe declaration and is
+at most `population_size`. The consumer guarantees that concurrent `evaluate`
+calls over independent read-only genome ranges may safely share its context.
+No other consumer callback is made concurrent by this policy.
+
+Zero workers require zero `max_evaluation_worker_scratch_bytes` and a null
+schedule observer. They execute the complete pre-0.31.0 serial path, including
+allocation count, callback order, first malformed-fitness failure, and policy
+provenance. A positive worker count requires a scratch budget no smaller than
+`evo_evaluation_worker_scratch_size(population_size, worker_count)`. That query
+performs checked size/alignment arithmetic but no allocation, callback, or
+thread operation.
+
+For positive worker count `W`, EVO creates exactly `W` run-local POSIX workers.
+The caller thread coordinates and never acts as a hidden evaluator. Validity is
+resolved serially for every candidate in ascending population order before the
+first evaluation wave. Candidate `i` is assigned stable one-based logical
+worker `i % W + 1` and zero-based wave `i / W`. Hard-invalid candidates retain
+that projected assignment but never invoke `evaluate`.
+
+An atomic release/acquire epoch dispatches one wave and joins its observable
+results before a later wave begins. At most `W` evaluator callbacks are active.
+Worker completion order inside a wave is neither recorded as authority nor used
+by EVO. The coordinator validates a complete wave in ascending candidate order.
+After all waves and all worker joins succeed, valid records commit in ascending
+candidate order, receive ascending commit ordinals, and undergo the ordinary
+stable-best reduction. The scheduler consumes no RNG and changes no genome,
+selection, crossover, mutation, adaptive, or stopping stream.
+
+A worker-start failure occurs while all successfully started workers still
+wait at epoch zero. EVO stops and joins them before validity or evaluation
+callbacks. A non-finite fitness lets the already dispatched wave finish, marks
+every failing row, selects the lowest failure index, cancels every later pending
+row, joins every worker, and commits no record. A join failure likewise commits
+nothing, retains scratch until termination, and makes one recovery join attempt
+before detaching a terminated handle whose recovery also fails. Cancellation
+suppresses future waves; EVO does not asynchronously unwind arbitrary C
+callbacks already running. Evaluation allocation, worker scratch allocation,
+start/join, fitness, or later diversity failure publishes no population
+generation and the public run retains no partial result.
+
+One `calloc` contains exactly the private worker records, checked alignment
+padding, and one public assignment record per population candidate. The range
+is zeroed and released only after all workers terminate and the synchronous
+schedule observer returns. EVO creates no dynamic queue node, global executor,
+spare or nested worker, cross-run pool, or retained thread.
+
+The schedule observer receives a complete borrowed
+`evo_evaluation_schedule_t` after every positive-worker attempt, including
+failed attempts. It exposes policy/view versions, population generation and
+size, worker count, exact library scratch bytes, aggregate validation and
+disposition counts, stable first-failure evidence, final outcome, and the
+candidate-ordered assignment array. Rows expose population index, logical
+worker, wave, disposition, commit ordinal, and explicit commit presence. The
+observer cannot stop or modify execution and must not retain the borrowed
+array. Failure schedules are diagnostic and always commit zero records.
+ADR-0032 and EVO-HRA-004 define the complete authority and projection contract.
+
 ### Versioned checkpoint and deterministic resume
 
 `EVO_CHECKPOINT_FORMAT_VERSION`, `EVO_CHECKPOINT_VIEW_VERSION`,
-and `EVO_CHECKPOINT_CONFIGURATION_VIEW_VERSION` are `2`.
+and `EVO_CHECKPOINT_CONFIGURATION_VIEW_VERSION` are `3`.
 `EVO_CHECKPOINT_CANDIDATE_VIEW_VERSION` remains `1`.
-`EVO_CHECKPOINT_INTEGRITY_CRC32` identifies the format-2 corruption check.
+`EVO_CHECKPOINT_INTEGRITY_CRC32` identifies the format-3 corruption check.
 
 `evo_checkpoint_size` computes the exact bounded size required by the supplied
 problem and configuration. It performs no allocation or callback work.
@@ -1359,7 +1452,7 @@ generation, including generation zero. Delivery follows natural stop
 classification, the optional application stop decision, and the generation
 observer. A provisional or failed generation emits nothing.
 
-Format 2 is canonical little-endian data with magic `EVOCKPT2`, one fixed
+Format 3 is canonical little-endian data with magic `EVOCKPT3`, one fixed
 header, and then configuration, continuation state, latest statistics,
 explicit evaluation records, the current population genome slab, and the
 independently owned
@@ -1375,11 +1468,15 @@ authentication, encryption, provenance, rollback protection, or authority.
 The FNV-1a configuration fingerprint is likewise only a quick format
 diagnostic. Inspection validates every decoded range, count, enum, finite
 value, owner relationship, winner relationship, statistics sum, and
-continuation invariant. Format 2 also records the recycling control, storage-
+continuation invariant. Format 3 also records the recycling control, storage-
 observer presence, population recycling disposition, stable active owner
 identity, and complete logical storage registry. Inspection reconciles that
 registry against configuration, generation parity, capacities, population
-provenance, and secure-erasure metadata. Resume canonically re-encodes the supplied
+provenance, and secure-erasure metadata. It additionally binds evaluator thread-
+safety declaration, worker count, library scratch budget, schedule-observer
+presence, and committed population parallel provenance. No thread handle,
+atomic epoch, runtime queue, provisional assignment, completion timing, or
+worker scratch is serialized. Resume canonically re-encodes the supplied
 configuration and compares its exact bytes. Neither checksum nor fingerprint
 can authorize a malformed or different configuration.
 
@@ -1398,7 +1495,7 @@ fitness. The accessor uses explicit projected ranges and a fixed record stride
 in constant time; enumerating the population is a complete linear audit. No
 offset table, CRC, fingerprint, or projected view supersedes decoded exact
 state. This is the mandatory Human-Readable Abstraction projection for binary
-format 2 and is audited by EVO-HRA-002. Its appended
+format 3 and is audited by EVO-HRA-002. Its appended
 `population_storage_registry` is the mandatory complete recycler projection
 and is audited by EVO-HRA-003.
 
@@ -1414,8 +1511,9 @@ Continuation state includes the current generation and final reason, stable
 global winner, all relevant RNG/operator/policy/schema versions, exact next
 adaptive rate and stagnant count, patience reference and stagnant count,
 complete current-population provenance and candidate evidence, schema-4
-statistics, population-recycling policy and registry, and current/global-best
-genomes. Resume invokes no callback for
+statistics, population-recycling policy and registry, committed parallel-
+evaluation policy and worker count, and current/global-best genomes. Resume
+invokes no callback for
 the restored generation and begins at the next transition. A terminal
 checkpoint reconstructs its terminal result without callbacks. An
 uninterrupted run and a resume from any emitted checkpoint therefore produce
@@ -1432,10 +1530,11 @@ EVO-owned allocations use the restoring build's local erasure backend; source
 backend metadata is retained only as audit evidence.
 The active slot is reconstructed through local allocations. A continued
 enabled run materializes the opposite stable slot before its next visible
-commit; a terminal resume needs no reusable physical owner. Format 1 is
-rejected explicitly because it has no registry or run-state schema-2 fields.
-ADR-0030 remains the base persistence decision and ADR-0031 defines the
-format-2 recycling amendment.
+commit; a terminal resume needs no reusable physical owner. Formats 1 and 2
+are rejected explicitly because neither contains complete format-3 parallel
+configuration and committed provenance. ADR-0030 remains the base persistence
+decision, ADR-0031 defines the format-2 recycling amendment, and ADR-0032
+defines the format-3 parallel-evaluation amendment.
 
 ### Status values
 
@@ -1452,7 +1551,7 @@ format-2 recycling amendment.
 | `EVO_ERROR_EVALUATION` | A fitness callback returned a non-finite component or negative penalty, a domain-distance callback returned outside finite `[0, 1]`, or a fixed-order statistics component sum became non-finite. |
 | `EVO_ERROR_NO_VALID_CANDIDATE` | Generation-zero evaluation completed, but every candidate was invalid, so no public winner exists. |
 | `EVO_ERROR_CHECKPOINT_INVALID` | Untrusted bytes have malformed layout, fields, decoded state, or relationships. |
-| `EVO_ERROR_CHECKPOINT_INTEGRITY` | The format-2 CRC-32 corruption check does not match. |
+| `EVO_ERROR_CHECKPOINT_INTEGRITY` | The format-3 CRC-32 corruption check does not match. |
 | `EVO_ERROR_CHECKPOINT_VERSION` | A checkpoint format, integrity algorithm, view-bound schema, or continuation-policy version is unsupported. |
 | `EVO_ERROR_CHECKPOINT_MISMATCH` | A valid checkpoint does not exactly match the supplied deterministic configuration, callback-presence declarations, or stable semantic identities. |
 
@@ -1838,7 +1937,20 @@ preserves the 0.29.0 allocator lifecycle. Checkpoint format, checkpoint view,
 and checkpoint-configuration view advance to version 2; the candidate view
 remains version 1.
 
-## Current 0.30.0 Conformance Boundary
+Version 0.31.0 adds the evaluator thread-safety enum, parallel policy and
+schedule version constants, assignment disposition and schedule outcome enums,
+versioned assignment/schedule projections, schedule observer, and
+`evo_evaluation_worker_scratch_size`. It appends the thread-safety declaration
+after the complete pre-0.31.0 `evo_problem_t` prefix and worker count, scratch
+budget, observer, and context after the complete pre-0.31.0 `evo_config_t`
+prefix. It appends parallel configuration and committed provenance to the
+complete version-2 checkpoint views. Existing member offsets and prior enum
+values are preserved, but public structure sizes or array strides change, so
+consumers must rebuild. Zero initialization preserves serial evaluation.
+Checkpoint format and both top-level views advance to version 3; the candidate
+view remains version 1.
+
+## Current 0.31.0 Conformance Boundary
 
 The current implementation exposes generation-zero compatibility plus bounded
 multi-generation execution:
@@ -1848,6 +1960,12 @@ multi-generation execution:
   and the all-valid diversity work bound;
 - successful execution constructs, initializes, validates, and evaluates a
   private population in deterministic order;
+- zero workers retain exact serial evaluator order; positive workers require an
+  explicit thread-safety declaration, exact scratch budget, fixed assignment,
+  wave-bounded dispatch, complete join, and stable candidate-order commit;
+- the complete schedule projection exposes assignment, completion, failure,
+  cancellation, and commit order while runtime thread identity and timing have
+  no decision authority;
 - hard-invalid candidates are never evaluated, aggregated, selected, or
   ranked;
 - comparison policy version 1 requires finite fitness, a non-negative soft-
@@ -1874,7 +1992,8 @@ multi-generation execution:
 - private population initialization is seed-reproducible and records its RNG
   algorithm version;
 - optional initializers run exactly once in ascending genome order;
-- private validation and evaluation run in deterministic ascending passes;
+- private validity always runs in an ascending pass; serial evaluation remains
+  ascending, while worker evaluation commits the same ascending record order;
 - private tournament selection samples valid evaluated candidates with
   replacement and deterministic tie handling, with byte-for-byte pre-0.25.0
   replay through the zero-valued dispatch;
@@ -1976,7 +2095,7 @@ multi-generation execution:
   owners remain authority;
 - enabled and disabled differential replay has identical consumer callbacks,
   committed algorithm evidence, winners, stopping, termination, and RNG state;
-- format-2 checkpoint capture uses an exact caller-owned bounded buffer and
+- format-3 checkpoint capture uses an exact caller-owned bounded buffer and
   serializes every continuation dependency without native padding, pointers,
   addresses, clocks, or process state;
 - untrusted inspection validates all byte ranges, arithmetic, versions,
@@ -1994,8 +2113,8 @@ multi-generation execution:
   remaining suffix without duplicate callback delivery and preserve RNG,
   winners, statistics, adaptation, patience, recycler identities, counts, and
   termination; and
-- variable-size or cross-run pooling, asynchronous or concurrent callbacks,
-  and parallelism are not implemented.
+- variable-size or cross-run pooling, persistent worker executors, asynchronous
+  callback cancellation, and distributed evaluation are not implemented.
 
 Consumers may treat `EVO_SUCCESS` as evidence of a valid global winner and
 exactly `generations_completed` promoted child generations. They must inspect
@@ -2004,10 +2123,10 @@ count. They may inspect `generation_statistics` for the final committed
 population, which is distinct from the global winner on all-invalid
 termination. When configured, they may copy each callback-lifetime observation
 into their own bounded storage. They may also configure deterministic stopping
-over committed snapshots. Version 0.30.0 defines no statistics history,
-asynchronous cancellation, or retained callback delivery. It adds
+over committed snapshots. Version 0.31.0 defines no statistics history,
+asynchronous callback cancellation, or retained callback delivery. It adds
 caller-owned checkpoint copies, deterministic suffix resume, and optional
-run-local storage recycling, but it still
+run-local storage recycling and bounded evaluator concurrency, but it still
 retains no internal checkpoint history and provides no persistent-storage,
 authentication, confidentiality, rollback-prevention, or asynchronous-I/O
 service.
@@ -2196,12 +2315,22 @@ result, schema-4 statistics, generation events, RNG-neutral operator behavior,
 and every generation's ordered registry. It also proves observer delivery order
 after generation observation and stopping but before checkpoint capture.
 
+The parallel-evaluation test compares worker counts 1 through 4 with serial
+evaluation across invalid candidates and multiple recycled generations. It
+locks fixed logical assignment and wave identity, stable valid-candidate commit
+order, exact schedule counts, thread-safe configuration and scratch boundaries,
+non-finite wave cancellation, worker-start failure before callbacks, complete
+join, replay, and public result/statistics parity. The hosted ThreadSanitizer
+job runs this focused scheduler surface, and wrapped allocation tests prove the
+single scratch allocation and atomic exhaustion path.
+
 The checkpoint test proves exact size calculation; capture ordering for
 generation zero and every committed child; allocation-free ordered inspection;
 constant-time candidate projection; generation-zero, intermediate, natural-
 terminal, and application-terminal suffix resume; final genome, fitness,
 statistics, adaptation, patience, generation-count, and termination parity;
-enabled registry persistence and byte-identical recycled resume suffix; and
+enabled registry persistence, parallel policy/configuration projection,
+parallel suffix replay, byte-identical recycled resume suffix; and
 suppression of duplicate callbacks for the restored generation. It also
 proves active-result preservation and callback-free rejection for malformed
 identity, configuration, budget, selector, alias, truncation, version,
@@ -2213,7 +2342,7 @@ The deterministic checkpoint-fuzz test rejects every truncation, a one-bit
 mutation at every serialized byte, and 2,048 seeded arbitrary byte ranges.
 The separate `tests/fuzz/checkpoint_fuzz.c` entry point exposes the same
 allocation-free untrusted parser to libFuzzer. Build-manifest parity requires
-exactly 25 production sources and 31 normative targets in CMake, GNU
+exactly 26 production sources and 32 normative targets in CMake, GNU
 Autotools, and AES-BLD-001 inventories.
 
 ## Related Records
@@ -2248,6 +2377,7 @@ Autotools, and AES-BLD-001 inventories.
 - `docs/adr/ADR-0029-opt-in-secure-erasure-lifecycle.md`
 - `docs/adr/ADR-0030-versioned-checkpoint-and-deterministic-resume.md`
 - `docs/adr/ADR-0031-deterministic-population-storage-recycling.md`
+- `docs/adr/ADR-0032-deterministic-bounded-parallel-evaluation.md`
 - `docs/architecture.md`
 - `docs/algorithms.md`
 - `docs/benchmarks.md`
@@ -2255,6 +2385,7 @@ Autotools, and AES-BLD-001 inventories.
 - `docs/engineering/reports/EVO-HRA-001-human-readable-abstraction-audit.md`
 - `docs/engineering/reports/EVO-HRA-002-checkpoint-audit.md`
 - `docs/engineering/reports/EVO-HRA-003-population-storage-recycling-audit.md`
+- `docs/engineering/reports/EVO-HRA-004-parallel-evaluation-audit.md`
 - `docs/engineering/SECURE-C-CXX.md`
 - `docs/engineering/AES-SEC-001-review-dispositions.json`
 - `https://github.com/dlworrell/evo/issues/4`
@@ -2286,4 +2417,5 @@ Autotools, and AES-BLD-001 inventories.
 - `https://github.com/dlworrell/evo/issues/50`
 - `https://github.com/dlworrell/evo/issues/51`
 - `https://github.com/dlworrell/evo/issues/52`
+- `https://github.com/dlworrell/evo/issues/53`
 - `https://github.com/dlworrell/AEMS/issues/18`

@@ -62,7 +62,14 @@ static bool completed_population_provenance_is_valid(
     uint32_t expected_odd_child_policy_version = 0;
     uint32_t expected_singleton_child_policy_version = 0;
 
-    if (evo_selection_validate_config(config) != EVO_SUCCESS ||
+    if ((config->evaluation_worker_count == 0
+             ? (population->parallel_evaluation_policy_version != 0 ||
+                population->evaluation_worker_count != 0)
+             : (population->parallel_evaluation_policy_version !=
+                    EVO_PARALLEL_EVALUATION_POLICY_VERSION ||
+                population->evaluation_worker_count !=
+                    config->evaluation_worker_count)) ||
+        evo_selection_validate_config(config) != EVO_SUCCESS ||
         !evo_crossover_operator_is_valid(config->crossover_operator) ||
         !evo_mutation_operator_is_valid(config->mutation_operator)) {
         return false;

@@ -29,7 +29,7 @@ enum {
 };
 
 static const unsigned char checkpoint_magic[8] = {
-    'E', 'V', 'O', 'C', 'K', 'P', 'T', '2'};
+    'E', 'V', 'O', 'C', 'K', 'P', 'T', '3'};
 
 _Static_assert(sizeof(double) == sizeof(uint64_t),
                "checkpoint format requires binary64-sized double");
@@ -126,6 +126,8 @@ typedef struct checkpoint_state_projection {
     evo_secure_erasure_backend_t result_secure_erasure_backend;
     bool result_secure_erasure_enabled;
     uint64_t result_random_seed;
+    uint32_t parallel_evaluation_policy_version;
+    size_t evaluation_worker_count;
 } checkpoint_state_projection_t;
 
 static bool checked_size_add(size_t left, size_t right, size_t *sum)
@@ -482,6 +484,12 @@ static void encode_configuration(checkpoint_writer_t *writer,
     write_bool(writer, config->generation_stop != NULL);
     write_bool(writer, config->population_recycling_enabled);
     write_bool(writer, config->population_storage_observer != NULL);
+    write_u32(
+        writer,
+        (uint32_t)problem->evaluation_callback_thread_safety);
+    write_size(writer, config->evaluation_worker_count);
+    write_size(writer, config->max_evaluation_worker_scratch_bytes);
+    write_bool(writer, config->evaluation_schedule_observer != NULL);
 }
 
 static bool decode_configuration(
@@ -541,6 +549,11 @@ static bool decode_configuration(
     configuration->generation_stop_present = read_bool(reader);
     configuration->population_recycling_enabled = read_bool(reader);
     configuration->population_storage_observer_present = read_bool(reader);
+    configuration->evaluation_callback_thread_safety =
+        (evo_evaluation_callback_thread_safety_t)read_u32(reader);
+    configuration->evaluation_worker_count = read_size(reader);
+    configuration->max_evaluation_worker_scratch_bytes = read_size(reader);
+    configuration->evaluation_schedule_observer_present = read_bool(reader);
 
     return reader->valid && reader->offset == reader->size &&
            configuration->version ==
@@ -552,6 +565,10 @@ static bool decode_configuration(
            configuration->evaluate_callback_present &&
            configuration->distance_callback_present ==
                (configuration->genome_distance_version != 0) &&
+           (configuration->evaluation_callback_thread_safety ==
+                EVO_EVALUATION_CALLBACK_SERIAL ||
+            configuration->evaluation_callback_thread_safety ==
+                EVO_EVALUATION_CALLBACK_THREAD_SAFE) &&
            (configuration->selection_policy == EVO_SELECTION_TOURNAMENT ||
             configuration->selection_policy == EVO_SELECTION_RANK) &&
            (configuration->crossover_operator == EVO_CROSSOVER_CONSUMER ||
@@ -577,6 +594,14 @@ static double checkpoint_distance_placeholder(const void *genome_a,
     return 0.0;
 }
 
+static void checkpoint_schedule_observer_placeholder(
+    const evo_evaluation_schedule_t *schedule,
+    void *context)
+{
+    (void)schedule;
+    (void)context;
+}
+
 static bool decoded_configuration_is_valid(
     const evo_checkpoint_configuration_view_t *source,
     evo_problem_t *problem,
@@ -596,6 +621,8 @@ static bool decoded_configuration_is_valid(
         .genome_distance_version = source->genome_distance_version,
         .checkpoint_problem_identity =
             source->checkpoint_problem_identity,
+        .evaluation_callback_thread_safety =
+            source->evaluation_callback_thread_safety,
     };
     *config = (evo_config_t){
         .population_size = source->population_size,
@@ -639,6 +666,13 @@ static bool decoded_configuration_is_valid(
             source->population_recycling_enabled,
         .checkpoint_context_identity =
             source->checkpoint_context_identity,
+        .evaluation_worker_count = source->evaluation_worker_count,
+        .max_evaluation_worker_scratch_bytes =
+            source->max_evaluation_worker_scratch_bytes,
+        .evaluation_schedule_observer =
+            source->evaluation_schedule_observer_present
+                ? checkpoint_schedule_observer_placeholder
+                : NULL,
     };
 
     return source->evaluate_callback_present &&
@@ -883,6 +917,8 @@ static void encode_state(checkpoint_writer_t *writer,
     write_u32(writer, (uint32_t)result->secure_erasure_backend);
     write_bool(writer, result->secure_erasure_enabled);
     write_u64(writer, result->random_seed);
+    write_u32(writer, population->parallel_evaluation_policy_version);
+    write_size(writer, population->evaluation_worker_count);
 }
 
 static bool termination_reason_is_valid(evo_termination_reason_t reason)
@@ -1050,6 +1086,8 @@ static bool decode_state(checkpoint_reader_t *reader,
         (evo_secure_erasure_backend_t)read_u32(reader);
     state->result_secure_erasure_enabled = read_bool(reader);
     state->result_random_seed = read_u64(reader);
+    state->parallel_evaluation_policy_version = read_u32(reader);
+    state->evaluation_worker_count = read_size(reader);
 
     return reader->valid && reader->offset == reader->size &&
            state->run.version == EVO_RUN_STATE_VERSION &&
@@ -1064,6 +1102,11 @@ static bool decode_state(checkpoint_reader_t *reader,
                EVO_BYTE_OPERATOR_POLICY_VERSION &&
            state->checkpoint_bounded_run_policy_version ==
                EVO_BOUNDED_RUN_POLICY_VERSION &&
+           ((state->evaluation_worker_count == 0 &&
+             state->parallel_evaluation_policy_version == 0) ||
+            (state->evaluation_worker_count != 0 &&
+             state->parallel_evaluation_policy_version ==
+                 EVO_PARALLEL_EVALUATION_POLICY_VERSION)) &&
            termination_reason_is_valid(state->run.termination_reason) &&
            state->run.best_generation <= state->run.current_generation &&
            state->population_size != 0 && state->genome_size != 0 &&
@@ -1353,6 +1396,9 @@ static bool decoded_population_provenance_is_valid(
         .secure_erasure_enabled = state->secure_erasure_enabled,
         .population_recycling_enabled =
             state->population_recycling_enabled,
+        .parallel_evaluation_policy_version =
+            state->parallel_evaluation_policy_version,
+        .evaluation_worker_count = state->evaluation_worker_count,
     };
     size_t requested_elites = 0;
     size_t effective_elites = 0;
@@ -1376,6 +1422,11 @@ static bool decoded_population_provenance_is_valid(
             configuration->population_recycling_enabled ||
         state->population_recycling_enabled !=
             config->population_recycling_enabled ||
+        state->parallel_evaluation_policy_version !=
+            (config->evaluation_worker_count == 0
+                 ? 0
+                 : EVO_PARALLEL_EVALUATION_POLICY_VERSION) ||
+        state->evaluation_worker_count != config->evaluation_worker_count ||
         (state->population_recycling_enabled
              ? (state->population_recycling_policy_version !=
                     EVO_POPULATION_RECYCLING_POLICY_VERSION ||
@@ -1730,6 +1781,9 @@ evo_status_t evo_checkpoint_inspect(const void *checkpoint,
             state.checkpoint_selection_policy_version,
         .byte_operator_policy_version =
             state.checkpoint_byte_operator_policy_version,
+        .parallel_evaluation_policy_version =
+            state.parallel_evaluation_policy_version,
+        .evaluation_worker_count = state.evaluation_worker_count,
         .fitness_comparison_policy_version =
             state.fitness_comparison_policy_version,
         .diversity_policy_version = state.diversity_policy_version,
@@ -2398,6 +2452,10 @@ static void apply_population_projection(
         source->diversity_uses_domain_distance;
     population->population_recycling_enabled =
         source->population_recycling_enabled;
+    population->parallel_evaluation_policy_version =
+        source->parallel_evaluation_policy_version;
+    population->evaluation_worker_count =
+        source->evaluation_worker_count;
 }
 
 static bool decode_evaluations_to_population(

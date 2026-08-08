@@ -19,6 +19,7 @@ libcatalyst_evo_la_SOURCES = \
 	src/population_recycling.c \
 	src/population_initialization.c \
 	src/population_evaluation.c \
+	src/evaluation_workers.c \
 	src/selection.c \
 	src/crossover.c \
 	src/mutation.c \
@@ -40,7 +41,7 @@ libcatalyst_evo_la_SOURCES = \
 	src/checkpoint.c \
 	src/rng.c
 libcatalyst_evo_la_LDFLAGS = -version-info 0:0:0 -no-undefined
-libcatalyst_evo_la_LIBADD = -lm
+libcatalyst_evo_la_LIBADD = -lm $(EVO_THREAD_LIBS)
 
 catalystevoincludedir = $(includedir)/catalyst/evo
 catalystevoinclude_HEADERS = include/catalyst/evo/evo.h
@@ -59,6 +60,7 @@ noinst_HEADERS = \
 	src/internal/child_tail.h \
 	src/internal/elite.h \
 	src/internal/population_evaluation.h \
+	src/internal/evaluation_workers.h \
 	src/internal/fitness.h \
 	src/internal/child_evaluation.h \
 	src/internal/generation_advancement.h \
@@ -85,6 +87,7 @@ check_PROGRAMS = \
 	tests/evo_rng_test \
 	tests/evo_population_initialization_test \
 	tests/evo_population_evaluation_test \
+	tests/evo_evaluation_workers_test \
 	tests/evo_fitness_test \
 	tests/evo_selection_test \
 	tests/evo_crossover_test \
@@ -135,6 +138,10 @@ tests_evo_population_initialization_test_LDADD = libcatalyst_evo.la -lm
 tests_evo_population_evaluation_test_SOURCES = \
 	tests/population_evaluation_test.c
 tests_evo_population_evaluation_test_LDADD = libcatalyst_evo.la -lm
+
+tests_evo_evaluation_workers_test_SOURCES = \
+	tests/evaluation_workers_test.c
+tests_evo_evaluation_workers_test_LDADD = libcatalyst_evo.la -lm
 
 tests_evo_fitness_test_SOURCES = tests/fitness_test.c
 tests_evo_fitness_test_LDADD = libcatalyst_evo.la -lm

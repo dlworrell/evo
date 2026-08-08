@@ -1,5 +1,6 @@
 #include "internal/population_evaluation.h"
 #include "internal/diversity.h"
+#include "internal/evaluation_workers.h"
 #include "internal/fitness.h"
 #include "internal/rng.h"
 #include "internal/secure_erasure.h"
@@ -74,6 +75,8 @@ static bool initialized_population_ready_for_evaluation(
         population->fitness_comparison_policy_version != 0 ||
         population->diversity_policy_version != 0 ||
         population->diversity_metric_version != 0 ||
+        population->parallel_evaluation_policy_version != 0 ||
+        population->evaluation_worker_count != 0 ||
         population->diversity_pair_count != 0 ||
         population->diversity_work_units != 0 ||
         population->diversity != 0.0 ||
@@ -163,6 +166,8 @@ static evo_status_t rollback_population_evaluations(
     population->fitness_comparison_policy_version = 0;
     population->diversity_policy_version = 0;
     population->diversity_metric_version = 0;
+    population->parallel_evaluation_policy_version = 0;
+    population->evaluation_worker_count = 0;
     population->diversity_pair_count = 0;
     population->diversity_work_units = 0;
     population->diversity = 0.0;
@@ -173,11 +178,12 @@ static evo_status_t rollback_population_evaluations(
     return status;
 }
 
-evo_status_t evo_population_evaluate_ready(
+evo_status_t evo_population_evaluate_ready_with_worker_backend(
     const evo_problem_t *problem,
     const evo_config_t *config,
     void *context,
-    evo_population_t *population)
+    evo_population_t *population,
+    const struct evo_evaluation_thread_backend *backend)
 {
     evo_candidate_evaluation_t *evaluations = NULL;
     size_t evaluation_bytes = 0;
@@ -190,6 +196,11 @@ evo_status_t evo_population_evaluate_ready(
     if (problem == NULL || config == NULL || population == NULL ||
         problem->evaluate == NULL) {
         return EVO_ERROR_INVALID_ARGUMENT;
+    }
+
+    status = evo_evaluation_workers_validate_config(problem, config);
+    if (status != EVO_SUCCESS) {
+        return status;
     }
 
     status = evo_diversity_validate_config(problem, config);
@@ -217,88 +228,115 @@ evo_status_t evo_population_evaluate_ready(
         }
     }
 
-    for (size_t index = 0; index < population->population_size; ++index) {
-        const void *genome =
-            evo_population_genome_const(population, index);
+    if (config->evaluation_worker_count == 0) {
+        for (size_t index = 0;
+             index < population->population_size;
+             ++index) {
+            const void *genome =
+                evo_population_genome_const(population, index);
 
-        if (genome == NULL) {
+            if (genome == NULL) {
+                return discard_provisional_evaluations(
+                    population,
+                    evaluations,
+                    evaluation_bytes,
+                    reused_storage,
+                    EVO_ERROR_STATE);
+            }
+
+            evaluations[index].valid =
+                problem->is_valid == NULL ||
+                problem->is_valid(genome, context);
+            if (evaluations[index].valid) {
+                ++valid_count;
+            }
+        }
+
+        for (size_t index = 0;
+             index < population->population_size;
+             ++index) {
+            const void *genome = NULL;
+            evo_fitness_candidate_view_t candidate_view = {0};
+            evo_fitness_candidate_view_t best_view = {0};
+            evo_fitness_order_t order = EVO_FITNESS_ORDER_EQUAL;
+
+            if (!evaluations[index].valid) {
+                continue;
+            }
+
+            genome = evo_population_genome_const(population, index);
+            if (genome == NULL) {
+                return discard_provisional_evaluations(
+                    population,
+                    evaluations,
+                    evaluation_bytes,
+                    reused_storage,
+                    EVO_ERROR_STATE);
+            }
+
+            evaluations[index].fitness =
+                problem->evaluate(genome, context);
+            evaluations[index].evaluated = true;
+            candidate_view = (evo_fitness_candidate_view_t){
+                .fitness = &evaluations[index].fitness,
+                .generation = UINT64_C(0),
+                .population_index = index,
+                .hard_valid = evaluations[index].valid,
+                .evaluated = evaluations[index].evaluated,
+            };
+            if (!evo_fitness_candidate_is_rankable(&candidate_view)) {
+                return discard_provisional_evaluations(
+                    population,
+                    evaluations,
+                    evaluation_bytes,
+                    reused_storage,
+                    EVO_ERROR_EVALUATION);
+            }
+
+            if (!has_best) {
+                best_index = index;
+                has_best = true;
+                continue;
+            }
+
+            best_view = (evo_fitness_candidate_view_t){
+                .fitness = &evaluations[best_index].fitness,
+                .generation = UINT64_C(0),
+                .population_index = best_index,
+                .hard_valid = evaluations[best_index].valid,
+                .evaluated = evaluations[best_index].evaluated,
+            };
+            if (!evo_fitness_compare_candidates(&candidate_view,
+                                                &best_view,
+                                                &order)) {
+                return discard_provisional_evaluations(
+                    population,
+                    evaluations,
+                    evaluation_bytes,
+                    reused_storage,
+                    EVO_ERROR_EVALUATION);
+            }
+            if (order == EVO_FITNESS_ORDER_LEFT) {
+                best_index = index;
+            }
+        }
+    } else {
+        status = evo_evaluation_workers_run(
+            problem,
+            config,
+            context,
+            population,
+            evaluations,
+            &valid_count,
+            &best_index,
+            &has_best,
+            backend);
+        if (status != EVO_SUCCESS) {
             return discard_provisional_evaluations(population,
                                                    evaluations,
                                                    evaluation_bytes,
                                                    reused_storage,
-                                                   EVO_ERROR_STATE);
-        }
-
-        evaluations[index].valid =
-            problem->is_valid == NULL ||
-            problem->is_valid(genome, context);
-        if (evaluations[index].valid) {
-            ++valid_count;
-        }
-    }
-
-    for (size_t index = 0; index < population->population_size; ++index) {
-        const void *genome = NULL;
-        evo_fitness_candidate_view_t candidate_view = {0};
-        evo_fitness_candidate_view_t best_view = {0};
-        evo_fitness_order_t order = EVO_FITNESS_ORDER_EQUAL;
-
-        if (!evaluations[index].valid) {
-            continue;
-        }
-
-        genome = evo_population_genome_const(population, index);
-        if (genome == NULL) {
-            return discard_provisional_evaluations(population,
-                                                   evaluations,
-                                                   evaluation_bytes,
-                                                   reused_storage,
-                                                   EVO_ERROR_STATE);
-        }
-
-        evaluations[index].fitness = problem->evaluate(genome, context);
-        evaluations[index].evaluated = true;
-        candidate_view = (evo_fitness_candidate_view_t){
-            .fitness = &evaluations[index].fitness,
-            .generation = UINT64_C(0),
-            .population_index = index,
-            .hard_valid = evaluations[index].valid,
-            .evaluated = evaluations[index].evaluated,
-        };
-        if (!evo_fitness_candidate_is_rankable(&candidate_view)) {
-            return discard_provisional_evaluations(
-                population,
-                evaluations,
-                evaluation_bytes,
-                reused_storage,
-                EVO_ERROR_EVALUATION);
-        }
-
-        if (!has_best) {
-            best_index = index;
-            has_best = true;
-            continue;
-        }
-
-        best_view = (evo_fitness_candidate_view_t){
-            .fitness = &evaluations[best_index].fitness,
-            .generation = UINT64_C(0),
-            .population_index = best_index,
-            .hard_valid = evaluations[best_index].valid,
-            .evaluated = evaluations[best_index].evaluated,
-        };
-        if (!evo_fitness_compare_candidates(&candidate_view,
-                                            &best_view,
-                                            &order)) {
-            return discard_provisional_evaluations(
-                population,
-                evaluations,
-                evaluation_bytes,
-                reused_storage,
-                EVO_ERROR_EVALUATION);
-        }
-        if (order == EVO_FITNESS_ORDER_LEFT) {
-            best_index = index;
+                                                   status);
         }
     }
 
@@ -308,6 +346,12 @@ evo_status_t evo_population_evaluate_ready(
     population->best_index = best_index;
     population->fitness_comparison_policy_version =
         EVO_FITNESS_COMPARISON_POLICY_VERSION;
+    population->parallel_evaluation_policy_version =
+        config->evaluation_worker_count == 0
+            ? 0
+            : EVO_PARALLEL_EVALUATION_POLICY_VERSION;
+    population->evaluation_worker_count =
+        config->evaluation_worker_count;
     population->has_best = has_best;
     population->evaluated = true;
     population->evaluations_recycled = reused_storage;
@@ -326,6 +370,20 @@ evo_status_t evo_population_evaluate_ready(
     population->evaluations_recycled = false;
 
     return EVO_SUCCESS;
+}
+
+evo_status_t evo_population_evaluate_ready(
+    const evo_problem_t *problem,
+    const evo_config_t *config,
+    void *context,
+    evo_population_t *population)
+{
+    return evo_population_evaluate_ready_with_worker_backend(
+        problem,
+        config,
+        context,
+        population,
+        NULL);
 }
 
 evo_status_t evo_population_restore_evaluations_allocate(

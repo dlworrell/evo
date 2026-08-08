@@ -103,6 +103,13 @@ release sequence above. Enabled execution alternates two fixed run-local owners
 and resets the former active owner before reuse without changing callbacks,
 RNG, committed evidence, stopping, or results.
 
+ADR-0032 advances bounded-run policy to version 12 in EVO 0.31.0 and composes
+parallel-evaluation policy version 1. Positive worker counts evaluate fixed
+candidate assignments concurrently and commit results in stable candidate
+order; zero preserves the complete serial path. Child-evaluation and
+generation-advancement policies advance to version 9 so the configured worker
+count survives completion and promotion.
+
 ## Consequences
 
 - Public `EVO_SUCCESS` can now represent zero or more completed transitions;

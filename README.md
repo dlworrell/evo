@@ -35,6 +35,7 @@ The governing product records are:
 - `docs/adr/ADR-0029-opt-in-secure-erasure-lifecycle.md`
 - `docs/adr/ADR-0030-versioned-checkpoint-and-deterministic-resume.md`
 - `docs/adr/ADR-0031-deterministic-population-storage-recycling.md`
+- `docs/adr/ADR-0032-deterministic-bounded-parallel-evaluation.md`
 - `docs/specs/EVO-001-library-contract.md`
 - `docs/specs/EVO-002-source-optimizer-contract.md`
 - `docs/roadmap.md`
@@ -95,6 +96,11 @@ address-free registry projects both stable slot identities, lifecycle roles,
 capacities, provenance, handoffs, and reset history. The retained EVO-HRA-003
 audit proves reference-path equivalence and registry reconciliation through
 checkpoint/resume.
+ADR-0032 assesses 0.31.0 bounded parallel evaluation: serial evaluation remains
+the exact reference while a complete candidate-ordered schedule projects stable
+logical worker assignment, waves, completion, cancellation, and commit order.
+The retained EVO-HRA-004 audit proves worker-count equivalence and that runtime
+thread identity or timing cannot become authority.
 
 ## Roadmap Scope
 
@@ -109,7 +115,7 @@ The core track includes:
 - Constraint and penalty handling
 - Checkpointing and reproducible random-number generation
 - Opt-in deterministic population-storage recycling
-- Parallel fitness evaluation
+- Opt-in bounded deterministic parallel fitness evaluation
 - Benchmarking and engineering evidence
 
 The source-optimizer track adds:
@@ -142,7 +148,7 @@ repository.
 - `docs/` — architecture, theory, algorithms, and evidence guidance
 
 The source-optimizer implementation directories will be introduced only by
-their dependency-ordered roadmap issues. Their absence in version 0.30.0 is an
+their dependency-ordered roadmap issues. Their absence in version 0.31.0 is an
 explicit current boundary, not an implicit feature claim.
 
 ## Authoritative Native Builds
@@ -182,7 +188,7 @@ declared Clang/LLVM and GNU profiles.
 
 ## Status
 
-**Current implementation boundary:** EVO 0.30.0 implements the deterministic
+**Current implementation boundary:** EVO 0.31.0 implements the deterministic
 evolutionary-search core. It does not yet ingest a C project, build a Clang AST
 or LLVM IR model, transform source, compile evolved candidates, or emit an
 optimized source patch. Those product boundaries are tracked in the 1.0
@@ -338,6 +344,17 @@ differential tests prove identical genomes, fitness, statistics, callback
 traces, stopping, and results. Checkpoint format 2 persists and validates the
 logical registry, and resumed execution reconstructs local owners without
 serializing allocator state.
+
+EVO 0.31.0 adds opt-in bounded parallel candidate evaluation. Zero workers
+preserve the complete serial path. A positive caller-bounded count requires an
+explicit thread-safe evaluator declaration and an exact library scratch budget.
+Validity remains serial; evaluator callbacks run in fixed candidate waves; and
+fitness records commit only in ascending valid-candidate order after every
+worker joins. Non-finite fitness cancels later waves and publishes no partial
+generation. A synchronous candidate-ordered schedule exposes stable logical
+worker identity, wave, completion/failure/cancellation, and commit order without
+using platform thread identity or timing as authority. Checkpoint format 3 binds
+the policy and committed provenance but serializes no live scheduler state.
 
 Version 0.3.0 added the independently tested private population-storage
 foundation: checked `population_size * genome_size` arithmetic, a
@@ -594,8 +611,8 @@ operator-stream, pair-production, singleton, elite-preservation, child-
 evaluation, atomic-advancement, and adaptive-mutation boundaries remain
 independently verified beneath the bounded public loop. Versioned checkpoint
 capture/resume is now composed at committed-generation boundaries. Population
-recycling is now composed at the same boundary; parallelism remains a later
-boundary.
+recycling is composed at the same boundary, and bounded evaluator concurrency
+now composes through fixed assignment, complete join, and stable record commit.
 
 ## Project Zero
 
