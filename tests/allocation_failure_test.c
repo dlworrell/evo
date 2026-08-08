@@ -17,6 +17,15 @@ static size_t fail_allocation_call;
 static size_t observation_calls;
 static size_t release_calls;
 static size_t stop_calls;
+static size_t checkpoint_observation_calls;
+
+enum { ALLOCATION_CHECKPOINT_CAPACITY = 4096 };
+
+static unsigned char allocation_checkpoint_buffer
+    [ALLOCATION_CHECKPOINT_CAPACITY];
+static unsigned char retained_allocation_checkpoint
+    [ALLOCATION_CHECKPOINT_CAPACITY];
+static size_t retained_allocation_checkpoint_size;
 
 void *__wrap_calloc(size_t count, size_t size)
 {
@@ -126,6 +135,25 @@ static bool continue_after_commit(
     return false;
 }
 
+static void retain_allocation_checkpoint(
+    const void *checkpoint,
+    size_t checkpoint_size,
+    const evo_checkpoint_view_t *view,
+    void *context)
+{
+    size_t *count = context;
+
+    assert(count == &checkpoint_observation_calls);
+    assert(checkpoint_size <= sizeof(retained_allocation_checkpoint));
+    assert(view->current_generation == 0);
+    for (size_t index = 0; index < checkpoint_size; ++index) {
+        retained_allocation_checkpoint[index] =
+            ((const unsigned char *)checkpoint)[index];
+    }
+    retained_allocation_checkpoint_size = checkpoint_size;
+    ++*count;
+}
+
 static void assert_population_empty(const evo_population_t *population)
 {
     assert(population->genomes == NULL);
@@ -217,6 +245,7 @@ static void reset_allocation_injection(size_t failure_call)
 {
     allocation_calls = 0;
     continuation_stop_calls = 0;
+    checkpoint_observation_calls = 0;
     fail_allocation_call = failure_call;
     observation_calls = 0;
     stop_calls = 0;
@@ -236,6 +265,77 @@ static void assert_run_allocation_failure(const evo_problem_t *problem,
     assert(observation_calls == 0);
     fail_allocation_call = 0;
     assert_completely_empty(&result);
+}
+
+static void test_checkpoint_restore_allocation_failures(void)
+{
+    const evo_problem_t problem = {
+        .genome_size = 32,
+        .evaluate = deterministic_evaluator,
+        .checkpoint_problem_identity = UINT64_C(0x51a110c051a110c0),
+    };
+    const evo_config_t config = {
+        .population_size = 10,
+        .generation_limit = 0,
+        .tournament_size = 2,
+        .crossover_rate = 0.0,
+        .mutation_rate = 0.0,
+        .max_genome_bytes = 32,
+        .max_population_bytes = 320,
+        .max_evaluation_bytes =
+            10 * sizeof(evo_candidate_evaluation_t),
+        .max_child_population_bytes = 320,
+        .generation_observer = count_observation,
+        .generation_observer_context = &observation_calls,
+        .max_diversity_work = SIZE_MAX,
+        .max_checkpoint_bytes = ALLOCATION_CHECKPOINT_CAPACITY,
+        .checkpoint_buffer = allocation_checkpoint_buffer,
+        .checkpoint_buffer_size = sizeof(allocation_checkpoint_buffer),
+        .checkpoint_observer = retain_allocation_checkpoint,
+        .checkpoint_observer_context = &checkpoint_observation_calls,
+        .checkpoint_context_identity = UINT64_C(0x51a110c0c07e57aa),
+    };
+    evo_result_t result = {0};
+
+    reset_allocation_injection(0);
+    assert(evo_run(&problem, &config, NULL, &result) == EVO_SUCCESS);
+    assert(allocation_calls == 3);
+    assert(observation_calls == 1);
+    assert(checkpoint_observation_calls == 1);
+    assert(retained_allocation_checkpoint_size != 0);
+    evo_result_destroy(&result);
+
+    for (size_t failure_call = 1; failure_call <= 3; ++failure_call) {
+        const size_t releases_before_resume = release_calls;
+
+        reset_allocation_injection(failure_call);
+        assert(evo_resume(&problem,
+                          &config,
+                          NULL,
+                          retained_allocation_checkpoint,
+                          retained_allocation_checkpoint_size,
+                          &result) == EVO_ERROR_OUT_OF_MEMORY);
+        assert(allocation_calls == failure_call);
+        assert(release_calls ==
+               releases_before_resume + failure_call - 1);
+        assert(observation_calls == 0);
+        assert(checkpoint_observation_calls == 0);
+        assert_completely_empty(&result);
+    }
+    fail_allocation_call = 0;
+
+    reset_allocation_injection(0);
+    assert(evo_resume(&problem,
+                      &config,
+                      NULL,
+                      retained_allocation_checkpoint,
+                      retained_allocation_checkpoint_size,
+                      &result) == EVO_SUCCESS);
+    assert(allocation_calls == 3);
+    assert(observation_calls == 0);
+    assert(checkpoint_observation_calls == 0);
+    assert(result.termination_reason == EVO_TERMINATION_GENERATION_LIMIT);
+    evo_result_destroy(&result);
 }
 
 int main(void)
@@ -284,6 +384,7 @@ int main(void)
     assert_run_allocation_failure(&problem, &config, 1);
     assert_run_allocation_failure(&problem, &config, 2);
     assert_run_allocation_failure(&problem, &config, 3);
+    test_checkpoint_restore_allocation_failures();
 
     run_config = config;
     run_config.generation_limit = 1;

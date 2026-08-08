@@ -65,6 +65,9 @@ noinst_HEADERS = \
 	src/internal/statistics.h \
 	src/internal/observer.h \
 	src/internal/stopping.h \
+	src/internal/run_state.h \
+	src/internal/checkpoint.h \
+	src/internal/result_storage.h \
 	tests/research/seed_schedule_research.h
 
 noinst_LTLIBRARIES = libevo_seed_schedule_research.la
@@ -97,6 +100,8 @@ check_PROGRAMS = \
 	tests/evo_observer_test \
 	tests/evo_application_stop_test \
 	tests/evo_stopping_test \
+	tests/evo_checkpoint_test \
+	tests/evo_checkpoint_fuzz_test \
 	tests/evo_seed_schedule_research_test \
 	tests/evo_seed_schedule_experiment \
 	tests/evo_secure_erasure_test \
@@ -182,6 +187,12 @@ tests_evo_application_stop_test_LDADD = libcatalyst_evo.la -lm
 tests_evo_stopping_test_SOURCES = tests/stopping_test.c
 tests_evo_stopping_test_LDADD = libcatalyst_evo.la -lm
 
+tests_evo_checkpoint_test_SOURCES = tests/checkpoint_test.c
+tests_evo_checkpoint_test_LDADD = libcatalyst_evo.la -lm
+
+tests_evo_checkpoint_fuzz_test_SOURCES = tests/checkpoint_fuzz_test.c
+tests_evo_checkpoint_fuzz_test_LDADD = libcatalyst_evo.la -lm
+
 tests_evo_seed_schedule_research_test_SOURCES = \
 	tests/seed_schedule_research_test.c
 tests_evo_seed_schedule_research_test_LDADD = \
@@ -218,5 +229,6 @@ EXTRA_DIST = \
 	catalyst-evo.pc.in \
 	consumer/consumer.c \
 	docs/engineering/AES-BLD-001-toolchain-profile.md \
+	tests/fuzz/checkpoint_fuzz.c \
 	build-aux/.gitkeep \
 	m4/.gitkeep

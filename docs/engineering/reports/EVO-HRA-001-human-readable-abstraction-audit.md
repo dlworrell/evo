@@ -88,3 +88,12 @@ For each future accelerator, the implementing pull request must retain:
 
 Failure to provide that evidence blocks conformance even if the accelerator is
 faster, smaller, deterministic, checksummed, or replayable.
+
+## EVO 0.29.0 Follow-Up
+
+This report remains the historical 0.25.0 baseline; its checkpoint row is not
+silently rewritten. EVO-HRA-002 separately audits the implemented format-1
+checkpoint and its ordered allocation-free configuration, continuation,
+statistics, ownership, and per-candidate projection. That follow-up confirms
+that CRC-32, the configuration fingerprint, and the section offsets are never
+authority and that decoded exact state remains fully enumerable.

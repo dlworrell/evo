@@ -15,7 +15,7 @@ search as a reviewable patch and reproducibility package.
 
 This specification defines the product layer above the reusable C17
 evolutionary-search core governed by EVO-001. Nothing in this draft claims that
-the source optimizer is implemented in version 0.28.0.
+the source optimizer is implemented in version 0.29.0.
 
 ## Claim Boundary
 
@@ -94,11 +94,13 @@ work, but may not independently accept, reject, rank, select, publish,
 suppress, or terminate a candidate or result. False positives and other
 approximations must be tested and must not change committed evidence.
 
-Canonical machine-readable evidence remains authoritative for checksums,
-schema validation, replay, and automated comparison. Human-readable reports
-and audit projections derive from it, must be regenerable, and must reconcile
-with it. Inability to produce or reconcile the required projection is a
-conformance failure; readability does not turn a drifting summary into a
+Canonical decoded logical records and their exact reference semantics remain
+authority for schema validation, replay, and automated comparison. A checksum,
+fingerprint, compressed representation, index, cache, filter, or projection
+cannot independently authorize a result. Human-readable reports and audit
+projections derive from the canonical records, must be regenerable, and must
+reconcile with them. Inability to produce or reconcile the required projection
+is a conformance failure; readability does not turn a drifting summary into a
 second authority.
 
 Issues and pull requests must identify every accelerated structure, reference
@@ -255,6 +257,16 @@ A product checkpoint binds:
 - toolchain, target, workload, manifest, and measurement identities; and
 - product checkpoint and artifact schemas.
 
+EVO Core checkpoint format 1 supplies only the committed evolutionary state,
+algorithm/configuration identity, corruption check, and ordered audit
+projection defined by ADR-0030 and EVO-HRA-002. Its CRC-32 and FNV-1a values
+are not authentication, provenance, confidentiality, or product-level resume
+authority. A product checkpoint must wrap the Core bytes with the remaining
+identities above, an explainable projection of those bindings, and approved
+authentication whenever bytes cross a trust boundary. It must reject a Core
+checkpoint whose decoded projection cannot be reconciled with the product
+record.
+
 Any incompatible identity rejects resume before executing a candidate. Every
 worker is joined, terminated, and cleaned before failure or checkpoint state is
 published.
@@ -327,9 +339,11 @@ that proof passes and all non-deferred roadmap requirements are reconciled.
 - `docs/adr/ADR-0001-library-boundary-and-build-system.md`
 - `docs/adr/ADR-0016-layered-source-to-source-c-optimizer.md`
 - `docs/adr/ADR-0026-human-readable-abstraction-and-audit-projection.md`
+- `docs/adr/ADR-0030-versioned-checkpoint-and-deterministic-resume.md`
 - `docs/architecture.md`
 - `docs/algorithms.md`
 - `docs/benchmarks.md`
 - `docs/engineering/reports/EVO-HRA-001-human-readable-abstraction-audit.md`
+- `docs/engineering/reports/EVO-HRA-002-checkpoint-audit.md`
 - `docs/roadmap.md`
 - GitHub issues #38, #56 through #69, and #83

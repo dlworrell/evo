@@ -39,6 +39,9 @@ Version 0.27.0 adds deterministic committed-evidence mutation-rate adaptation
 with a schema-4 human-readable decision projection.
 Version 0.28.0 adds a disabled-by-default exact secure-erasure lifecycle for
 every EVO-owned genome and evaluation range.
+Version 0.29.0 adds canonical endian-stable committed-generation checkpoints,
+allocation-free inspection, deterministic callback reattachment, and suffix-
+only resume through the same continuation loop.
 
 ### Source analysis and transformation
 
@@ -114,21 +117,26 @@ ADR-0026 defines the complete rule.
 
 ## Current Conformance Boundary
 
-Only the evolutionary-search core exists in version 0.28.0. Source ingestion,
+Only the evolutionary-search core exists in version 0.29.0. Source ingestion,
 analysis, transformation, candidate materialization, external-process
 isolation, target-code measurement, product commands, and optimized-patch
 artifacts are planned by issues #58 through #69. Documentation of those
 planned boundaries is not an implementation claim.
 
-The 0.28.0 core uses explicit bounded arrays, direct deterministic scans, and
+The 0.29.0 core uses explicit bounded arrays, direct deterministic scans, and
 one direct constant-space adaptive-rate record rather than compressed,
 probabilistic, cached, or indexed run authority. Its
 reference byte operators act directly on those exact arrays and introduce no
 accelerated authority or retained compact decision structure. Secure erasure
 uses the same direct owner fields and exact byte counts as its stable registry,
-not an address-keyed cache or pool. It therefore has no current accelerated
-structure requiring remediation. This
-audit does not pre-approve later checkpoint, recycling, parallelism, analysis,
+not an address-keyed cache or pool. Checkpoint format 1 is canonical binary
+persistence rather than an accelerated decision path; its mandatory ordered
+view exposes every configuration, generation, population, RNG/substream,
+statistics, adaptation, ownership, and resume-identity field, while its
+candidate accessor enumerates the exact population in stable order. It
+therefore has no current opaque accelerated authority requiring remediation.
+This audit does not pre-approve later compressed checkpoints, recycling,
+parallelism, analysis,
 recipe, orchestration, or artifact implementations.
 
 ## Core Modules
@@ -143,7 +151,7 @@ recipe, orchestration, or artifact implementations.
 - Diversity evidence and deterministic stagnation handling
 - Fitness and constraint handling
 - Statistics and evidence
-- Checkpointing
+- Versioned checkpoint inspection, capture, and deterministic resume
 - Reproducible random-number generation
 
 ## Population Storage Boundary
@@ -353,8 +361,8 @@ It exposes prior and next rates, bounds, step, threshold, stagnant count,
 improvement/diversity/clamp/reset facts, and one reason enum in committed
 generation order. Pair, singleton, elite, child-evaluation, generation-
 advancement, and bounded-run evidence carry the rate used so lifecycle
-validation can reject mismatched provenance. A future checkpoint must persist
-this state and projection together; no hidden history may be reconstructed.
+validation can reject mismatched provenance. Version 0.29.0 persists this state
+and projection together; no hidden history is reconstructed.
 
 ## Secure-Erasure Boundary
 
@@ -381,6 +389,51 @@ The guarantee is deliberately bounded to live EVO-owned process memory. It
 does not claim to scrub consumer copies, stale aliases, allocator metadata,
 swap, crash artifacts, device caches, or persistent media. ADR-0029 defines
 the exact registry, lifecycle states, backend boundary, and test evidence.
+
+## Checkpoint and Resume Boundary
+
+Version 0.29.0 defines checkpoint format version 1 as a fixed little-endian
+header plus six explicit sections: deterministic configuration, continuation
+state, latest statistics, candidate evaluations, current population genomes,
+and the global-best genome. Native padding, function pointers, context
+addresses, and allocator addresses never cross the boundary. Unsigned sizes
+use checked 64-bit encoding and floating-point values use explicit IEEE-754
+binary64 bits.
+
+Capture is opt-in and writes into one exact caller-owned buffer after stop and
+generation-observer delivery for a committed generation. It performs no EVO
+allocation. The observer receives borrowed bytes and the stable
+`evo_checkpoint_view_t`; persistent copies remain caller-owned cleartext and
+are outside EVO's secure-erasure guarantee.
+
+Inspection is an allocation-free untrusted-input parser. It enforces the byte
+budget, section arithmetic, CRC-32, configuration fingerprint, enum/boolean
+domains, finite evidence, counts, stable-best order, statistics sums,
+termination state, and owner lengths. CRC and FNV are corruption/navigation
+evidence only. They provide no authentication, encryption, or independent
+authority.
+
+Resume then re-encodes and exactly compares every deterministic configuration
+byte, callback-presence flag, and caller-declared nonzero problem/context
+identity before allocating. Restored population, evaluation, and result
+owners use the same reviewed allocation sites and the restoring build's local
+secure-erasure backend. Full native population/statistics/adaptive invariants
+must pass before those provisional objects commit. Failure destroys all
+restored owners atomically and invokes no callback or RNG.
+
+The continuation record retains current/global winner identities, global RNG
+and substream versions, bounded-run/operator provenance, schema-4 statistics,
+effective adaptive rate and stagnant count, and significant-improvement
+patience state. Fresh and restored state enter the same bounded loop. Resume
+never replays callbacks for the restored generation; terminal resume returns
+immediately and intermediate resume begins with the next generation.
+
+The binary bytes are not permitted to become opaque authority. The ordered
+checkpoint view exposes exact logical sections and direct owner ranges, and
+`evo_checkpoint_candidate_inspect` projects each genome/evaluation record in
+ascending population order in constant time. A complete audit is linear and
+uses no compact index, cache, filter, or hidden decoder state. ADR-0030 defines
+the wire contract, trust boundary, projection, and verification evidence.
 
 ## Private Child-Population Ownership Boundary
 
@@ -677,7 +730,7 @@ uses the fixed order all-invalid, converged, stagnated, generation limit, then
 application requested. Natural classification suppresses the application stop
 callback, and the observer sees the selected final reason. Bounded-run policy
 version 5 records constant-space stopping evidence privately. Recycling,
-checkpointing, and parallelism remain separate decisions.
+storage recycling and parallelism remain separate decisions.
 
 Version 0.24.0 advances bounded-run policy to version 6. It records the final
 elite count, source valid count, elite policy, singleton policy, and explicit-
@@ -706,6 +759,13 @@ Version 0.28.0 leaves those decision-evidence schemas unchanged. Secure-
 erasure policy is retained directly with each owner and moves atomically with
 population ownership; it does not alter the bounded-run decision trace.
 
+Version 0.29.0 advances bounded-run policy to version 10 and introduces
+private run-state schema 1. The schema makes current/global winner identity,
+adaptive and stopping state, terminal reason, and global RNG/operator versions
+explicit continuation authority. Checkpoint format 1 persists this state plus
+the exact population and public evidence; restore supplies it unchanged to the
+same loop.
+
 ## EVO Core Execution Flow
 
 1. Initialize a population.
@@ -716,7 +776,7 @@ population ownership; it does not alter the bounded-run decision trace.
 6. Record statistics and evidence.
 7. Stop on convergence, stagnation, generation limit, or an application-defined condition.
 
-Version 0.28.0 publicly implements steps 1 through 5 for at most
+Version 0.29.0 publicly implements steps 1 through 5 for at most
 `generation_limit` bounded transitions, with caller-bounded elite policy
 version 1, explicit consumer/reference byte-operator policy, and bounded
 diversity measurement in step 5. It implements the constant-space statistics
@@ -724,8 +784,9 @@ and adaptive-decision portion of step 6 for every committed generation, records 
 winner and completed transition count, and explicitly identifies limit
 completion, later all-invalid extinction, convergence, stagnation, or an
 application request after a committed generation. Committed-generation
-observation completes the current bounded portion of step 6. Checkpointing and
-parallel evaluation remain absent.
+observation and versioned checkpoint projection complete the current bounded
+portion of step 6. Deterministic resume continues the suffix from any retained
+committed generation. Parallel evaluation remains absent.
 
 ## Source-Optimizer Execution Flow
 

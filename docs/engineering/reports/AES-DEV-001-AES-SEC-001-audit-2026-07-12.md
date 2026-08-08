@@ -47,3 +47,21 @@ Full compliance is not yet claimed. Component and property tests remain incomple
 1. Add component tests for selection, crossover, mutation, diversity, RNG, and checkpoint behavior.
 2. Add fuzz harnesses before checkpoint or other external-input parsing becomes stable.
 3. Preserve this audit as the baseline and ratchet enforcement against new work.
+
+## EVO 0.29.0 Checkpoint Amendment (2026-08-08)
+
+This section preserves the scaffold-era assessment above as history and records
+the disposition of its parser-specific follow-up when checkpoint format 1 is
+implemented by ADR-0030.
+
+| Requirement | 0.29.0 status | Retained evidence |
+|---|---|---|
+| Fuzzing | Pass for checkpoint parser | `tests/checkpoint_fuzz_test.c` covers every truncation, one bit at every byte, and 2,048 seeded arbitrary inputs; `tests/fuzz/checkpoint_fuzz.c` exposes the same parser to libFuzzer |
+| Explicit lengths and overflow checks | Pass for checkpoint boundary | Caller byte budget, fixed header, total length, ordered section offsets/sizes, 64-bit-to-`size_t` conversion, multiplication/addition, record counts, owner byte counts, and re-signed semantic tampering reject before allocation |
+| Unsafe-input isolation | Pass for checkpoint boundary | `evo_checkpoint_inspect` validates without allocation, RNG, or callbacks; `evo_resume` allocates only after inspection and exact configuration/identity matching |
+| Custom cryptography avoided | Pass | CRC-32 is labeled accidental-corruption detection and FNV-1a is labeled a format fingerprint; neither is authentication, encryption, collision-resistant authority, or a security credential |
+| Failure cleanup | Pass | Allocation-failure and secure-erasure tests cover all three restore owners, atomic empty failure, local-backend erasure, and caller-buffer exclusion |
+
+Core checkpoint bytes remain untrusted unless separately authenticated by the
+consumer. ADR-0030, EVO-001, and EVO-HRA-002 define the parser, ownership,
+security, and explainable-projection boundaries.

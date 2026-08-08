@@ -1,6 +1,6 @@
 # ADR-0015: Bounded Public Multi-Generation Run
 
-Status: Accepted (operator dispatch extended by ADR-0025 and ADR-0027)
+Status: Accepted (extended through checkpoint continuation by ADR-0030)
 Date: 2026-08-02
 Decision owner: EVO
 
@@ -90,6 +90,13 @@ for the next attempted transition, and commits the next rate plus schema-4
 projection after promotion and strict-improvement resolution but before stop
 classification and application callbacks.
 
+ADR-0030 advances bounded-run policy to version 10 in EVO 0.29.0. It factors
+the complete committed continuation state into run-state schema 1 and routes
+both a fresh generation-zero state and a validated restored state through the
+same remaining-generation loop. The restored generation is not delivered to
+callbacks again, and generation-indexed RNG domains retain their original
+source generation.
+
 ## Consequences
 
 - Public `EVO_SUCCESS` can now represent zero or more completed transitions;
@@ -106,8 +113,8 @@ classification and application callbacks.
 - At the 0.16.0 boundary, convergence, stagnation, application stop or observer
   callbacks, a public termination reason, generalized elitism, adaptive
   mutation, population recycling, checkpointing, parallelism, and secure
-  erasure remained deferred. ADR-0017 through ADR-0024 resolve the first six;
-  the remaining items stay separate.
+  erasure remained deferred. Later ADRs through ADR-0030 resolve those items
+  except population recycling and parallelism, which remain separate.
 
 ## Alternatives considered
 

@@ -10,7 +10,8 @@
 enum {
     TRACKED_ALLOCATION_CAPACITY = 16,
     TEST_GENOME_SIZE = 8,
-    TEST_POPULATION_SIZE = 2
+    TEST_POPULATION_SIZE = 2,
+    SECURE_CHECKPOINT_CAPACITY = 4096
 };
 
 typedef enum release_expectation {
@@ -42,6 +43,10 @@ static size_t lifecycle_sequence;
 static size_t release_calls;
 static size_t tracked_count;
 static release_expectation_t release_expectation;
+static unsigned char secure_checkpoint_buffer[SECURE_CHECKPOINT_CAPACITY];
+static unsigned char retained_secure_checkpoint[SECURE_CHECKPOINT_CAPACITY];
+static size_t retained_secure_checkpoint_size;
+static size_t secure_checkpoint_calls;
 
 static tracked_allocation_t *active_record(void *allocation)
 {
@@ -257,6 +262,26 @@ static evo_config_t make_config(bool secure_erasure_enabled,
     };
 }
 
+static void retain_secure_checkpoint(
+    const void *checkpoint,
+    size_t checkpoint_size,
+    const evo_checkpoint_view_t *view,
+    void *context)
+{
+    size_t *calls = context;
+
+    assert(calls == &secure_checkpoint_calls);
+    assert(view->secure_erasure_enabled);
+    assert(view->current_generation == 0);
+    assert(checkpoint_size <= sizeof(retained_secure_checkpoint));
+    for (size_t index = 0; index < checkpoint_size; ++index) {
+        retained_secure_checkpoint[index] =
+            ((const unsigned char *)checkpoint)[index];
+    }
+    retained_secure_checkpoint_size = checkpoint_size;
+    ++*calls;
+}
+
 static void assert_result_empty(const evo_result_t *result)
 {
     assert(result->best_genome == NULL);
@@ -450,6 +475,49 @@ static void test_attached_evaluation_rollback_is_erased(void)
     assert_tracking_complete(2, 2, 2);
 }
 
+static void test_restored_owners_use_local_secure_backend(void)
+{
+    evo_problem_t problem = make_problem();
+    evo_config_t config = make_config(true, 0);
+    evo_result_t result = {0};
+
+    problem.checkpoint_problem_identity =
+        UINT64_C(0x5128ec005128ec00);
+    config.max_checkpoint_bytes = SECURE_CHECKPOINT_CAPACITY;
+    config.checkpoint_buffer = secure_checkpoint_buffer;
+    config.checkpoint_buffer_size = sizeof(secure_checkpoint_buffer);
+    config.checkpoint_observer = retain_secure_checkpoint;
+    config.checkpoint_observer_context = &secure_checkpoint_calls;
+    config.checkpoint_context_identity =
+        UINT64_C(0x5128ec00c07e57aa);
+
+    secure_checkpoint_calls = 0;
+    begin_tracking(EXPECT_SECURE_RELEASE, 0);
+    assert(evo_run(&problem, &config, NULL, &result) == EVO_SUCCESS);
+    assert(secure_checkpoint_calls == 1);
+    assert(retained_secure_checkpoint_size != 0);
+    assert_live_result_audit(&result, true);
+    evo_result_destroy(&result);
+    assert_tracking_complete(3, 3, 3);
+
+    secure_checkpoint_calls = 0;
+    begin_tracking(EXPECT_SECURE_RELEASE, 0);
+    assert(evo_resume(&problem,
+                      &config,
+                      NULL,
+                      retained_secure_checkpoint,
+                      retained_secure_checkpoint_size,
+                      &result) == EVO_SUCCESS);
+    assert(secure_checkpoint_calls == 0);
+    assert_live_result_audit(&result, true);
+    assert(result.secure_erasure_backend ==
+           evo_secure_erasure_selected_backend());
+    assert(release_calls == 2);
+    assert(erasure_calls == 2);
+    evo_result_destroy(&result);
+    assert_tracking_complete(3, 3, 3);
+}
+
 int main(void)
 {
     _Static_assert(EVO_SECURE_ERASURE_POLICY_VERSION == UINT32_C(1),
@@ -466,5 +534,6 @@ int main(void)
     test_all_invalid_transfer_failure_is_erased();
     test_child_evaluation_failure_erases_every_live_owner();
     test_attached_evaluation_rollback_is_erased();
+    test_restored_owners_use_local_secure_backend();
     return 0;
 }

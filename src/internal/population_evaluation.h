@@ -17,4 +17,9 @@ evo_status_t evo_population_evaluate_ready(
     void *context,
     evo_population_t *population);
 
+/* Allocate and attach empty local-backend evaluation owners for restore. */
+evo_status_t evo_population_restore_evaluations_allocate(
+    const evo_config_t *config,
+    evo_population_t *population);
+
 #endif

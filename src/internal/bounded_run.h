@@ -2,8 +2,9 @@
 #define CATALYST_EVO_INTERNAL_BOUNDED_RUN_H
 
 #include "internal/generation_advancement.h"
+#include "internal/run_state.h"
 
-#define EVO_BOUNDED_RUN_POLICY_VERSION UINT32_C(9)
+#define EVO_BOUNDED_RUN_POLICY_VERSION UINT32_C(10)
 
 typedef struct evo_bounded_run_evidence {
     size_t population_size;
@@ -76,6 +77,24 @@ evo_status_t evo_bounded_run_advance(
     void *context,
     evo_population_t *parents,
     evo_result_t *best_result,
+    evo_bounded_run_evidence_t *evidence);
+
+/* Establish complete continuation state from committed generation zero. */
+evo_status_t evo_run_state_initialize(
+    const evo_problem_t *problem,
+    const evo_config_t *config,
+    const evo_population_t *population,
+    const evo_result_t *result,
+    evo_run_state_t *state);
+
+/* Continue from generation zero or one fully validated restored snapshot. */
+evo_status_t evo_bounded_run_continue(
+    const evo_problem_t *problem,
+    const evo_config_t *config,
+    void *context,
+    evo_population_t *parents,
+    evo_result_t *best_result,
+    evo_run_state_t *state,
     evo_bounded_run_evidence_t *evidence);
 
 #endif
