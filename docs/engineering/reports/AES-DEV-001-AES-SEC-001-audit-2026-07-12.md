@@ -109,3 +109,25 @@ ADR-0032, EVO-001, and EVO-HRA-004 define the callback, memory, scheduler,
 failure, replay, checkpoint, and human-readable projection boundaries. Dynamic
 work stealing, persistent pools, asynchronous callback cancellation, timeouts,
 and distributed workers remain outside this assessment.
+
+## EVO 0.32.0 Core-Benchmark Amendment (2026-08-08)
+
+The core benchmark adds a repository-owned C executable and a Python artifact
+validator/projection driver. It changes no installed runtime API and introduces
+no new library allocation, concurrency, parser, checkpoint, or callback trust
+boundary. Benchmark results are evidence about a named build and environment;
+they are never executable input to EVO.
+
+| Requirement | 0.32.0 status | Retained evidence |
+|---|---|---|
+| Dangerous C primitives | Pass | `benchmarks/core_benchmark.c` writes JSON only to standard output and introduces no banned allocation, copy, formatting, process, or file primitive |
+| Process invocation | Pass | `benchmarks/validate_core_benchmark.py` invokes the exact build-tree executable with an argument vector, no shell, and fixed smoke/extended timeouts |
+| Bounded artifact input | Pass | The driver rejects canonical JSON, schema input, or captured benchmark output larger than 2 MiB before parsing or retention |
+| Output authority | Pass | The build system supplies explicit output paths; the C executable has no file authority, and Markdown is written only after canonical JSON validation |
+| Correctness authority | Pass | Explicit seed oracles and direct ordered mode equality remain authoritative; timing, RSS, aggregation, and the scoped FNV record locator cannot approve correctness |
+| Explainability | Pass | Canonical JSON retains every ordered trace and raw sample; the Markdown projection is derived from validated JSON; EVO-HRA-005 retains the ADR-0026 audit |
+
+ADR-0033 and EVO-HRA-005 define the benchmark's execution, evidence,
+measurement, and human-readable projection boundaries. Benchmark artifact
+ingestion into the installed library, network publication, shell evaluation,
+and performance-threshold enforcement remain outside this assessment.

@@ -294,6 +294,12 @@
         "autotools": "tests/evo_seed_schedule_experiment"
       },
       {
+        "id": "core-benchmark-smoke",
+        "source": "benchmarks/core_benchmark.c",
+        "cmake": "evo_core_benchmark_smoke",
+        "autotools": "benchmarks/evo_core_benchmark"
+      },
+      {
         "id": "secure-erasure",
         "source": "tests/secure_erasure_test.c",
         "cmake": "evo_secure_erasure_test",

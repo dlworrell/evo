@@ -1,0 +1,366 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/dlworrell/evo/benchmarks/evo-core-benchmark-v1.schema.json",
+  "title": "EVO Core Benchmark Evidence v1",
+  "type": "object",
+  "required": [
+    "schema",
+    "schema_version",
+    "benchmark_id",
+    "tier",
+    "correctness_passed",
+    "record_locator",
+    "evo",
+    "environment",
+    "measurement_policy",
+    "memory_policy",
+    "workload",
+    "common_policy",
+    "human_readable_abstraction",
+    "cases"
+  ],
+  "properties": {
+    "schema": {"const": "catalyst.evo-core-benchmark.v1"},
+    "schema_version": {"const": "1.0.0"},
+    "benchmark_id": {"const": "EVO-CORE-001"},
+    "tier": {"enum": ["smoke", "extended"]},
+    "correctness_passed": {"type": "boolean"},
+    "record_locator": {
+      "type": "object",
+      "required": ["algorithm", "value", "scope", "authoritative"],
+      "properties": {
+        "algorithm": {"const": "fnv1a64-navigation-only"},
+        "value": {"type": "string", "pattern": "^[0-9a-f]{16}$"},
+        "scope": {"const": "mode-seed-best-genome-and-raw-timing-fields"},
+        "authoritative": {"const": false}
+      },
+      "additionalProperties": false
+    },
+    "evo": {
+      "type": "object",
+      "required": ["version", "commit"],
+      "properties": {
+        "version": {"type": "string"},
+        "commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"}
+      },
+      "additionalProperties": false
+    },
+    "environment": {
+      "type": "object",
+      "required": [
+        "platform",
+        "architecture",
+        "compiler_family",
+        "compiler_version",
+        "linker",
+        "build_frontend",
+        "build_profile",
+        "c_standard",
+        "size_t_bits",
+        "clock_ticks_per_second",
+        "process_peak_resident_native",
+        "process_peak_resident_unit"
+      ],
+      "properties": {
+        "platform": {"type": "string", "minLength": 1},
+        "architecture": {"type": "string", "minLength": 1},
+        "compiler_family": {"type": "string", "minLength": 1},
+        "compiler_version": {"type": "string", "minLength": 1},
+        "linker": {"type": "string", "minLength": 1},
+        "build_frontend": {"type": "string", "minLength": 1},
+        "build_profile": {"type": "string", "minLength": 1},
+        "c_standard": {"type": "integer", "minimum": 201710},
+        "size_t_bits": {"type": "integer", "minimum": 16},
+        "clock_ticks_per_second": {"type": "integer", "minimum": 1},
+        "process_peak_resident_native": {"type": "integer", "minimum": 0},
+        "process_peak_resident_unit": {"enum": ["bytes", "kibibytes"]}
+      },
+      "additionalProperties": false
+    },
+    "measurement_policy": {
+      "type": "object",
+      "required": [
+        "warmup_runs_per_case_seed",
+        "measured_repetitions_per_case_seed",
+        "sample_order",
+        "wall_timer",
+        "cpu_timer",
+        "timed_region",
+        "runtime_thresholds_enforced",
+        "cross_machine_equivalence_claimed",
+        "aggregation",
+        "platform_tolerance"
+      ],
+      "properties": {
+        "warmup_runs_per_case_seed": {"type": "integer", "minimum": 0},
+        "measured_repetitions_per_case_seed": {"type": "integer", "minimum": 1},
+        "sample_order": {"const": "case-seed-repetition"},
+        "wall_timer": {"type": "string"},
+        "cpu_timer": {"type": "string"},
+        "timed_region": {"type": "string"},
+        "runtime_thresholds_enforced": {"const": false},
+        "cross_machine_equivalence_claimed": {"const": false},
+        "aggregation": {"type": "string"},
+        "platform_tolerance": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "memory_policy": {
+      "type": "object",
+      "required": [
+        "exact_model",
+        "exact_model_includes",
+        "exact_model_excludes",
+        "rss_scope",
+        "rss_authoritative"
+      ],
+      "properties": {
+        "exact_model": {"const": "library-requested-calloc-bytes"},
+        "exact_model_includes": {
+          "type": "array",
+          "items": {"type": "string"},
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "exact_model_excludes": {
+          "type": "array",
+          "items": {"type": "string"},
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "rss_scope": {"const": "complete-benchmark-process"},
+        "rss_authoritative": {"const": false}
+      },
+      "additionalProperties": false
+    },
+    "workload": {
+      "type": "object",
+      "required": [
+        "name",
+        "genome_representation",
+        "fitness_definition",
+        "population_size",
+        "generation_limit",
+        "seed_count",
+        "validity",
+        "stopping"
+      ],
+      "properties": {
+        "name": {"const": "byte-onemax-v1"},
+        "genome_representation": {"type": "string"},
+        "fitness_definition": {"type": "string"},
+        "population_size": {"type": "integer", "minimum": 1},
+        "generation_limit": {"type": "integer", "minimum": 0},
+        "seed_count": {"type": "integer", "minimum": 1},
+        "validity": {"type": "string"},
+        "stopping": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "common_policy": {
+      "type": "object",
+      "required": [
+        "selection",
+        "crossover",
+        "mutation",
+        "adaptive_mutation",
+        "elite",
+        "diversity",
+        "rng",
+        "resource_budgets",
+        "callback_policy",
+        "secure_erasure_enabled",
+        "fitness_target_enabled",
+        "stagnation_enabled",
+        "diversity_floor_enabled",
+        "checkpointing_enabled"
+      ],
+      "properties": {
+        "selection": {"type": "object"},
+        "crossover": {"type": "object"},
+        "mutation": {"type": "object"},
+        "adaptive_mutation": {"type": "object"},
+        "elite": {"type": "object"},
+        "diversity": {"type": "object"},
+        "rng": {"type": "object"},
+        "resource_budgets": {"type": "object"},
+        "callback_policy": {"type": "object"},
+        "secure_erasure_enabled": {"const": false},
+        "fitness_target_enabled": {"const": false},
+        "stagnation_enabled": {"const": false},
+        "diversity_floor_enabled": {"const": false},
+        "checkpointing_enabled": {"const": false}
+      },
+      "additionalProperties": false
+    },
+    "human_readable_abstraction": {
+      "type": "object",
+      "required": [
+        "accelerated_authority",
+        "canonical_authority",
+        "summary_projection",
+        "locator_role"
+      ],
+      "properties": {
+        "accelerated_authority": {"const": false},
+        "canonical_authority": {"type": "string"},
+        "summary_projection": {"type": "string"},
+        "locator_role": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {"$ref": "#/$defs/case"}
+    }
+  },
+  "$defs": {
+    "fitness": {
+      "type": "object",
+      "required": [
+        "correctness",
+        "performance",
+        "memory_use",
+        "reliability",
+        "maintainability",
+        "constraint_penalty",
+        "total"
+      ],
+      "additionalProperties": {"type": "number"}
+    },
+    "sample": {
+      "type": "object",
+      "required": [
+        "repetition",
+        "wall_time_ns",
+        "cpu_clock_ticks",
+        "matches_seed_reference",
+        "matches_serial_reference"
+      ],
+      "properties": {
+        "repetition": {"type": "integer", "minimum": 0},
+        "wall_time_ns": {"type": "integer", "minimum": 0},
+        "cpu_clock_ticks": {"type": "integer", "minimum": 0},
+        "matches_seed_reference": {"type": "boolean"},
+        "matches_serial_reference": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    },
+    "generation": {
+      "type": "object",
+      "required": [
+        "generation_index",
+        "valid_count",
+        "invalid_count",
+        "generation_best_index",
+        "generation_best_total",
+        "global_best_total",
+        "diversity_pair_count",
+        "diversity_work_units",
+        "diversity",
+        "diversity_scaled_1e6",
+        "mutation_rate_prior",
+        "mutation_rate_effective",
+        "mutation_stagnant_generations",
+        "mutation_adaptation_reason"
+      ],
+      "properties": {
+        "generation_index": {"type": "integer", "minimum": 0},
+        "valid_count": {"type": "integer", "minimum": 0},
+        "invalid_count": {"type": "integer", "minimum": 0},
+        "generation_best_index": {"type": "integer", "minimum": 0},
+        "generation_best_total": {"type": "number"},
+        "global_best_total": {"type": "number"},
+        "diversity_pair_count": {"type": "integer", "minimum": 0},
+        "diversity_work_units": {"type": "integer", "minimum": 0},
+        "diversity": {"type": "number", "minimum": 0, "maximum": 1},
+        "diversity_scaled_1e6": {"type": "integer", "minimum": 0, "maximum": 1000000},
+        "mutation_rate_prior": {"type": "number", "minimum": 0, "maximum": 1},
+        "mutation_rate_effective": {"type": "number", "minimum": 0, "maximum": 1},
+        "mutation_stagnant_generations": {"type": "integer", "minimum": 0},
+        "mutation_adaptation_reason": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "seed": {
+      "type": "object",
+      "required": [
+        "seed_hex",
+        "cross_mode_passed",
+        "oracle",
+        "result",
+        "generation_trace",
+        "raw_samples"
+      ],
+      "properties": {
+        "seed_hex": {"type": "string", "pattern": "^[0-9a-f]{16}$"},
+        "cross_mode_passed": {"type": "boolean"},
+        "oracle": {"type": "object"},
+        "result": {
+          "type": "object",
+          "required": [
+            "best_genome_hex",
+            "best_fitness",
+            "generations_completed",
+            "random_seed_hex",
+            "termination_reason",
+            "final_statistics"
+          ],
+          "properties": {
+            "best_genome_hex": {"type": "string", "pattern": "^[0-9a-f]+$"},
+            "best_fitness": {"$ref": "#/$defs/fitness"},
+            "generations_completed": {"type": "integer", "minimum": 0},
+            "random_seed_hex": {"type": "string", "pattern": "^[0-9a-f]{16}$"},
+            "termination_reason": {"type": "string"},
+            "final_statistics": {"type": "object"}
+          },
+          "additionalProperties": false
+        },
+        "generation_trace": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/generation"}
+        },
+        "raw_samples": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/sample"}
+        }
+      },
+      "additionalProperties": false
+    },
+    "case": {
+      "type": "object",
+      "required": [
+        "case_id",
+        "parallel_evaluation",
+        "population_recycling",
+        "evaluation_worker_count",
+        "worker_scratch_bytes",
+        "requested_heap_peak_bytes",
+        "requested_heap_total_bytes",
+        "correctness_passed",
+        "seeds"
+      ],
+      "properties": {
+        "case_id": {"type": "string"},
+        "parallel_evaluation": {"type": "boolean"},
+        "population_recycling": {"type": "boolean"},
+        "evaluation_worker_count": {"type": "integer", "minimum": 0},
+        "worker_scratch_bytes": {"type": "integer", "minimum": 0},
+        "requested_heap_peak_bytes": {"type": "integer", "minimum": 1},
+        "requested_heap_total_bytes": {"type": "integer", "minimum": 1},
+        "correctness_passed": {"type": "boolean"},
+        "seeds": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/seed"}
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

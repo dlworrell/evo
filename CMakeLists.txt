@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(catalyst_evo VERSION 0.31.0 LANGUAGES C)
+project(catalyst_evo VERSION 0.32.0 LANGUAGES C)
 
 include(CTest)
 include(CheckSymbolExists)
@@ -97,6 +97,7 @@ if(NOT MSVC)
 endif()
 
 if(BUILD_TESTING)
+    add_subdirectory(benchmarks)
     add_subdirectory(tests)
 endif()
 

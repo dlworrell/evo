@@ -33,6 +33,20 @@ Run the Project Zero baseline locally with:
 bash scripts/project-zero verify
 ```
 
+Changes affecting core search behavior, execution mode, or performance
+evidence must also run the bounded canonical benchmark:
+
+```sh
+cmake -S . -B build/benchmark \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DBUILD_TESTING=ON \
+  -DEVO_BENCHMARK_COMMIT=<commit>
+cmake --build build/benchmark --target benchmark-smoke --parallel
+```
+
+Do not add timing thresholds to the smoke gate. Retain raw samples and derive
+human-readable summaries from validated canonical evidence.
+
 ## Change Discipline
 
 - Keep each commit to one logical, reviewable change.

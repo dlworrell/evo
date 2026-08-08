@@ -1,13 +1,13 @@
 # EVO-001: Evolutionary Optimization Library Contract
 
 Status: Baseline
-Version: 0.31.0
+Version: 0.32.0
 Owner: EVO
 
 ## Scope Boundary
 
 This specification governs the reusable deterministic C17 evolutionary-search
-core implemented through version 0.31.0. It does not define C-project
+core implemented through version 0.32.0. It does not define C-project
 ingestion, Clang/LLVM analysis, structured source transformations, isolated
 candidate builds, baseline-versus-candidate measurement, optimized patches, or
 product-level replay artifacts.
@@ -115,6 +115,13 @@ and commit presence/order. Private evaluation records and completed-population
 validation remain authority; operating-system thread identity, completion
 timing, atomic scheduler state, and the projection cannot commit fitness.
 ADR-0032 and the retained EVO-HRA-004 audit define and verify this boundary.
+
+Version 0.32.0 adds no accelerated core structure. Its maintained benchmark
+retains explicit cases, seeds, semantic results, complete generation traces,
+and raw measurement repetitions in canonical JSON. Aggregates and the scoped
+FNV locator are derived, non-authoritative values. The human-readable report is
+regenerated only by parsing and validating the JSON. ADR-0033 and the retained
+EVO-HRA-005 audit define and verify this evidence boundary.
 
 ## Public Interface
 
@@ -1950,7 +1957,13 @@ consumers must rebuild. Zero initialization preserves serial evaluation.
 Checkpoint format and both top-level views advance to version 3; the candidate
 view remains version 1.
 
-## Current 0.31.0 Conformance Boundary
+Version 0.32.0 changes no public type, member offset, enum value, function
+signature, installed symbol, core policy version, checkpoint format, callback
+order, allocation behavior, or RNG schedule. It advances only EVO's package
+and public version macros and adds repository benchmark/schema/projection
+entry points outside the installed library ABI.
+
+## Current 0.32.0 Conformance Boundary
 
 The current implementation exposes generation-zero compatibility plus bounded
 multi-generation execution:
@@ -2113,6 +2126,9 @@ multi-generation execution:
   remaining suffix without duplicate callback delivery and preserve RNG,
   winners, statistics, adaptation, patience, recycler identities, counts, and
   termination; and
+- the maintained core benchmark gates explicit fixed oracles and complete
+  serial/parallel plus allocate/recycle semantic equivalence before retaining
+  ordered raw timing and memory evidence, with no performance threshold; and
 - variable-size or cross-run pooling, persistent worker executors, asynchronous
   callback cancellation, and distributed evaluation are not implemented.
 
@@ -2123,7 +2139,7 @@ count. They may inspect `generation_statistics` for the final committed
 population, which is distinct from the global winner on all-invalid
 termination. When configured, they may copy each callback-lifetime observation
 into their own bounded storage. They may also configure deterministic stopping
-over committed snapshots. Version 0.31.0 defines no statistics history,
+over committed snapshots. Version 0.32.0 defines no statistics history,
 asynchronous callback cancellation, or retained callback delivery. It adds
 caller-owned checkpoint copies, deterministic suffix resume, and optional
 run-local storage recycling and bounded evaluator concurrency, but it still
@@ -2140,6 +2156,21 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON
 cmake --build build --parallel
 ctest --test-dir build --output-on-failure
 ```
+
+The bounded benchmark verification set is:
+
+```sh
+cmake -S . -B build/benchmark \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DBUILD_TESTING=ON \
+  -DEVO_BENCHMARK_COMMIT=<commit>
+cmake --build build/benchmark --target benchmark-smoke --parallel
+```
+
+`EVO-CORE-001` proves fixed oracle vectors, repeated semantic replay, exact
+serial/parallel and allocate/recycle equivalence, complete ordered generation
+traces and raw samples, validated schema/authority fields, and Markdown
+regeneration from canonical JSON. Runtime and RSS remain reporting-only.
 
 The portable result-lifecycle test proves public callback order, invalid
 suppression, winner transfer, complete fitness evidence, stable ties,
@@ -2342,7 +2373,7 @@ The deterministic checkpoint-fuzz test rejects every truncation, a one-bit
 mutation at every serialized byte, and 2,048 seeded arbitrary byte ranges.
 The separate `tests/fuzz/checkpoint_fuzz.c` entry point exposes the same
 allocation-free untrusted parser to libFuzzer. Build-manifest parity requires
-exactly 26 production sources and 32 normative targets in CMake, GNU
+exactly 26 production sources and 33 normative targets in CMake, GNU
 Autotools, and AES-BLD-001 inventories.
 
 ## Related Records
@@ -2378,6 +2409,7 @@ Autotools, and AES-BLD-001 inventories.
 - `docs/adr/ADR-0030-versioned-checkpoint-and-deterministic-resume.md`
 - `docs/adr/ADR-0031-deterministic-population-storage-recycling.md`
 - `docs/adr/ADR-0032-deterministic-bounded-parallel-evaluation.md`
+- `docs/adr/ADR-0033-reproducible-core-benchmark-evidence.md`
 - `docs/architecture.md`
 - `docs/algorithms.md`
 - `docs/benchmarks.md`
@@ -2386,6 +2418,7 @@ Autotools, and AES-BLD-001 inventories.
 - `docs/engineering/reports/EVO-HRA-002-checkpoint-audit.md`
 - `docs/engineering/reports/EVO-HRA-003-population-storage-recycling-audit.md`
 - `docs/engineering/reports/EVO-HRA-004-parallel-evaluation-audit.md`
+- `docs/engineering/reports/EVO-HRA-005-core-benchmark-evidence-audit.md`
 - `docs/engineering/SECURE-C-CXX.md`
 - `docs/engineering/AES-SEC-001-review-dispositions.json`
 - `https://github.com/dlworrell/evo/issues/4`

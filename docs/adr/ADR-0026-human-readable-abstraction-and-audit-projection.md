@@ -184,6 +184,13 @@ every candidate's stable logical worker, wave, completion/cancellation
 disposition, and commit order independent of runtime threads and timing.
 EVO-HRA-004 retains the differential and concurrency audit.
 
+ADR-0033 performs the change-specific assessment for EVO 0.32.0. Core
+benchmark JSON retains complete ordered cases, seeds, generation traces, and
+raw measurements as authority. Its FNV value and aggregates are explicitly
+non-authoritative, and the Markdown projection is regenerated only by parsing
+and validating the canonical JSON. EVO-HRA-005 retains the benchmark evidence
+and projection audit.
+
 ## Consequences
 
 - EVO may use efficient internal data structures without exposing their

@@ -29,7 +29,7 @@ records their versions as evidence.
 ## Frontend parity
 
 `CMakeLists.txt` and `Makefile.am` enumerate all twenty-six production
-sources and the same thirty-two normative targets. Both frontends:
+sources and the same thirty-three normative targets. Both frontends:
 
 - compile the project as C17 with the same warning policy;
 - default to warnings-as-errors;
@@ -40,6 +40,8 @@ sources and the same thirty-two normative targets. Both frontends:
   macro when available, and otherwise compile the same volatile-byte secure-
   erasure fallback;
 - build the private seed-schedule research support only for tests;
+- build the private core-benchmark executable and expose equivalent bounded
+  smoke and explicitly requested extended evidence targets;
 - install `libcatalyst_evo.a`, the public header, and `catalyst-evo.pc`;
 - support an out-of-tree build without network access after bootstrap.
 

@@ -36,6 +36,7 @@ The governing product records are:
 - `docs/adr/ADR-0030-versioned-checkpoint-and-deterministic-resume.md`
 - `docs/adr/ADR-0031-deterministic-population-storage-recycling.md`
 - `docs/adr/ADR-0032-deterministic-bounded-parallel-evaluation.md`
+- `docs/adr/ADR-0033-reproducible-core-benchmark-evidence.md`
 - `docs/specs/EVO-001-library-contract.md`
 - `docs/specs/EVO-002-source-optimizer-contract.md`
 - `docs/roadmap.md`
@@ -101,6 +102,11 @@ the exact reference while a complete candidate-ordered schedule projects stable
 logical worker assignment, waves, completion, cancellation, and commit order.
 The retained EVO-HRA-004 audit proves worker-count equivalence and that runtime
 thread identity or timing cannot become authority.
+ADR-0033 assesses 0.32.0 core benchmark evidence: complete ordered JSON cases,
+seeds, generation traces, and raw samples remain authority, while aggregates
+and the scoped FNV locator are derived and non-authoritative. The Markdown
+summary is regenerated only from validated JSON, and EVO-HRA-005 retains the
+reconciliation audit.
 
 ## Roadmap Scope
 
@@ -148,7 +154,7 @@ repository.
 - `docs/` — architecture, theory, algorithms, and evidence guidance
 
 The source-optimizer implementation directories will be introduced only by
-their dependency-ordered roadmap issues. Their absence in version 0.31.0 is an
+their dependency-ordered roadmap issues. Their absence in version 0.32.0 is an
 explicit current boundary, not an implicit feature claim.
 
 ## Authoritative Native Builds
@@ -188,7 +194,7 @@ declared Clang/LLVM and GNU profiles.
 
 ## Status
 
-**Current implementation boundary:** EVO 0.31.0 implements the deterministic
+**Current implementation boundary:** EVO 0.32.0 implements the deterministic
 evolutionary-search core. It does not yet ingest a C project, build a Clang AST
 or LLVM IR model, transform source, compile evolved candidates, or emit an
 optimized source patch. Those product boundaries are tracked in the 1.0
@@ -355,6 +361,16 @@ generation. A synchronous candidate-ordered schedule exposes stable logical
 worker identity, wave, completion/failure/cancellation, and commit order without
 using platform thread identity or timing as authority. Checkpoint format 3 binds
 the policy and committed provenance but serializes no live scheduler state.
+
+EVO 0.32.0 adds the versioned `EVO-CORE-001` correctness, search-quality,
+runtime, and memory-evidence baseline. Fixed byte-genome oracles and complete
+semantic replay gate four serial/parallel and allocate/recycle cases before
+measurement. Canonical JSON retains every policy, seed, generation trace, and
+raw sample in stable order. Runtime, CPU, and process-RSS values are
+reporting-only; exact library-requested heap bytes state their scope and
+exclusions. CMake and GNU Autotools expose bounded smoke and intentionally
+dispatched extended targets, and Markdown is derived only by parsing and
+validating the JSON artifact.
 
 Version 0.3.0 added the independently tested private population-storage
 foundation: checked `population_size * genome_size` arithmetic, a
