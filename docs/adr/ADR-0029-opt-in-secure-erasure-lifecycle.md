@@ -165,6 +165,13 @@ Checkpoint input, output, and retained copies remain caller-owned cleartext
 ranges that EVO never erases or releases. Source-process backend metadata is
 audit evidence only and never selects the restoring disposition.
 
+ADR-0031 composes enabled population reuse with this lifecycle in EVO 0.30.0.
+Each complete former-active genome and evaluation range is erased before that
+owner becomes reusable, and reset-time erasures are counted in the address-free
+storage registry. A retained slot may undergo multiple reset erasures followed
+by one terminal release erasure. Exact-once applies independently to each
+reset/release event; no reused byte range is exposed before its reset completes.
+
 ## Alternatives considered
 
 ### Claim that ordinary `free` scrubs storage

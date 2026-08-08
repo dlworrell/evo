@@ -49,13 +49,12 @@ static bool child_progress_is_valid(
 
     if (parents == children || children->genomes == NULL ||
         !evo_population_secure_erasure_is_valid(config, children) ||
+        !evo_population_recycling_child_is_valid(config, children) ||
         children->genomes == parents->genomes ||
-        children->evaluations != NULL ||
         children->population_size != config->population_size ||
         children->population_size != parents->population_size ||
         children->genome_size != problem->genome_size ||
         children->genome_size != parents->genome_size ||
-        children->evaluation_bytes != 0 ||
         children->valid_count != 0 || children->best_index != 0 ||
         children->elite_count != 0 ||
         children->elite_source_valid_count != 0 ||

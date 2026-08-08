@@ -31,13 +31,14 @@ static bool produced_child_ready_for_evaluation(
     uint32_t expected_odd_child_policy_version = 0;
     uint32_t expected_singleton_child_policy_version = 0;
 
-    if (children->genomes == NULL || children->evaluations != NULL ||
+    if (children->genomes == NULL ||
         !evo_population_secure_erasure_is_valid(config, children) ||
+        !evo_population_recycling_child_is_valid(config, children) ||
         children->population_size == 0 || children->genome_size == 0 ||
         children->storage_bytes == 0 ||
         children->population_size != config->population_size ||
         children->genome_size != problem->genome_size ||
-        children->evaluation_bytes != 0 || children->valid_count != 0 ||
+        children->valid_count != 0 ||
         children->best_index != 0 || children->initialization_seed != 0 ||
         children->rng_algorithm_version != 0 ||
         children->produced_count != children->population_size ||
@@ -168,9 +169,15 @@ evo_status_t evo_child_population_evaluate(
         children->diversity_policy_version;
     candidate.diversity_metric_version =
         children->diversity_metric_version;
+    candidate.population_recycling_policy_version =
+        children->population_recycling_policy_version;
+    candidate.storage_owner_identity =
+        children->storage_owner_identity;
     candidate.policy_version = EVO_CHILD_EVALUATION_POLICY_VERSION;
     candidate.has_best = children->has_best;
     candidate.elite_count_explicit = children->elite_count_explicit;
+    candidate.population_recycling_enabled =
+        children->population_recycling_enabled;
     candidate.complete = true;
     *evidence = candidate;
     return EVO_SUCCESS;

@@ -15,7 +15,7 @@ search as a reviewable patch and reproducibility package.
 
 This specification defines the product layer above the reusable C17
 evolutionary-search core governed by EVO-001. Nothing in this draft claims that
-the source optimizer is implemented in version 0.29.0.
+the source optimizer is implemented in version 0.30.0.
 
 ## Claim Boundary
 
@@ -257,15 +257,15 @@ A product checkpoint binds:
 - toolchain, target, workload, manifest, and measurement identities; and
 - product checkpoint and artifact schemas.
 
-EVO Core checkpoint format 1 supplies only the committed evolutionary state,
-algorithm/configuration identity, corruption check, and ordered audit
-projection defined by ADR-0030 and EVO-HRA-002. Its CRC-32 and FNV-1a values
-are not authentication, provenance, confidentiality, or product-level resume
-authority. A product checkpoint must wrap the Core bytes with the remaining
-identities above, an explainable projection of those bindings, and approved
-authentication whenever bytes cross a trust boundary. It must reject a Core
-checkpoint whose decoded projection cannot be reconciled with the product
-record.
+EVO Core checkpoint format 2 supplies only the committed evolutionary state,
+algorithm/configuration identity, logical population-storage registry,
+corruption check, and ordered audit projections defined by ADR-0030, ADR-0031,
+EVO-HRA-002, and EVO-HRA-003. Its CRC-32 and FNV-1a values are not
+authentication, provenance, confidentiality, or product-level resume authority.
+A product checkpoint must wrap the Core bytes with the remaining identities
+above, an explainable projection of those bindings, and approved authentication
+whenever bytes cross a trust boundary. It must reject a Core checkpoint whose
+decoded projections cannot be reconciled with the product record.
 
 Any incompatible identity rejects resume before executing a candidate. Every
 worker is joined, terminated, and cleaned before failure or checkpoint state is
@@ -340,10 +340,12 @@ that proof passes and all non-deferred roadmap requirements are reconciled.
 - `docs/adr/ADR-0016-layered-source-to-source-c-optimizer.md`
 - `docs/adr/ADR-0026-human-readable-abstraction-and-audit-projection.md`
 - `docs/adr/ADR-0030-versioned-checkpoint-and-deterministic-resume.md`
+- `docs/adr/ADR-0031-deterministic-population-storage-recycling.md`
 - `docs/architecture.md`
 - `docs/algorithms.md`
 - `docs/benchmarks.md`
 - `docs/engineering/reports/EVO-HRA-001-human-readable-abstraction-audit.md`
 - `docs/engineering/reports/EVO-HRA-002-checkpoint-audit.md`
+- `docs/engineering/reports/EVO-HRA-003-population-storage-recycling-audit.md`
 - `docs/roadmap.md`
 - GitHub issues #38, #56 through #69, and #83

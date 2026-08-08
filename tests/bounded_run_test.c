@@ -758,6 +758,7 @@ static void test_private_bounded_run_evidence(void)
     config.selection_policy = EVO_SELECTION_RANK;
     config.rank_base_weight = 1;
     config.rank_step_weight = 1;
+    config.population_recycling_enabled = true;
     assert(evo_population_create(&problem, &config, &population) ==
            EVO_SUCCESS);
     assert(evo_population_initialize(&problem,
@@ -856,10 +857,15 @@ static void test_private_bounded_run_evidence(void)
            EVO_BYTE_DIVERSITY_METRIC_VERSION);
     assert(evidence.stopping_policy_version ==
            EVO_STOPPING_POLICY_VERSION);
+    assert(evidence.population_recycling_policy_version ==
+           EVO_POPULATION_RECYCLING_POLICY_VERSION);
+    assert(evidence.final_active_storage_owner_identity == UINT64_C(1));
+    assert(evidence.final_reusable_storage_owner_identity == UINT64_C(2));
     assert(evidence.significant_best_total == 2.0);
     assert(evidence.stagnant_generations == 0);
     assert(!evidence.stopped_converged);
     assert(!evidence.stopped_stagnated);
+    assert(evidence.population_recycling_enabled);
     assert(evidence.policy_version == EVO_BOUNDED_RUN_POLICY_VERSION);
     assert(evidence.complete);
     assert_result(&best,

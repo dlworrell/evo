@@ -3,7 +3,7 @@
 
 #include "internal/population_evaluation.h"
 
-#define EVO_CHILD_EVALUATION_POLICY_VERSION UINT32_C(7)
+#define EVO_CHILD_EVALUATION_POLICY_VERSION UINT32_C(8)
 
 typedef struct evo_child_evaluation_evidence {
     size_t population_size;
@@ -26,9 +26,12 @@ typedef struct evo_child_evaluation_evidence {
     uint32_t fitness_comparison_policy_version;
     uint32_t diversity_policy_version;
     uint32_t diversity_metric_version;
+    uint32_t population_recycling_policy_version;
+    uint64_t storage_owner_identity;
     uint32_t policy_version;
     bool has_best;
     bool elite_count_explicit;
+    bool population_recycling_enabled;
     bool complete;
 } evo_child_evaluation_evidence_t;
 

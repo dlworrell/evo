@@ -14,11 +14,17 @@ _Static_assert(EVO_MUTATION_ADAPTATION_POLICY_VERSION == UINT32_C(1),
                "unsupported EVO mutation-adaptation policy");
 _Static_assert(EVO_SECURE_ERASURE_POLICY_VERSION == UINT32_C(1),
                "unsupported EVO secure-erasure policy");
-_Static_assert(EVO_CHECKPOINT_FORMAT_VERSION == UINT32_C(1),
+_Static_assert(EVO_POPULATION_RECYCLING_POLICY_VERSION == UINT32_C(1),
+               "unsupported EVO population-recycling policy");
+_Static_assert(EVO_POPULATION_STORAGE_REGISTRY_VERSION == UINT32_C(1),
+               "unsupported EVO population-storage registry");
+_Static_assert(EVO_POPULATION_STORAGE_OWNER_SLOTS == 2,
+               "unsupported EVO population-storage slot count");
+_Static_assert(EVO_CHECKPOINT_FORMAT_VERSION == UINT32_C(2),
                "unsupported EVO checkpoint format");
-_Static_assert(EVO_CHECKPOINT_VIEW_VERSION == UINT32_C(1),
+_Static_assert(EVO_CHECKPOINT_VIEW_VERSION == UINT32_C(2),
                "unsupported EVO checkpoint view");
-_Static_assert(EVO_CHECKPOINT_CONFIGURATION_VIEW_VERSION == UINT32_C(1),
+_Static_assert(EVO_CHECKPOINT_CONFIGURATION_VIEW_VERSION == UINT32_C(2),
                "unsupported EVO checkpoint configuration view");
 _Static_assert(EVO_CHECKPOINT_CANDIDATE_VIEW_VERSION == UINT32_C(1),
                "unsupported EVO checkpoint candidate view");

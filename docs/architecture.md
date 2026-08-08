@@ -42,6 +42,9 @@ every EVO-owned genome and evaluation range.
 Version 0.29.0 adds canonical endian-stable committed-generation checkpoints,
 allocation-free inspection, deterministic callback reattachment, and suffix-
 only resume through the same continuation loop.
+Version 0.30.0 adds disabled-by-default deterministic population-storage
+recycling through two fixed run-local slots and a complete address-free owner
+registry.
 
 ### Source analysis and transformation
 
@@ -117,13 +120,13 @@ ADR-0026 defines the complete rule.
 
 ## Current Conformance Boundary
 
-Only the evolutionary-search core exists in version 0.29.0. Source ingestion,
+Only the evolutionary-search core exists in version 0.30.0. Source ingestion,
 analysis, transformation, candidate materialization, external-process
 isolation, target-code measurement, product commands, and optimized-patch
 artifacts are planned by issues #58 through #69. Documentation of those
 planned boundaries is not an implementation claim.
 
-The 0.29.0 core uses explicit bounded arrays, direct deterministic scans, and
+The 0.30.0 core uses explicit bounded arrays, direct deterministic scans, and
 one direct constant-space adaptive-rate record rather than compressed,
 probabilistic, cached, or indexed run authority. Its
 reference byte operators act directly on those exact arrays and introduce no
@@ -133,11 +136,15 @@ not an address-keyed cache or pool. Checkpoint format 1 is canonical binary
 persistence rather than an accelerated decision path; its mandatory ordered
 view exposes every configuration, generation, population, RNG/substream,
 statistics, adaptation, ownership, and resume-identity field, while its
-candidate accessor enumerates the exact population in stable order. It
-therefore has no current opaque accelerated authority requiring remediation.
-This audit does not pre-approve later compressed checkpoints, recycling,
-parallelism, analysis,
-recipe, orchestration, or artifact implementations.
+candidate accessor enumerates the exact population in stable order. The
+population recycler is an exact allocation accelerator over two fixed local
+owners. Exact pointer/count fields remain authority, while the complete stable
+owner registry projects role, capacity, provenance, handoff, reset, and
+erasure history without exposing addresses. EVO-HRA-003 differentially
+reconciles that projection against the explicit allocation path. The current
+core therefore has no opaque accelerated authority requiring remediation.
+This audit does not pre-approve later variable pools, compressed checkpoints,
+parallelism, analysis, recipe, orchestration, or artifact implementations.
 
 ## Core Modules
 
@@ -147,6 +154,7 @@ recipe, orchestration, or artifact implementations.
 - Consumer and reference byte-genome mutation
 - Evidence-driven bounded mutation-rate adaptation
 - Opt-in secure erasure with exact owner-and-byte-count evidence
+- Opt-in two-slot population recycling with an address-free audit registry
 - Deterministic elite preservation and ordinary singleton production
 - Diversity evidence and deterministic stagnation handling
 - Fitness and constraint handling
@@ -173,6 +181,22 @@ performs ordinary release and makes no erasure claim. Enabled destruction
 erases each exact range once immediately before its sole release. Child
 promotion moves this metadata with both owners before destroying the former
 parent.
+
+Version 0.30.0 optionally retains exactly two run-local logical population
+slots. Generation zero owns stable slot 1; the first transition materializes
+slot 2, and later committed generations alternate active and reusable roles.
+Before reuse, EVO resets the former active genome and evaluation ranges in
+full, clears their population evidence, and retains only exact capacities,
+owner identity, reset/erasure metadata, and the detached evaluation reserve.
+Disabled execution continues to allocate and release each child through the
+0.29.0 path.
+
+`evo_population_storage_registry_t` is the complete human-readable projection
+of this accelerated lifecycle. It orders at most two entries by stable logical
+identity and exposes role, represented/source generations, capacities,
+handoffs, resets, erasures, and owner presence. It contains no address or
+allocator metadata and cannot authorize ownership: every use reconciles the
+registry against the exact pointer/count owners and committed generation.
 
 ## Deterministic Initialization Boundary
 
@@ -378,11 +402,14 @@ records the selected backend beside each owner. CMake and GNU Autotools detect
 the sole wrapper uses an ascending volatile-byte zero loop. It does not use
 generic `memset`, allocate memory, call a consumer, or consume RNG.
 
-Cleanup erases each active genome or evaluation range exactly once and then
-immediately releases that sole owner. This covers successful population and
-result destruction, former-parent disposal after promotion, provisional
-evaluation rejection, attached-evaluation rollback, child failure, public-run
-failure, and partial allocation. The complete owner record is then zeroed, so
+Terminal cleanup erases each active genome or evaluation range exactly once
+and then immediately releases that sole owner. Recycling extends the same
+wrapper to every complete former-active range before reuse, so one long-lived
+owner may have several reset erasures followed by one final-release erasure.
+This covers successful population and result destruction, former-parent reset
+or disposal after promotion, provisional evaluation rejection or recycled-
+reserve reset, attached-evaluation rollback, child failure, public-run failure,
+and partial allocation. Final destruction zeroes the complete owner record, so
 repeated destruction is inert.
 
 The guarantee is deliberately bounded to live EVO-owned process memory. It
@@ -434,6 +461,18 @@ checkpoint view exposes exact logical sections and direct owner ranges, and
 ascending population order in constant time. A complete audit is linear and
 uses no compact index, cache, filter, or hidden decoder state. ADR-0030 defines
 the wire contract, trust boundary, projection, and verification evidence.
+
+Version 0.30.0 advances the checkpoint format, checkpoint view, and canonical
+configuration view to version 2 with magic `EVOCKPT2`. Format 2 persists the
+recycling flag, storage-observer presence, population recycling disposition,
+stable active owner identity, and complete logical storage registry. Inspection
+reconciles that registry with generation parity, capacities, provenance,
+secure-erasure metadata, and configuration before allocation. Resume creates
+new local owners, reattaches the restoring build's local erasure backend, and
+materializes the opposite slot only when a later transition requires it.
+Format 1 is rejected explicitly rather than assigning lifecycle state absent
+from its bytes. ADR-0031 defines this amendment and EVO-HRA-003 retains the
+projection and reference-equivalence audit.
 
 ## Private Child-Population Ownership Boundary
 
@@ -609,6 +648,14 @@ an optimization run is deliberately left to a later stopping-policy boundary.
 The old parent is released rather than recycled into the child handle; buffer
 recycling remains a separate ownership decision.
 
+Version 0.30.0 supplies that separate decision without weakening atomicity.
+Enabled advancement dry-validates current and next registries, both owner
+ranges, reset eligibility, and all aliases. Its no-fail commit moves the child
+owners into the active handle, moves the former active owners into the reusable
+handle, resets both complete reusable ranges, and then commits the registry and
+version-8 evidence. Disabled advancement retains the exact release behavior
+above.
+
 ## Public Bounded Multi-Generation Run
 
 Version 0.16.0 composes the accepted private generation boundaries inside
@@ -729,8 +776,9 @@ Classification is allocation-free and RNG-free. Coincident terminal evidence
 uses the fixed order all-invalid, converged, stagnated, generation limit, then
 application requested. Natural classification suppresses the application stop
 callback, and the observer sees the selected final reason. Bounded-run policy
-version 5 records constant-space stopping evidence privately. Recycling,
-storage recycling and parallelism remain separate decisions.
+version 5 records constant-space stopping evidence privately. Population
+recycling and parallelism remain separate decisions at this historical 0.23.0
+boundary.
 
 Version 0.24.0 advances bounded-run policy to version 6. It records the final
 elite count, source valid count, elite policy, singleton policy, and explicit-
@@ -766,6 +814,12 @@ explicit continuation authority. Checkpoint format 1 persists this state plus
 the exact population and public evidence; restore supplies it unchanged to the
 same loop.
 
+Version 0.30.0 advances bounded-run policy to version 11, child-evaluation and
+generation-advancement policies to version 8, and private run-state schema to
+version 2. These records carry the recycling policy and stable active/reusable
+identities through evaluation, atomic promotion, checkpoint capture, and
+resume without making the projection an ownership authority.
+
 ## EVO Core Execution Flow
 
 1. Initialize a population.
@@ -776,7 +830,7 @@ same loop.
 6. Record statistics and evidence.
 7. Stop on convergence, stagnation, generation limit, or an application-defined condition.
 
-Version 0.29.0 publicly implements steps 1 through 5 for at most
+Version 0.30.0 publicly implements steps 1 through 5 for at most
 `generation_limit` bounded transitions, with caller-bounded elite policy
 version 1, explicit consumer/reference byte-operator policy, and bounded
 diversity measurement in step 5. It implements the constant-space statistics
@@ -784,9 +838,11 @@ and adaptive-decision portion of step 6 for every committed generation, records 
 winner and completed transition count, and explicitly identifies limit
 completion, later all-invalid extinction, convergence, stagnation, or an
 application request after a committed generation. Committed-generation
-observation and versioned checkpoint projection complete the current bounded
-portion of step 6. Deterministic resume continues the suffix from any retained
-committed generation. Parallel evaluation remains absent.
+observation, the population-storage registry, and versioned checkpoint
+projection complete the current bounded portion of step 6. Deterministic
+resume continues the suffix from any retained committed generation. Enabled
+storage recycling changes allocation/reset work only; parallel evaluation
+remains absent.
 
 ## Source-Optimizer Execution Flow
 

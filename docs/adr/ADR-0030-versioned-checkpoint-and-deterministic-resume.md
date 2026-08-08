@@ -219,6 +219,13 @@ equivalence, and fall back to or reject against format-1 reference semantics.
   protection, atomic file replacement, and media erasure remain application
   responsibilities.
 
+ADR-0031 advances the current EVO 0.30.0 format, checkpoint view, and canonical
+configuration view to version 2 with magic `EVOCKPT2`. It persists and projects
+the complete logical population-storage registry plus recycling configuration
+and owner identity. Format 1 remains the historical decision defined here but
+is rejected by the format-2 parser because it contains no registry or private
+run-state schema-2 continuation. EVO-HRA-003 audits the amendment.
+
 ## Alternatives considered
 
 ### Serialize native C structures

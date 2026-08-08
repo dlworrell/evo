@@ -16,7 +16,8 @@ enum {
     TEST_HEADER_CHECKSUM = 132,
     TEST_CONFIGURATION_MAX_POPULATION_BYTES = 68,
     TEST_STATE_TERMINATION_REASON = 28,
-    TEST_STATE_INITIALIZATION_SEED = 160
+    TEST_STATE_ACTIVE_STORAGE_OWNER = 85,
+    TEST_STATE_INITIALIZATION_SEED = 366
 };
 
 typedef struct event_log {
@@ -195,6 +196,33 @@ static void observe_checkpoint(const void *checkpoint,
            UINT64_C(0x5100510051005100));
     assert(view->configuration.checkpoint_context_identity ==
            UINT64_C(0x5151515151515151));
+    assert(!view->configuration.population_storage_observer_present);
+    assert(view->population_storage_registry.version ==
+           EVO_POPULATION_STORAGE_REGISTRY_VERSION);
+    assert(view->population_storage_registry.policy_version ==
+           EVO_POPULATION_RECYCLING_POLICY_VERSION);
+    assert(view->population_storage_registry.recycling_enabled ==
+           view->configuration.population_recycling_enabled);
+    if (view->configuration.population_recycling_enabled) {
+        const uint64_t expected_active =
+            generation % 2 == 0 ? UINT64_C(1) : UINT64_C(2);
+
+        assert(view->population_storage_registry.entry_count ==
+               (generation == 0 ? 1 : 2));
+        assert(view->population_storage_registry.active_owner_identity ==
+               expected_active);
+        assert(view->population_storage_registry.reusable_owner_identity ==
+               (generation == 0
+                    ? UINT64_C(0)
+                    : (expected_active == UINT64_C(1)
+                           ? UINT64_C(2)
+                           : UINT64_C(1))));
+    } else {
+        assert(view->population_storage_registry.entry_count == 0);
+        assert(view->population_storage_registry.active_owner_identity == 0);
+        assert(view->population_storage_registry.reusable_owner_identity ==
+               0);
+    }
     assert(view->population_size == TEST_POPULATION_SIZE);
     assert(view->population_evaluation_records == TEST_POPULATION_SIZE);
     assert(evo_checkpoint_candidate_inspect(view, 0, &candidate) ==
@@ -449,6 +477,18 @@ static void test_inspection_and_rejection(void)
     for (size_t index = 0; index < size; ++index) {
         corrupted[index] = checkpoints.snapshots[generation][index];
     }
+    write_u64_le(corrupted,
+                 state_offset + TEST_STATE_ACTIVE_STORAGE_OWNER,
+                 UINT64_C(1));
+    rewrite_integrity(corrupted, size);
+    assert(evo_checkpoint_inspect(corrupted,
+                                  size,
+                                  TEST_CHECKPOINT_CAPACITY,
+                                  &view) == EVO_ERROR_CHECKPOINT_INVALID);
+
+    for (size_t index = 0; index < size; ++index) {
+        corrupted[index] = checkpoints.snapshots[generation][index];
+    }
     write_u32_le(corrupted,
                  state_offset + TEST_STATE_TERMINATION_REASON,
                  (uint32_t)EVO_TERMINATION_CONVERGED);
@@ -485,7 +525,7 @@ static void test_inspection_and_rejection(void)
     for (size_t index = 0; index < size; ++index) {
         corrupted[index] = checkpoints.snapshots[generation][index];
     }
-    corrupted[8] = UINT8_C(2);
+    corrupted[8] = UINT8_C(3);
     assert(evo_checkpoint_inspect(corrupted,
                                   size,
                                   TEST_CHECKPOINT_CAPACITY,
@@ -574,6 +614,58 @@ static void test_resume_preserves_patience_and_adaptation_state(void)
     evo_result_destroy(&uninterrupted);
 }
 
+static void test_recycled_checkpoint_resume_preserves_projection(void)
+{
+    evo_problem_t problem = make_problem();
+    event_log_t uninterrupted_events = {0};
+    checkpoint_log_t uninterrupted_checkpoints = {0};
+    unsigned char uninterrupted_buffer[TEST_CHECKPOINT_CAPACITY] = {0};
+    evo_config_t config = make_config(&uninterrupted_events,
+                                      &uninterrupted_checkpoints,
+                                      uninterrupted_buffer,
+                                      sizeof(uninterrupted_buffer));
+    evo_result_t uninterrupted = {0};
+    event_log_t resumed_events = {0};
+    checkpoint_log_t resumed_checkpoints = {0};
+    unsigned char resumed_buffer[TEST_CHECKPOINT_CAPACITY] = {0};
+    evo_config_t resumed_config = make_config(&resumed_events,
+                                              &resumed_checkpoints,
+                                              resumed_buffer,
+                                              sizeof(resumed_buffer));
+    evo_result_t resumed = {0};
+    const size_t resume_generation = 2;
+
+    config.population_recycling_enabled = true;
+    resumed_config.population_recycling_enabled = true;
+    assert(evo_run(&problem, &config, NULL, &uninterrupted) == EVO_SUCCESS);
+    assert(uninterrupted_checkpoints.count == TEST_SNAPSHOT_COUNT);
+    assert(evo_resume(&problem,
+                      &resumed_config,
+                      NULL,
+                      uninterrupted_checkpoints.snapshots[resume_generation],
+                      uninterrupted_checkpoints.sizes[resume_generation],
+                      &resumed) == EVO_SUCCESS);
+    assert_results_equal(&uninterrupted, &resumed);
+    assert(resumed_events.count ==
+           TEST_GENERATION_LIMIT - resume_generation);
+    assert(resumed_checkpoints.count ==
+           TEST_GENERATION_LIMIT - resume_generation);
+    for (size_t generation = resume_generation + 1;
+         generation <= TEST_GENERATION_LIMIT;
+         ++generation) {
+        assert(resumed_checkpoints.sizes[generation] ==
+               uninterrupted_checkpoints.sizes[generation]);
+        for (size_t index = 0;
+             index < resumed_checkpoints.sizes[generation];
+             ++index) {
+            assert(resumed_checkpoints.snapshots[generation][index] ==
+                   uninterrupted_checkpoints.snapshots[generation][index]);
+        }
+    }
+    evo_result_destroy(&resumed);
+    evo_result_destroy(&uninterrupted);
+}
+
 static void test_checkpoint_preflight_is_callback_free(void)
 {
     evo_problem_t problem = make_problem();
@@ -642,6 +734,7 @@ int main(void)
     test_checkpoint_resume_replay();
     test_inspection_and_rejection();
     test_resume_preserves_patience_and_adaptation_state();
+    test_recycled_checkpoint_resume_preserves_projection();
     test_checkpoint_preflight_is_callback_free();
     return 0;
 }

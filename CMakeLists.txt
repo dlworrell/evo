@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(catalyst_evo VERSION 0.29.0 LANGUAGES C)
+project(catalyst_evo VERSION 0.30.0 LANGUAGES C)
 
 include(CTest)
 include(CheckSymbolExists)
@@ -45,6 +45,7 @@ endif()
 add_library(catalyst_evo STATIC
     src/population.c
     src/population_storage.c
+    src/population_recycling.c
     src/population_initialization.c
     src/population_evaluation.c
     src/selection.c

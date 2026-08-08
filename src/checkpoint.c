@@ -9,6 +9,7 @@
 #include "internal/fitness.h"
 #include "internal/mutation.h"
 #include "internal/population_evaluation.h"
+#include "internal/population_recycling.h"
 #include "internal/result_storage.h"
 #include "internal/rng.h"
 #include "internal/selection.h"
@@ -28,7 +29,7 @@ enum {
 };
 
 static const unsigned char checkpoint_magic[8] = {
-    'E', 'V', 'O', 'C', 'K', 'P', 'T', '1'};
+    'E', 'V', 'O', 'C', 'K', 'P', 'T', '2'};
 
 _Static_assert(sizeof(double) == sizeof(uint64_t),
                "checkpoint format requires binary64-sized double");
@@ -93,6 +94,8 @@ typedef struct checkpoint_state_projection {
     uint64_t source_generation;
     uint32_t secure_erasure_policy_version;
     evo_secure_erasure_backend_t secure_erasure_backend;
+    uint32_t population_recycling_policy_version;
+    uint64_t storage_owner_identity;
     uint32_t rng_algorithm_version;
     uint32_t operator_seed_schedule_version;
     uint32_t selection_policy_version;
@@ -116,6 +119,7 @@ typedef struct checkpoint_state_projection {
     bool elite_count_explicit;
     bool diversity_uses_domain_distance;
     bool secure_erasure_enabled;
+    bool population_recycling_enabled;
     evo_fitness_t global_best_fitness;
     size_t result_best_genome_size;
     uint32_t result_secure_erasure_policy_version;
@@ -476,6 +480,8 @@ static void encode_configuration(checkpoint_writer_t *writer,
     write_bool(writer, problem->genome_distance != NULL);
     write_bool(writer, config->generation_observer != NULL);
     write_bool(writer, config->generation_stop != NULL);
+    write_bool(writer, config->population_recycling_enabled);
+    write_bool(writer, config->population_storage_observer != NULL);
 }
 
 static bool decode_configuration(
@@ -533,6 +539,8 @@ static bool decode_configuration(
     configuration->distance_callback_present = read_bool(reader);
     configuration->generation_observer_present = read_bool(reader);
     configuration->generation_stop_present = read_bool(reader);
+    configuration->population_recycling_enabled = read_bool(reader);
+    configuration->population_storage_observer_present = read_bool(reader);
 
     return reader->valid && reader->offset == reader->size &&
            configuration->version ==
@@ -627,6 +635,8 @@ static bool decoded_configuration_is_valid(
         .adaptive_mutation_reset_on_improvement =
             source->adaptive_mutation_reset_on_improvement,
         .secure_erasure_enabled = source->secure_erasure_enabled,
+        .population_recycling_enabled =
+            source->population_recycling_enabled,
         .checkpoint_context_identity =
             source->checkpoint_context_identity,
     };
@@ -763,6 +773,45 @@ static bool decode_statistics(checkpoint_reader_t *reader,
                statistics->mutation_adaptation_reason);
 }
 
+static void encode_population_storage_entry(
+    checkpoint_writer_t *writer,
+    const evo_population_storage_entry_t *entry)
+{
+    write_u64(writer, entry->owner_identity);
+    write_u32(writer, (uint32_t)entry->lifecycle);
+    write_u64(writer, entry->population_generation);
+    write_u64(writer, entry->source_generation);
+    write_size(writer, entry->genome_capacity_bytes);
+    write_size(writer, entry->evaluation_capacity_bytes);
+    write_size(writer, entry->handoff_count);
+    write_size(writer, entry->reset_count);
+    write_size(writer, entry->genome_erasure_count);
+    write_size(writer, entry->evaluation_erasure_count);
+    write_u32(writer, (uint32_t)entry->last_reset_disposition);
+    write_bool(writer, entry->genome_owner_present);
+    write_bool(writer, entry->evaluation_owner_present);
+}
+
+static void encode_population_storage_registry(
+    checkpoint_writer_t *writer,
+    const evo_population_storage_registry_t *registry)
+{
+    write_u32(writer, registry->version);
+    write_u32(writer, registry->policy_version);
+    write_bool(writer, registry->recycling_enabled);
+    write_size(writer, registry->entry_count);
+    write_u64(writer, registry->active_owner_identity);
+    write_u64(writer, registry->reusable_owner_identity);
+    write_u32(writer, registry->secure_erasure_policy_version);
+    write_u32(writer, (uint32_t)registry->secure_erasure_backend);
+    write_bool(writer, registry->secure_erasure_enabled);
+    for (size_t index = 0;
+         index < EVO_POPULATION_STORAGE_OWNER_SLOTS;
+         ++index) {
+        encode_population_storage_entry(writer, &registry->entries[index]);
+    }
+}
+
 static void encode_state(checkpoint_writer_t *writer,
                          const evo_population_t *population,
                          const evo_result_t *result,
@@ -781,6 +830,9 @@ static void encode_state(checkpoint_writer_t *writer,
     write_double(writer, state->stopping.significant_best_total);
     write_size(writer, state->stopping.stagnant_generations);
     write_bool(writer, state->stopping.initialized);
+    encode_population_storage_registry(
+        writer,
+        &state->population_storage_registry);
     write_u32(writer, EVO_RNG_ALGORITHM_VERSION);
     write_u32(writer, EVO_OPERATOR_SEED_SCHEDULE_VERSION);
     write_u32(writer, EVO_SELECTION_POLICY_VERSION);
@@ -799,6 +851,8 @@ static void encode_state(checkpoint_writer_t *writer,
     write_u64(writer, population->source_generation);
     write_u32(writer, population->secure_erasure_policy_version);
     write_u32(writer, (uint32_t)population->secure_erasure_backend);
+    write_u32(writer, population->population_recycling_policy_version);
+    write_u64(writer, population->storage_owner_identity);
     write_u32(writer, population->rng_algorithm_version);
     write_u32(writer, population->operator_seed_schedule_version);
     write_u32(writer, population->selection_policy_version);
@@ -822,6 +876,7 @@ static void encode_state(checkpoint_writer_t *writer,
     write_bool(writer, population->elite_count_explicit);
     write_bool(writer, population->diversity_uses_domain_distance);
     write_bool(writer, population->secure_erasure_enabled);
+    write_bool(writer, population->population_recycling_enabled);
     write_fitness(writer, &result->best_fitness);
     write_size(writer, result->best_genome_size);
     write_u32(writer, result->secure_erasure_policy_version);
@@ -843,6 +898,81 @@ static bool secure_backend_is_valid(evo_secure_erasure_backend_t backend)
            backend == EVO_SECURE_ERASURE_BACKEND_VOLATILE_BYTES;
 }
 
+static bool population_storage_lifecycle_is_valid(
+    evo_population_storage_lifecycle_t lifecycle)
+{
+    return lifecycle >= EVO_POPULATION_STORAGE_EMPTY &&
+           lifecycle <= EVO_POPULATION_STORAGE_REUSABLE;
+}
+
+static bool population_storage_reset_is_valid(
+    evo_population_storage_reset_disposition_t disposition)
+{
+    return disposition >= EVO_POPULATION_STORAGE_RESET_NONE &&
+           disposition <= EVO_POPULATION_STORAGE_RESET_SECURE_ERASE;
+}
+
+static bool decode_population_storage_entry(
+    checkpoint_reader_t *reader,
+    evo_population_storage_entry_t *entry)
+{
+    *entry = (evo_population_storage_entry_t){0};
+    entry->owner_identity = read_u64(reader);
+    entry->lifecycle =
+        (evo_population_storage_lifecycle_t)read_u32(reader);
+    entry->population_generation = read_u64(reader);
+    entry->source_generation = read_u64(reader);
+    entry->genome_capacity_bytes = read_size(reader);
+    entry->evaluation_capacity_bytes = read_size(reader);
+    entry->handoff_count = read_size(reader);
+    entry->reset_count = read_size(reader);
+    entry->genome_erasure_count = read_size(reader);
+    entry->evaluation_erasure_count = read_size(reader);
+    entry->last_reset_disposition =
+        (evo_population_storage_reset_disposition_t)read_u32(reader);
+    entry->genome_owner_present = read_bool(reader);
+    entry->evaluation_owner_present = read_bool(reader);
+
+    return reader->valid &&
+           population_storage_lifecycle_is_valid(entry->lifecycle) &&
+           population_storage_reset_is_valid(
+               entry->last_reset_disposition);
+}
+
+static bool decode_population_storage_registry(
+    checkpoint_reader_t *reader,
+    evo_population_storage_registry_t *registry)
+{
+    *registry = (evo_population_storage_registry_t){0};
+    registry->version = read_u32(reader);
+    registry->policy_version = read_u32(reader);
+    registry->recycling_enabled = read_bool(reader);
+    registry->entry_count = read_size(reader);
+    registry->active_owner_identity = read_u64(reader);
+    registry->reusable_owner_identity = read_u64(reader);
+    registry->secure_erasure_policy_version = read_u32(reader);
+    registry->secure_erasure_backend =
+        (evo_secure_erasure_backend_t)read_u32(reader);
+    registry->secure_erasure_enabled = read_bool(reader);
+    for (size_t index = 0;
+         index < EVO_POPULATION_STORAGE_OWNER_SLOTS;
+         ++index) {
+        if (!decode_population_storage_entry(reader,
+                                             &registry->entries[index])) {
+            return false;
+        }
+    }
+
+    return reader->valid &&
+           registry->version == EVO_POPULATION_STORAGE_REGISTRY_VERSION &&
+           registry->policy_version ==
+               EVO_POPULATION_RECYCLING_POLICY_VERSION &&
+           registry->entry_count <= EVO_POPULATION_STORAGE_OWNER_SLOTS &&
+           registry->secure_erasure_policy_version ==
+               EVO_SECURE_ERASURE_POLICY_VERSION &&
+           secure_backend_is_valid(registry->secure_erasure_backend);
+}
+
 static bool decode_state(checkpoint_reader_t *reader,
                          checkpoint_state_projection_t *state)
 {
@@ -861,6 +991,11 @@ static bool decode_state(checkpoint_reader_t *reader,
     state->run.stopping.significant_best_total = read_double(reader);
     state->run.stopping.stagnant_generations = read_size(reader);
     state->run.stopping.initialized = read_bool(reader);
+    if (!decode_population_storage_registry(
+            reader,
+            &state->run.population_storage_registry)) {
+        return false;
+    }
     state->checkpoint_rng_algorithm_version = read_u32(reader);
     state->checkpoint_operator_seed_schedule_version = read_u32(reader);
     state->checkpoint_selection_policy_version = read_u32(reader);
@@ -880,6 +1015,8 @@ static bool decode_state(checkpoint_reader_t *reader,
     state->secure_erasure_policy_version = read_u32(reader);
     state->secure_erasure_backend =
         (evo_secure_erasure_backend_t)read_u32(reader);
+    state->population_recycling_policy_version = read_u32(reader);
+    state->storage_owner_identity = read_u64(reader);
     state->rng_algorithm_version = read_u32(reader);
     state->operator_seed_schedule_version = read_u32(reader);
     state->selection_policy_version = read_u32(reader);
@@ -905,6 +1042,7 @@ static bool decode_state(checkpoint_reader_t *reader,
     state->elite_count_explicit = read_bool(reader);
     state->diversity_uses_domain_distance = read_bool(reader);
     state->secure_erasure_enabled = read_bool(reader);
+    state->population_recycling_enabled = read_bool(reader);
     state->global_best_fitness = read_fitness(reader);
     state->result_best_genome_size = read_size(reader);
     state->result_secure_erasure_policy_version = read_u32(reader);
@@ -1188,9 +1326,21 @@ static bool decoded_population_provenance_is_valid(
     const evo_config_t *config,
     const checkpoint_state_projection_t *state)
 {
+    unsigned char genome_sentinel = 0;
+    evo_candidate_evaluation_t evaluation_sentinel = {0};
     evo_population_t population = {
+        .genomes = &genome_sentinel,
+        .evaluations = &evaluation_sentinel,
         .population_size = state->population_size,
         .genome_size = state->genome_size,
+        .storage_bytes = state->storage_bytes,
+        .evaluation_bytes = state->evaluation_bytes,
+        .secure_erasure_policy_version =
+            state->secure_erasure_policy_version,
+        .secure_erasure_backend = state->secure_erasure_backend,
+        .population_recycling_policy_version =
+            state->population_recycling_policy_version,
+        .storage_owner_identity = state->storage_owner_identity,
         .valid_count = state->valid_count,
         .diversity_policy_version = state->diversity_policy_version,
         .diversity_metric_version = state->diversity_metric_version,
@@ -1200,10 +1350,14 @@ static bool decoded_population_provenance_is_valid(
         .evaluated = state->evaluated,
         .diversity_uses_domain_distance =
             state->diversity_uses_domain_distance,
+        .secure_erasure_enabled = state->secure_erasure_enabled,
+        .population_recycling_enabled =
+            state->population_recycling_enabled,
     };
     size_t requested_elites = 0;
     size_t effective_elites = 0;
     size_t offspring_count = 0;
+    size_t expected_evaluation_bytes = 0;
     uint32_t expected_odd_policy = 0;
     uint32_t expected_singleton_policy = 0;
     bool production_is_valid = false;
@@ -1214,6 +1368,21 @@ static bool decoded_population_provenance_is_valid(
             state->secure_erasure_policy_version,
             state->secure_erasure_backend) ||
         state->evaluation_bytes > config->max_evaluation_bytes ||
+        !checked_size_multiply(state->population_size,
+                               sizeof(evo_candidate_evaluation_t),
+                               &expected_evaluation_bytes) ||
+        state->evaluation_bytes != expected_evaluation_bytes ||
+        state->population_recycling_enabled !=
+            configuration->population_recycling_enabled ||
+        state->population_recycling_enabled !=
+            config->population_recycling_enabled ||
+        (state->population_recycling_enabled
+             ? (state->population_recycling_policy_version !=
+                    EVO_POPULATION_RECYCLING_POLICY_VERSION ||
+                (state->storage_owner_identity != UINT64_C(1) &&
+                 state->storage_owner_identity != UINT64_C(2)))
+             : (state->population_recycling_policy_version != 0 ||
+                state->storage_owner_identity != 0)) ||
         state->fitness_comparison_policy_version !=
             EVO_FITNESS_COMPARISON_POLICY_VERSION ||
         state->diversity_uses_domain_distance !=
@@ -1222,7 +1391,12 @@ static bool decoded_population_provenance_is_valid(
             (configuration->distance_callback_present
                  ? configuration->genome_distance_version
                  : EVO_BYTE_DIVERSITY_METRIC_VERSION) ||
-        !evo_population_diversity_evidence_is_valid(config, &population)) {
+        !evo_population_diversity_evidence_is_valid(config, &population) ||
+        !evo_population_storage_registry_is_valid(
+            config,
+            &population,
+            state->run.current_generation,
+            &state->run.population_storage_registry)) {
         return false;
     }
 
@@ -1582,6 +1756,8 @@ evo_status_t evo_checkpoint_inspect(const void *checkpoint,
         .serialized_evaluations = bytes + layout.evaluations_offset,
         .serialized_evaluation_record_size =
             EVO_CHECKPOINT_EVALUATION_RECORD_SIZE,
+        .population_storage_registry =
+            state.run.population_storage_registry,
     };
     return EVO_SUCCESS;
 }
@@ -2043,7 +2219,12 @@ evo_status_t evo_checkpoint_emit(
         !evo_population_validate_completed(config,
                                            population,
                                            &valid_count) ||
-        valid_count != population->valid_count) {
+        valid_count != population->valid_count ||
+        !evo_population_storage_registry_is_valid(
+            config,
+            population,
+            state->current_generation,
+            &state->population_storage_registry)) {
         return EVO_ERROR_STATE;
     }
 
@@ -2180,6 +2361,10 @@ static void apply_population_projection(
         source->elite_source_valid_count;
     population->initialization_seed = source->initialization_seed;
     population->source_generation = source->source_generation;
+    population->population_recycling_policy_version =
+        source->population_recycling_policy_version;
+    population->storage_owner_identity =
+        source->storage_owner_identity;
     population->rng_algorithm_version = source->rng_algorithm_version;
     population->operator_seed_schedule_version =
         source->operator_seed_schedule_version;
@@ -2211,6 +2396,8 @@ static void apply_population_projection(
     population->elite_count_explicit = source->elite_count_explicit;
     population->diversity_uses_domain_distance =
         source->diversity_uses_domain_distance;
+    population->population_recycling_enabled =
+        source->population_recycling_enabled;
 }
 
 static bool decode_evaluations_to_population(
@@ -2268,6 +2455,11 @@ static bool restored_continuation_is_valid(
         (state->termination_reason == EVO_TERMINATION_NONE &&
          state->current_generation >= config->generation_limit) ||
         result->termination_reason != state->termination_reason ||
+        !evo_population_storage_registry_is_valid(
+            config,
+            population,
+            state->current_generation,
+            &state->population_storage_registry) ||
         !evo_adaptive_mutation_statistics_are_valid(
             config,
             &result->generation_statistics)) {
@@ -2466,6 +2658,13 @@ evo_status_t evo_checkpoint_restore(
                                             EVO_ERROR_CHECKPOINT_INVALID);
     }
     apply_population_projection(&projection, &restored_population);
+    /*
+     * The checkpoint registry retains the source backend for inspection.
+     * Continued execution reattaches the build-selected local backend, just
+     * as the restored population and result owners do.
+     */
+    projection.run.population_storage_registry.secure_erasure_backend =
+        restored_population.secure_erasure_backend;
 
     status = evo_result_storage_allocate(problem,
                                          config,

@@ -1,13 +1,13 @@
 # EVO-001: Evolutionary Optimization Library Contract
 
 Status: Baseline
-Version: 0.29.0
+Version: 0.30.0
 Owner: EVO
 
 ## Scope Boundary
 
 This specification governs the reusable deterministic C17 evolutionary-search
-core implemented through version 0.29.0. It does not define C-project
+core implemented through version 0.30.0. It does not define C-project
 ingestion, Clang/LLVM analysis, structured source transformations, isolated
 candidate builds, baseline-versus-candidate measurement, optimized patches, or
 product-level replay artifacts.
@@ -95,6 +95,17 @@ invariants and exact canonical configuration bytes remain authority. The
 retained EVO-HRA-002 audit records this assessment; a future compressed,
 indexed, cached, deduplicated, or probabilistic checkpoint representation must
 independently satisfy ADR-0026.
+
+Version 0.30.0 adds an exact allocation accelerator: the optional two-slot
+population recycler. Exact private pointer/count owners remain canonical. The
+complete allocation-free `evo_population_storage_registry_t` projection uses
+stable identities rather than addresses and exposes both slots' lifecycle,
+capacity, population provenance, handoff, reset, erasure, and presence state in
+fixed order. Every use reconciles that projection with the physical owners and
+committed generation; a stale, aliased, malformed, or unreconcilable registry
+fails closed. The explicit 0.29.0 allocation path remains executable and is the
+differential oracle. ADR-0031 and the retained EVO-HRA-003 audit define and
+verify this conformance boundary.
 
 ## Public Interface
 
@@ -1140,6 +1151,13 @@ complete committed continuation state into run-state schema 1, and passes both
 fresh and restored state through the same remaining-generation loop. The
 bounded run still does not define old-slab recycling or parallelism.
 
+Version 0.30.0 advances bounded-run policy to version 11, child-evaluation and
+generation-advancement policies to version 8, and private run-state schema to
+version 2. Enabled recycling carries policy version 1 and stable active and
+reusable owner identities through child evaluation, atomic promotion, registry
+observation, checkpoint capture, and resume. Disabled execution preserves the
+complete version-10 allocation and RNG path. Parallelism remains undefined.
+
 ### Result lifecycle
 
 The caller must zero-initialize `evo_result_t` before its first use:
@@ -1222,6 +1240,13 @@ release, and then zeros the owner record. Provisional evaluation failure and
 post-attachment diversity rollback follow the same rule. No erasure path
 allocates, invokes a consumer callback, or consumes RNG state.
 
+When population recycling is enabled, the same wrapper also erases each
+complete former-active genome and evaluation range before that owner becomes
+reusable. Those reset-time erasures are recorded separately from terminal
+release. A long-lived slot may therefore have multiple complete reset erasures
+and one final-release erasure; exact-once continues to apply to each individual
+reset or release event, not to the allocation's entire multi-generation life.
+
 CMake and GNU Autotools independently detect `explicit_bzero` and define the
 same internal capability macro. When detected, the wrapper invokes that
 supported primitive. Otherwise it writes zero through a volatile-byte loop in
@@ -1235,12 +1260,96 @@ paging or crash artifacts, device caches, or persistent media. Callers must
 not modify the result's owner pointer, byte count, policy version, backend, or
 enabled flag. ADR-0029 defines the complete boundary and audit registry.
 
+### Opt-in deterministic population-storage recycling
+
+`EVO_POPULATION_RECYCLING_POLICY_VERSION` and
+`EVO_POPULATION_STORAGE_REGISTRY_VERSION` are `1`.
+`EVO_POPULATION_STORAGE_OWNER_SLOTS` is `2`.
+
+`evo_config_t.population_recycling_enabled` is the zero-valued compatibility
+control. When false, every transition executes the complete pre-0.30.0 child
+allocation, evaluation, promotion, and former-parent release path. A configured
+storage observer does not implicitly enable recycling.
+
+When true, one run has exactly two logical slot identities. Slot 1 contains
+generation zero. The first attempted transition materializes slot 2's genome
+owner and one detached zeroed evaluation reserve. Later transitions alternate
+the slots' active and reusable roles by committed-generation parity. Slots are
+local to one run, are never shared, and are never selected by an address,
+allocator behavior, hash, clock, process identity, or random input.
+
+Both slots have the same checked genome capacity
+`population_size * genome_size` and evaluation capacity
+`population_size * sizeof(evo_candidate_evaluation_t)`. Existing population,
+child-population, and evaluation budgets authorize those exact ranges; no new
+aggregate budget exists. A successful positive-length enabled run performs
+five allocation classes regardless of transition count: initial genomes,
+initial evaluations, result genome, second-slot genomes, and second-slot
+evaluations. A zero-length run retains the three generation-zero allocations.
+
+Before an enabled promotion changes state, EVO validates both completed
+populations, current and next registries, every pointer/count range, generation
+and production provenance, reset eligibility, and independence among both
+population objects, both owned ranges, the registry, and caller-owned evidence.
+Rejection preserves every object and byte. The remaining no-fail phase:
+
+1. moves evaluated child owners into the active population;
+2. moves former active owners into the reusable population;
+3. resets the complete former evaluation and genome ranges;
+4. clears all reusable candidate, production, statistics, and generation
+   evidence while retaining only capacities, stable owner identity,
+   erasure/reset metadata, and the detached evaluation reserve;
+5. commits the next registry; and
+6. commits generation-advancement evidence.
+
+Disabled reset uses an ascending full-range zero-byte operation and records
+`EVO_POPULATION_STORAGE_RESET_ZERO_BYTES`; this makes no secure-erasure claim.
+Enabled secure erasure records
+`EVO_POPULATION_STORAGE_RESET_SECURE_ERASE`. If evaluation or diversity fails
+after taking a recycled reserve, EVO resets the complete provisional range and
+returns it to the same reusable owner. It does not allocate or release that
+reserve during rollback. Enclosing failure still destroys every acquired owner
+under its retained cleanup policy and leaves the public result empty.
+
+`evo_population_storage_registry_t` is the complete address-free audit
+projection. The disabled canonical registry has zero entries and zero active
+and reusable identities. Enabled generation zero has one ordered active entry;
+every later committed generation has one active and one reusable entry ordered
+by owner identity. `evo_population_storage_entry_t` exposes identity,
+`EMPTY`/`ACTIVE`/`REUSABLE` lifecycle, population and source generations,
+genome and evaluation capacities, handoff and reset counts, reset-time erasure
+counts, last reset disposition, and explicit owner-presence flags. The registry
+also exposes policy versions and secure-erasure disposition.
+
+The registry is evidence, never a second ownership table. Exact private
+pointer/count fields remain authority. Every registry is reconciled against
+those fields, configuration, secure-erasure metadata, and committed generation
+before it can be used, delivered, or serialized. Malformed, stale, aliased, or
+unreconcilable evidence fails closed; no fallback guesses ownership.
+
+When non-null, `population_storage_observer` receives a fresh synchronous
+borrowed registry for every committed generation, including generation zero.
+Delivery follows the generation observer and any application-stop decision and
+precedes checkpoint delivery. The observer cannot stop or modify EVO, receives
+no address-bearing owner state, owns no projection storage, and must not retain
+the borrowed registry address.
+
+Recycling consumes no RNG word and invokes no additional problem callback.
+For identical problem, seed, and algorithmic configuration, enabled and
+disabled runs have identical initialization, validity, evaluation, selection,
+crossover, mutation, stopping, and generation-observer traces; committed
+genomes and fitness; statistics and adaptive/stopping evidence; result winner;
+generation count; termination; and algorithm-visible RNG state. Only allocator
+events, release timing, reset work, recycler evidence, and recycling-bound
+checkpoint fields may differ. ADR-0031 defines the complete policy and
+EVO-HRA-003 retains its Human-Readable Abstraction audit.
+
 ### Versioned checkpoint and deterministic resume
 
 `EVO_CHECKPOINT_FORMAT_VERSION`, `EVO_CHECKPOINT_VIEW_VERSION`,
-`EVO_CHECKPOINT_CONFIGURATION_VIEW_VERSION`, and
-`EVO_CHECKPOINT_CANDIDATE_VIEW_VERSION` are `1`.
-`EVO_CHECKPOINT_INTEGRITY_CRC32` identifies the format-1 corruption check.
+and `EVO_CHECKPOINT_CONFIGURATION_VIEW_VERSION` are `2`.
+`EVO_CHECKPOINT_CANDIDATE_VIEW_VERSION` remains `1`.
+`EVO_CHECKPOINT_INTEGRITY_CRC32` identifies the format-2 corruption check.
 
 `evo_checkpoint_size` computes the exact bounded size required by the supplied
 problem and configuration. It performs no allocation or callback work.
@@ -1250,9 +1359,10 @@ generation, including generation zero. Delivery follows natural stop
 classification, the optional application stop decision, and the generation
 observer. A provisional or failed generation emits nothing.
 
-Format 1 is canonical little-endian data with one fixed header followed by
-configuration, continuation state, latest statistics, explicit evaluation
-records, the current population genome slab, and the independently owned
+Format 2 is canonical little-endian data with magic `EVOCKPT2`, one fixed
+header, and then configuration, continuation state, latest statistics,
+explicit evaluation records, the current population genome slab, and the
+independently owned
 global-best genome in that order. It contains no native structure image,
 padding, pointer, function address, context address, allocator address, clock,
 process identity, or unrecorded entropy. Fixed-width integers, checked 64-bit
@@ -1265,7 +1375,11 @@ authentication, encryption, provenance, rollback protection, or authority.
 The FNV-1a configuration fingerprint is likewise only a quick format
 diagnostic. Inspection validates every decoded range, count, enum, finite
 value, owner relationship, winner relationship, statistics sum, and
-continuation invariant. Resume canonically re-encodes the supplied
+continuation invariant. Format 2 also records the recycling control, storage-
+observer presence, population recycling disposition, stable active owner
+identity, and complete logical storage registry. Inspection reconciles that
+registry against configuration, generation parity, capacities, population
+provenance, and secure-erasure metadata. Resume canonically re-encodes the supplied
 configuration and compares its exact bytes. Neither checksum nor fingerprint
 can authorize a malformed or different configuration.
 
@@ -1284,7 +1398,9 @@ fitness. The accessor uses explicit projected ranges and a fixed record stride
 in constant time; enumerating the population is a complete linear audit. No
 offset table, CRC, fingerprint, or projected view supersedes decoded exact
 state. This is the mandatory Human-Readable Abstraction projection for binary
-format 1 and is audited by EVO-HRA-002.
+format 2 and is audited by EVO-HRA-002. Its appended
+`population_storage_registry` is the mandatory complete recycler projection
+and is audited by EVO-HRA-003.
 
 `evo_resume` first performs inspection and exact configuration and stable-
 identity matching. It allocates only after those checks, reconstructs the
@@ -1298,7 +1414,8 @@ Continuation state includes the current generation and final reason, stable
 global winner, all relevant RNG/operator/policy/schema versions, exact next
 adaptive rate and stagnant count, patience reference and stagnant count,
 complete current-population provenance and candidate evidence, schema-4
-statistics, and current/global-best genomes. Resume invokes no callback for
+statistics, population-recycling policy and registry, and current/global-best
+genomes. Resume invokes no callback for
 the restored generation and begins at the next transition. A terminal
 checkpoint reconstructs its terminal result without callbacks. An
 uninterrupted run and a resume from any emitted checkpoint therefore produce
@@ -1313,6 +1430,12 @@ transport, rollback prevention, atomic file replacement, and erasure of
 caller-owned checkpoint copies remain consumer responsibilities. Restored
 EVO-owned allocations use the restoring build's local erasure backend; source
 backend metadata is retained only as audit evidence.
+The active slot is reconstructed through local allocations. A continued
+enabled run materializes the opposite stable slot before its next visible
+commit; a terminal resume needs no reusable physical owner. Format 1 is
+rejected explicitly because it has no registry or run-state schema-2 fields.
+ADR-0030 remains the base persistence decision and ADR-0031 defines the
+format-2 recycling amendment.
 
 ### Status values
 
@@ -1329,7 +1452,7 @@ backend metadata is retained only as audit evidence.
 | `EVO_ERROR_EVALUATION` | A fitness callback returned a non-finite component or negative penalty, a domain-distance callback returned outside finite `[0, 1]`, or a fixed-order statistics component sum became non-finite. |
 | `EVO_ERROR_NO_VALID_CANDIDATE` | Generation-zero evaluation completed, but every candidate was invalid, so no public winner exists. |
 | `EVO_ERROR_CHECKPOINT_INVALID` | Untrusted bytes have malformed layout, fields, decoded state, or relationships. |
-| `EVO_ERROR_CHECKPOINT_INTEGRITY` | The format-1 CRC-32 corruption check does not match. |
+| `EVO_ERROR_CHECKPOINT_INTEGRITY` | The format-2 CRC-32 corruption check does not match. |
 | `EVO_ERROR_CHECKPOINT_VERSION` | A checkpoint format, integrity algorithm, view-bound schema, or continuation-policy version is unsupported. |
 | `EVO_ERROR_CHECKPOINT_MISMATCH` | A valid checkpoint does not exactly match the supplied deterministic configuration, callback-presence declarations, or stable semantic identities. |
 
@@ -1700,7 +1823,22 @@ Checkpoint capture and resume require explicit nonzero semantic identities and
 a caller byte budget. The private bounded-run policy advances to version 10 so
 fresh and restored committed state use the same continuation loop.
 
-## Current 0.29.0 Conformance Boundary
+Version 0.30.0 adds `evo_population_storage_lifecycle_t`,
+`evo_population_storage_reset_disposition_t`,
+`evo_population_storage_entry_t`, `evo_population_storage_registry_t`, and the
+population-storage observer type and version constants. It appends the
+recycling control, observer, and observer context after the complete pre-0.30.0
+`evo_config_t` prefix; appends recycling and observer-presence fields after the
+complete version-1 checkpoint-configuration prefix; and appends the registry
+after the complete version-1 checkpoint-view prefix. Existing member offsets
+and enum values are preserved, but configuration and checkpoint-view sizes or
+array strides change, so consumers must rebuild. Supported public function
+signatures and installed function symbols do not change. Zero initialization
+preserves the 0.29.0 allocator lifecycle. Checkpoint format, checkpoint view,
+and checkpoint-configuration view advance to version 2; the candidate view
+remains version 1.
+
+## Current 0.30.0 Conformance Boundary
 
 The current implementation exposes generation-zero compatibility plus bounded
 multi-generation execution:
@@ -1780,10 +1918,10 @@ multi-generation execution:
   preserves selection- and byte-operator-policy identity, and promotes the
   child to shared completed-population authority;
 - private generation advancement validates current/child lineage and all
-  ownership ranges, moves the evaluated child into the parent handle, empties
-  the child handle, releases the former parent, and records the next generation
-  plus selection and byte-operator provenance without allocation, copying, RNG,
-  or callbacks;
+  ownership ranges, then either releases the former parent in compatibility
+  mode or resets it into the reusable handle under enabled recycling; both
+  paths record the next generation plus complete policy provenance without
+  allocation, RNG, or callbacks after preflight;
 - public bounded execution validates transition-only policy before callbacks,
   runs ascending transitions, allocates the result once, retains earlier exact
   ties, counts completed promotions, and stops successfully after promoting a
@@ -1831,7 +1969,14 @@ multi-generation execution:
 - the direct owner-and-byte-count registry records every governed erasure
   range, enabled lifecycle disposition, and build-selected backend without an
   accelerated or address-keyed authority;
-- format-1 checkpoint capture uses an exact caller-owned bounded buffer and
+- the optional recycler alternates exactly two stable run-local slot identities
+  and performs no allocation after the first enabled transition;
+- its complete address-free registry exposes roles, capacities, provenance,
+  handoffs, resets, erasures, and owner presence while exact pointer/count
+  owners remain authority;
+- enabled and disabled differential replay has identical consumer callbacks,
+  committed algorithm evidence, winners, stopping, termination, and RNG state;
+- format-2 checkpoint capture uses an exact caller-owned bounded buffer and
   serializes every continuation dependency without native padding, pointers,
   addresses, clocks, or process state;
 - untrusted inspection validates all byte ranges, arithmetic, versions,
@@ -1841,14 +1986,16 @@ multi-generation execution:
   resume before allocation; CRC-32 and FNV-1a remain diagnostics only;
 - checkpoint and per-candidate views expose the stable ordered audit
   projection required by ADR-0026, including direct genome/evaluation ranges,
-  with no compressed or opaque authority;
+  and the checkpoint view exposes the complete recycler registry, with no
+  compressed or opaque authority;
 - restored state uses the same reviewed population, evaluation, result, and
   secure-erasure ownership paths as fresh execution;
 - generation-zero, intermediate, and terminal resume continue only the
   remaining suffix without duplicate callback delivery and preserve RNG,
-  winners, statistics, adaptation, patience, counts, and termination; and
-- buffer recycling, asynchronous or
-  concurrent callbacks, and parallelism are not implemented.
+  winners, statistics, adaptation, patience, recycler identities, counts, and
+  termination; and
+- variable-size or cross-run pooling, asynchronous or concurrent callbacks,
+  and parallelism are not implemented.
 
 Consumers may treat `EVO_SUCCESS` as evidence of a valid global winner and
 exactly `generations_completed` promoted child generations. They must inspect
@@ -1857,9 +2004,10 @@ count. They may inspect `generation_statistics` for the final committed
 population, which is distinct from the global winner on all-invalid
 termination. When configured, they may copy each callback-lifetime observation
 into their own bounded storage. They may also configure deterministic stopping
-over committed snapshots. Version 0.29.0 defines no statistics history,
+over committed snapshots. Version 0.30.0 defines no statistics history,
 asynchronous cancellation, or retained callback delivery. It adds
-caller-owned checkpoint copies and deterministic suffix resume, but it still
+caller-owned checkpoint copies, deterministic suffix resume, and optional
+run-local storage recycling, but it still
 retains no internal checkpoint history and provides no persistent-storage,
 authentication, confidentiality, rollback-prevention, or asynchronous-I/O
 service.
@@ -1884,19 +2032,22 @@ bounds and exact compatibility replay, rank-policy arithmetic, golden rank
 vectors, stable ties, invalid exclusion, one-member and extreme weights,
 fixed-seed statistical sanity, all-invalid handling, and failure preservation.
 A secure-erasure link-wrapper test proves every registry range is erased over
-its exact byte count exactly once immediately before release on success,
-promotion, allocation failure, all-invalid transfer failure, generation-zero
-and child provisional failure, rollback, and restored checkpoint owners. It
-separately proves that caller checkpoint buffers are outside EVO's erasure
-authority, disabled policy invokes no erasure, and both the
+its exact byte count immediately before each governed reset or release on
+success, promotion/reuse, allocation failure, all-invalid transfer failure,
+generation-zero and child provisional failure, rollback, and restored
+checkpoint owners. It separately proves exact per-slot repeated reset counts,
+one terminal erasure per live owner, that caller checkpoint buffers are outside
+EVO's erasure authority, disabled policy invokes no erasure, and both the
 detected `explicit_bzero` backend and volatile-byte fallback produce complete
 zero ranges.
 A separate Linux-only static-link test uses the GNU-compatible
 `--wrap=calloc` linker facility to
 prove failure and cleanup at the population, evaluation-record, and
-result-transfer allocations, including every restore allocation point; it also
-proves overflowing rank configuration and malformed checkpoint preflight are
-rejected before the first allocation attempt.
+result-transfer allocations, including every restore allocation point. It also
+proves enabled runs have exactly five allocations for one or seven transitions,
+failure at each of those sites cleans every earlier owner, no sixth allocation
+can occur, and overflowing rank configuration or malformed checkpoint
+preflight rejects before the first allocation attempt.
 
 The fitness-policy test locks comparison policy version 1, hard-valid and
 evaluated rankability, non-negative finite penalty evidence, caller-total
@@ -1972,10 +2123,13 @@ allocation preserves the fully produced child unchanged.
 The generation-advancement test proves generation-zero and later-generation
 lineage, allocation-identity and byte preservation, all-invalid promotion,
 empty-child reuse, overflow, object and owned-range alias rejection, malformed
-state preservation, and repeated-call rejection. The wrapped-allocation and
-release test also proves that advancement succeeds while the next allocator
-call is forced to fail and releases exactly the two former-parent allocations,
-confirming the transition's allocation-free single-owner contract.
+state preservation, and repeated-call rejection. It separately proves enabled
+two-slot role exchange, full former-parent reset, registry/evidence propagation,
+and stale or aliased registry rejection. The wrapped-allocation and release
+test also proves that compatibility advancement succeeds while the next
+allocator call is forced to fail and releases exactly the two former-parent
+allocations, confirming that transition's allocation-free single-owner
+contract.
 
 The generation-statistics test locks fixed aggregation policy and schema
 version 4 golden vectors for
@@ -2036,15 +2190,22 @@ wrapped-allocation test additionally proves the five-allocation bounded path,
 exact successful cleanup, explicit-elite transition composition, and empty
 public failure after child-slab or child-evaluation allocation failure.
 
+The population-recycling test differentially compares the disabled reference
+path, enabled accelerator, and replay. It locks the complete callback trace,
+result, schema-4 statistics, generation events, RNG-neutral operator behavior,
+and every generation's ordered registry. It also proves observer delivery order
+after generation observation and stopping but before checkpoint capture.
+
 The checkpoint test proves exact size calculation; capture ordering for
 generation zero and every committed child; allocation-free ordered inspection;
 constant-time candidate projection; generation-zero, intermediate, natural-
 terminal, and application-terminal suffix resume; final genome, fitness,
 statistics, adaptation, patience, generation-count, and termination parity;
-and suppression of duplicate callbacks for the restored generation. It also
+enabled registry persistence and byte-identical recycled resume suffix; and
+suppression of duplicate callbacks for the restored generation. It also
 proves active-result preservation and callback-free rejection for malformed
 identity, configuration, budget, selector, alias, truncation, version,
-integrity, and decoded-state inputs. Independent CRC calculation plus
+integrity, registry, and decoded-state inputs. Independent CRC calculation plus
 re-signed configuration, provenance, and termination tampering prove that
 diagnostic integrity values cannot authorize semantically impossible state.
 
@@ -2052,8 +2213,8 @@ The deterministic checkpoint-fuzz test rejects every truncation, a one-bit
 mutation at every serialized byte, and 2,048 seeded arbitrary byte ranges.
 The separate `tests/fuzz/checkpoint_fuzz.c` entry point exposes the same
 allocation-free untrusted parser to libFuzzer. Build-manifest parity requires
-exactly 24 production sources and 30 normative tests in CMake, GNU Autotools,
-and AES-BLD-001 inventories.
+exactly 25 production sources and 31 normative targets in CMake, GNU
+Autotools, and AES-BLD-001 inventories.
 
 ## Related Records
 
@@ -2086,12 +2247,14 @@ and AES-BLD-001 inventories.
 - `docs/adr/ADR-0028-evidence-driven-adaptive-mutation.md`
 - `docs/adr/ADR-0029-opt-in-secure-erasure-lifecycle.md`
 - `docs/adr/ADR-0030-versioned-checkpoint-and-deterministic-resume.md`
+- `docs/adr/ADR-0031-deterministic-population-storage-recycling.md`
 - `docs/architecture.md`
 - `docs/algorithms.md`
 - `docs/benchmarks.md`
 - `docs/engineering/AES-DEV-001-development-principles.md`
 - `docs/engineering/reports/EVO-HRA-001-human-readable-abstraction-audit.md`
 - `docs/engineering/reports/EVO-HRA-002-checkpoint-audit.md`
+- `docs/engineering/reports/EVO-HRA-003-population-storage-recycling-audit.md`
 - `docs/engineering/SECURE-C-CXX.md`
 - `docs/engineering/AES-SEC-001-review-dispositions.json`
 - `https://github.com/dlworrell/evo/issues/4`
@@ -2122,4 +2285,5 @@ and AES-BLD-001 inventories.
 - `https://github.com/dlworrell/evo/issues/49`
 - `https://github.com/dlworrell/evo/issues/50`
 - `https://github.com/dlworrell/evo/issues/51`
+- `https://github.com/dlworrell/evo/issues/52`
 - `https://github.com/dlworrell/AEMS/issues/18`

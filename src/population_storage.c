@@ -5,6 +5,7 @@
 #include "internal/elite.h"
 #include "internal/fitness.h"
 #include "internal/mutation.h"
+#include "internal/population_evaluation.h"
 #include "internal/rng.h"
 #include "internal/secure_erasure.h"
 #include "internal/selection.h"
@@ -159,6 +160,7 @@ bool evo_population_validate_completed(
         population->genome_size == 0 || !population->evaluated ||
         population->population_size != config->population_size ||
         !evo_population_secure_erasure_is_valid(config, population) ||
+        !evo_population_recycling_completed_is_valid(config, population) ||
         !completed_population_provenance_is_valid(config, population) ||
         !checked_size_multiply(population->population_size,
                                population->genome_size,
@@ -268,6 +270,7 @@ static bool population_genome_offset(const evo_population_t *population,
 static evo_status_t population_allocate(const evo_problem_t *problem,
                                         const evo_config_t *config,
                                         size_t storage_budget,
+                                        uint64_t storage_owner_identity,
                                         evo_population_t *population)
 {
     size_t storage_bytes = 0;
@@ -302,6 +305,17 @@ static evo_status_t population_allocate(const evo_problem_t *problem,
             : EVO_SECURE_ERASURE_BACKEND_NONE;
     population->secure_erasure_enabled =
         config->secure_erasure_enabled;
+    if (config->population_recycling_enabled) {
+        if (storage_owner_identity != UINT64_C(1) &&
+            storage_owner_identity != UINT64_C(2)) {
+            evo_population_destroy(population);
+            return EVO_ERROR_STATE;
+        }
+        population->population_recycling_policy_version =
+            EVO_POPULATION_RECYCLING_POLICY_VERSION;
+        population->storage_owner_identity = storage_owner_identity;
+        population->population_recycling_enabled = true;
+    }
     return EVO_SUCCESS;
 }
 
@@ -313,7 +327,8 @@ evo_status_t evo_population_create(const evo_problem_t *problem,
         return EVO_ERROR_INVALID_ARGUMENT;
     }
 
-    if (population->genomes != NULL || population->evaluations != NULL) {
+    if (population->genomes != NULL || population->evaluations != NULL ||
+        population->reusable_evaluations != NULL) {
         return EVO_ERROR_INVALID_ARGUMENT;
     }
 
@@ -326,6 +341,9 @@ evo_status_t evo_population_create(const evo_problem_t *problem,
     return population_allocate(problem,
                                config,
                                config->max_population_bytes,
+                               config->population_recycling_enabled
+                                   ? UINT64_C(1)
+                                   : UINT64_C(0),
                                population);
 }
 
@@ -342,7 +360,8 @@ evo_status_t evo_child_population_create(
     }
 
     if (children == parents || children->genomes != NULL ||
-        children->evaluations != NULL) {
+        children->evaluations != NULL ||
+        children->reusable_evaluations != NULL) {
         return EVO_ERROR_INVALID_ARGUMENT;
     }
 
@@ -358,10 +377,34 @@ evo_status_t evo_child_population_create(
         return EVO_ERROR_STATE;
     }
 
-    return population_allocate(problem,
-                               config,
-                               config->max_child_population_bytes,
-                               children);
+    {
+        const uint64_t child_owner_identity =
+            config->population_recycling_enabled
+                ? (parents->storage_owner_identity == UINT64_C(1)
+                       ? UINT64_C(2)
+                       : UINT64_C(1))
+                : UINT64_C(0);
+        evo_status_t status = population_allocate(
+            problem,
+            config,
+            config->max_child_population_bytes,
+            child_owner_identity,
+            children);
+
+        if (status != EVO_SUCCESS) {
+            return status;
+        }
+        if (config->population_recycling_enabled) {
+            status = evo_population_reusable_evaluations_allocate(
+                config,
+                children);
+            if (status != EVO_SUCCESS) {
+                evo_population_destroy(children);
+                return status;
+            }
+        }
+        return EVO_SUCCESS;
+    }
 }
 
 void *evo_population_genome(evo_population_t *population, size_t index)
@@ -389,22 +432,29 @@ const void *evo_population_genome_const(const evo_population_t *population,
 
 void evo_population_destroy(evo_population_t *population)
 {
+    evo_candidate_evaluation_t *evaluation_owner = NULL;
+    size_t evaluation_owner_bytes = 0;
+
     if (population == NULL) {
         return;
     }
 
+    evaluation_owner = population->evaluations != NULL
+                           ? population->evaluations
+                           : population->reusable_evaluations;
+    evaluation_owner_bytes = population->evaluations != NULL
+                                 ? population->evaluation_bytes
+                                 : population->reusable_evaluation_bytes;
     if (population->secure_erasure_enabled &&
         evo_secure_erasure_metadata_is_valid(
             population->secure_erasure_enabled,
             population->secure_erasure_policy_version,
             population->secure_erasure_backend)) {
-        if (population->evaluations != NULL &&
-            population->evaluation_bytes != 0) {
-            evo_secure_erase(population->evaluations,
-                             population->evaluation_bytes);
+        if (evaluation_owner != NULL && evaluation_owner_bytes != 0) {
+            evo_secure_erase(evaluation_owner, evaluation_owner_bytes);
         }
     }
-    free(population->evaluations);
+    free(evaluation_owner);
     if (population->secure_erasure_enabled &&
         evo_secure_erasure_metadata_is_valid(
             population->secure_erasure_enabled,

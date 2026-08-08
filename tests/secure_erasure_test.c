@@ -31,6 +31,11 @@ typedef struct evaluation_context {
     size_t evaluation_calls;
 } evaluation_context_t;
 
+typedef struct storage_registry_log {
+    evo_population_storage_registry_t registries[4];
+    size_t count;
+} storage_registry_log_t;
+
 void *__real_calloc(size_t count, size_t size);
 void __real_free(void *allocation);
 void __real_evo_secure_erase(void *allocation, size_t byte_count);
@@ -105,7 +110,6 @@ void __wrap_evo_secure_erase(void *allocation, size_t byte_count)
     assert(record != NULL);
     assert(byte_count != 0);
     assert(byte_count == record->byte_count);
-    assert(record->erase_calls == 0);
     ++record->erase_calls;
     record->erase_sequence = ++lifecycle_sequence;
     ++erasure_calls;
@@ -121,7 +125,7 @@ void __wrap_free(void *allocation)
 
         assert(record != NULL);
         if (release_expectation == EXPECT_SECURE_RELEASE) {
-            assert(record->erase_calls == 1);
+            assert(record->erase_calls != 0);
             assert(record->erase_sequence == lifecycle_sequence);
         } else {
             assert(record->erase_calls == 0);
@@ -159,9 +163,26 @@ static void assert_tracking_complete(size_t expected_attempts,
     assert(erasure_calls == expected_erasures);
     for (size_t index = 0; index < tracked_count; ++index) {
         assert(tracked[index].released);
-        assert(tracked[index].erase_calls ==
-               (expected_erasures == 0 ? 0 : 1));
+        if (expected_erasures == 0) {
+            assert(tracked[index].erase_calls == 0);
+        } else {
+            assert(tracked[index].erase_calls != 0);
+            if (expected_erasures == expected_allocations) {
+                assert(tracked[index].erase_calls == 1);
+            }
+        }
     }
+}
+
+static void retain_storage_registry(
+    const evo_population_storage_registry_t *registry,
+    void *context)
+{
+    storage_registry_log_t *log = context;
+
+    assert(log->count < 4);
+    log->registries[log->count] = *registry;
+    ++log->count;
 }
 
 static void initialize_secret_genome(void *genome, void *context)
@@ -396,6 +417,61 @@ static void test_enabled_policy_survives_owner_promotion(void)
     assert_tracking_complete(5, 5, 5);
 }
 
+static void test_recycling_securely_resets_exact_owner_ranges(void)
+{
+    const evo_problem_t problem = make_problem();
+    evo_config_t config = make_config(true, 3);
+    storage_registry_log_t registries = {0};
+    evo_result_t result = {0};
+
+    config.population_recycling_enabled = true;
+    config.population_storage_observer = retain_storage_registry;
+    config.population_storage_observer_context = &registries;
+    begin_tracking(EXPECT_SECURE_RELEASE, 0);
+    assert(evo_run(&problem, &config, NULL, &result) == EVO_SUCCESS);
+    assert(result.generations_completed == 3);
+    assert(allocation_attempts == 5);
+    assert(release_calls == 4);
+    assert(erasure_calls == 10);
+    assert(tracked_count == 5);
+    assert(tracked[0].erase_calls == 3);
+    assert(tracked[1].erase_calls == 3);
+    assert(tracked[2].erase_calls == 0);
+    assert(tracked[3].erase_calls == 2);
+    assert(tracked[4].erase_calls == 2);
+    assert(registries.count == 4);
+    for (size_t generation = 0; generation < registries.count; ++generation) {
+        const evo_population_storage_registry_t *registry =
+            &registries.registries[generation];
+        const size_t half = generation / 2;
+        const size_t odd = generation % 2;
+
+        assert(registry->recycling_enabled);
+        assert(registry->secure_erasure_enabled);
+        assert(registry->secure_erasure_backend ==
+               evo_secure_erasure_selected_backend());
+        assert(registry->entries[0].reset_count == half + odd);
+        assert(registry->entries[0].genome_erasure_count == half + odd);
+        assert(registry->entries[0].evaluation_erasure_count == half + odd);
+        assert(registry->entries[0].last_reset_disposition ==
+               (generation == 0
+                    ? EVO_POPULATION_STORAGE_RESET_NONE
+                    : EVO_POPULATION_STORAGE_RESET_SECURE_ERASE));
+        if (generation != 0) {
+            assert(registry->entries[1].reset_count == half);
+            assert(registry->entries[1].genome_erasure_count == half);
+            assert(registry->entries[1].evaluation_erasure_count == half);
+            assert(registry->entries[1].last_reset_disposition ==
+                   (half == 0
+                        ? EVO_POPULATION_STORAGE_RESET_NONE
+                        : EVO_POPULATION_STORAGE_RESET_SECURE_ERASE));
+        }
+    }
+    evo_result_destroy(&result);
+    assert(erasure_calls == 11);
+    assert_tracking_complete(5, 5, 11);
+}
+
 static void test_every_allocation_failure_erases_prior_owners(void)
 {
     const evo_problem_t problem = make_problem();
@@ -458,6 +534,29 @@ static void test_child_evaluation_failure_erases_every_live_owner(void)
     assert(context.evaluation_calls == TEST_POPULATION_SIZE + 1);
     assert_result_empty(&result);
     assert_tracking_complete(5, 5, 5);
+}
+
+static void test_recycled_evaluation_failure_resets_before_release(void)
+{
+    evo_problem_t problem = make_problem();
+    evo_config_t config = make_config(true, 1);
+    evaluation_context_t context = {0};
+    evo_result_t result = {0};
+
+    problem.evaluate = evaluate_child_non_finite;
+    config.population_recycling_enabled = true;
+    begin_tracking(EXPECT_SECURE_RELEASE, 0);
+    assert(evo_run(&problem, &config, &context, &result) ==
+           EVO_ERROR_EVALUATION);
+    assert(context.evaluation_calls == TEST_POPULATION_SIZE + 1);
+    assert_result_empty(&result);
+    assert(tracked_count == 5);
+    assert(tracked[0].erase_calls == 1);
+    assert(tracked[1].erase_calls == 1);
+    assert(tracked[2].erase_calls == 1);
+    assert(tracked[3].erase_calls == 1);
+    assert(tracked[4].erase_calls == 2);
+    assert_tracking_complete(5, 5, 6);
 }
 
 static void test_attached_evaluation_rollback_is_erased(void)
@@ -529,10 +628,12 @@ int main(void)
     test_enabled_policy_erases_success_owners();
     test_population_owner_registry_is_exact();
     test_enabled_policy_survives_owner_promotion();
+    test_recycling_securely_resets_exact_owner_ranges();
     test_every_allocation_failure_erases_prior_owners();
     test_provisional_evaluation_failure_is_erased();
     test_all_invalid_transfer_failure_is_erased();
     test_child_evaluation_failure_erases_every_live_owner();
+    test_recycled_evaluation_failure_resets_before_release();
     test_attached_evaluation_rollback_is_erased();
     test_restored_owners_use_local_secure_backend();
     return 0;
