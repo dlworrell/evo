@@ -86,3 +86,26 @@ constructors materialize the second slot; later transitions allocate nothing.
 ADR-0031, EVO-001, and EVO-HRA-003 define the lifecycle, security, replay, and
 human-readable projection boundaries. Shared pools, cross-run caches, lazy
 reset, and parallel owner access remain outside this assessment.
+
+## EVO 0.31.0 Parallel-Evaluation Amendment (2026-08-08)
+
+Parallel evaluation is disabled by zero initialization. Enabled execution uses
+exactly the caller-declared number of run-local POSIX workers and one checked
+temporary allocation bounded by an exact public size query. Only a caller-
+declared thread-safe evaluator is concurrent; validity and every other callback
+remain synchronous.
+
+| Requirement | 0.31.0 status | Retained evidence |
+|---|---|---|
+| Explicit concurrency contract | Pass | Positive worker count requires the thread-safe evaluator declaration; serial-only callbacks reject before allocation or callbacks |
+| Bounded resources | Pass | Worker count is no greater than population size; checked size/alignment arithmetic and the caller scratch budget gate the sole library scheduler allocation |
+| Race-free publication | Pass | Release/acquire wave epochs isolate candidate writes; coordinator validation and commit occur only after a complete wave and all workers join; hosted ThreadSanitizer exercises the scheduler |
+| Failure cleanup | Pass | Allocation, worker-start, worker-join, non-finite fitness, and later diversity failures attach no record set or generation; every started worker terminates before scratch release |
+| Stable authority | Pass | Fitness validates and commits in ascending candidate order; completion timing, native thread identity, and atomic state cannot affect ranking, statistics, stopping, or checkpoint state |
+| Explainability | Pass | The complete candidate-ordered schedule projects logical worker, wave, disposition, cancellation, and commit order; EVO-HRA-004 retains the ADR-0026 audit |
+| Checkpoint trust boundary | Pass | Format 3 binds deterministic parallel configuration and committed provenance but persists no live thread, queue, atomic, callback timing, or provisional schedule |
+
+ADR-0032, EVO-001, and EVO-HRA-004 define the callback, memory, scheduler,
+failure, replay, checkpoint, and human-readable projection boundaries. Dynamic
+work stealing, persistent pools, asynchronous callback cancellation, timeouts,
+and distributed workers remain outside this assessment.

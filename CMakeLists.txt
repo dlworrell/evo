@@ -1,9 +1,11 @@
 cmake_minimum_required(VERSION 3.20)
-project(catalyst_evo VERSION 0.30.0 LANGUAGES C)
+project(catalyst_evo VERSION 0.31.0 LANGUAGES C)
 
 include(CTest)
 include(CheckSymbolExists)
 include(GNUInstallDirs)
+
+find_package(Threads REQUIRED)
 
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -48,6 +50,7 @@ add_library(catalyst_evo STATIC
     src/population_recycling.c
     src/population_initialization.c
     src/population_evaluation.c
+    src/evaluation_workers.c
     src/selection.c
     src/crossover.c
     src/mutation.c
@@ -87,6 +90,8 @@ if(EVO_HAVE_EXPLICIT_BZERO)
     )
 endif()
 
+target_link_libraries(catalyst_evo PUBLIC Threads::Threads)
+
 if(NOT MSVC)
     target_link_libraries(catalyst_evo PUBLIC m)
 endif()
@@ -100,6 +105,7 @@ set(exec_prefix "\${prefix}")
 set(libdir "\${exec_prefix}/${CMAKE_INSTALL_LIBDIR}")
 set(includedir "\${prefix}/${CMAKE_INSTALL_INCLUDEDIR}")
 set(PACKAGE_VERSION "${PROJECT_VERSION}")
+set(EVO_THREAD_LIBS "${CMAKE_THREAD_LIBS_INIT}")
 configure_file(
     catalyst-evo.pc.in
     "${CMAKE_CURRENT_BINARY_DIR}/catalyst-evo.pc"

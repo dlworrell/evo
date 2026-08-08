@@ -72,6 +72,36 @@ _Static_assert(EVO_POPULATION_RECYCLING_POLICY_VERSION == UINT32_C(1),
                "the initial population-recycling policy must remain stable");
 _Static_assert(EVO_POPULATION_STORAGE_REGISTRY_VERSION == UINT32_C(1),
                "the initial storage-registry schema must remain stable");
+_Static_assert(EVO_PARALLEL_EVALUATION_POLICY_VERSION == UINT32_C(1),
+               "the initial parallel-evaluation policy must remain stable");
+_Static_assert(EVO_EVALUATION_SCHEDULE_VERSION == UINT32_C(1),
+               "the initial evaluation-schedule schema must remain stable");
+_Static_assert(EVO_EVALUATION_CALLBACK_SERIAL == 0,
+               "serial evaluation must remain the zero-value default");
+_Static_assert(EVO_EVALUATION_CALLBACK_THREAD_SAFE == 1,
+               "thread-safe evaluation must retain its public value");
+_Static_assert(EVO_EVALUATION_NOT_VALIDATED == 0,
+               "not-validated must remain the zero disposition");
+_Static_assert(EVO_EVALUATION_EXCLUDED == 1,
+               "excluded evaluation must retain its public value");
+_Static_assert(EVO_EVALUATION_PENDING == 2,
+               "pending evaluation must retain its public value");
+_Static_assert(EVO_EVALUATION_COMPLETED == 3,
+               "completed evaluation must retain its public value");
+_Static_assert(EVO_EVALUATION_FAILED == 4,
+               "failed evaluation must retain its public value");
+_Static_assert(EVO_EVALUATION_CANCELED == 5,
+               "canceled evaluation must retain its public value");
+_Static_assert(EVO_EVALUATION_SCHEDULE_NOT_RUN == 0,
+               "not-run must remain the zero schedule outcome");
+_Static_assert(EVO_EVALUATION_SCHEDULE_COMMITTED == 1,
+               "committed schedule must retain its public value");
+_Static_assert(EVO_EVALUATION_SCHEDULE_FITNESS_REJECTED == 2,
+               "fitness rejection must retain its public value");
+_Static_assert(EVO_EVALUATION_SCHEDULE_WORKER_START_FAILED == 3,
+               "worker-start failure must retain its public value");
+_Static_assert(EVO_EVALUATION_SCHEDULE_WORKER_JOIN_FAILED == 4,
+               "worker-join failure must retain its public value");
 _Static_assert(EVO_POPULATION_STORAGE_EMPTY == 0,
                "empty storage must remain the zero lifecycle value");
 _Static_assert(EVO_POPULATION_STORAGE_ACTIVE == 1,
@@ -84,12 +114,12 @@ _Static_assert(EVO_POPULATION_STORAGE_RESET_ZERO_BYTES == 1,
                "ordinary reset must retain its public value");
 _Static_assert(EVO_POPULATION_STORAGE_RESET_SECURE_ERASE == 2,
                "secure reset must retain its public value");
-_Static_assert(EVO_CHECKPOINT_FORMAT_VERSION == UINT32_C(2),
-               "recycler checkpoints require format schema 2");
-_Static_assert(EVO_CHECKPOINT_VIEW_VERSION == UINT32_C(2),
-               "recycler checkpoint views require schema 2");
-_Static_assert(EVO_CHECKPOINT_CONFIGURATION_VIEW_VERSION == UINT32_C(2),
-               "recycler configuration views require schema 2");
+_Static_assert(EVO_CHECKPOINT_FORMAT_VERSION == UINT32_C(3),
+               "parallel-evaluation checkpoints require format schema 3");
+_Static_assert(EVO_CHECKPOINT_VIEW_VERSION == UINT32_C(3),
+               "parallel-evaluation checkpoint views require schema 3");
+_Static_assert(EVO_CHECKPOINT_CONFIGURATION_VIEW_VERSION == UINT32_C(3),
+               "parallel-evaluation configuration views require schema 3");
 _Static_assert(
     offsetof(evo_checkpoint_configuration_view_t,
              population_recycling_enabled) >=
@@ -103,6 +133,43 @@ _Static_assert(
                  serialized_evaluation_record_size) +
             sizeof(size_t),
     "the storage registry must follow the checkpoint view version-1 prefix");
+_Static_assert(
+    offsetof(evo_checkpoint_configuration_view_t,
+             evaluation_callback_thread_safety) >=
+        offsetof(evo_checkpoint_configuration_view_t,
+                 population_storage_observer_present) +
+            sizeof(bool),
+    "parallel configuration must follow the checkpoint view version-2 prefix");
+_Static_assert(
+    offsetof(evo_checkpoint_view_t,
+             parallel_evaluation_policy_version) >=
+        offsetof(evo_checkpoint_view_t, byte_operator_policy_version) +
+            sizeof(uint32_t),
+    "parallel provenance must be present in checkpoint view schema 3");
+_Static_assert(
+    offsetof(evo_problem_t, evaluation_callback_thread_safety) >=
+        offsetof(evo_problem_t, checkpoint_problem_identity) +
+            sizeof(uint64_t),
+    "callback thread-safety must extend the complete pre-0.31.0 problem");
+_Static_assert(
+    offsetof(evo_config_t, evaluation_worker_count) >=
+        offsetof(evo_config_t, population_storage_observer_context) +
+            sizeof(void *),
+    "worker policy must extend the complete pre-0.31.0 configuration");
+_Static_assert(
+    offsetof(evo_config_t, max_evaluation_worker_scratch_bytes) >=
+        offsetof(evo_config_t, evaluation_worker_count) + sizeof(size_t),
+    "worker scratch budget must follow the worker count");
+_Static_assert(
+    offsetof(evo_config_t, evaluation_schedule_observer) >=
+        offsetof(evo_config_t, max_evaluation_worker_scratch_bytes) +
+            sizeof(size_t),
+    "the evaluation schedule observer must follow its scratch budget");
+_Static_assert(
+    offsetof(evo_config_t, evaluation_schedule_observer_context) >=
+        offsetof(evo_config_t, evaluation_schedule_observer) +
+            sizeof(evo_evaluation_schedule_observer_fn),
+    "the evaluation schedule context must follow its observer");
 _Static_assert(EVO_GENERATION_STATISTICS_VERSION == UINT32_C(4),
                "statistics schema 4 must carry adaptation evidence");
 _Static_assert(offsetof(evo_generation_statistics_t,

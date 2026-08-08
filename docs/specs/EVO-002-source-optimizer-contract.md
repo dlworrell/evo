@@ -15,7 +15,7 @@ search as a reviewable patch and reproducibility package.
 
 This specification defines the product layer above the reusable C17
 evolutionary-search core governed by EVO-001. Nothing in this draft claims that
-the source optimizer is implemented in version 0.30.0.
+the source optimizer is implemented in version 0.31.0.
 
 ## Claim Boundary
 
@@ -257,10 +257,11 @@ A product checkpoint binds:
 - toolchain, target, workload, manifest, and measurement identities; and
 - product checkpoint and artifact schemas.
 
-EVO Core checkpoint format 2 supplies only the committed evolutionary state,
+EVO Core checkpoint format 3 supplies only the committed evolutionary state,
 algorithm/configuration identity, logical population-storage registry,
-corruption check, and ordered audit projections defined by ADR-0030, ADR-0031,
-EVO-HRA-002, and EVO-HRA-003. Its CRC-32 and FNV-1a values are not
+bounded parallel-evaluation provenance, corruption check, and ordered audit
+projections defined by ADR-0030 through ADR-0032 and EVO-HRA-002 through
+EVO-HRA-004. Its CRC-32 and FNV-1a values are not
 authentication, provenance, confidentiality, or product-level resume authority.
 A product checkpoint must wrap the Core bytes with the remaining identities
 above, an explainable projection of those bindings, and approved authentication

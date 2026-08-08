@@ -3,6 +3,8 @@
 
 #include "internal/population_storage.h"
 
+struct evo_evaluation_thread_backend;
+
 /*
  * Evaluate a population whose lifecycle-specific preflight has completed.
  *
@@ -16,6 +18,14 @@ evo_status_t evo_population_evaluate_ready(
     const evo_config_t *config,
     void *context,
     evo_population_t *population);
+
+/* Test seam for deterministic worker-start failure injection. */
+evo_status_t evo_population_evaluate_ready_with_worker_backend(
+    const evo_problem_t *problem,
+    const evo_config_t *config,
+    void *context,
+    evo_population_t *population,
+    const struct evo_evaluation_thread_backend *backend);
 
 /* Allocate and attach empty local-backend evaluation owners for restore. */
 evo_status_t evo_population_restore_evaluations_allocate(

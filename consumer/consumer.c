@@ -20,11 +20,15 @@ _Static_assert(EVO_POPULATION_STORAGE_REGISTRY_VERSION == UINT32_C(1),
                "unsupported EVO population-storage registry");
 _Static_assert(EVO_POPULATION_STORAGE_OWNER_SLOTS == 2,
                "unsupported EVO population-storage slot count");
-_Static_assert(EVO_CHECKPOINT_FORMAT_VERSION == UINT32_C(2),
+_Static_assert(EVO_PARALLEL_EVALUATION_POLICY_VERSION == UINT32_C(1),
+               "unsupported EVO parallel-evaluation policy");
+_Static_assert(EVO_EVALUATION_SCHEDULE_VERSION == UINT32_C(1),
+               "unsupported EVO evaluation-schedule view");
+_Static_assert(EVO_CHECKPOINT_FORMAT_VERSION == UINT32_C(3),
                "unsupported EVO checkpoint format");
-_Static_assert(EVO_CHECKPOINT_VIEW_VERSION == UINT32_C(2),
+_Static_assert(EVO_CHECKPOINT_VIEW_VERSION == UINT32_C(3),
                "unsupported EVO checkpoint view");
-_Static_assert(EVO_CHECKPOINT_CONFIGURATION_VIEW_VERSION == UINT32_C(2),
+_Static_assert(EVO_CHECKPOINT_CONFIGURATION_VIEW_VERSION == UINT32_C(3),
                "unsupported EVO checkpoint configuration view");
 _Static_assert(EVO_CHECKPOINT_CANDIDATE_VIEW_VERSION == UINT32_C(1),
                "unsupported EVO checkpoint candidate view");
@@ -156,8 +160,14 @@ int main(void)
     };
     evo_result_t result = {0};
     size_t checkpoint_size = 0;
+    size_t evaluation_worker_scratch_size = 1;
 
-    if (evo_checkpoint_size(&problem, &config, &checkpoint_size) !=
+    if (evo_evaluation_worker_scratch_size(
+            config.population_size,
+            0,
+            &evaluation_worker_scratch_size) != EVO_SUCCESS ||
+        evaluation_worker_scratch_size != 0 ||
+        evo_checkpoint_size(&problem, &config, &checkpoint_size) !=
             EVO_SUCCESS ||
         checkpoint_size == 0) {
         return 1;

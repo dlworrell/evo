@@ -3,7 +3,7 @@
 
 #include "internal/population_storage.h"
 
-#define EVO_GENERATION_ADVANCEMENT_POLICY_VERSION UINT32_C(8)
+#define EVO_GENERATION_ADVANCEMENT_POLICY_VERSION UINT32_C(9)
 
 typedef struct evo_generation_advancement_evidence {
     size_t population_size;
@@ -26,6 +26,8 @@ typedef struct evo_generation_advancement_evidence {
     uint32_t fitness_comparison_policy_version;
     uint32_t diversity_policy_version;
     uint32_t diversity_metric_version;
+    uint32_t parallel_evaluation_policy_version;
+    size_t evaluation_worker_count;
     uint32_t population_recycling_policy_version;
     uint64_t active_storage_owner_identity;
     uint64_t reusable_storage_owner_identity;

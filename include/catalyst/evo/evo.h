@@ -10,7 +10,7 @@ extern "C" {
 #endif
 
 #define EVO_VERSION_MAJOR 0
-#define EVO_VERSION_MINOR 30
+#define EVO_VERSION_MINOR 31
 #define EVO_VERSION_PATCH 0
 
 typedef enum evo_status {
@@ -100,6 +100,8 @@ typedef enum evo_secure_erasure_backend {
 #define EVO_POPULATION_RECYCLING_POLICY_VERSION UINT32_C(1)
 #define EVO_POPULATION_STORAGE_REGISTRY_VERSION UINT32_C(1)
 #define EVO_POPULATION_STORAGE_OWNER_SLOTS 2
+#define EVO_PARALLEL_EVALUATION_POLICY_VERSION UINT32_C(1)
+#define EVO_EVALUATION_SCHEDULE_VERSION UINT32_C(1)
 
 typedef enum evo_population_storage_lifecycle {
     EVO_POPULATION_STORAGE_EMPTY = 0,
@@ -161,6 +163,83 @@ typedef struct evo_population_storage_registry {
  */
 typedef void (*evo_population_storage_observer_fn)(
     const evo_population_storage_registry_t *registry,
+    void *context);
+
+/*
+ * Explicit consumer declaration for the evaluate callback. SERIAL is the
+ * zero-valued compatibility contract. THREAD_SAFE permits concurrent calls
+ * over distinct read-only genomes with the same caller-owned context.
+ */
+typedef enum evo_evaluation_callback_thread_safety {
+    EVO_EVALUATION_CALLBACK_SERIAL = 0,
+    EVO_EVALUATION_CALLBACK_THREAD_SAFE = 1
+} evo_evaluation_callback_thread_safety_t;
+
+typedef enum evo_evaluation_assignment_disposition {
+    EVO_EVALUATION_NOT_VALIDATED = 0,
+    EVO_EVALUATION_EXCLUDED = 1,
+    EVO_EVALUATION_PENDING = 2,
+    EVO_EVALUATION_COMPLETED = 3,
+    EVO_EVALUATION_FAILED = 4,
+    EVO_EVALUATION_CANCELED = 5
+} evo_evaluation_assignment_disposition_t;
+
+typedef enum evo_evaluation_schedule_outcome {
+    EVO_EVALUATION_SCHEDULE_NOT_RUN = 0,
+    EVO_EVALUATION_SCHEDULE_COMMITTED = 1,
+    EVO_EVALUATION_SCHEDULE_FITNESS_REJECTED = 2,
+    EVO_EVALUATION_SCHEDULE_WORKER_START_FAILED = 3,
+    EVO_EVALUATION_SCHEDULE_WORKER_JOIN_FAILED = 4
+} evo_evaluation_schedule_outcome_t;
+
+/*
+ * One explicit candidate-to-worker projection. Worker identities are stable,
+ * one-based logical labels; dispatch_wave and commit_order are zero-based.
+ * committed distinguishes the first commit from an absent commit-order value.
+ */
+typedef struct evo_evaluation_assignment {
+    size_t population_index;
+    size_t worker_identity;
+    size_t dispatch_wave;
+    size_t commit_order;
+    evo_evaluation_assignment_disposition_t disposition;
+    bool committed;
+} evo_evaluation_assignment_t;
+
+/*
+ * Complete, candidate-ordered audit projection for one configured worker
+ * evaluation attempt. assignments is borrowed only for the observer call.
+ * Runtime queue or thread handles are neither exposed nor authoritative.
+ */
+typedef struct evo_evaluation_schedule {
+    uint32_t version;
+    uint32_t policy_version;
+    uint64_t population_generation;
+    size_t population_size;
+    size_t worker_count;
+    size_t scratch_bytes;
+    size_t validated_count;
+    size_t hard_invalid_count;
+    size_t scheduled_count;
+    size_t completed_count;
+    size_t failed_count;
+    size_t canceled_count;
+    size_t committed_count;
+    size_t first_failure_index;
+    size_t failed_worker_identity;
+    evo_evaluation_schedule_outcome_t outcome;
+    const evo_evaluation_assignment_t *assignments;
+    size_t assignment_count;
+    bool has_failure_index;
+    bool complete;
+} evo_evaluation_schedule_t;
+
+/*
+ * Synchronous audit delivery after every configured worker attempt has joined.
+ * Failure schedules are diagnostic only and never publish a generation.
+ */
+typedef void (*evo_evaluation_schedule_observer_fn)(
+    const evo_evaluation_schedule_t *schedule,
     void *context);
 
 /*
@@ -263,15 +342,15 @@ typedef void (*evo_generation_observer_fn)(
     const evo_generation_statistics_t *statistics,
     void *context);
 
-#define EVO_CHECKPOINT_FORMAT_VERSION UINT32_C(2)
-#define EVO_CHECKPOINT_VIEW_VERSION UINT32_C(2)
-#define EVO_CHECKPOINT_CONFIGURATION_VIEW_VERSION UINT32_C(2)
+#define EVO_CHECKPOINT_FORMAT_VERSION UINT32_C(3)
+#define EVO_CHECKPOINT_VIEW_VERSION UINT32_C(3)
+#define EVO_CHECKPOINT_CONFIGURATION_VIEW_VERSION UINT32_C(3)
 #define EVO_CHECKPOINT_CANDIDATE_VIEW_VERSION UINT32_C(1)
 #define EVO_CHECKPOINT_INTEGRITY_CRC32 UINT32_C(1)
 
 /*
  * Human-readable projection of every deterministic configuration field bound
- * by checkpoint format 2. Pointer values are never serialized. Callback
+ * by checkpoint format 3. Pointer values are never serialized. Callback
  * presence and caller-declared stable problem/context identities stand in for
  * reattached executable and external state.
  */
@@ -323,6 +402,11 @@ typedef struct evo_checkpoint_configuration_view {
     bool generation_stop_present;
     bool population_recycling_enabled;
     bool population_storage_observer_present;
+    evo_evaluation_callback_thread_safety_t
+        evaluation_callback_thread_safety;
+    size_t evaluation_worker_count;
+    size_t max_evaluation_worker_scratch_bytes;
+    bool evaluation_schedule_observer_present;
 } evo_checkpoint_configuration_view_t;
 
 /* One explicit candidate in checkpoint population order. */
@@ -367,6 +451,8 @@ typedef struct evo_checkpoint_view {
     uint32_t bounded_run_policy_version;
     uint32_t selection_policy_version;
     uint32_t byte_operator_policy_version;
+    uint32_t parallel_evaluation_policy_version;
+    size_t evaluation_worker_count;
     uint32_t fitness_comparison_policy_version;
     uint32_t diversity_policy_version;
     uint32_t diversity_metric_version;
@@ -446,6 +532,11 @@ typedef struct evo_problem {
      * built-in modes do not invoke this callback.
      */
     void (*crossover)(const void *parent_a, const void *parent_b, void *child_a, void *child_b, void *context);
+    /*
+     * Fitness evaluation receives one complete read-only genome. Positive
+     * evaluation_worker_count may invoke this callback concurrently over
+     * independent genomes only when the thread-safety field below opts in.
+     */
     evo_fitness_t (*evaluate)(const void *genome, void *context);
     bool (*is_valid)(const void *genome, void *context);
     /* NULL selects built-in byte mismatch metric version 1. */
@@ -454,6 +545,9 @@ typedef struct evo_problem {
     uint32_t genome_distance_version;
     /* Stable nonzero semantic identity required for checkpoint operations. */
     uint64_t checkpoint_problem_identity;
+    /* Explicit concurrency contract for evaluate; zero is serial-only. */
+    evo_evaluation_callback_thread_safety_t
+        evaluation_callback_thread_safety;
 } evo_problem_t;
 
 typedef struct evo_config {
@@ -559,7 +653,7 @@ typedef struct evo_config {
      */
     bool secure_erasure_enabled;
     /*
-     * Checkpoint format 2 uses a caller-owned scratch buffer and invokes the
+     * Checkpoint format 3 uses a caller-owned scratch buffer and invokes the
      * observer synchronously after each committed generation. A non-NULL
      * observer requires a non-NULL buffer of at least the size reported by
      * evo_checkpoint_size(), bounded by max_checkpoint_bytes. The buffer and
@@ -583,6 +677,18 @@ typedef struct evo_config {
     evo_population_storage_observer_fn population_storage_observer;
     /* Caller-owned audit state, never inspected or retained by EVO. */
     void *population_storage_observer_context;
+    /*
+     * Zero preserves exact serial evaluation. A positive count no greater
+     * than population_size enables fixed-assignment worker policy version 1.
+     * max_evaluation_worker_scratch_bytes bounds the sole temporary worker
+     * allocation and must cover evo_evaluation_worker_scratch_size().
+     */
+    size_t evaluation_worker_count;
+    size_t max_evaluation_worker_scratch_bytes;
+    /* Optional complete candidate-assignment audit for worker attempts. */
+    evo_evaluation_schedule_observer_fn evaluation_schedule_observer;
+    /* Caller-owned audit state, never inspected or retained by EVO. */
+    void *evaluation_schedule_observer_context;
 } evo_config_t;
 
 typedef struct evo_result {
@@ -645,6 +751,13 @@ typedef struct evo_result {
  * no RNG. Its effective rate is passed unchanged to both consumer and
  * reference mutation dispatch in the next attempted transition.
  *
+ * Zero evaluation workers preserve the exact serial validity/evaluation path.
+ * A positive bounded count keeps validity serial, invokes only the explicitly
+ * thread-safe evaluator in fixed waves, joins every worker, and commits valid
+ * records in ascending candidate order. The optional schedule observer receives
+ * a complete borrowed assignment/completion/commit projection after join.
+ * Runtime thread identity and callback completion timing never affect results.
+ *
  * Optional fitness-target, patience, and diversity-floor stopping is disabled
  * by the zero-initialized configuration. Enabled policies inspect only the
  * committed global winner and latest generation statistics. Natural reason
@@ -666,10 +779,20 @@ typedef struct evo_result {
  */
 evo_status_t evo_run(const evo_problem_t *problem, const evo_config_t *config, void *context, evo_result_t *result);
 
-/** Compute the exact format-2 byte count for this population configuration. */
+/** Compute the exact format-3 byte count for this population configuration. */
 evo_status_t evo_checkpoint_size(const evo_problem_t *problem,
                                  const evo_config_t *config,
                                  size_t *checkpoint_size);
+
+/*
+ * Report the exact library scratch allocation required by one configured
+ * worker evaluation. Zero workers require zero bytes. No callback, allocation,
+ * or thread operation occurs.
+ */
+evo_status_t evo_evaluation_worker_scratch_size(
+    size_t population_size,
+    size_t worker_count,
+    size_t *scratch_size);
 
 /**
  * Validate an untrusted checkpoint without allocation and return its ordered

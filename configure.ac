@@ -1,7 +1,7 @@
 AC_PREREQ([2.69])
 AC_INIT(
   [catalyst-evo],
-  [0.30.0],
+  [0.31.0],
   [https://github.com/dlworrell/evo/issues]
 )
 AC_CONFIG_SRCDIR([src/population.c])
@@ -11,6 +11,26 @@ AM_INIT_AUTOMAKE([foreign subdir-objects parallel-tests color-tests])
 AC_PROG_CC
 AM_PROG_AR
 LT_INIT([disable-shared])
+
+AC_CHECK_HEADERS(
+  [pthread.h sched.h],
+  [],
+  [AC_MSG_ERROR([POSIX thread headers are required])]
+)
+evo_saved_LIBS=$LIBS
+AC_SEARCH_LIBS(
+  [pthread_create],
+  [pthread],
+  [],
+  [AC_MSG_ERROR([a POSIX pthread implementation is required])]
+)
+AS_CASE(
+  [$ac_cv_search_pthread_create],
+  [none\ required], [EVO_THREAD_LIBS=""],
+  [EVO_THREAD_LIBS="$ac_cv_search_pthread_create"]
+)
+AC_SUBST([EVO_THREAD_LIBS])
+LIBS=$evo_saved_LIBS
 
 AC_CHECK_FUNCS([explicit_bzero])
 AS_IF(

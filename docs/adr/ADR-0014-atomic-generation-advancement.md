@@ -78,6 +78,15 @@ ADR-0028 advances generation-advancement policy to version 7 in EVO 0.27.0 so
 the ownership transfer also preserves the exact effective mutation rate used
 to produce the incoming child.
 
+ADR-0031 advances generation-advancement policy to version 8 in EVO 0.30.0 so
+the transfer also preserves population-recycling policy version 1, the enabled
+state, and the stable active and reusable storage-owner identities.
+
+ADR-0032 advances generation-advancement policy to version 9 in EVO 0.31.0 so
+the transfer also preserves parallel-evaluation policy version 1 and the
+configured evaluation-worker count. Promotion remains single-threaded and
+allocates no memory.
+
 ## Consequences
 
 - Rejection preserves both population structures, their allocations and

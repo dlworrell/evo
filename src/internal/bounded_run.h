@@ -4,7 +4,7 @@
 #include "internal/generation_advancement.h"
 #include "internal/run_state.h"
 
-#define EVO_BOUNDED_RUN_POLICY_VERSION UINT32_C(11)
+#define EVO_BOUNDED_RUN_POLICY_VERSION UINT32_C(12)
 
 typedef struct evo_bounded_run_evidence {
     size_t population_size;
@@ -36,6 +36,8 @@ typedef struct evo_bounded_run_evidence {
     uint32_t generation_advancement_policy_version;
     uint32_t diversity_policy_version;
     uint32_t diversity_metric_version;
+    uint32_t parallel_evaluation_policy_version;
+    size_t evaluation_worker_count;
     uint32_t stopping_policy_version;
     uint32_t population_recycling_policy_version;
     uint64_t final_active_storage_owner_identity;

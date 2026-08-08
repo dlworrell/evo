@@ -226,6 +226,13 @@ and owner identity. Format 1 remains the historical decision defined here but
 is rejected by the format-2 parser because it contains no registry or private
 run-state schema-2 continuation. EVO-HRA-003 audits the amendment.
 
+ADR-0032 advances the EVO 0.31.0 format and both top-level views to version 3
+with magic `EVOCKPT3`. It binds evaluator thread-safety, worker count, library
+scratch budget, schedule-observer presence, and committed parallel-policy
+provenance while excluding live threads and provisional scheduler state.
+Formats 1 and 2 are rejected by the format-3 parser rather than inventing those
+fields. EVO-HRA-004 audits the bounded scheduler projection independently.
+
 ## Alternatives considered
 
 ### Serialize native C structures

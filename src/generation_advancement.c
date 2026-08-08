@@ -268,6 +268,10 @@ evo_status_t evo_population_advance_generation_with_registry(
         evaluated_children->diversity_policy_version;
     candidate.diversity_metric_version =
         evaluated_children->diversity_metric_version;
+    candidate.parallel_evaluation_policy_version =
+        evaluated_children->parallel_evaluation_policy_version;
+    candidate.evaluation_worker_count =
+        evaluated_children->evaluation_worker_count;
     candidate.population_recycling_policy_version =
         evaluated_children->population_recycling_policy_version;
     candidate.active_storage_owner_identity =

@@ -2,7 +2,7 @@
 
 This document distinguishes algorithms implemented by the reusable
 `catalyst_evo` core from the structured program transformations and evaluation
-algorithm required by the EVO 1.0 source optimizer. Version 0.30.0 implements
+algorithm required by the EVO 1.0 source optimizer. Version 0.31.0 implements
 only the core boundary described below.
 
 ## EVO Core Initial Release
@@ -22,6 +22,7 @@ only the core boundary described below.
 - Opt-in exact secure erasure of EVO-owned genome and evaluation ranges
 - Versioned committed-generation checkpoint and deterministic resume
 - Opt-in deterministic two-slot population-storage recycling
+- Opt-in bounded deterministic parallel evaluation
 
 ## Later EVO Core Releases
 
@@ -32,7 +33,7 @@ only the core boundary described below.
 - Particle swarm optimization
 - NSGA-II and multi-objective optimization
 - Niching, crowding, and fitness sharing
-- Parallel and distributed evaluation
+- Distributed evaluation and persistent worker orchestration
 
 Algorithms must expose deterministic behavior under a recorded random seed and preserve sufficient evidence to reproduce a run.
 
@@ -905,6 +906,53 @@ local owners, and reattaches the local erasure backend. Format 1 rejects by
 version because it contains no registry or schema-2 continuation state.
 ADR-0031 fixes the lifecycle, replay, checkpoint amendment, and audit contract;
 EVO-HRA-003 retains the human-readable abstraction assessment.
+
+## Deterministic Bounded Parallel Evaluation
+
+Version 0.31.0 defines parallel-evaluation policy version 1. Zero configured
+workers execute the exact serial validation/evaluation path. A positive count
+`W <= population_size` requires the evaluator to be declared thread-safe and
+the exact library scratch size to fit the caller's explicit budget.
+
+Validity remains a complete ascending serial pass. Each candidate then has the
+fixed logical assignment:
+
+```text
+worker = (population_index mod W) + 1
+wave   = floor(population_index / W)
+```
+
+The `W` POSIX workers start one wave at a time. Each worker evaluates at most
+one hard-valid candidate in the wave and publishes completion through a release
+epoch. The coordinator waits with acquire semantics for every worker, validates
+returned fitness in ascending index order, and starts no later wave after a
+failure. A malformed fitness marks its row failed, other completed rows in that
+wave remain diagnostic only, and all future pending rows are canceled.
+
+After all waves succeed and every worker joins, records become evaluated and
+receive commit ordinals in ascending valid-candidate order. Stable-best
+reduction, diversity, statistics, stopping, and result updates therefore see
+the same ordered records as serial execution. The scheduler consumes no RNG and
+changes no selection or operator stream.
+
+One checked `calloc` contains `W` worker records, alignment padding, and one
+explicit assignment record per population candidate. It is zeroed and released
+after join and synchronous audit delivery. The caller thread is a coordinator,
+not a hidden evaluator; the scheduler creates no spare, nested, pooled, or
+cross-run worker.
+
+`evo_evaluation_schedule_t` projects the complete attempt in ascending
+candidate order: stable logical worker, wave, eligibility, completion, failure,
+cancellation, commit presence/order, aggregate counts, first failure, and final
+outcome. Physical thread identity, runtime completion order, atomic state, and
+timing are absent and non-authoritative. Serial evaluation remains the exact
+reference path required by ADR-0026.
+
+Checkpoint format 3 with magic `EVOCKPT3` binds thread-safety declaration,
+worker count, scratch budget, observer presence, and committed population
+policy provenance. It serializes no live thread or provisional schedule.
+ADR-0032 fixes the full algorithm, failure, checkpoint, and projection contract;
+EVO-HRA-004 retains the Human-Readable Abstraction audit.
 
 ## Structured C Source Evolution
 

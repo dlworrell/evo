@@ -90,6 +90,7 @@
       "src/population_recycling.c",
       "src/population_initialization.c",
       "src/population_evaluation.c",
+      "src/evaluation_workers.c",
       "src/selection.c",
       "src/crossover.c",
       "src/mutation.c",
@@ -153,6 +154,12 @@
         "source": "tests/population_evaluation_test.c",
         "cmake": "evo_population_evaluation_test",
         "autotools": "tests/evo_population_evaluation_test"
+      },
+      {
+        "id": "evaluation-workers",
+        "source": "tests/evaluation_workers_test.c",
+        "cmake": "evo_evaluation_workers_test",
+        "autotools": "tests/evo_evaluation_workers_test"
       },
       {
         "id": "fitness",

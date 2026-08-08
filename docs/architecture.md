@@ -45,6 +45,9 @@ only resume through the same continuation loop.
 Version 0.30.0 adds disabled-by-default deterministic population-storage
 recycling through two fixed run-local slots and a complete address-free owner
 registry.
+Version 0.31.0 adds opt-in bounded parallel evaluation through fixed logical
+worker assignments, stable candidate-order commit, and a complete schedule
+projection independent of runtime thread identity and timing.
 
 ### Source analysis and transformation
 
@@ -120,19 +123,19 @@ ADR-0026 defines the complete rule.
 
 ## Current Conformance Boundary
 
-Only the evolutionary-search core exists in version 0.30.0. Source ingestion,
+Only the evolutionary-search core exists in version 0.31.0. Source ingestion,
 analysis, transformation, candidate materialization, external-process
 isolation, target-code measurement, product commands, and optimized-patch
 artifacts are planned by issues #58 through #69. Documentation of those
 planned boundaries is not an implementation claim.
 
-The 0.30.0 core uses explicit bounded arrays, direct deterministic scans, and
+The 0.31.0 core uses explicit bounded arrays, direct deterministic scans, and
 one direct constant-space adaptive-rate record rather than compressed,
 probabilistic, cached, or indexed run authority. Its
 reference byte operators act directly on those exact arrays and introduce no
 accelerated authority or retained compact decision structure. Secure erasure
 uses the same direct owner fields and exact byte counts as its stable registry,
-not an address-keyed cache or pool. Checkpoint format 1 is canonical binary
+not an address-keyed cache or pool. Checkpoint format 3 is canonical binary
 persistence rather than an accelerated decision path; its mandatory ordered
 view exposes every configuration, generation, population, RNG/substream,
 statistics, adaptation, ownership, and resume-identity field, while its
@@ -141,10 +144,16 @@ population recycler is an exact allocation accelerator over two fixed local
 owners. Exact pointer/count fields remain authority, while the complete stable
 owner registry projects role, capacity, provenance, handoff, reset, and
 erasure history without exposing addresses. EVO-HRA-003 differentially
-reconciles that projection against the explicit allocation path. The current
-core therefore has no opaque accelerated authority requiring remediation.
-This audit does not pre-approve later variable pools, compressed checkpoints,
-parallelism, analysis, recipe, orchestration, or artifact implementations.
+reconciles that projection against the explicit allocation path. The bounded
+evaluation scheduler is an exact execution accelerator over the serial
+evaluator. Its complete candidate-ordered schedule exposes fixed logical worker
+assignment, wave, completion/cancellation, and stable commit order, while
+private evaluation records remain authority. EVO-HRA-004 reconciles worker
+counts with serial execution and excludes runtime thread identity and timing
+from decisions. The current core therefore has no opaque accelerated authority
+requiring remediation. This audit does not pre-approve later variable pools,
+compressed checkpoints, persistent or distributed schedulers, analysis,
+recipe, orchestration, or artifact implementations.
 
 ## Core Modules
 
@@ -155,6 +164,7 @@ parallelism, analysis, recipe, orchestration, or artifact implementations.
 - Evidence-driven bounded mutation-rate adaptation
 - Opt-in secure erasure with exact owner-and-byte-count evidence
 - Opt-in two-slot population recycling with an address-free audit registry
+- Opt-in bounded parallel evaluation with a candidate-ordered schedule view
 - Deterministic elite preservation and ordinary singleton production
 - Diversity evidence and deterministic stagnation handling
 - Fitness and constraint handling
@@ -249,6 +259,20 @@ Resource, allocation, and malformed-fitness failures leave the initialized
 genome slab owned and unevaluated inside the private phase. Population
 destruction releases both the genome slab and evaluation records and resets
 the complete private object.
+
+Version 0.31.0 keeps the complete path above for a zero worker count. A positive
+count requires an explicitly thread-safe evaluator and exact temporary scratch
+budget. Validity remains an ascending serial pass. Hard-valid evaluator calls
+run in fixed waves where candidate index determines logical worker and wave;
+the coordinator validates each complete wave and commits all records in
+ascending valid-candidate order only after every worker joins. A failed wave
+cancels later waves and attaches no record set.
+
+The schedule observer receives one complete candidate-ordered projection after
+join. Logical worker identity, wave, disposition, and commit ordinal are audit
+facts; platform thread identifiers, atomic epochs, completion timing, and the
+projection itself cannot authorize fitness. The serial path is the exact
+reference and differential oracle.
 
 ## Public Generation-Zero Boundary
 
@@ -473,6 +497,15 @@ materializes the opposite slot only when a later transition requires it.
 Format 1 is rejected explicitly rather than assigning lifecycle state absent
 from its bytes. ADR-0031 defines this amendment and EVO-HRA-003 retains the
 projection and reference-equivalence audit.
+
+Version 0.31.0 advances those three checkpoint schemas to version 3 with magic
+`EVOCKPT3`. Canonical configuration appends evaluator thread-safety, logical
+worker count, exact library scratch budget, and schedule-observer presence.
+Committed population state appends parallel-policy version and worker count.
+No thread handle, atomic epoch, queue, in-progress assignment, completion
+timing, or temporary scratch is serialized. Resume validates the exact policy
+before allocation and creates new workers only for a later generation.
+ADR-0032 and EVO-HRA-004 define this amendment.
 
 ## Private Child-Population Ownership Boundary
 
@@ -820,6 +853,11 @@ version 2. These records carry the recycling policy and stable active/reusable
 identities through evaluation, atomic promotion, checkpoint capture, and
 resume without making the projection an ownership authority.
 
+Version 0.31.0 advances bounded-run policy to version 12 and child-evaluation
+and generation-advancement policies to version 9. Each carries parallel-
+evaluation policy version and worker count from generation evaluation through
+promotion, checkpoint capture, resume, and final bounded-run evidence.
+
 ## EVO Core Execution Flow
 
 1. Initialize a population.
@@ -830,7 +868,7 @@ resume without making the projection an ownership authority.
 6. Record statistics and evidence.
 7. Stop on convergence, stagnation, generation limit, or an application-defined condition.
 
-Version 0.30.0 publicly implements steps 1 through 5 for at most
+Version 0.31.0 publicly implements steps 1 through 5 for at most
 `generation_limit` bounded transitions, with caller-bounded elite policy
 version 1, explicit consumer/reference byte-operator policy, and bounded
 diversity measurement in step 5. It implements the constant-space statistics
@@ -841,8 +879,9 @@ application request after a committed generation. Committed-generation
 observation, the population-storage registry, and versioned checkpoint
 projection complete the current bounded portion of step 6. Deterministic
 resume continues the suffix from any retained committed generation. Enabled
-storage recycling changes allocation/reset work only; parallel evaluation
-remains absent.
+storage recycling changes allocation/reset work only. Enabled bounded parallel
+evaluation changes evaluator overlap only; validity, stable commit, statistics,
+stopping, checkpoint, and result authority remain candidate ordered.
 
 ## Source-Optimizer Execution Flow
 

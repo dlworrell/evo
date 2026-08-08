@@ -3,7 +3,7 @@
 
 #include "internal/population_evaluation.h"
 
-#define EVO_CHILD_EVALUATION_POLICY_VERSION UINT32_C(8)
+#define EVO_CHILD_EVALUATION_POLICY_VERSION UINT32_C(9)
 
 typedef struct evo_child_evaluation_evidence {
     size_t population_size;
@@ -26,6 +26,8 @@ typedef struct evo_child_evaluation_evidence {
     uint32_t fitness_comparison_policy_version;
     uint32_t diversity_policy_version;
     uint32_t diversity_metric_version;
+    uint32_t parallel_evaluation_policy_version;
+    size_t evaluation_worker_count;
     uint32_t population_recycling_policy_version;
     uint64_t storage_owner_identity;
     uint32_t policy_version;
@@ -38,12 +40,13 @@ typedef struct evo_child_evaluation_evidence {
 /*
  * Validate and evaluate one fully produced child population.
  *
- * Validation and evaluation callbacks run in ascending candidate order, and
- * invalid candidates are never evaluated. Diversity then follows its fixed
+ * Validity callbacks run in ascending candidate order. Configured evaluation
+ * workers use fixed candidate assignments and commit returned fitness in
+ * ascending order; serial mode preserves the original callback sequence.
+ * Invalid candidates are never evaluated. Diversity then follows its fixed
  * valid-pair schedule. No RNG state is consumed and child genome bytes are
  * read-only. Rejection preserves library-owned child state and caller-owned
- * evidence, although consumer callback side effects cannot be rolled back
- * after dispatch begins.
+ * evidence, although consumer callback side effects cannot be rolled back.
  */
 evo_status_t evo_child_population_evaluate(
     const evo_problem_t *problem,

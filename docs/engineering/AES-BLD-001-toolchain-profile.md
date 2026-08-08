@@ -28,12 +28,14 @@ records their versions as evidence.
 
 ## Frontend parity
 
-`CMakeLists.txt` and `Makefile.am` enumerate all twenty-five production
-sources and the same thirty-one normative targets. Both frontends:
+`CMakeLists.txt` and `Makefile.am` enumerate all twenty-six production
+sources and the same thirty-two normative targets. Both frontends:
 
 - compile the project as C17 with the same warning policy;
 - default to warnings-as-errors;
 - expose sanitizer instrumentation as an explicit option;
+- link the platform POSIX thread implementation and exercise the deterministic
+  worker scheduler under ThreadSanitizer in hosted verification;
 - independently detect `explicit_bzero`, define the same private capability
   macro when available, and otherwise compile the same volatile-byte secure-
   erasure fallback;
