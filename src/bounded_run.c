@@ -4,6 +4,7 @@
 #include "internal/child_evaluation.h"
 #include "internal/child_pair.h"
 #include "internal/child_single.h"
+#include "internal/checkpoint.h"
 #include "internal/crossover.h"
 #include "internal/diversity.h"
 #include "internal/elite.h"
@@ -15,6 +16,7 @@
 #include "internal/statistics.h"
 #include "internal/stopping.h"
 
+#include <math.h>
 #include <stdint.h>
 
 static bool checked_size_multiply(size_t left,
@@ -491,45 +493,175 @@ static evo_status_t resolve_strict_improvement(
     return EVO_SUCCESS;
 }
 
-evo_status_t evo_bounded_run_advance(
+evo_status_t evo_run_state_initialize(
+    const evo_problem_t *problem,
+    const evo_config_t *config,
+    const evo_population_t *population,
+    const evo_result_t *result,
+    evo_run_state_t *state)
+{
+    evo_bounded_run_evidence_t validation_evidence = {0};
+    evo_generation_statistics_t expected_statistics = {0};
+    const evo_candidate_evaluation_t *evaluation = NULL;
+    const void *genome = NULL;
+    evo_run_state_t candidate = {0};
+    size_t best_index = 0;
+    evo_status_t status = EVO_SUCCESS;
+
+    if (problem == NULL || config == NULL || population == NULL ||
+        result == NULL || state == NULL || state->initialized ||
+        byte_ranges_overlap(population,
+                            sizeof(*population),
+                            state,
+                            sizeof(*state)) ||
+        byte_ranges_overlap(result,
+                            sizeof(*result),
+                            state,
+                            sizeof(*state))) {
+        return EVO_ERROR_INVALID_ARGUMENT;
+    }
+    if (config->generation_limit != 0) {
+        if (!initial_run_state_is_valid(problem,
+                                        config,
+                                        population,
+                                        result,
+                                        &validation_evidence)) {
+            return EVO_ERROR_STATE;
+        }
+    } else if (!population->initialized ||
+               population->source_generation != 0 ||
+               population->genomes == NULL ||
+               population->evaluations == NULL ||
+               population->population_size != config->population_size ||
+               population->genome_size != problem->genome_size ||
+               population->valid_count == 0 || !population->has_best ||
+               !evo_population_best_index(population, &best_index) ||
+               result->best_genome == NULL ||
+               result->best_genome_size != problem->genome_size ||
+               result->generations_completed != 0 ||
+               result->random_seed != config->random_seed ||
+               result->termination_reason != EVO_TERMINATION_NONE ||
+               evo_generation_statistics_record(config,
+                                                population,
+                                                UINT64_C(0),
+                                                &expected_statistics) !=
+                   EVO_SUCCESS ||
+               !generation_statistics_equal(&expected_statistics,
+                                            &result->generation_statistics)) {
+        return EVO_ERROR_STATE;
+    } else {
+        genome = evo_population_genome_const(population, best_index);
+        evaluation = evo_population_evaluation_const(population,
+                                                     best_index);
+        if (genome == NULL || evaluation == NULL ||
+            !fitness_equal(&evaluation->fitness,
+                           &result->best_fitness) ||
+            !bytes_equal(genome,
+                         result->best_genome,
+                         problem->genome_size)) {
+            return EVO_ERROR_STATE;
+        }
+    }
+
+    candidate.version = EVO_RUN_STATE_VERSION;
+    candidate.best_population_index = population->best_index;
+    candidate.adaptive_mutation_applicable =
+        evo_adaptive_mutation_is_applicable(config);
+    if (candidate.adaptive_mutation_applicable) {
+        status = evo_adaptive_mutation_restore_initial(
+            config,
+            &result->generation_statistics,
+            &candidate.adaptive_mutation);
+        if (status != EVO_SUCCESS) {
+            return EVO_ERROR_STATE;
+        }
+    }
+    status = evo_stopping_state_initialize(config,
+                                           result,
+                                           &candidate.stopping);
+    if (status != EVO_SUCCESS) {
+        return EVO_ERROR_STATE;
+    }
+    candidate.initialized = true;
+    *state = candidate;
+    return EVO_SUCCESS;
+}
+
+static bool continuation_state_is_valid(
+    const evo_problem_t *problem,
+    const evo_config_t *config,
+    const evo_population_t *parents,
+    const evo_result_t *best_result,
+    const evo_run_state_t *state)
+{
+    size_t valid_count = 0;
+
+    return state->version == EVO_RUN_STATE_VERSION && state->initialized &&
+           state->termination_reason == EVO_TERMINATION_NONE &&
+           state->current_generation < config->generation_limit &&
+           state->current_generation == best_result->generations_completed &&
+           state->current_generation ==
+               best_result->generation_statistics.generation_index &&
+           state->best_generation <= state->current_generation &&
+           state->best_population_index < config->population_size &&
+           state->adaptive_mutation_applicable ==
+               evo_adaptive_mutation_is_applicable(config) &&
+           state->stopping.initialized &&
+           isfinite(state->stopping.significant_best_total) &&
+           best_result->best_genome != NULL &&
+           best_result->best_genome_size == problem->genome_size &&
+           best_result->random_seed == config->random_seed &&
+           best_result->termination_reason == EVO_TERMINATION_NONE &&
+           evo_fitness_evidence_is_valid(&best_result->best_fitness) &&
+           ((state->current_generation == 0 && parents->initialized &&
+             parents->source_generation == 0) ||
+            (state->current_generation != 0 && !parents->initialized &&
+             parents->source_generation == state->current_generation - 1)) &&
+           evo_population_validate_completed(config,
+                                             parents,
+                                             &valid_count) &&
+           valid_count == parents->valid_count && parents->has_best;
+}
+
+evo_status_t evo_bounded_run_continue(
     const evo_problem_t *problem,
     const evo_config_t *config,
     void *context,
     evo_population_t *parents,
     evo_result_t *best_result,
+    evo_run_state_t *state,
     evo_bounded_run_evidence_t *evidence)
 {
     evo_bounded_run_evidence_t candidate = {0};
-    evo_adaptive_mutation_state_t adaptive_mutation_state = {0};
     evo_population_t children = {0};
-    evo_stopping_state_t stopping_state = {0};
     evo_status_t status = EVO_SUCCESS;
-    bool adaptive_mutation_applicable = false;
 
     if (problem == NULL || config == NULL || parents == NULL ||
-        best_result == NULL || evidence == NULL) {
+        best_result == NULL || state == NULL || evidence == NULL) {
         return EVO_ERROR_INVALID_ARGUMENT;
     }
-    adaptive_mutation_applicable =
-        evo_adaptive_mutation_is_applicable(config);
-
     status = evo_bounded_run_validate_config(problem, config);
     if (status != EVO_SUCCESS) {
         return status;
     }
-
-    if (!initial_run_state_is_valid(problem,
-                                    config,
-                                    parents,
-                                    best_result,
-                                    evidence)) {
+    if (!continuation_state_is_valid(problem,
+                                     config,
+                                     parents,
+                                     best_result,
+                                     state)) {
         return EVO_ERROR_STATE;
     }
 
     candidate.population_size = config->population_size;
     candidate.requested_transitions = config->generation_limit;
-    candidate.best_generation = 0;
-    candidate.best_population_index = parents->best_index;
+    candidate.completed_transitions =
+        (size_t)state->current_generation;
+    candidate.final_generation = state->current_generation;
+    candidate.final_valid_count = parents->valid_count;
+    candidate.final_best_index = parents->best_index;
+    candidate.final_has_best = parents->has_best;
+    candidate.best_generation = state->best_generation;
+    candidate.best_population_index = state->best_population_index;
     candidate.operator_seed_schedule_version =
         EVO_OPERATOR_SEED_SCHEDULE_VERSION;
     candidate.selection_policy_version =
@@ -562,26 +694,12 @@ evo_status_t evo_bounded_run_advance(
     candidate.stopping_policy_version = EVO_STOPPING_POLICY_VERSION;
     candidate.policy_version = EVO_BOUNDED_RUN_POLICY_VERSION;
 
-    if (adaptive_mutation_applicable) {
-        status = evo_adaptive_mutation_restore_initial(
-            config,
-            &best_result->generation_statistics,
-            &adaptive_mutation_state);
-        if (status != EVO_SUCCESS) {
-            return EVO_ERROR_STATE;
-        }
-    }
-
-    status = evo_stopping_state_initialize(config,
-                                           best_result,
-                                           &stopping_state);
-    if (status != EVO_SUCCESS) {
-        return EVO_ERROR_STATE;
-    }
     candidate.significant_best_total =
-        stopping_state.significant_best_total;
+        state->stopping.significant_best_total;
+    candidate.stagnant_generations =
+        state->stopping.stagnant_generations;
 
-    for (size_t transition = 0;
+    for (size_t transition = (size_t)state->current_generation;
          transition < config->generation_limit;
          ++transition) {
         evo_child_evaluation_evidence_t evaluation_evidence = {0};
@@ -598,8 +716,8 @@ evo_status_t evo_bounded_run_advance(
         bool has_improvement = false;
 
         transition_config.mutation_rate =
-            adaptive_mutation_applicable
-                ? adaptive_mutation_state.effective_rate
+            state->adaptive_mutation_applicable
+                ? state->adaptive_mutation.effective_rate
                 : 0.0;
 
         status = evo_child_population_create(problem,
@@ -693,6 +811,7 @@ evo_status_t evo_bounded_run_advance(
             advancement_evidence.elite_count_explicit;
         best_result->generations_completed =
             candidate.completed_transitions;
+        state->current_generation = candidate.final_generation;
 
         if (has_improvement) {
             copy_genome(improved_genome,
@@ -702,14 +821,17 @@ evo_status_t evo_bounded_run_advance(
             candidate.best_generation = candidate.final_generation;
             candidate.best_population_index =
                 candidate.final_best_index;
+            state->best_generation = candidate.best_generation;
+            state->best_population_index =
+                candidate.best_population_index;
         }
 
-        if (adaptive_mutation_applicable) {
+        if (state->adaptive_mutation_applicable) {
             status = evo_adaptive_mutation_commit(
                 config,
                 has_improvement,
                 &generation_statistics,
-                &adaptive_mutation_state);
+                &state->adaptive_mutation);
         }
         if (status != EVO_SUCCESS ||
             advancement_evidence.mutation_rate_used !=
@@ -735,20 +857,21 @@ evo_status_t evo_bounded_run_advance(
             best_result,
             !candidate.final_has_best,
             candidate.completed_transitions == candidate.requested_transitions,
-            &stopping_state,
+            &state->stopping,
             &natural_reason);
         if (status != EVO_SUCCESS) {
             status = EVO_ERROR_STATE;
             break;
         }
         candidate.significant_best_total =
-            stopping_state.significant_best_total;
+            state->stopping.significant_best_total;
         candidate.stagnant_generations =
-            stopping_state.stagnant_generations;
+            state->stopping.stagnant_generations;
         termination_reason = evo_generation_callbacks_notify(problem,
                                                              config,
                                                              best_result,
                                                              natural_reason);
+        state->termination_reason = termination_reason;
         if (termination_reason != EVO_TERMINATION_NONE) {
             candidate.termination_reason = termination_reason;
             candidate.stopped_all_invalid =
@@ -760,6 +883,15 @@ evo_status_t evo_bounded_run_advance(
             candidate.stopped_application_requested =
                 termination_reason ==
                 EVO_TERMINATION_APPLICATION_REQUESTED;
+        }
+
+        status = evo_checkpoint_emit(problem,
+                                     config,
+                                     parents,
+                                     best_result,
+                                     state);
+        if (status != EVO_SUCCESS) {
+            break;
         }
 
         if (termination_reason != EVO_TERMINATION_NONE) {
@@ -775,4 +907,36 @@ evo_status_t evo_bounded_run_advance(
     candidate.complete = true;
     *evidence = candidate;
     return EVO_SUCCESS;
+}
+
+evo_status_t evo_bounded_run_advance(
+    const evo_problem_t *problem,
+    const evo_config_t *config,
+    void *context,
+    evo_population_t *parents,
+    evo_result_t *best_result,
+    evo_bounded_run_evidence_t *evidence)
+{
+    evo_run_state_t state = {0};
+    evo_status_t status = EVO_SUCCESS;
+
+    if (problem == NULL || config == NULL || parents == NULL ||
+        best_result == NULL || evidence == NULL) {
+        return EVO_ERROR_INVALID_ARGUMENT;
+    }
+    status = evo_run_state_initialize(problem,
+                                      config,
+                                      parents,
+                                      best_result,
+                                      &state);
+    if (status != EVO_SUCCESS) {
+        return status;
+    }
+    return evo_bounded_run_continue(problem,
+                                    config,
+                                    context,
+                                    parents,
+                                    best_result,
+                                    &state,
+                                    evidence);
 }

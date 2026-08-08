@@ -158,6 +158,13 @@ its live and reusable owner registry independently under ADR-0026.
 - Consumers remain responsible for their own copies, callback state, aliases,
   checkpoints, logs, and platform-level data-remanence policy.
 
+ADR-0030 composes checkpoint restore with this lifecycle in EVO 0.29.0.
+Restored population-genome, evaluation, and result allocations use the same
+reviewed owner constructors and register the restoring build's local backend.
+Checkpoint input, output, and retained copies remain caller-owned cleartext
+ranges that EVO never erases or releases. Source-process backend metadata is
+audit evidence only and never selects the restoring disposition.
+
 ## Alternatives considered
 
 ### Claim that ordinary `free` scrubs storage
@@ -196,6 +203,9 @@ The direct fixed owner registry is simpler and exact.
   winner-transfer failure, generation-zero and child provisional-evaluation
   failure, and attached-evaluation rollback.
 - The test passes with detected `explicit_bzero` and with the volatile fallback.
+- Checkpoint restore tests prove local-backend registration, exact-once erasure
+  of every restored owner on success and failure, and the exclusion of caller-
+  owned checkpoint buffers from EVO's erasure authority.
 - Existing allocation-failure and lifecycle tests prove complete reset and
   repeatable destruction under the unchanged default.
 - The installed consumer validates the appended result audit fields through

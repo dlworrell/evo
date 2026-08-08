@@ -127,10 +127,10 @@ gate and never invokes the consumer callback.
 Child-evaluation and generation-advancement policy versions advance to 7;
 bounded-run policy advances to 9. These are private evidence-schema changes.
 
-### Checkpoint requirements
+### Checkpoint requirements and fulfillment
 
-The later checkpoint format governed by issue #51 must persist enough committed
-authority to resume without a hidden warm-up history:
+The checkpoint format originally assigned to issue #51 was required to persist
+enough committed authority to resume without a hidden warm-up history:
 
 - mutation-adaptation policy version and every configured policy field;
 - the latest schema-4 generation statistics;
@@ -141,6 +141,13 @@ authority to resume without a hidden warm-up history:
 Restore must validate that the checkpoint projection and private adaptive state
 agree before any allocation, RNG use, or callback. Recomputing a different rate
 from an incomplete retained window is not permitted.
+
+ADR-0030 fulfills these requirements in EVO 0.29.0. Checkpoint format 1
+persists every listed field, `evo_checkpoint_view_t` projects the adaptive and
+stopping state in generation order, and resume reconciles the private state
+with schema-4 statistics before allocating restored owners or invoking a
+callback. The checkpoint/resume tests prove exact adaptive and patience
+continuation against an uninterrupted run.
 
 ## Human-Readable Abstraction Assessment
 

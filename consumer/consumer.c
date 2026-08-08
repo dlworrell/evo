@@ -14,6 +14,16 @@ _Static_assert(EVO_MUTATION_ADAPTATION_POLICY_VERSION == UINT32_C(1),
                "unsupported EVO mutation-adaptation policy");
 _Static_assert(EVO_SECURE_ERASURE_POLICY_VERSION == UINT32_C(1),
                "unsupported EVO secure-erasure policy");
+_Static_assert(EVO_CHECKPOINT_FORMAT_VERSION == UINT32_C(1),
+               "unsupported EVO checkpoint format");
+_Static_assert(EVO_CHECKPOINT_VIEW_VERSION == UINT32_C(1),
+               "unsupported EVO checkpoint view");
+_Static_assert(EVO_CHECKPOINT_CONFIGURATION_VIEW_VERSION == UINT32_C(1),
+               "unsupported EVO checkpoint configuration view");
+_Static_assert(EVO_CHECKPOINT_CANDIDATE_VIEW_VERSION == UINT32_C(1),
+               "unsupported EVO checkpoint candidate view");
+_Static_assert(EVO_CHECKPOINT_INTEGRITY_CRC32 == UINT32_C(1),
+               "unsupported EVO checkpoint integrity policy");
 
 typedef struct callback_state {
     size_t observer_calls;
@@ -139,6 +149,13 @@ int main(void)
         .elite_count = 1,
     };
     evo_result_t result = {0};
+    size_t checkpoint_size = 0;
+
+    if (evo_checkpoint_size(&problem, &config, &checkpoint_size) !=
+            EVO_SUCCESS ||
+        checkpoint_size == 0) {
+        return 1;
+    }
 
     if (evo_run(&problem, &config, NULL, &result) != EVO_SUCCESS) {
         return 1;

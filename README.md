@@ -33,6 +33,7 @@ The governing product records are:
 - `docs/adr/ADR-0027-reference-byte-genome-operators.md`
 - `docs/adr/ADR-0028-evidence-driven-adaptive-mutation.md`
 - `docs/adr/ADR-0029-opt-in-secure-erasure-lifecycle.md`
+- `docs/adr/ADR-0030-versioned-checkpoint-and-deterministic-resume.md`
 - `docs/specs/EVO-001-library-contract.md`
 - `docs/specs/EVO-002-source-optimizer-contract.md`
 - `docs/roadmap.md`
@@ -81,7 +82,13 @@ mutation: its direct constant-space state is canonical, and schema-4 observer
 records provide the ordered human-readable decision projection. ADR-0029
 assesses 0.28.0 secure erasure: direct owner fields and exact byte counts are
 canonical, and its stable registry names every range, lifecycle disposition,
-and backend without an accelerated or address-keyed authority.
+and backend without an accelerated or address-keyed authority. ADR-0030
+assesses 0.29.0 checkpointing: canonical binary persistence is never opaque
+authority because an allocation-free ordered view exposes configuration,
+generation, population, RNG/substream, statistics, adaptation, ownership, and
+resume identities, with explicit per-candidate projection.
+The retained EVO-HRA-002 audit reconciles that projection against the binary
+sections and exact resume authority.
 
 ## Roadmap Scope
 
@@ -128,7 +135,7 @@ repository.
 - `docs/` — architecture, theory, algorithms, and evidence guidance
 
 The source-optimizer implementation directories will be introduced only by
-their dependency-ordered roadmap issues. Their absence in version 0.28.0 is an
+their dependency-ordered roadmap issues. Their absence in version 0.29.0 is an
 explicit current boundary, not an implicit feature claim.
 
 ## Authoritative Native Builds
@@ -168,7 +175,7 @@ declared Clang/LLVM and GNU profiles.
 
 ## Status
 
-**Current implementation boundary:** EVO 0.28.0 implements the deterministic
+**Current implementation boundary:** EVO 0.29.0 implements the deterministic
 evolutionary-search core. It does not yet ingest a C project, build a Clang AST
 or LLVM IR model, transform source, compile evolved candidates, or emit an
 optimized source patch. Those product boundaries are tracked in the 1.0
@@ -297,6 +304,20 @@ success and failure paths. CMake and GNU Autotools independently detect
 `explicit_bzero`; unsupported platforms use the reviewed volatile-byte
 fallback. Disabled cleanup invokes no erasure primitive and preserves ordinary
 release without claiming that freed bytes were scrubbed.
+
+EVO 0.29.0 adds endian-stable checkpoint format 1 and deterministic resume.
+An opt-in synchronous checkpoint observer receives a committed snapshot after
+stop and generation-observer delivery. The canonical little-endian format
+persists exact configuration identity, current population and evaluations,
+global winner, RNG/operator versions, schema-4 statistics, adaptive rate, and
+patience state without serializing pointers or native padding. Untrusted
+inspection is allocation-free and budgeted; CRC-32 detects corruption but is
+explicitly neither authentication nor encryption. Resume requires exact
+canonical configuration plus nonzero reattached problem/context identities,
+allocates only after validation, never replays callbacks for the restored
+generation, and reproduces the uninterrupted suffix. The ordered checkpoint
+view and per-candidate accessor are the mandatory human-readable audit
+projection over the binary representation.
 
 Version 0.3.0 added the independently tested private population-storage
 foundation: checked `population_size * genome_size` arithmetic, a
@@ -526,6 +547,10 @@ generation count. Stop state is supplied through `generation_stop_context`.
 required only when `generation_limit` is positive. None of these fields is an
 arbitrary compiled-in cap.
 
+`max_checkpoint_bytes` bounds capture and untrusted resume input. Enabled
+capture writes only to a caller-owned buffer sized through
+`evo_checkpoint_size`; EVO never owns or erases that cleartext buffer.
+
 The status values are:
 
 - `EVO_SUCCESS`
@@ -536,6 +561,10 @@ The status values are:
 - `EVO_ERROR_STATE`
 - `EVO_ERROR_EVALUATION`
 - `EVO_ERROR_NO_VALID_CANDIDATE`
+- `EVO_ERROR_CHECKPOINT_INVALID`
+- `EVO_ERROR_CHECKPOINT_INTEGRITY`
+- `EVO_ERROR_CHECKPOINT_VERSION`
+- `EVO_ERROR_CHECKPOINT_MISMATCH`
 
 See `docs/specs/EVO-001-library-contract.md` for the complete API, ownership,
 failure-state, alias, compatibility, and secure-erasure boundaries.
@@ -543,8 +572,9 @@ failure-state, alias, compatibility, and secure-erasure boundaries.
 The tournament, crossover-dispatch, mutation-dispatch, child-population,
 operator-stream, pair-production, singleton, elite-preservation, child-
 evaluation, atomic-advancement, and adaptive-mutation boundaries remain
-independently verified beneath the bounded public loop. Population recycling,
-checkpointing, and parallelism remain later boundaries.
+independently verified beneath the bounded public loop. Versioned checkpoint
+capture/resume is now composed at committed-generation boundaries. Population
+recycling and parallelism remain later boundaries.
 
 ## Project Zero
 

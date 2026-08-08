@@ -256,6 +256,18 @@
         "autotools": "tests/evo_stopping_test"
       },
       {
+        "id": "checkpoint",
+        "source": "tests/checkpoint_test.c",
+        "cmake": "evo_checkpoint_test",
+        "autotools": "tests/evo_checkpoint_test"
+      },
+      {
+        "id": "checkpoint-fuzz",
+        "source": "tests/checkpoint_fuzz_test.c",
+        "cmake": "evo_checkpoint_fuzz_test",
+        "autotools": "tests/evo_checkpoint_fuzz_test"
+      },
+      {
         "id": "seed-schedule-research",
         "source": "tests/seed_schedule_research_test.c",
         "cmake": "evo_seed_schedule_research_test",

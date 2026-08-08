@@ -10,7 +10,7 @@ extern "C" {
 #endif
 
 #define EVO_VERSION_MAJOR 0
-#define EVO_VERSION_MINOR 28
+#define EVO_VERSION_MINOR 29
 #define EVO_VERSION_PATCH 0
 
 typedef enum evo_status {
@@ -21,7 +21,11 @@ typedef enum evo_status {
     EVO_ERROR_RESOURCE_LIMIT = -4,
     EVO_ERROR_STATE = -5,
     EVO_ERROR_EVALUATION = -6,
-    EVO_ERROR_NO_VALID_CANDIDATE = -7
+    EVO_ERROR_NO_VALID_CANDIDATE = -7,
+    EVO_ERROR_CHECKPOINT_INVALID = -8,
+    EVO_ERROR_CHECKPOINT_INTEGRITY = -9,
+    EVO_ERROR_CHECKPOINT_VERSION = -10,
+    EVO_ERROR_CHECKPOINT_MISMATCH = -11
 } evo_status_t;
 
 typedef enum evo_termination_reason {
@@ -194,6 +198,139 @@ typedef void (*evo_generation_observer_fn)(
     const evo_generation_statistics_t *statistics,
     void *context);
 
+#define EVO_CHECKPOINT_FORMAT_VERSION UINT32_C(1)
+#define EVO_CHECKPOINT_VIEW_VERSION UINT32_C(1)
+#define EVO_CHECKPOINT_CONFIGURATION_VIEW_VERSION UINT32_C(1)
+#define EVO_CHECKPOINT_CANDIDATE_VIEW_VERSION UINT32_C(1)
+#define EVO_CHECKPOINT_INTEGRITY_CRC32 UINT32_C(1)
+
+/*
+ * Human-readable projection of every deterministic configuration field bound
+ * by checkpoint format 1. Pointer values are never serialized. Callback
+ * presence and caller-declared stable problem/context identities stand in for
+ * reattached executable and external state.
+ */
+typedef struct evo_checkpoint_configuration_view {
+    uint32_t version;
+    size_t genome_size;
+    size_t population_size;
+    size_t generation_limit;
+    size_t tournament_size;
+    double crossover_rate;
+    double mutation_rate;
+    uint64_t random_seed;
+    size_t max_genome_bytes;
+    size_t max_population_bytes;
+    size_t max_evaluation_bytes;
+    size_t max_child_population_bytes;
+    size_t max_diversity_work;
+    bool fitness_target_enabled;
+    double fitness_target;
+    bool stagnation_enabled;
+    double improvement_tolerance;
+    size_t stagnation_patience;
+    bool diversity_floor_enabled;
+    double diversity_floor;
+    bool elite_count_enabled;
+    size_t elite_count;
+    evo_selection_policy_t selection_policy;
+    size_t rank_base_weight;
+    size_t rank_step_weight;
+    evo_crossover_operator_t crossover_operator;
+    evo_mutation_operator_t mutation_operator;
+    bool adaptive_mutation_enabled;
+    double adaptive_mutation_min_rate;
+    double adaptive_mutation_max_rate;
+    double adaptive_mutation_step;
+    double adaptive_mutation_diversity_threshold;
+    bool adaptive_mutation_reset_on_improvement;
+    bool secure_erasure_enabled;
+    uint32_t genome_distance_version;
+    uint64_t checkpoint_problem_identity;
+    uint64_t checkpoint_context_identity;
+    bool initialize_callback_present;
+    bool mutate_callback_present;
+    bool crossover_callback_present;
+    bool evaluate_callback_present;
+    bool validity_callback_present;
+    bool distance_callback_present;
+    bool generation_observer_present;
+    bool generation_stop_present;
+} evo_checkpoint_configuration_view_t;
+
+/* One explicit candidate in checkpoint population order. */
+typedef struct evo_checkpoint_candidate_view {
+    uint32_t version;
+    size_t population_index;
+    const void *genome;
+    size_t genome_size;
+    evo_fitness_t fitness;
+    bool valid;
+    bool evaluated;
+} evo_checkpoint_candidate_view_t;
+
+/*
+ * Ordered, allocation-free audit projection over one validated checkpoint.
+ * serialized_checkpoint and all candidate genome views are caller-owned and
+ * remain valid only while the original byte range remains unchanged.
+ */
+typedef struct evo_checkpoint_view {
+    uint32_t version;
+    uint32_t format_version;
+    uint32_t integrity_algorithm;
+    uint32_t integrity_value;
+    uint64_t configuration_fingerprint;
+    const void *serialized_checkpoint;
+    size_t serialized_checkpoint_size;
+    evo_checkpoint_configuration_view_t configuration;
+    uint64_t current_generation;
+    evo_termination_reason_t termination_reason;
+    size_t population_size;
+    size_t valid_count;
+    size_t current_best_index;
+    bool current_has_best;
+    uint64_t global_best_generation;
+    size_t global_best_population_index;
+    evo_fitness_t global_best_fitness;
+    const void *global_best_genome;
+    size_t global_best_genome_size;
+    evo_generation_statistics_t generation_statistics;
+    uint32_t rng_algorithm_version;
+    uint32_t operator_seed_schedule_version;
+    uint32_t bounded_run_policy_version;
+    uint32_t selection_policy_version;
+    uint32_t byte_operator_policy_version;
+    uint32_t fitness_comparison_policy_version;
+    uint32_t diversity_policy_version;
+    uint32_t diversity_metric_version;
+    uint32_t adaptive_mutation_policy_version;
+    double effective_mutation_rate;
+    size_t adaptive_mutation_stagnant_generations;
+    double significant_best_total;
+    size_t stopping_stagnant_generations;
+    uint32_t secure_erasure_policy_version;
+    evo_secure_erasure_backend_t secure_erasure_backend;
+    bool secure_erasure_enabled;
+    size_t population_genome_bytes;
+    const void *population_genomes;
+    size_t population_genome_stride;
+    size_t population_evaluation_records;
+    size_t population_evaluation_bytes;
+    const void *serialized_evaluations;
+    size_t serialized_evaluation_record_size;
+} evo_checkpoint_view_t;
+
+/*
+ * Synchronous checkpoint delivery after a committed generation's stop and
+ * observer callbacks. The caller may copy the bytes but must not retain or
+ * modify either borrowed view. No pointer value appears in the checkpoint.
+ */
+typedef void (*evo_checkpoint_observer_fn)(
+    const void *checkpoint,
+    size_t checkpoint_size,
+    const evo_checkpoint_view_t *view,
+    void *context);
+
 /*
  * Synchronous decision evaluated only for a committed generation from which
  * EVO could otherwise continue. Returning true requests successful stopping;
@@ -247,6 +384,8 @@ typedef struct evo_problem {
     evo_genome_distance_fn genome_distance;
     /* Must be nonzero exactly when genome_distance is non-NULL. */
     uint32_t genome_distance_version;
+    /* Stable nonzero semantic identity required for checkpoint operations. */
+    uint64_t checkpoint_problem_identity;
 } evo_problem_t;
 
 typedef struct evo_config {
@@ -351,6 +490,21 @@ typedef struct evo_config {
      * no erasure claim and preserves the pre-0.28.0 lifecycle behavior.
      */
     bool secure_erasure_enabled;
+    /*
+     * Checkpoint format 1 uses a caller-owned scratch buffer and invokes the
+     * observer synchronously after each committed generation. A non-NULL
+     * observer requires a non-NULL buffer of at least the size reported by
+     * evo_checkpoint_size(), bounded by max_checkpoint_bytes. The buffer and
+     * callback pointers are reattached runtime resources and are not
+     * serialized. max_checkpoint_bytes also bounds untrusted resume input.
+     */
+    size_t max_checkpoint_bytes;
+    void *checkpoint_buffer;
+    size_t checkpoint_buffer_size;
+    evo_checkpoint_observer_fn checkpoint_observer;
+    void *checkpoint_observer_context;
+    /* Stable nonzero identity for reattached caller context semantics. */
+    uint64_t checkpoint_context_identity;
 } evo_config_t;
 
 typedef struct evo_result {
@@ -433,6 +587,42 @@ typedef struct evo_result {
  * produce an event.
  */
 evo_status_t evo_run(const evo_problem_t *problem, const evo_config_t *config, void *context, evo_result_t *result);
+
+/** Compute the exact format-1 byte count for this population configuration. */
+evo_status_t evo_checkpoint_size(const evo_problem_t *problem,
+                                 const evo_config_t *config,
+                                 size_t *checkpoint_size);
+
+/**
+ * Validate an untrusted checkpoint without allocation and return its ordered
+ * human-readable projection. Integrity is CRC-32 corruption detection only;
+ * it provides neither authentication nor encryption.
+ */
+evo_status_t evo_checkpoint_inspect(const void *checkpoint,
+                                    size_t checkpoint_size,
+                                    size_t max_checkpoint_bytes,
+                                    evo_checkpoint_view_t *view);
+
+/** Decode one explicit candidate from a previously inspected checkpoint. */
+evo_status_t evo_checkpoint_candidate_inspect(
+    const evo_checkpoint_view_t *checkpoint,
+    size_t population_index,
+    evo_checkpoint_candidate_view_t *candidate);
+
+/**
+ * Resume from one validated committed-generation checkpoint. The supplied
+ * problem, configuration, callbacks, and context are newly attached runtime
+ * resources. Their canonical scalar configuration, callback-presence flags,
+ * and stable identities must match the checkpoint before allocation, RNG, or
+ * callback work. The checkpoint bytes and output result object must be
+ * disjoint. A restored generation is never notified a second time.
+ */
+evo_status_t evo_resume(const evo_problem_t *problem,
+                        const evo_config_t *config,
+                        void *context,
+                        const void *checkpoint,
+                        size_t checkpoint_size,
+                        evo_result_t *result);
 
 /**
  * Release the owned genome and reset every result field to zero.

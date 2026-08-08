@@ -2,7 +2,7 @@
 
 This document distinguishes algorithms implemented by the reusable
 `catalyst_evo` core from the structured program transformations and evaluation
-algorithm required by the EVO 1.0 source optimizer. Version 0.28.0 implements
+algorithm required by the EVO 1.0 source optimizer. Version 0.29.0 implements
 only the core boundary described below.
 
 ## EVO Core Initial Release
@@ -20,6 +20,7 @@ only the core boundary described below.
 - Stagnation detection
 - Constraint penalties
 - Opt-in exact secure erasure of EVO-owned genome and evaluation ranges
+- Versioned committed-generation checkpoint and deterministic resume
 
 ## Later EVO Core Releases
 
@@ -518,7 +519,7 @@ affected by allocation addresses or later equal candidates. Failure at any
 transition destroys all internal owners and the result allocation; no partial
 winner or completion count escapes the public call.
 
-Through version 0.28.0, this algorithm has a bounded sequential working set of
+Through version 0.29.0, this algorithm has a bounded sequential working set of
 one current population, one child population, one result genome, and the
 current population's evaluation records plus provisional child evaluation
 records during child evaluation. It does not recycle slabs or run callbacks
@@ -742,10 +743,10 @@ used. Bounded-run policy advances to version 9 and child-evaluation and
 generation-advancement policies to version 7.
 
 The direct state record is canonical, not an accelerator. The ordered observer
-records are its ADR-0026 human-readable audit projection. Future checkpointing
-must persist the effective next rate, stagnant count, schema-4 record, policy
+records are its ADR-0026 human-readable audit projection. Checkpoint format 1
+persists the effective next rate, stagnant count, schema-4 record, policy
 parameters and versions, committed generation, global winner, and existing RNG
-state together; an incomplete history may not be used to guess a rate.
+state together; an incomplete history is never used to guess a rate.
 
 ## Opt-In Secure Erasure
 
@@ -790,6 +791,61 @@ addresses as evidence. The guarantee ends at live EVO-owned process memory and
 does not extend to consumer copies, swap, crash artifacts, or persistent media.
 ADR-0029 fixes the complete owner registry, portability boundary, and cleanup
 contract.
+
+## Versioned Checkpoint and Deterministic Resume
+
+Version 0.29.0 advances bounded-run policy to version 10 and defines private
+run-state schema 1. A fresh generation-zero run and a restored committed run
+enter the same continuation algorithm with these direct scalar inputs:
+
+```text
+current committed generation
+global-best generation and population index
+effective next mutation rate and adaptive stagnant count
+significant-best reference and stopping stagnant count
+explicit current termination reason
+```
+
+After each generation commits, natural stopping and the optional application
+decision run first, the generation observer receives the final reason, and an
+enabled checkpoint is encoded last. Provisional generations never emit.
+Resume treats the restored generation as already delivered and starts at
+`current_generation + 1`; terminal snapshots perform no transition or callback.
+
+Checkpoint format 1 writes a fixed little-endian header and six ordered
+sections:
+
+```text
+configuration -> continuation -> statistics -> evaluations -> population -> global best
+```
+
+Every section has an explicit offset and length. Sizes use checked unsigned
+64-bit values, doubles use explicit IEEE-754 binary64 bits, and booleans use
+zero or one. Native padding and pointers are absent. CRC-32 covers the complete
+format for corruption detection, and FNV-1a-64 fingerprints the configuration
+section for navigation. Neither value authorizes a state or provides
+authentication.
+
+Inspection validates the complete byte layout and decoded evidence without
+allocation. Resume then canonically encodes the supplied deterministic
+configuration and requires exact byte equality, including callback-presence
+flags and caller-declared problem/context identities. Only after that equality
+does it allocate local population/evaluation/result owners, decode records,
+and re-run native population, statistics, adaptive, stopping, winner, and
+secure-erasure invariants.
+
+The mandatory `evo_checkpoint_view_t` projection presents configuration,
+generation, population, global winner, RNG/substream/operator versions,
+schema-4 statistics, adaptive/stopping state, secure-erasure ownership, and
+resume identities in logical order. Candidate inspection maps ascending
+population indexes directly to explicit genome and evaluation ranges in
+constant time; it uses no compact index or cached authority. This is the
+ADR-0026 audit projection over the binary persistence format.
+
+Capture uses one exact caller-owned buffer and allocates nothing. Restore uses
+only the existing three allocation classes. Caller checkpoint buffers remain
+cleartext external copies and are not erased by EVO. ADR-0030 fixes the format,
+parser, callback order, replay, security limits, and projection contract.
 
 ## Structured C Source Evolution
 

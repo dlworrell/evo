@@ -18,6 +18,28 @@ static bool evaluation_storage_size(size_t population_size, size_t *bytes)
     return true;
 }
 
+static evo_status_t allocate_evaluation_storage(
+    const evo_config_t *config,
+    size_t population_size,
+    evo_candidate_evaluation_t **evaluations,
+    size_t *evaluation_bytes)
+{
+    if (config == NULL || evaluations == NULL || evaluation_bytes == NULL ||
+        *evaluations != NULL || *evaluation_bytes != 0 ||
+        config->max_evaluation_bytes == 0 ||
+        !evaluation_storage_size(population_size, evaluation_bytes) ||
+        *evaluation_bytes > config->max_evaluation_bytes) {
+        return EVO_ERROR_RESOURCE_LIMIT;
+    }
+
+    *evaluations = calloc(1, *evaluation_bytes);
+    if (*evaluations == NULL) {
+        *evaluation_bytes = 0;
+        return EVO_ERROR_OUT_OF_MEMORY;
+    }
+    return EVO_SUCCESS;
+}
+
 static bool initialized_population_ready_for_evaluation(
     const evo_problem_t *problem,
     const evo_config_t *config,
@@ -133,16 +155,12 @@ evo_status_t evo_population_evaluate_ready(
         return status;
     }
 
-    if (config->max_evaluation_bytes == 0 ||
-        !evaluation_storage_size(population->population_size,
-                                 &evaluation_bytes) ||
-        evaluation_bytes > config->max_evaluation_bytes) {
-        return EVO_ERROR_RESOURCE_LIMIT;
-    }
-
-    evaluations = calloc(1, evaluation_bytes);
-    if (evaluations == NULL) {
-        return EVO_ERROR_OUT_OF_MEMORY;
+    status = allocate_evaluation_storage(config,
+                                         population->population_size,
+                                         &evaluations,
+                                         &evaluation_bytes);
+    if (status != EVO_SUCCESS) {
+        return status;
     }
 
     for (size_t index = 0; index < population->population_size; ++index) {
@@ -247,6 +265,32 @@ evo_status_t evo_population_evaluate_ready(
         }
     }
 
+    return EVO_SUCCESS;
+}
+
+evo_status_t evo_population_restore_evaluations_allocate(
+    const evo_config_t *config,
+    evo_population_t *population)
+{
+    evo_candidate_evaluation_t *evaluations = NULL;
+    size_t evaluation_bytes = 0;
+    evo_status_t status = EVO_SUCCESS;
+
+    if (config == NULL || population == NULL || population->genomes == NULL ||
+        population->population_size != config->population_size ||
+        population->evaluations != NULL || population->evaluation_bytes != 0 ||
+        population->evaluated) {
+        return EVO_ERROR_INVALID_ARGUMENT;
+    }
+    status = allocate_evaluation_storage(config,
+                                         population->population_size,
+                                         &evaluations,
+                                         &evaluation_bytes);
+    if (status != EVO_SUCCESS) {
+        return status;
+    }
+    population->evaluations = evaluations;
+    population->evaluation_bytes = evaluation_bytes;
     return EVO_SUCCESS;
 }
 

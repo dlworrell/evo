@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(catalyst_evo VERSION 0.28.0 LANGUAGES C)
+project(catalyst_evo VERSION 0.29.0 LANGUAGES C)
 
 include(CTest)
 include(CheckSymbolExists)

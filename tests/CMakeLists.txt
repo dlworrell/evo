@@ -114,6 +114,14 @@ add_executable(evo_stopping_test stopping_test.c)
 target_link_libraries(evo_stopping_test PRIVATE catalyst_evo)
 add_test(NAME evo_stopping_test COMMAND evo_stopping_test)
 
+add_executable(evo_checkpoint_test checkpoint_test.c)
+target_link_libraries(evo_checkpoint_test PRIVATE catalyst_evo)
+add_test(NAME evo_checkpoint_test COMMAND evo_checkpoint_test)
+
+add_executable(evo_checkpoint_fuzz_test checkpoint_fuzz_test.c)
+target_link_libraries(evo_checkpoint_fuzz_test PRIVATE catalyst_evo)
+add_test(NAME evo_checkpoint_fuzz_test COMMAND evo_checkpoint_fuzz_test)
+
 add_library(evo_seed_schedule_research STATIC
     research/seed_schedule_research.c
 )
