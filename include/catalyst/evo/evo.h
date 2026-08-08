@@ -10,7 +10,7 @@ extern "C" {
 #endif
 
 #define EVO_VERSION_MAJOR 0
-#define EVO_VERSION_MINOR 27
+#define EVO_VERSION_MINOR 28
 #define EVO_VERSION_PATCH 0
 
 typedef enum evo_status {
@@ -72,6 +72,18 @@ typedef enum evo_mutation_adaptation_reason {
     EVO_MUTATION_ADAPTATION_IMPROVEMENT_HOLD = 7
 } evo_mutation_adaptation_reason_t;
 
+/*
+ * Build-selected implementation used by secure-erasure policy version 1.
+ * NONE is the canonical disabled/empty value. The volatile-byte fallback is
+ * a reviewed portability boundary, not a claim about allocator or hardware
+ * media sanitization.
+ */
+typedef enum evo_secure_erasure_backend {
+    EVO_SECURE_ERASURE_BACKEND_NONE = 0,
+    EVO_SECURE_ERASURE_BACKEND_EXPLICIT_BZERO = 1,
+    EVO_SECURE_ERASURE_BACKEND_VOLATILE_BYTES = 2
+} evo_secure_erasure_backend_t;
+
 #define EVO_FITNESS_COMPARISON_POLICY_VERSION UINT32_C(1)
 #define EVO_DIVERSITY_POLICY_VERSION UINT32_C(1)
 #define EVO_BYTE_DIVERSITY_METRIC_VERSION UINT32_C(1)
@@ -80,6 +92,7 @@ typedef enum evo_mutation_adaptation_reason {
 #define EVO_SELECTION_POLICY_VERSION UINT32_C(1)
 #define EVO_BYTE_OPERATOR_POLICY_VERSION UINT32_C(1)
 #define EVO_MUTATION_ADAPTATION_POLICY_VERSION UINT32_C(1)
+#define EVO_SECURE_ERASURE_POLICY_VERSION UINT32_C(1)
 
 /*
  * Fitness components are caller-owned evidence. constraint_penalty is a
@@ -332,6 +345,12 @@ typedef struct evo_config {
     double adaptive_mutation_step;
     double adaptive_mutation_diversity_threshold;
     bool adaptive_mutation_reset_on_improvement;
+    /*
+     * Opt in to secure-erasure policy version 1 for every EVO-owned genome
+     * and candidate-evaluation allocation. Disabled ordinary release makes
+     * no erasure claim and preserves the pre-0.28.0 lifecycle behavior.
+     */
+    bool secure_erasure_enabled;
 } evo_config_t;
 
 typedef struct evo_result {
@@ -341,6 +360,11 @@ typedef struct evo_result {
     uint64_t random_seed;
     evo_termination_reason_t termination_reason;
     evo_generation_statistics_t generation_statistics;
+    /* Stable audit projection for the sole public genome owner. */
+    size_t best_genome_size;
+    uint32_t secure_erasure_policy_version;
+    evo_secure_erasure_backend_t secure_erasure_backend;
+    bool secure_erasure_enabled;
 } evo_result_t;
 
 /**
@@ -414,8 +438,11 @@ evo_status_t evo_run(const evo_problem_t *problem, const evo_config_t *config, v
  * Release the owned genome and reset every result field to zero.
  *
  * This operation is null-safe and repeatable for initialized result objects.
- * It does not securely erase genome bytes before releasing them. Consumers
- * handling secret material require a separately reviewed erasure boundary.
+ * A result created with secure_erasure_enabled erases exactly
+ * best_genome_size bytes through the recorded policy/backend immediately
+ * before release. A result created without that opt-in uses ordinary release
+ * and makes no claim that allocator, operating-system, or hardware copies are
+ * scrubbed. Callers must not modify the result's owner or erasure metadata.
  */
 void evo_result_destroy(evo_result_t *result);
 

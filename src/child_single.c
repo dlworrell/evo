@@ -116,7 +116,9 @@ static bool child_state_is_valid(const evo_problem_t *problem,
     size_t expected_storage_bytes = 0;
 
     if (!production_objects_are_independent(parents, children, evidence) ||
-        children->genomes == NULL || children->evaluations != NULL ||
+        children->genomes == NULL ||
+        !evo_population_secure_erasure_is_valid(config, children) ||
+        children->evaluations != NULL ||
         children->population_size != config->population_size ||
         children->population_size != parents->population_size ||
         children->genome_size != problem->genome_size ||

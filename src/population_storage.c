@@ -6,6 +6,7 @@
 #include "internal/fitness.h"
 #include "internal/mutation.h"
 #include "internal/rng.h"
+#include "internal/secure_erasure.h"
 #include "internal/selection.h"
 
 #include <math.h>
@@ -35,6 +36,19 @@ static bool fitness_is_zero(const evo_fitness_t *fitness)
            fitness->maintainability == 0.0 &&
            fitness->constraint_penalty == 0.0 &&
            fitness->total == 0.0;
+}
+
+bool evo_population_secure_erasure_is_valid(
+    const evo_config_t *config,
+    const evo_population_t *population)
+{
+    return config != NULL && population != NULL &&
+           population->secure_erasure_enabled ==
+               config->secure_erasure_enabled &&
+           evo_secure_erasure_metadata_is_valid(
+               population->secure_erasure_enabled,
+               population->secure_erasure_policy_version,
+               population->secure_erasure_backend);
 }
 
 static bool completed_population_provenance_is_valid(
@@ -144,6 +158,7 @@ bool evo_population_validate_completed(
         population->population_size == 0 ||
         population->genome_size == 0 || !population->evaluated ||
         population->population_size != config->population_size ||
+        !evo_population_secure_erasure_is_valid(config, population) ||
         !completed_population_provenance_is_valid(config, population) ||
         !checked_size_multiply(population->population_size,
                                population->genome_size,
@@ -279,6 +294,14 @@ static evo_status_t population_allocate(const evo_problem_t *problem,
     population->population_size = config->population_size;
     population->genome_size = problem->genome_size;
     population->storage_bytes = storage_bytes;
+    population->secure_erasure_policy_version =
+        EVO_SECURE_ERASURE_POLICY_VERSION;
+    population->secure_erasure_backend =
+        config->secure_erasure_enabled
+            ? evo_secure_erasure_selected_backend()
+            : EVO_SECURE_ERASURE_BACKEND_NONE;
+    population->secure_erasure_enabled =
+        config->secure_erasure_enabled;
     return EVO_SUCCESS;
 }
 
@@ -370,7 +393,28 @@ void evo_population_destroy(evo_population_t *population)
         return;
     }
 
+    if (population->secure_erasure_enabled &&
+        evo_secure_erasure_metadata_is_valid(
+            population->secure_erasure_enabled,
+            population->secure_erasure_policy_version,
+            population->secure_erasure_backend)) {
+        if (population->evaluations != NULL &&
+            population->evaluation_bytes != 0) {
+            evo_secure_erase(population->evaluations,
+                             population->evaluation_bytes);
+        }
+    }
     free(population->evaluations);
+    if (population->secure_erasure_enabled &&
+        evo_secure_erasure_metadata_is_valid(
+            population->secure_erasure_enabled,
+            population->secure_erasure_policy_version,
+            population->secure_erasure_backend) &&
+        population->genomes != NULL &&
+        population->storage_bytes != 0) {
+        evo_secure_erase(population->genomes,
+                         population->storage_bytes);
+    }
     free(population->genomes);
     *population = (evo_population_t){0};
 }

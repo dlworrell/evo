@@ -611,6 +611,13 @@ static void assert_results_equal(const evo_result_t *left,
            right->generation_statistics.mutation_rate_effective);
     assert(left->generation_statistics.mutation_adaptation_reason ==
            right->generation_statistics.mutation_adaptation_reason);
+    assert(left->best_genome_size == right->best_genome_size);
+    assert(left->secure_erasure_policy_version ==
+           right->secure_erasure_policy_version);
+    assert(left->secure_erasure_backend ==
+           right->secure_erasure_backend);
+    assert(left->secure_erasure_enabled ==
+           right->secure_erasure_enabled);
 }
 
 static void test_public_consumer_and_reference_traces(void)

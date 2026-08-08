@@ -30,6 +30,12 @@ _Static_assert(EVO_MUTATION_ADAPTATION_DISABLED == 1,
                "disabled adaptation must retain its public value");
 _Static_assert(EVO_MUTATION_ADAPTATION_IMPROVEMENT_HOLD == 7,
                "adaptation reason values must remain append-only");
+_Static_assert(EVO_SECURE_ERASURE_BACKEND_NONE == 0,
+               "disabled secure erasure must remain the zero value");
+_Static_assert(EVO_SECURE_ERASURE_BACKEND_EXPLICIT_BZERO == 1,
+               "explicit_bzero backend must retain its public value");
+_Static_assert(EVO_SECURE_ERASURE_BACKEND_VOLATILE_BYTES == 2,
+               "volatile fallback must retain its public value");
 _Static_assert(offsetof(evo_result_t, termination_reason) >=
                    offsetof(evo_result_t, random_seed) + sizeof(uint64_t),
                "termination evidence must remain appended to evo_result_t");
@@ -37,6 +43,15 @@ _Static_assert(offsetof(evo_result_t, generation_statistics) >=
                    offsetof(evo_result_t, termination_reason) +
                        sizeof(evo_termination_reason_t),
                "generation statistics must remain appended to evo_result_t");
+_Static_assert(offsetof(evo_result_t, best_genome_size) >=
+                   offsetof(evo_result_t, generation_statistics) +
+                       sizeof(evo_generation_statistics_t),
+               "result owner size must follow the 0.27 result prefix");
+_Static_assert(offsetof(evo_result_t,
+                        secure_erasure_policy_version) >=
+                   offsetof(evo_result_t, best_genome_size) +
+                       sizeof(size_t),
+               "erasure policy evidence must follow its owner size");
 _Static_assert(EVO_GENERATION_RESULT_VIEW_VERSION == UINT32_C(1),
                "the initial observer result-view schema must remain stable");
 _Static_assert(EVO_FITNESS_COMPARISON_POLICY_VERSION == UINT32_C(1),
@@ -51,6 +66,8 @@ _Static_assert(EVO_BYTE_OPERATOR_POLICY_VERSION == UINT32_C(1),
                "the initial byte-operator policy must remain stable");
 _Static_assert(EVO_MUTATION_ADAPTATION_POLICY_VERSION == UINT32_C(1),
                "the initial adaptive-mutation policy must remain stable");
+_Static_assert(EVO_SECURE_ERASURE_POLICY_VERSION == UINT32_C(1),
+               "the initial secure-erasure policy must remain stable");
 _Static_assert(EVO_GENERATION_STATISTICS_VERSION == UINT32_C(4),
                "statistics schema 4 must carry adaptation evidence");
 _Static_assert(offsetof(evo_generation_statistics_t,
@@ -147,6 +164,11 @@ _Static_assert(offsetof(evo_config_t,
                             adaptive_mutation_diversity_threshold) +
                        sizeof(double),
                "the reset choice must follow adaptive numeric controls");
+_Static_assert(offsetof(evo_config_t, secure_erasure_enabled) >=
+                   offsetof(evo_config_t,
+                            adaptive_mutation_reset_on_improvement) +
+                       sizeof(bool),
+               "secure erasure must follow the 0.27 configuration prefix");
 
 enum {
     TEST_POPULATION_CAPACITY = 8,
@@ -225,6 +247,11 @@ static void assert_completely_empty(const evo_result_t *result)
                 .adaptive_mutation_clamped_to_max);
     assert(!result->generation_statistics
                 .adaptive_mutation_reset_on_improvement);
+    assert(result->best_genome_size == 0);
+    assert(result->secure_erasure_policy_version == 0);
+    assert(result->secure_erasure_backend ==
+           EVO_SECURE_ERASURE_BACKEND_NONE);
+    assert(!result->secure_erasure_enabled);
 }
 
 static void assert_results_equal(const evo_result_t *actual,
@@ -326,6 +353,13 @@ static void assert_results_equal(const evo_result_t *actual,
                .adaptive_mutation_reset_on_improvement ==
            expected->generation_statistics
                .adaptive_mutation_reset_on_improvement);
+    assert(actual->best_genome_size == expected->best_genome_size);
+    assert(actual->secure_erasure_policy_version ==
+           expected->secure_erasure_policy_version);
+    assert(actual->secure_erasure_backend ==
+           expected->secure_erasure_backend);
+    assert(actual->secure_erasure_enabled ==
+           expected->secure_erasure_enabled);
 }
 
 static void record_event(lifecycle_context_t *context,
@@ -552,6 +586,12 @@ static void test_generation_zero_execution_and_winner_transfer(void)
     assert(result.best_fitness.total == 8.0);
     assert(result.generations_completed == 0);
     assert(result.random_seed == 42);
+    assert(result.best_genome_size == problem.genome_size);
+    assert(result.secure_erasure_policy_version ==
+           EVO_SECURE_ERASURE_POLICY_VERSION);
+    assert(result.secure_erasure_backend ==
+           EVO_SECURE_ERASURE_BACKEND_NONE);
+    assert(!result.secure_erasure_enabled);
     assert(result.termination_reason == EVO_TERMINATION_GENERATION_LIMIT);
     assert(result.generation_statistics.version ==
            EVO_GENERATION_STATISTICS_VERSION);

@@ -406,7 +406,9 @@ evo_status_t evo_elite_population_complete(
             EVO_SINGLETON_CHILD_POLICY_VERSION;
     }
 
-    if (children->genomes == NULL || children->evaluations != NULL ||
+    if (children->genomes == NULL ||
+        !evo_population_secure_erasure_is_valid(config, children) ||
+        children->evaluations != NULL ||
         children->population_size != config->population_size ||
         children->population_size != parents->population_size ||
         children->genome_size != problem->genome_size ||

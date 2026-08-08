@@ -1,13 +1,13 @@
 # EVO-001: Evolutionary Optimization Library Contract
 
 Status: Baseline
-Version: 0.27.0
+Version: 0.28.0
 Owner: EVO
 
 ## Scope Boundary
 
 This specification governs the reusable deterministic C17 evolutionary-search
-core implemented through version 0.27.0. It does not define C-project
+core implemented through version 0.28.0. It does not define C-project
 ingestion, Clang/LLVM analysis, structured source transformations, isolated
 candidate builds, baseline-versus-candidate measurement, optimized patches, or
 product-level replay artifacts.
@@ -79,6 +79,13 @@ schema-4 statistics expose the corresponding ordered decision projection for
 human audit. ADR-0028 defines the projection and the later checkpoint fields
 required to resume it without hidden history.
 
+Version 0.28.0 also adds no accelerator. Its canonical secure-erasure registry
+is the fixed set of direct result, population-genome, population-evaluation,
+and provisional-evaluation owners with exact byte counts and explicit
+dispositions. ADR-0029 defines that stable human-readable registry and its
+exact-once lifecycle tests. There is no compressed, cached, indexed,
+probabilistic, pooled, or address-keyed authority.
+
 ## Public Interface
 
 The public API is declared in `include/catalyst/evo/evo.h`.
@@ -136,7 +143,8 @@ tolerance/patience, and diversity-floor stopping controls, then
 `selection_policy`, `rank_base_weight`, and `rank_step_weight`, then byte-
 operator policy version 1's `crossover_operator` and `mutation_operator`, then
 mutation-adaptation policy version 1's enable flag, finite minimum, maximum,
-step, inclusive diversity threshold, and reset-on-improvement flag.
+step, inclusive diversity threshold, and reset-on-improvement flag, followed
+by secure-erasure policy version 1's disabled-by-default enable flag.
 
 `max_genome_bytes` is trusted caller policy for the largest individual genome
 allocation accepted by `evo_run`. It avoids a platform-specific hard-coded
@@ -403,12 +411,16 @@ The internal lifecycle contract is:
    of exactly `population_size * genome_size` bytes.
 5. Indexed genome access returns a bounded, non-owning view. Out-of-range
    access returns null, and no view may outlive the population.
-6. Destruction releases the slab and resets every population field to zero.
-   It is null-safe and repeatable for initialized objects.
+6. Destruction applies the population's retained ordinary or secure-erasure
+   disposition independently to evaluation records and the genome slab,
+   releases each sole owner, and resets every population field to zero. It is
+   null-safe and repeatable for initialized objects.
 
-Population destruction does not securely erase the genome slab. The same
-secret-material restriction defined for `evo_result_destroy` applies to
-population storage and every non-owning genome view.
+Version 0.28.0 retains exact genome and evaluation byte counts plus policy
+version, backend, and enabled state beside every active population. Disabled
+destruction makes no scrubbing claim. Enabled destruction follows the secure-
+erasure lifecycle below. Every non-owning genome or evaluation view becomes
+invalid at release and must not be retained by a consumer callback.
 
 ### Deterministic population initialization
 
@@ -1093,7 +1105,9 @@ same provenance. Version 0.27.0 advances bounded-run policy to version 9 and
 child-evaluation and generation-advancement policies to version 7. They record
 the effective mutation rate through production, evaluation, promotion, and
 final run evidence. The bounded run does not define old-slab recycling,
-checkpointing, parallelism, or secure erasure.
+checkpointing, or parallelism. Version 0.28.0 composes its existing owner
+cleanup with the separate secure-erasure policy without changing run decisions
+or RNG.
 
 ### Result lifecycle
 
@@ -1132,14 +1146,63 @@ The lifecycle contract is:
 8. Callers may use bounded, non-owning aliases to read or write genome bytes
    while the result remains alive. An alias may not free or reallocate the
    storage and must not survive result destruction.
-9. `evo_result_destroy` releases the owned allocation and resets every result
-   field to zero. Destruction is null-safe and repeatable for initialized
-   result objects.
-10. A destroyed result may be passed to `evo_run` again immediately.
+9. A live result retains `best_genome_size`, secure-erasure policy version 1,
+   the enabled flag, and either backend `NONE` or the selected enabled backend
+   beside its sole owner.
+10. `evo_result_destroy` applies that retained disposition, releases the owned
+   allocation, and resets every result field to zero. Destruction is null-safe
+   and repeatable for initialized result objects.
+11. A destroyed result may be passed to `evo_run` again immediately.
 
-`evo_result_destroy` does not securely erase genome bytes. Consumers must not
-place secret or cryptographic material in genomes without a separately
-reviewed erasure boundary.
+With the default disabled policy, `evo_result_destroy` does not securely erase
+genome bytes and makes no such claim. Consumers that enable policy version 1
+receive the bounded process-memory erasure defined below, but remain
+responsible for their own copies, aliases, callback state, swap, crash
+artifacts, allocator behavior, and platform-level data-remanence policy.
+
+### Opt-in secure-erasure lifecycle
+
+`EVO_SECURE_ERASURE_POLICY_VERSION` is `1`.
+`evo_secure_erasure_backend_t` defines the zero-valued
+`EVO_SECURE_ERASURE_BACKEND_NONE`, detected
+`EVO_SECURE_ERASURE_BACKEND_EXPLICIT_BZERO`, and reviewed fallback
+`EVO_SECURE_ERASURE_BACKEND_VOLATILE_BYTES` values.
+
+The stable logical owner registry is:
+
+| Owner | Exact count | Terminal disposition |
+|---|---:|---|
+| Public result genome | `evo_result_t.best_genome_size` | `evo_result_destroy` |
+| Population genome slab | `evo_population_t.storage_bytes` | population destruction |
+| Population evaluations | `evo_population_t.evaluation_bytes` | rollback or population destruction |
+| Provisional evaluations | checked local `evaluation_bytes` | provisional discard |
+
+Successful construction records policy version 1 with each active owner.
+Disabled owners record backend `NONE`; enabled owners record the build-selected
+backend. A child owner receives the active configuration policy, and atomic
+generation advancement moves the pointers, exact counts, and policy metadata
+together before disposing of the former parent.
+
+For disabled owners, terminal cleanup invokes no secure-erasure primitive,
+uses ordinary release, and makes no claim that the prior bytes were scrubbed.
+For enabled canonical owners, cleanup invokes the sole erasure wrapper exactly
+once over the complete retained range, completes that erase before the sole
+release, and then zeros the owner record. Provisional evaluation failure and
+post-attachment diversity rollback follow the same rule. No erasure path
+allocates, invokes a consumer callback, or consumes RNG state.
+
+CMake and GNU Autotools independently detect `explicit_bzero` and define the
+same internal capability macro. When detected, the wrapper invokes that
+supported primitive. Otherwise it writes zero through a volatile-byte loop in
+ascending range order. Generic `memset` is not an erasure backend. Backend
+selection may vary by supported platform but cannot affect evolutionary
+decisions or replay streams.
+
+The guarantee covers only the exact live process allocation owned by EVO. It
+does not cover consumer copies, aliases after destruction, allocator metadata,
+paging or crash artifacts, device caches, or persistent media. Callers must
+not modify the result's owner pointer, byte count, policy version, backend, or
+enabled flag. ADR-0029 defines the complete boundary and audit registry.
 
 ### Status values
 
@@ -1499,7 +1562,17 @@ may change, so consumers must rebuild. Supported public function signatures
 and installed function symbols, allocation classes, resource budgets, and RNG
 domains do not change.
 
-## Current 0.27.0 Conformance Boundary
+Version 0.28.0 adds `evo_secure_erasure_backend_t` and
+`EVO_SECURE_ERASURE_POLICY_VERSION`; appends `secure_erasure_enabled` after
+the complete pre-0.28.0 `evo_config_t` prefix; and appends
+`best_genome_size`, policy version, backend, and enabled evidence after the
+complete pre-0.28.0 `evo_result_t` prefix. Existing member offsets and
+zero-initialized ordinary-release behavior are preserved, but configuration
+and result sizes or array strides may change, so consumers must rebuild.
+Supported public function signatures and RNG domains do not change. One new
+private production module supplies the build-selected erasure wrapper.
+
+## Current 0.28.0 Conformance Boundary
 
 The current implementation exposes generation-zero compatibility plus bounded
 multi-generation execution:
@@ -1519,7 +1592,8 @@ multi-generation execution:
 - all-invalid completion has a distinct public status;
 - allocation, resource, state, and evaluation failures return an empty result
   after complete private cleanup;
-- result destruction is null-safe, repeatable, and restores the empty state;
+- result destruction is null-safe, repeatable, restores the empty state, and
+  applies the retained ordinary or secure-erasure disposition;
 - private population construction checks size arithmetic and both caller
   budgets before allocating a contiguous zero-initialized slab;
 - private population views are bounds-checked and non-owning;
@@ -1625,7 +1699,10 @@ multi-generation execution:
   or failed generations;
 - direct bounded arrays remain exact byte-operator authority, with no
   compressed, cached, indexed, or probabilistic structure requiring an ADR-0026
-  audit projection; and
+  audit projection;
+- the direct owner-and-byte-count registry records every governed erasure
+  range, enabled lifecycle disposition, and build-selected backend without an
+  accelerated or address-keyed authority; and
 - checkpointing, buffer recycling, asynchronous or
   concurrent callbacks, and parallelism are not implemented.
 
@@ -1636,7 +1713,7 @@ count. They may inspect `generation_statistics` for the final committed
 population, which is distinct from the global winner on all-invalid
 termination. When configured, they may copy each callback-lifetime observation
 into their own bounded storage. They may also configure deterministic stopping
-over committed snapshots. Version 0.27.0 defines no statistics history,
+over committed snapshots. Version 0.28.0 defines no statistics history,
 asynchronous cancellation, or retained callback delivery.
 
 ## Verification
@@ -1658,6 +1735,13 @@ independently. The selection test proves completed-state validation, tournament
 bounds and exact compatibility replay, rank-policy arithmetic, golden rank
 vectors, stable ties, invalid exclusion, one-member and extreme weights,
 fixed-seed statistical sanity, all-invalid handling, and failure preservation.
+A secure-erasure link-wrapper test proves every registry range is erased over
+its exact byte count exactly once immediately before release on success,
+promotion, allocation failure, all-invalid transfer failure, generation-zero
+and child provisional failure, and rollback. It
+separately proves that disabled policy invokes no erasure and that both the
+detected `explicit_bzero` backend and volatile-byte fallback produce complete
+zero ranges.
 A separate Linux-only
 static-link test uses the GNU-compatible `--wrap=calloc` linker facility to
 prove failure and cleanup at the population, evaluation-record, and
@@ -1831,6 +1915,7 @@ public failure after child-slab or child-evaluation allocation failure.
 - `docs/adr/ADR-0026-human-readable-abstraction-and-audit-projection.md`
 - `docs/adr/ADR-0027-reference-byte-genome-operators.md`
 - `docs/adr/ADR-0028-evidence-driven-adaptive-mutation.md`
+- `docs/adr/ADR-0029-opt-in-secure-erasure-lifecycle.md`
 - `docs/architecture.md`
 - `docs/algorithms.md`
 - `docs/benchmarks.md`
@@ -1864,4 +1949,5 @@ public failure after child-slab or child-evaluation allocation failure.
 - `https://github.com/dlworrell/evo/issues/47`
 - `https://github.com/dlworrell/evo/issues/48`
 - `https://github.com/dlworrell/evo/issues/49`
+- `https://github.com/dlworrell/evo/issues/50`
 - `https://github.com/dlworrell/AEMS/issues/18`

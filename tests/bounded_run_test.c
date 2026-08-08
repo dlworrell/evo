@@ -5,6 +5,7 @@
 #include "internal/child_pair.h"
 #include "internal/elite.h"
 #include "internal/population_storage.h"
+#include "internal/secure_erasure.h"
 #include "internal/statistics.h"
 
 #include <assert.h>
@@ -62,6 +63,11 @@ static void assert_result_empty(const evo_result_t *result)
     assert(result->generation_statistics.best_fitness.total == 0.0);
     assert(result->generation_statistics.fitness_sums.total == 0.0);
     assert(!result->generation_statistics.has_best);
+    assert(result->best_genome_size == 0);
+    assert(result->secure_erasure_policy_version == 0);
+    assert(result->secure_erasure_backend ==
+           EVO_SECURE_ERASURE_BACKEND_NONE);
+    assert(!result->secure_erasure_enabled);
     assert(result->generation_statistics
                .fitness_comparison_policy_version == 0);
 }
@@ -712,6 +718,14 @@ static void snapshot_generation_zero(
         storage[offset] = ((const unsigned char *)genome)[offset];
     }
     result->best_genome = storage;
+    result->best_genome_size = problem->genome_size;
+    result->secure_erasure_policy_version =
+        EVO_SECURE_ERASURE_POLICY_VERSION;
+    result->secure_erasure_backend =
+        config->secure_erasure_enabled
+            ? evo_secure_erasure_selected_backend()
+            : EVO_SECURE_ERASURE_BACKEND_NONE;
+    result->secure_erasure_enabled = config->secure_erasure_enabled;
     result->best_fitness = evaluation->fitness;
     result->random_seed = config->random_seed;
     assert(evo_generation_statistics_record(config,

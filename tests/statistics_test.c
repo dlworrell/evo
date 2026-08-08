@@ -40,6 +40,10 @@ static void initialize_fixture(statistics_fixture_t *fixture,
     fixture->population.storage_bytes = population_size;
     fixture->population.evaluation_bytes =
         population_size * sizeof(evo_candidate_evaluation_t);
+    fixture->population.secure_erasure_policy_version =
+        EVO_SECURE_ERASURE_POLICY_VERSION;
+    fixture->population.secure_erasure_backend =
+        EVO_SECURE_ERASURE_BACKEND_NONE;
     fixture->population.initialized = generation_index == UINT64_C(0);
     fixture->population.source_generation =
         generation_index == UINT64_C(0)

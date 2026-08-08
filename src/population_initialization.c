@@ -10,6 +10,7 @@ static bool population_matches_inputs(const evo_problem_t *problem,
     size_t expected_storage_bytes = 0;
 
     if (population->genomes == NULL || population->initialized ||
+        !evo_population_secure_erasure_is_valid(config, population) ||
         population->initialization_seed != 0 ||
         population->rng_algorithm_version != 0 ||
         population->produced_count != 0 ||

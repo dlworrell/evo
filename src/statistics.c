@@ -114,6 +114,7 @@ evo_status_t evo_generation_statistics_record(
     }
 
     if (population->genomes == NULL || population->evaluations == NULL ||
+        !evo_population_secure_erasure_is_valid(config, population) ||
         population->population_size == 0 || !population->evaluated ||
         population->valid_count > population->population_size ||
         population->fitness_comparison_policy_version !=

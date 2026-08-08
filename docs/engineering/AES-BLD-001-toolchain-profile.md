@@ -28,12 +28,15 @@ records their versions as evidence.
 
 ## Frontend parity
 
-`CMakeLists.txt` and `Makefile.am` enumerate all twenty-three production
-sources and the same twenty-seven normative tests. Both frontends:
+`CMakeLists.txt` and `Makefile.am` enumerate all twenty-four production
+sources and the same twenty-eight normative tests. Both frontends:
 
 - compile the project as C17 with the same warning policy;
 - default to warnings-as-errors;
 - expose sanitizer instrumentation as an explicit option;
+- independently detect `explicit_bzero`, define the same private capability
+  macro when available, and otherwise compile the same volatile-byte secure-
+  erasure fallback;
 - build the private seed-schedule research support only for tests;
 - install `libcatalyst_evo.a`, the public header, and `catalyst-evo.pc`;
 - support an out-of-tree build without network access after bootstrap.

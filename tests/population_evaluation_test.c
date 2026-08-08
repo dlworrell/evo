@@ -239,6 +239,10 @@ static void test_evaluation_size_overflow_rejection(void)
         .population_size = population_size,
         .genome_size = 1,
         .storage_bytes = population_size,
+        .secure_erasure_policy_version =
+            EVO_SECURE_ERASURE_POLICY_VERSION,
+        .secure_erasure_backend =
+            EVO_SECURE_ERASURE_BACKEND_NONE,
         .initialization_seed = 18,
         .rng_algorithm_version = EVO_RNG_ALGORITHM_VERSION,
         .initialized = true,

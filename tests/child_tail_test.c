@@ -114,6 +114,10 @@ static void fixture_initialize(tail_fixture_t *fixture,
     fixture->parents.storage_bytes = storage_bytes;
     fixture->parents.evaluation_bytes =
         fixture->config.max_evaluation_bytes;
+    fixture->parents.secure_erasure_policy_version =
+        EVO_SECURE_ERASURE_POLICY_VERSION;
+    fixture->parents.secure_erasure_backend =
+        EVO_SECURE_ERASURE_BACKEND_NONE;
     fixture->parents.valid_count = population_size;
     fixture->parents.best_index = population_size - 1;
     fixture->parents.initialization_seed = fixture->config.random_seed;

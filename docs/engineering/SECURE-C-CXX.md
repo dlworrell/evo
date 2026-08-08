@@ -23,6 +23,9 @@ EVO native code must:
 - run sanitizer tests when supported;
 - include fuzz coverage for parsers and external-input handlers when applicable;
 - avoid custom cryptography;
+- route requested secret erasure through a supported non-optimizable primitive
+  or reviewed volatile fallback with an exact retained byte count; ordinary
+  release and generic `memset` must not be represented as secure erasure;
 - record every approved exception in the waiver log.
 
 ## Unsafe Code

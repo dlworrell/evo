@@ -3,6 +3,7 @@
 #include "internal/bounded_run.h"
 #include "internal/observer.h"
 #include "internal/population_storage.h"
+#include "internal/secure_erasure.h"
 #include "internal/statistics.h"
 #include "internal/stopping.h"
 
@@ -55,6 +56,14 @@ static evo_status_t transfer_best_candidate(
     result->best_fitness = evaluation->fitness;
     result->generations_completed = 0;
     result->random_seed = config->random_seed;
+    result->best_genome_size = problem->genome_size;
+    result->secure_erasure_policy_version =
+        EVO_SECURE_ERASURE_POLICY_VERSION;
+    result->secure_erasure_backend =
+        config->secure_erasure_enabled
+            ? evo_secure_erasure_selected_backend()
+            : EVO_SECURE_ERASURE_BACKEND_NONE;
+    result->secure_erasure_enabled = config->secure_erasure_enabled;
     return EVO_SUCCESS;
 }
 
@@ -173,6 +182,16 @@ void evo_result_destroy(evo_result_t *result)
         return;
     }
 
+    if (result->secure_erasure_enabled &&
+        evo_secure_erasure_metadata_is_valid(
+            result->secure_erasure_enabled,
+            result->secure_erasure_policy_version,
+            result->secure_erasure_backend) &&
+        result->best_genome != NULL &&
+        result->best_genome_size != 0) {
+        evo_secure_erase(result->best_genome,
+                         result->best_genome_size);
+    }
     free(result->best_genome);
     *result = (evo_result_t){0};
 }

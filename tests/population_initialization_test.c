@@ -39,6 +39,10 @@ static void assert_population_empty(const evo_population_t *population)
     assert(population->genome_size == 0);
     assert(population->storage_bytes == 0);
     assert(population->evaluation_bytes == 0);
+    assert(population->secure_erasure_policy_version == 0);
+    assert(population->secure_erasure_backend ==
+           EVO_SECURE_ERASURE_BACKEND_NONE);
+    assert(!population->secure_erasure_enabled);
     assert(population->valid_count == 0);
     assert(population->best_index == 0);
     assert(population->produced_count == 0);

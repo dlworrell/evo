@@ -37,6 +37,8 @@ Version 0.26.0 adds explicit compatibility-preserving operator dispatch plus
 bounded reference one-point, two-point, uniform, and byte-XOR policies.
 Version 0.27.0 adds deterministic committed-evidence mutation-rate adaptation
 with a schema-4 human-readable decision projection.
+Version 0.28.0 adds a disabled-by-default exact secure-erasure lifecycle for
+every EVO-owned genome and evaluation range.
 
 ### Source analysis and transformation
 
@@ -112,18 +114,20 @@ ADR-0026 defines the complete rule.
 
 ## Current Conformance Boundary
 
-Only the evolutionary-search core exists in version 0.27.0. Source ingestion,
+Only the evolutionary-search core exists in version 0.28.0. Source ingestion,
 analysis, transformation, candidate materialization, external-process
 isolation, target-code measurement, product commands, and optimized-patch
 artifacts are planned by issues #58 through #69. Documentation of those
 planned boundaries is not an implementation claim.
 
-The 0.27.0 core uses explicit bounded arrays, direct deterministic scans, and
+The 0.28.0 core uses explicit bounded arrays, direct deterministic scans, and
 one direct constant-space adaptive-rate record rather than compressed,
 probabilistic, cached, or indexed run authority. Its
 reference byte operators act directly on those exact arrays and introduce no
-accelerated authority or retained compact decision structure. It therefore has
-no current accelerated structure requiring remediation. This
+accelerated authority or retained compact decision structure. Secure erasure
+uses the same direct owner fields and exact byte counts as its stable registry,
+not an address-keyed cache or pool. It therefore has no current accelerated
+structure requiring remediation. This
 audit does not pre-approve later checkpoint, recycling, parallelism, analysis,
 recipe, orchestration, or artifact implementations.
 
@@ -134,6 +138,7 @@ recipe, orchestration, or artifact implementations.
 - Consumer and reference byte-genome crossover
 - Consumer and reference byte-genome mutation
 - Evidence-driven bounded mutation-rate adaptation
+- Opt-in secure erasure with exact owner-and-byte-count evidence
 - Deterministic elite preservation and ordinary singleton production
 - Diversity evidence and deterministic stagnation handling
 - Fitness and constraint handling
@@ -153,6 +158,13 @@ Indexed genome pointers are bounded non-owning views. Population destruction
 invalidates every view, releases the slab, and resets the complete private
 object. The subsystem remains independently tested; version 0.6.0 invokes it
 as the private storage boundary for `evo_run`.
+
+Version 0.28.0 retains policy version, backend, and enabled disposition beside
+the existing genome and evaluation owner/count pairs. Disabled destruction
+performs ordinary release and makes no erasure claim. Enabled destruction
+erases each exact range once immediately before its sole release. Child
+promotion moves this metadata with both owners before destroying the former
+parent.
 
 ## Deterministic Initialization Boundary
 
@@ -343,6 +355,32 @@ generation order. Pair, singleton, elite, child-evaluation, generation-
 advancement, and bounded-run evidence carry the rate used so lifecycle
 validation can reject mismatched provenance. A future checkpoint must persist
 this state and projection together; no hidden history may be reconstructed.
+
+## Secure-Erasure Boundary
+
+Version 0.28.0 appends secure-erasure policy version 1. The stable ownership
+registry has four domain entries: public result genome, population genome
+slab, attached population evaluations, and provisional evaluations. Each entry
+uses its direct owner plus the exact retained allocation count; no global
+pointer table, cache, compressed record, or address identity participates.
+
+The zero-initialized policy records ordinary release. Enabled construction
+records the selected backend beside each owner. CMake and GNU Autotools detect
+`explicit_bzero` under the same internal capability macro; when unavailable,
+the sole wrapper uses an ascending volatile-byte zero loop. It does not use
+generic `memset`, allocate memory, call a consumer, or consume RNG.
+
+Cleanup erases each active genome or evaluation range exactly once and then
+immediately releases that sole owner. This covers successful population and
+result destruction, former-parent disposal after promotion, provisional
+evaluation rejection, attached-evaluation rollback, child failure, public-run
+failure, and partial allocation. The complete owner record is then zeroed, so
+repeated destruction is inert.
+
+The guarantee is deliberately bounded to live EVO-owned process memory. It
+does not claim to scrub consumer copies, stale aliases, allocator metadata,
+swap, crash artifacts, device caches, or persistent media. ADR-0029 defines
+the exact registry, lifecycle states, backend boundary, and test evidence.
 
 ## Private Child-Population Ownership Boundary
 
@@ -664,6 +702,10 @@ Generation-statistics schema 4 publishes the ordered adaptive decision; its
 explicit fields are the ADR-0026 audit projection, not a compressed or cached
 authority.
 
+Version 0.28.0 leaves those decision-evidence schemas unchanged. Secure-
+erasure policy is retained directly with each owner and moves atomically with
+population ownership; it does not alter the bounded-run decision trace.
+
 ## EVO Core Execution Flow
 
 1. Initialize a population.
@@ -674,7 +716,7 @@ authority.
 6. Record statistics and evidence.
 7. Stop on convergence, stagnation, generation limit, or an application-defined condition.
 
-Version 0.27.0 publicly implements steps 1 through 5 for at most
+Version 0.28.0 publicly implements steps 1 through 5 for at most
 `generation_limit` bounded transitions, with caller-bounded elite policy
 version 1, explicit consumer/reference byte-operator policy, and bounded
 diversity measurement in step 5. It implements the constant-space statistics

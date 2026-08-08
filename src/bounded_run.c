@@ -11,6 +11,7 @@
 #include "internal/observer.h"
 #include "internal/mutation.h"
 #include "internal/selection.h"
+#include "internal/secure_erasure.h"
 #include "internal/statistics.h"
 #include "internal/stopping.h"
 
@@ -238,6 +239,13 @@ static bool initial_run_state_is_valid(
 
     if (config->generation_limit == 0 ||
         best_result->best_genome == NULL ||
+        best_result->best_genome_size != problem->genome_size ||
+        best_result->secure_erasure_enabled !=
+            config->secure_erasure_enabled ||
+        !evo_secure_erasure_metadata_is_valid(
+            best_result->secure_erasure_enabled,
+            best_result->secure_erasure_policy_version,
+            best_result->secure_erasure_backend) ||
         best_result->generations_completed != 0 ||
         best_result->random_seed != config->random_seed ||
         best_result->termination_reason != EVO_TERMINATION_NONE ||

@@ -93,6 +93,7 @@
       "src/crossover.c",
       "src/mutation.c",
       "src/adaptive_mutation.c",
+      "src/secure_erasure.c",
       "src/parent_pair.c",
       "src/child_pair.c",
       "src/child_single.c",
@@ -265,6 +266,12 @@
         "source": "tests/seed_schedule_experiment.c",
         "cmake": "evo_seed_schedule_experiment",
         "autotools": "tests/evo_seed_schedule_experiment"
+      },
+      {
+        "id": "secure-erasure",
+        "source": "tests/secure_erasure_test.c",
+        "cmake": "evo_secure_erasure_test",
+        "autotools": "tests/evo_secure_erasure_test"
       },
       {
         "id": "allocation-failure",

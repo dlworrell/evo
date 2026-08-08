@@ -173,6 +173,11 @@ static void assert_empty_result(const evo_result_t *result)
     assert(result->random_seed == 0);
     assert(result->termination_reason == EVO_TERMINATION_NONE);
     assert(result->generation_statistics.version == 0);
+    assert(result->best_genome_size == 0);
+    assert(result->secure_erasure_policy_version == 0);
+    assert(result->secure_erasure_backend ==
+           EVO_SECURE_ERASURE_BACKEND_NONE);
+    assert(!result->secure_erasure_enabled);
 }
 
 static void test_disabled_controls_preserve_generation_limit(void)

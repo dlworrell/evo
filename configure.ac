@@ -1,7 +1,7 @@
 AC_PREREQ([2.69])
 AC_INIT(
   [catalyst-evo],
-  [0.27.0],
+  [0.28.0],
   [https://github.com/dlworrell/evo/issues]
 )
 AC_CONFIG_SRCDIR([src/population.c])
@@ -11,6 +11,16 @@ AM_INIT_AUTOMAKE([foreign subdir-objects parallel-tests color-tests])
 AC_PROG_CC
 AM_PROG_AR
 LT_INIT([disable-shared])
+
+AC_CHECK_FUNCS([explicit_bzero])
+AS_IF(
+  [test "x$ac_cv_func_explicit_bzero" = "xyes"],
+  [AC_DEFINE(
+    [EVO_HAVE_EXPLICIT_BZERO],
+    [1],
+    [Define to 1 when explicit_bzero is available.]
+  )]
+)
 
 AC_ARG_ENABLE(
   [warnings-as-errors],
