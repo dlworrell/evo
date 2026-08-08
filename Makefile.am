@@ -110,6 +110,7 @@ check_PROGRAMS = \
 	tests/evo_checkpoint_fuzz_test \
 	tests/evo_seed_schedule_research_test \
 	tests/evo_seed_schedule_experiment \
+	benchmarks/evo_core_benchmark \
 	tests/evo_secure_erasure_test \
 	tests/evo_allocation_failure_test
 TESTS = $(check_PROGRAMS)
@@ -217,6 +218,15 @@ tests_evo_seed_schedule_experiment_SOURCES = \
 tests_evo_seed_schedule_experiment_LDADD = \
 	libevo_seed_schedule_research.la libcatalyst_evo.la -lm
 
+benchmarks_evo_core_benchmark_SOURCES = benchmarks/core_benchmark.c
+benchmarks_evo_core_benchmark_LDADD = libcatalyst_evo.la -lm
+benchmarks_evo_core_benchmark_CPPFLAGS = \
+	$(AM_CPPFLAGS) \
+	-DEVO_BENCHMARK_COMMIT=\"0000000000000000000000000000000000000000\" \
+	-DEVO_BENCHMARK_LINKER_ID=\"autotools-default\" \
+	-DEVO_BENCHMARK_BUILD_FRONTEND=\"autotools\" \
+	-DEVO_BENCHMARK_BUILD_PROFILE=\"c17\"
+
 tests_evo_secure_erasure_test_SOURCES = \
 	tests/secure_erasure_test.c
 tests_evo_secure_erasure_test_LDADD = libcatalyst_evo.la -lm
@@ -233,6 +243,41 @@ tests_evo_allocation_failure_test_LDFLAGS = \
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = catalyst-evo.pc
 
+BENCHMARK_OUTPUT_DIR = $(abs_builddir)/benchmark-results
+BENCHMARK_SMOKE_JSON = $(BENCHMARK_OUTPUT_DIR)/EVO-CORE-001-smoke.json
+BENCHMARK_SMOKE_MARKDOWN = $(BENCHMARK_OUTPUT_DIR)/EVO-CORE-001-smoke.md
+BENCHMARK_EXTENDED_JSON = \
+	$(BENCHMARK_OUTPUT_DIR)/EVO-CORE-001-extended.json
+BENCHMARK_EXTENDED_MARKDOWN = \
+	$(BENCHMARK_OUTPUT_DIR)/EVO-CORE-001-extended.md
+
+.PHONY: benchmark-smoke benchmark-extended
+benchmark-smoke: benchmarks/evo_core_benchmark
+	$(MKDIR_P) "$(BENCHMARK_OUTPUT_DIR)"
+	python3 "$(abs_srcdir)/benchmarks/validate_core_benchmark.py" \
+		--program "$(abs_builddir)/benchmarks/evo_core_benchmark" \
+		--tier smoke \
+		--commit "$${EVO_BENCHMARK_COMMIT:-local-tree}" \
+		--linker "$(LD)" \
+		--json "$(BENCHMARK_SMOKE_JSON)" \
+		--markdown "$(BENCHMARK_SMOKE_MARKDOWN)"
+
+benchmark-extended: benchmarks/evo_core_benchmark
+	$(MKDIR_P) "$(BENCHMARK_OUTPUT_DIR)"
+	python3 "$(abs_srcdir)/benchmarks/validate_core_benchmark.py" \
+		--program "$(abs_builddir)/benchmarks/evo_core_benchmark" \
+		--tier extended \
+		--commit "$${EVO_BENCHMARK_COMMIT:-local-tree}" \
+		--linker "$(LD)" \
+		--json "$(BENCHMARK_EXTENDED_JSON)" \
+		--markdown "$(BENCHMARK_EXTENDED_MARKDOWN)"
+
+CLEANFILES = \
+	benchmark-results/EVO-CORE-001-smoke.json \
+	benchmark-results/EVO-CORE-001-smoke.md \
+	benchmark-results/EVO-CORE-001-extended.json \
+	benchmark-results/EVO-CORE-001-extended.md
+
 EXTRA_DIST = \
 	.aems/aes-bld-001.json \
 	.aems/aes-bld-001-waivers.json \
@@ -240,6 +285,10 @@ EXTRA_DIST = \
 	.github/workflows/aes-bld-001.yml \
 	CMakeLists.txt \
 	CMakePresets.json \
+	benchmarks/CMakeLists.txt \
+	benchmarks/README.md \
+	benchmarks/evo-core-benchmark-v1.schema.json \
+	benchmarks/validate_core_benchmark.py \
 	catalyst-evo.pc.in \
 	consumer/consumer.c \
 	docs/engineering/AES-BLD-001-toolchain-profile.md \

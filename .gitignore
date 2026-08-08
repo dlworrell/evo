@@ -220,6 +220,7 @@ __marimo__/
 # Native CMake and GNU Autotools outputs
 CMakeUserPresets.json
 compile_commands.json
+benchmark-results/
 autom4te.cache/
 aclocal.m4
 configure

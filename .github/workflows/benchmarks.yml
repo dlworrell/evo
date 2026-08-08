@@ -1,0 +1,52 @@
+name: Core Benchmarks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      tier:
+        description: Benchmark evidence tier
+        required: true
+        default: extended
+        type: choice
+        options:
+          - smoke
+          - extended
+
+permissions:
+  contents: read
+
+jobs:
+  core-benchmark:
+    runs-on: ubuntu-24.04
+    env:
+      BENCHMARK_TIER: ${{ github.event_name == 'workflow_dispatch' && inputs.tier || 'smoke' }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Configure release benchmark
+        run: >-
+          cmake -S . -B build/benchmark
+          -DCMAKE_BUILD_TYPE=Release
+          -DBUILD_TESTING=ON
+          -DEVO_BENCHMARK_COMMIT=${GITHUB_SHA}
+
+      - name: Build and validate benchmark evidence
+        run: cmake --build build/benchmark --target "benchmark-${BENCHMARK_TIER}" --parallel
+
+      - name: Publish benchmark summary
+        shell: bash
+        run: |
+          summary="build/benchmark/benchmark-results/EVO-CORE-001-${BENCHMARK_TIER}.md"
+          cat "$summary" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload benchmark evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: evo-core-benchmark-${{ env.BENCHMARK_TIER }}-${{ github.run_id }}
+          path: build/benchmark/benchmark-results/
+          retention-days: 90

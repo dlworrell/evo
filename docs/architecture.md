@@ -48,6 +48,9 @@ registry.
 Version 0.31.0 adds opt-in bounded parallel evaluation through fixed logical
 worker assignments, stable candidate-order commit, and a complete schedule
 projection independent of runtime thread identity and timing.
+Version 0.32.0 adds a versioned core benchmark evidence boundary with explicit
+correctness oracles, complete ordered generation and measurement records, and
+a human-readable report derived from validated canonical JSON.
 
 ### Source analysis and transformation
 
@@ -123,13 +126,13 @@ ADR-0026 defines the complete rule.
 
 ## Current Conformance Boundary
 
-Only the evolutionary-search core exists in version 0.31.0. Source ingestion,
+Only the evolutionary-search core exists in version 0.32.0. Source ingestion,
 analysis, transformation, candidate materialization, external-process
 isolation, target-code measurement, product commands, and optimized-patch
 artifacts are planned by issues #58 through #69. Documentation of those
 planned boundaries is not an implementation claim.
 
-The 0.31.0 core uses explicit bounded arrays, direct deterministic scans, and
+The 0.32.0 core uses explicit bounded arrays, direct deterministic scans, and
 one direct constant-space adaptive-rate record rather than compressed,
 probabilistic, cached, or indexed run authority. Its
 reference byte operators act directly on those exact arrays and introduce no
@@ -150,10 +153,14 @@ evaluator. Its complete candidate-ordered schedule exposes fixed logical worker
 assignment, wave, completion/cancellation, and stable commit order, while
 private evaluation records remain authority. EVO-HRA-004 reconciles worker
 counts with serial execution and excludes runtime thread identity and timing
-from decisions. The current core therefore has no opaque accelerated authority
-requiring remediation. This audit does not pre-approve later variable pools,
-compressed checkpoints, persistent or distributed schedulers, analysis,
-recipe, orchestration, or artifact implementations.
+from decisions. The maintained benchmark retains complete cases, seeds,
+generation traces, and raw samples as canonical JSON; its Markdown projection
+is regenerated from that artifact, and aggregates and the scoped FNV locator
+remain explicitly non-authoritative. EVO-HRA-005 audits this boundary. The
+current core therefore has no opaque accelerated authority requiring
+remediation. This audit does not pre-approve later variable pools, compressed
+checkpoints, persistent or distributed schedulers, analysis, recipe,
+orchestration, or artifact implementations.
 
 ## Core Modules
 
@@ -868,7 +875,7 @@ promotion, checkpoint capture, resume, and final bounded-run evidence.
 6. Record statistics and evidence.
 7. Stop on convergence, stagnation, generation limit, or an application-defined condition.
 
-Version 0.31.0 publicly implements steps 1 through 5 for at most
+Version 0.32.0 publicly implements steps 1 through 5 for at most
 `generation_limit` bounded transitions, with caller-bounded elite policy
 version 1, explicit consumer/reference byte-operator policy, and bounded
 diversity measurement in step 5. It implements the constant-space statistics
@@ -882,6 +889,10 @@ resume continues the suffix from any retained committed generation. Enabled
 storage recycling changes allocation/reset work only. Enabled bounded parallel
 evaluation changes evaluator overlap only; validity, stable commit, statistics,
 stopping, checkpoint, and result authority remain candidate ordered.
+The `EVO-CORE-001` evidence layer exercises that unchanged core under four
+serial/parallel and allocate/recycle modes, gates exact semantic equivalence,
+and records reporting-only performance measurements outside algorithm
+authority.
 
 ## Source-Optimizer Execution Flow
 

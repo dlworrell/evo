@@ -22,7 +22,7 @@ jobs:
       - name: Check formatting
         shell: bash
         run: |
-          mapfile -t files < <(find include src tests examples -type f \( -name '*.c' -o -name '*.h' \) 2>/dev/null | sort)
+          mapfile -t files < <(find include src tests benchmarks examples -type f \( -name '*.c' -o -name '*.h' \) 2>/dev/null | sort)
           if [ ${#files[@]} -eq 0 ]; then
             echo "No C source files found."
             exit 0
@@ -42,12 +42,12 @@ jobs:
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DBUILD_TESTING=ON
 
       - name: Run cppcheck
-        run: cppcheck --enable=warning,performance,portability --error-exitcode=1 --inline-suppr -I include src tests
+        run: cppcheck --enable=warning,performance,portability --error-exitcode=1 --inline-suppr -I include src tests benchmarks
 
       - name: Run clang-tidy
         shell: bash
         run: |
-          mapfile -t files < <(find src tests -type f -name '*.c' | sort)
+          mapfile -t files < <(find src tests benchmarks -type f -name '*.c' | sort)
           if [ ${#files[@]} -eq 0 ]; then
             echo "No C source files found."
             exit 0

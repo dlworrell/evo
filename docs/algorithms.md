@@ -2,7 +2,7 @@
 
 This document distinguishes algorithms implemented by the reusable
 `catalyst_evo` core from the structured program transformations and evaluation
-algorithm required by the EVO 1.0 source optimizer. Version 0.31.0 implements
+algorithm required by the EVO 1.0 source optimizer. Version 0.32.0 implements
 only the core boundary described below.
 
 ## EVO Core Initial Release
@@ -23,6 +23,7 @@ only the core boundary described below.
 - Versioned committed-generation checkpoint and deterministic resume
 - Opt-in deterministic two-slot population-storage recycling
 - Opt-in bounded deterministic parallel evaluation
+- Reproducible correctness and search-quality benchmark evidence
 
 ## Later EVO Core Releases
 
@@ -953,6 +954,29 @@ worker count, scratch budget, observer presence, and committed population
 policy provenance. It serializes no live thread or provisional schedule.
 ADR-0032 fixes the full algorithm, failure, checkpoint, and projection contract;
 EVO-HRA-004 retains the Human-Readable Abstraction audit.
+
+## Reproducible Core Benchmark
+
+Version 0.32.0 adds `EVO-CORE-001` without changing an EVO search algorithm.
+The explicit `byte-onemax-v1` workload counts set bits in a 16-byte genome and
+runs a fixed 32-member, 12-transition search. Rank selection, uniform-byte
+crossover, byte-XOR mutation, adaptive mutation, two elites, and byte diversity
+are fully recorded.
+
+Four cases vary only evaluation worker count and population recycling. The
+serial/non-recycled case is the executable semantic reference. Every warmup,
+measurement repetition, and other case must match its genome, full fitness,
+termination, final statistics, and complete generation trace. Three seeds also
+match explicit fixed genome, convergence, and diversity vectors.
+
+Only after correctness passes does the artifact retain monotonic wall time,
+CPU-clock ticks, an exact library-requested heap model, and platform-native
+process RSS. Timing and RSS enforce no threshold or cross-machine equivalence.
+The JSON keeps raw samples in case/seed/repetition order; min, lower median,
+max, and the scoped FNV locator are derived conveniences rather than
+authority. A separate validator parses that JSON and generates the Markdown
+audit projection.
+ADR-0033 and EVO-HRA-005 fix the full evidence and abstraction contract.
 
 ## Structured C Source Evolution
 
