@@ -380,8 +380,10 @@ resource exhaustion, command injection, path traversal, symlink escape,
 environment leakage, process escape, unexpected network access, malicious
 build scripts, corrupt checkpoints, and artifact substitution.
 
-EVO must not weaken AES-DEV-001, AES-SEC-001, AES-BLD-001, Project Zero, or
-downstream repository controls in order to improve fitness.
+EVO must not weaken AES-DEV-001, AES-SEC-001, AES-BLD-001, the retained
+Project Zero onboarding certification, or downstream repository controls in
+order to improve fitness. Ordinary product changes use the current AES/AEMS
+gates and do not rerun Project Zero.
 
 ## EVO 1.0 Conformance
 

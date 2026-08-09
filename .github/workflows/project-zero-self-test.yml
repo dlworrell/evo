@@ -4,15 +4,9 @@ on:
   pull_request:
     paths:
       - '.github/workflows/p0.yml'
-      - '.github/workflows/verify.yml'
-      - '.github/workflows/documentation.yml'
-      - '.github/workflows/compliance.yml'
-      - '.github/workflows/optimization.yml'
-      - '.github/workflows/release.yml'
       - '.github/workflows/project-zero.yml'
       - '.github/workflows/project-zero-self-test.yml'
       - '.aems/project-zero/**'
-      - 'docs/standards/repository-lifecycle-contract.md'
       - 'scripts/project-zero'
       - 'templates/project_zero/**'
       - 'tools/project_zero.py'
@@ -20,15 +14,9 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/p0.yml'
-      - '.github/workflows/verify.yml'
-      - '.github/workflows/documentation.yml'
-      - '.github/workflows/compliance.yml'
-      - '.github/workflows/optimization.yml'
-      - '.github/workflows/release.yml'
       - '.github/workflows/project-zero.yml'
       - '.github/workflows/project-zero-self-test.yml'
       - '.aems/project-zero/**'
-      - 'docs/standards/repository-lifecycle-contract.md'
       - 'scripts/project-zero'
       - 'templates/project_zero/**'
       - 'tools/project_zero.py'

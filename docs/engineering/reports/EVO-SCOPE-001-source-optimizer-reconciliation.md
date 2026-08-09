@@ -1,6 +1,6 @@
 # EVO-SCOPE-001: Source-Optimizer Scope Reconciliation
 
-Status: Certification-impacting reconciliation candidate
+Status: Reconciled; Project Zero lifecycle routing superseded by EVO-P0-002
 Date: 2026-08-02
 Owner: EVO
 Trigger: GitHub issue #57
@@ -55,6 +55,13 @@ unchanged.
 
 ## Project Zero and AEMS Boundary
 
+EVO-P0-002 later certifies the expanded repository baseline as
+`ENGINEERING_READY` and clarifies that Project Zero is a one-time onboarding
+mechanism. Ongoing source-optimizer scope changes use ordinary Catylist,
+AES/AEMS, contract, ADR, security, and build review; they do not automatically
+restart Project Zero. The original reconciliation boundary below is retained
+as historical context.
+
 This record does not certify the expanded product. The repository remains at
 its recorded lifecycle state until the authoritative external review accepts
 the new repository class, threat boundary, build/tool dependencies, and
@@ -85,4 +92,3 @@ evidence but may not approve its own transition to `ENGINEERING_READY`.
 - `docs/algorithms.md`
 - `docs/benchmarks.md`
 - GitHub issues #38, #48, #51, #53 through #57
-

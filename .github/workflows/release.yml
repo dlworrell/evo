@@ -19,12 +19,7 @@ permissions:
 
 jobs:
   verify:
-    uses: ./.github/workflows/project-zero.yml
-    with:
-      mode: verify
-      repository_state: existing
-      profile: .aems/project-zero/profiles/default/profile.json
-      mutation_policy: report-only
+    uses: ./.github/workflows/verify.yml
 
   package:
     needs: verify

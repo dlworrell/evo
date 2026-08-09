@@ -1,6 +1,6 @@
 # EVO-P0-001 Project Zero Certification Candidate
 
-Status: Candidate
+Status: Historical candidate; superseded by EVO-P0-002
 Owner: EVO
 Governing standards: AES-002, AES-003
 
@@ -19,6 +19,11 @@ The EVO repository contains a reviewable Project Zero candidate baseline:
 - machine-readable JSON and human-readable Markdown lifecycle evidence.
 
 ## Certification Boundary
+
+EVO-P0-002 records the later reviewed transition to `ENGINEERING_READY` and
+clarifies that Project Zero is one-time onboarding rather than a recurring
+development or release gate. The text below preserves the original candidate
+boundary.
 
 This record does not approve its own claim. The manifest therefore declares
 `project_zero.state: CERTIFICATION` with certification status `candidate`.

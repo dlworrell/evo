@@ -674,10 +674,14 @@ capture/resume is now composed at committed-generation boundaries. Population
 recycling is composed at the same boundary, and bounded evaluator concurrency
 now composes through fixed assignment, complete join, and stable record commit.
 
-## Project Zero
+## Project Zero Onboarding
 
-The Project Zero interface is installed from the canonical `repo_templates`
-contract:
+EVO's one-time Project Zero onboarding is complete. EVO-P0-002 records the
+reviewed `ENGINEERING_READY` handoff into ordinary Catylist, AES, and AEMS
+oversight. Project Zero is not rerun for routine pull requests or releases.
+
+The retained manual interface from the canonical `repo_templates` contract is
+available only for an explicit Catylist/AEMS reassessment request:
 
 ```sh
 bash scripts/project-zero inspect
@@ -688,13 +692,13 @@ python3 ../AEMS/scripts/aems_project_zero.py \
   --format all
 ```
 
-The local workflow reports whether the repository baseline is certifiable.
-AEMS remains authoritative for AES-002 lifecycle state. This repository does
-not approve its own transition to `ENGINEERING_READY`.
+The local workflow reports whether a requested onboarding baseline is
+certifiable. It does not replace the retained certification decision or the
+ongoing AES/AEMS engineering gates.
 
 The stable GitHub Actions entry points are:
 
-- `P0 Repository Lifecycle`
+- `P0 Repository Lifecycle` (manual onboarding/reassessment only)
 - `Verify Repository`
 - `Documentation Report`
 - `Repository Compliance`
@@ -702,5 +706,5 @@ The stable GitHub Actions entry points are:
 - `Release Readiness`
 
 See `docs/standards/repository-lifecycle-contract.md` and
-`docs/engineering/reports/EVO-P0-001-certification-candidate.md` for the
-governing contract and certification boundary.
+`docs/engineering/reports/EVO-P0-002-engineering-ready-certification.md` for
+the governing contract and completed certification boundary.

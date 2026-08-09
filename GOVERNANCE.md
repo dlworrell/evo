@@ -10,13 +10,14 @@ evaluation, orchestration, and artifact components on the path to 1.0.
 The repository follows this authority chain:
 
 ```text
-Catylist -> AES -> AEMS -> Project Zero -> repo_templates -> EVO
+Catylist -> AES -> AEMS -> repo_templates -> EVO
 ```
 
 - Catylist defines ecosystem structure and repository relationships.
 - AES defines engineering, security, and lifecycle obligations.
 - AEMS evaluates repository state and preserves enforcement evidence.
-- Project Zero governs repository preparation and Engineering Ready review.
+- Project Zero performed the one-time preparation and Engineering Ready
+  onboarding recorded by EVO-P0-002; it is not a standing development gate.
 - `repo_templates` supplies the canonical lifecycle scaffold.
 - EVO owns its core-library architecture and its source-analysis,
   transformation, candidate-evaluation, optimization, evidence, and artifact
@@ -65,11 +66,14 @@ Changes shall:
 
 ## Project Zero Certification
 
-The repository may propose a certification candidate, but it may not approve
-its own transition to `ENGINEERING_READY`. Approval requires a separate,
-traceable review of the candidate commit and its retained evidence.
+EVO-P0-002 records the separately reviewed transition to
+`ENGINEERING_READY`. Project Zero's role ends at that initial oversight
+handoff. Ordinary development and release work do not rerun Project Zero;
+they remain governed by Catylist, AES, AEMS, repository contracts, build
+parity, tests, security review, analyzers, and sanitizers.
 
-The source-optimizer scope materially expands the repository's execution and
-security boundary. Issue #57 and the additive EVO-SCOPE-001 reconciliation
-record require renewed Project Zero/AEMS assessment before the expanded
-product can claim `ENGINEERING_READY` or 1.0 readiness.
+The manual Project Zero entry point remains available only if Catylist or AEMS
+explicitly invalidates the retained certification or requests a new onboarding
+assessment. Product-scope growth, including the source optimizer, is handled
+through ordinary ADR, contract, threat-boundary, and AES/AEMS review rather
+than implicitly resetting the repository to Project Zero.

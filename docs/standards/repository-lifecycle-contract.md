@@ -1,12 +1,17 @@
 # Repository Lifecycle Contract
 
-Status: Draft implementation contract
+Status: Adopted implementation contract
 
 ## Purpose
 
-Every Catalyst repository shall expose stable automation entry points for repository preparation, verification, documentation and reporting, optimization experiments, and release preparation.
+Every Catalyst repository that begins outside Catylist oversight shall use
+Project Zero once for repository preparation and Engineering Ready review.
+After certification, ordinary verification, documentation, reporting,
+optimization experiments, and release preparation use their domain workflows
+without rerunning Project Zero.
 
-The canonical dependency order is:
+For repositories that require Project Zero onboarding, the initial dependency
+order is:
 
 ```text
 Catylist -> AES -> AEMS -> P0 -> repo_templates -> EDT / EVO / EWT -> project repositories
@@ -16,7 +21,7 @@ Catylist -> AES -> AEMS -> P0 -> repo_templates -> EDT / EVO / EWT -> project re
 
 | Workflow | Responsibility | Mutation policy |
 |---|---|---|
-| `p0.yml` | Inspect, plan, remediate, verify, or assess readiness | Remediation only through a branch and pull request |
+| `p0.yml` | Manually inspect, remediate, or reassess an onboarding baseline before certification or on explicit authority request | Remediation only through a branch and pull request |
 | `verify.yml` | Execute repository verification and preserve evidence | Read-only |
 | `documentation.yml` | Inventory documentation and produce a report package for EDT | Read-only |
 | `compliance.yml` | Verify baseline repository and AES-adoption obligations | Read-only |
@@ -31,6 +36,23 @@ Each workflow shall:
 4. upload its evidence even when validation fails;
 5. avoid direct writes to the default branch;
 6. use deterministic inputs and identify the commit under evaluation.
+
+## Post-certification boundary
+
+The separately reviewed certification record is the durable evidence that
+Project Zero completed. Once the AES manifest declares `ENGINEERING_READY`:
+
+- ordinary pull requests, repository verification, compliance, and release
+  readiness do not invoke Project Zero;
+- Catylist, AES, AEMS, repository contracts, build parity, tests, security
+  review, analyzers, and sanitizers govern ongoing work;
+- the Project Zero dispatcher and engine may remain as manual historical and
+  reassessment tooling; and
+- Project Zero runs again only when Catylist or AEMS explicitly invalidates the
+  retained certification or requests a new onboarding assessment.
+
+A new feature, release, or product-scope change does not by itself reset an
+Engineering Ready repository to Project Zero.
 
 ## Local interfaces
 
