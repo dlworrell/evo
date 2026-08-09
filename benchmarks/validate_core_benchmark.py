@@ -154,7 +154,7 @@ def validate(path: Path) -> dict[str, Any]:
     require(document.get("correctness_passed") is True, "correctness gate failed")
 
     evo = require_mapping(document.get("evo"), "EVO identity")
-    require(evo.get("version") == "0.32.0", "unexpected EVO version")
+    require(evo.get("version") == "0.33.0", "unexpected EVO version")
     require(
         isinstance(evo.get("commit"), str)
         and re.fullmatch(r"[0-9a-f]{40}", evo["commit"]) is not None,

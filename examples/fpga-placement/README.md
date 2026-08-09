@@ -1,5 +1,13 @@
-# FPGA Design-Space Exploration Example
+# FPGA Placement Reference Adapter
 
-This example will optimize bounded FPGA design choices such as peripheral placement, arbitration weights, DMA priorities, memory-map allocation, routing cost, timing slack, LUT use, block-RAM use, and clock-domain crossings.
+`fpga_placement.c` searches x/y position, pipeline depth, and memory bank over
+an explicit 8×8 integer fixture. Out-of-envelope placement, pipeline, and bank
+values are hard invalid. Timing above the modeled target and LUT use above the
+modeled budget are visible soft penalties already included in `fitness.total`.
+The consumer stop callback requests successful termination after generation
+three, proving application-controlled bounded stopping and observer order.
 
-Invalid designs and timing failures receive explicit constraint penalties or rejection. Constraint magnitude should be preserved in the fitness evidence.
+This fixture is not a hardware tool. It invokes no vendor placer, router,
+timing engine, simulator, bitstream generator, or device. It makes no physical
+timing, resource, safety, or deployability claim beyond its stated integer
+model.

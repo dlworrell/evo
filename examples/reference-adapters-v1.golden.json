@@ -1,0 +1,1680 @@
+{
+  "adapters": [
+    {
+      "adapter_id": "repository-scoring",
+      "authority": {
+        "accelerated_structure": null,
+        "limitation": "scores only the four immutable fixture records; it reads, writes, and publishes no repository",
+        "probabilistic_authority": false,
+        "projection_complete": true,
+        "reference_form": "explicit fixed fixture and ordered core evidence",
+        "source_optimizer_claimed": false
+      },
+      "capabilities": {
+        "bounded_parallel_evaluation": false,
+        "checkpoint_resume": true,
+        "deterministic_replay": true,
+        "hard_constraints": true,
+        "soft_penalties": true
+      },
+      "checkpoint_resume": {
+        "candidate_projection_complete": true,
+        "candidates": [
+          {
+            "evaluated": true,
+            "fitness": {
+              "constraint_penalty": 0,
+              "correctness": 240,
+              "maintainability": 60,
+              "memory_use": 0,
+              "performance": 150,
+              "reliability": 210,
+              "total": 660
+            },
+            "genome": "ff3c19ae",
+            "population_index": 0,
+            "valid": true
+          },
+          {
+            "evaluated": false,
+            "fitness": {
+              "constraint_penalty": 0,
+              "correctness": 0,
+              "maintainability": 0,
+              "memory_use": 0,
+              "performance": 0,
+              "reliability": 0,
+              "total": 0
+            },
+            "genome": "e38e9eae",
+            "population_index": 1,
+            "valid": false
+          },
+          {
+            "evaluated": true,
+            "fitness": {
+              "constraint_penalty": 0,
+              "correctness": 120,
+              "maintainability": 210,
+              "memory_use": 0,
+              "performance": 30,
+              "reliability": 180,
+              "total": 540
+            },
+            "genome": "83d89e65",
+            "population_index": 2,
+            "valid": true
+          },
+          {
+            "evaluated": true,
+            "fitness": {
+              "constraint_penalty": 0,
+              "correctness": 240,
+              "maintainability": 60,
+              "memory_use": 0,
+              "performance": 210,
+              "reliability": 210,
+              "total": 720
+            },
+            "genome": "ff7619ae",
+            "population_index": 3,
+            "valid": true
+          },
+          {
+            "evaluated": true,
+            "fitness": {
+              "constraint_penalty": 50,
+              "correctness": 120,
+              "maintainability": 210,
+              "memory_use": 0,
+              "performance": 150,
+              "reliability": 60,
+              "total": 490
+            },
+            "genome": "e33c9e19",
+            "population_index": 4,
+            "valid": true
+          },
+          {
+            "evaluated": true,
+            "fitness": {
+              "constraint_penalty": 0,
+              "correctness": 240,
+              "maintainability": 60,
+              "memory_use": 0,
+              "performance": 210,
+              "reliability": 210,
+              "total": 720
+            },
+            "genome": "ff8e19ae",
+            "population_index": 5,
+            "valid": true
+          },
+          {
+            "evaluated": true,
+            "fitness": {
+              "constraint_penalty": 0,
+              "correctness": 240,
+              "maintainability": 60,
+              "memory_use": 0,
+              "performance": 210,
+              "reliability": 210,
+              "total": 720
+            },
+            "genome": "ff8e19ae",
+            "population_index": 6,
+            "valid": true
+          },
+          {
+            "evaluated": true,
+            "fitness": {
+              "constraint_penalty": 0,
+              "correctness": 240,
+              "maintainability": 60,
+              "memory_use": 0,
+              "performance": 210,
+              "reliability": 210,
+              "total": 720
+            },
+            "genome": "ff7619ae",
+            "population_index": 7,
+            "valid": true
+          },
+          {
+            "evaluated": true,
+            "fitness": {
+              "constraint_penalty": 0,
+              "correctness": 120,
+              "maintainability": 120,
+              "memory_use": 0,
+              "performance": 60,
+              "reliability": 210,
+              "total": 510
+            },
+            "genome": "e3696bae",
+            "population_index": 8,
+            "valid": true
+          },
+          {
+            "evaluated": true,
+            "fitness": {
+              "constraint_penalty": 0,
+              "correctness": 120,
+              "maintainability": 210,
+              "memory_use": 0,
+              "performance": 120,
+              "reliability": 210,
+              "total": 660
+            },
+            "genome": "e33b9eae",
+            "population_index": 9,
+            "valid": true
+          },
+          {
+            "evaluated": false,
+            "fitness": {
+              "constraint_penalty": 0,
+              "correctness": 0,
+              "maintainability": 0,
+              "memory_use": 0,
+              "performance": 0,
+              "reliability": 0,
+              "total": 0
+            },
+            "genome": "ff76ccae",
+            "population_index": 10,
+            "valid": false
+          },
+          {
+            "evaluated": true,
+            "fitness": {
+              "constraint_penalty": 0,
+              "correctness": 240,
+              "maintainability": 60,
+              "memory_use": 0,
+              "performance": 210,
+              "reliability": 210,
+              "total": 720
+            },
+            "genome": "ff7619ae",
+            "population_index": 11,
+            "valid": true
+          }
+        ],
+        "captured_generation": 2,
+        "format_version": 3,
+        "integrity_crc32": 561448882,
+        "resumed_result_equal": true,
+        "resumed_trace_suffix_equal": true,
+        "serialized_size": 2000
+      },
+      "configuration": {
+        "application_stop_generation": 0,
+        "checkpoint_context_identity": "5501000000000002",
+        "checkpoint_problem_identity": "5501000000000001",
+        "checkpoint_required_bytes": 2000,
+        "crossover": "uniform-byte-v1",
+        "crossover_rate": 0.75,
+        "diversity_floor_enabled": false,
+        "elite_count": 1,
+        "evaluation_callback_thread_safety": "thread-safe",
+        "evaluation_worker_count": 0,
+        "evaluation_worker_scratch_bytes": 0,
+        "fitness_target_enabled": false,
+        "generation_limit": 6,
+        "genome_size": 4,
+        "max_checkpoint_bytes": 16384,
+        "max_child_population_bytes": 48,
+        "max_diversity_work": 264,
+        "max_evaluation_bytes": 4096,
+        "max_genome_bytes": 4,
+        "max_population_bytes": 48,
+        "mutation": "nonzero-xor-byte-v1",
+        "mutation_rate": 0.35,
+        "population_recycling": true,
+        "population_size": 12,
+        "random_seed": 55001,
+        "rank_base_weight": 1,
+        "rank_step_weight": 1,
+        "selection": "stable-linear-rank-v1",
+        "stagnation_patience": 0
+      },
+      "domain": "bounded repository scoring weight search",
+      "evo_version": "0.33.0",
+      "fixture": {
+        "hard_constraint": "sum(weights) <= 24",
+        "repositories": [
+          {
+            "documentation": 6,
+            "id": "alpha",
+            "review": 7,
+            "security": 9,
+            "tests": 8
+          },
+          {
+            "documentation": 8,
+            "id": "beta",
+            "review": 9,
+            "security": 7,
+            "tests": 6
+          },
+          {
+            "documentation": 7,
+            "id": "gamma",
+            "review": 6,
+            "security": 8,
+            "tests": 9
+          },
+          {
+            "documentation": 9,
+            "id": "delta",
+            "review": 8,
+            "security": 6,
+            "tests": 7
+          }
+        ],
+        "soft_penalty": "50 per missing security weight below 3",
+        "weight_mapping": "1 + byte modulo 8"
+      },
+      "fixture_id": "repository-review-corpus-v1",
+      "replay": {
+        "exact": true,
+        "run_count": 2
+      },
+      "result": {
+        "best_fitness": {
+          "constraint_penalty": 0,
+          "correctness": 240,
+          "maintainability": 60,
+          "memory_use": 0,
+          "performance": 210,
+          "reliability": 210,
+          "total": 720
+        },
+        "best_genome": "ff7619ae",
+        "generations_completed": 6,
+        "random_seed": 55001,
+        "termination_reason": "generation-limit"
+      },
+      "schema_version": "1.0.0",
+      "trace": [
+        {
+          "best_index": 4,
+          "diversity": 0.9888888888888889,
+          "diversity_pair_count": 45,
+          "diversity_work_units": 180,
+          "generation": 0,
+          "generation_best_total": 720,
+          "global_best_genome": "ff7619ae",
+          "global_best_total": 720,
+          "invalid_count": 2,
+          "valid_count": 10
+        },
+        {
+          "best_index": 1,
+          "diversity": 0.8181818181818182,
+          "diversity_pair_count": 66,
+          "diversity_work_units": 264,
+          "generation": 1,
+          "generation_best_total": 720,
+          "global_best_genome": "ff7619ae",
+          "global_best_total": 720,
+          "invalid_count": 0,
+          "valid_count": 12
+        },
+        {
+          "best_index": 3,
+          "diversity": 0.6166666666666667,
+          "diversity_pair_count": 45,
+          "diversity_work_units": 180,
+          "generation": 2,
+          "generation_best_total": 720,
+          "global_best_genome": "ff7619ae",
+          "global_best_total": 720,
+          "invalid_count": 2,
+          "valid_count": 10
+        },
+        {
+          "best_index": 0,
+          "diversity": 0.49444444444444446,
+          "diversity_pair_count": 45,
+          "diversity_work_units": 180,
+          "generation": 3,
+          "generation_best_total": 720,
+          "global_best_genome": "ff7619ae",
+          "global_best_total": 720,
+          "invalid_count": 2,
+          "valid_count": 10
+        },
+        {
+          "best_index": 2,
+          "diversity": 0.2803030303030303,
+          "diversity_pair_count": 66,
+          "diversity_work_units": 264,
+          "generation": 4,
+          "generation_best_total": 720,
+          "global_best_genome": "ff7619ae",
+          "global_best_total": 720,
+          "invalid_count": 0,
+          "valid_count": 12
+        },
+        {
+          "best_index": 0,
+          "diversity": 0.36363636363636365,
+          "diversity_pair_count": 66,
+          "diversity_work_units": 264,
+          "generation": 5,
+          "generation_best_total": 720,
+          "global_best_genome": "ff7619ae",
+          "global_best_total": 720,
+          "invalid_count": 0,
+          "valid_count": 12
+        },
+        {
+          "best_index": 2,
+          "diversity": 0.36818181818181817,
+          "diversity_pair_count": 55,
+          "diversity_work_units": 220,
+          "generation": 6,
+          "generation_best_total": 720,
+          "global_best_genome": "ff7619ae",
+          "global_best_total": 720,
+          "invalid_count": 1,
+          "valid_count": 11
+        }
+      ]
+    },
+    {
+      "adapter_id": "compiler-options",
+      "authority": {
+        "accelerated_structure": null,
+        "limitation": "searches a deterministic option model only; it does not parse, analyze, transform, compile, or emit C source",
+        "probabilistic_authority": false,
+        "projection_complete": true,
+        "reference_form": "explicit fixed fixture and ordered core evidence",
+        "source_optimizer_claimed": false
+      },
+      "capabilities": {
+        "bounded_parallel_evaluation": false,
+        "checkpoint_resume": false,
+        "deterministic_replay": true,
+        "hard_constraints": true,
+        "soft_penalties": true
+      },
+      "configuration": {
+        "application_stop_generation": 0,
+        "checkpoint_context_identity": "0000000000000000",
+        "checkpoint_problem_identity": "5502000000000001",
+        "checkpoint_required_bytes": 0,
+        "crossover": "uniform-byte-v1",
+        "crossover_rate": 0.75,
+        "diversity_floor_enabled": false,
+        "elite_count": 1,
+        "evaluation_callback_thread_safety": "thread-safe",
+        "evaluation_worker_count": 0,
+        "evaluation_worker_scratch_bytes": 0,
+        "fitness_target_enabled": false,
+        "generation_limit": 6,
+        "genome_size": 4,
+        "max_checkpoint_bytes": 0,
+        "max_child_population_bytes": 48,
+        "max_diversity_work": 264,
+        "max_evaluation_bytes": 4096,
+        "max_genome_bytes": 4,
+        "max_population_bytes": 48,
+        "mutation": "nonzero-xor-byte-v1",
+        "mutation_rate": 0.35,
+        "population_recycling": true,
+        "population_size": 12,
+        "random_seed": 55002,
+        "rank_base_weight": 1,
+        "rank_step_weight": 1,
+        "selection": "stable-linear-rank-v1",
+        "stagnation_patience": 3
+      },
+      "domain": "bounded compiler build-configuration search",
+      "evo_version": "0.33.0",
+      "fixture": {
+        "baseline_runtime_units": 1000,
+        "baseline_size_units": 400,
+        "correctness_cases": 25,
+        "hard_constraints": [
+          "vectorization requires optimization level above zero",
+          "maximum unroll cannot pair with disabled inlining"
+        ],
+        "parameters": [
+          "optimization-level",
+          "unroll-level",
+          "inline-level",
+          "vectorization-enabled"
+        ],
+        "soft_penalty": "3 per modeled size unit above 180"
+      },
+      "fixture_id": "compiler-option-model-v1",
+      "replay": {
+        "exact": true,
+        "run_count": 2
+      },
+      "result": {
+        "best_fitness": {
+          "constraint_penalty": 0,
+          "correctness": 1000,
+          "maintainability": 100,
+          "memory_use": 560,
+          "performance": 2370,
+          "reliability": 100,
+          "total": 2570
+        },
+        "best_genome": "cfac76c5",
+        "generations_completed": 6,
+        "random_seed": 55002,
+        "termination_reason": "stagnated"
+      },
+      "schema_version": "1.0.0",
+      "trace": [
+        {
+          "best_index": 0,
+          "diversity": 1,
+          "diversity_pair_count": 28,
+          "diversity_work_units": 112,
+          "generation": 0,
+          "generation_best_total": 2370,
+          "global_best_genome": "cfac7684",
+          "global_best_total": 2370,
+          "invalid_count": 4,
+          "valid_count": 8
+        },
+        {
+          "best_index": 11,
+          "diversity": 0.9090909090909091,
+          "diversity_pair_count": 55,
+          "diversity_work_units": 220,
+          "generation": 1,
+          "generation_best_total": 2370,
+          "global_best_genome": "cfac7684",
+          "global_best_total": 2370,
+          "invalid_count": 1,
+          "valid_count": 11
+        },
+        {
+          "best_index": 2,
+          "diversity": 0.7840909090909091,
+          "diversity_pair_count": 66,
+          "diversity_work_units": 264,
+          "generation": 2,
+          "generation_best_total": 2370,
+          "global_best_genome": "cfac7684",
+          "global_best_total": 2370,
+          "invalid_count": 0,
+          "valid_count": 12
+        },
+        {
+          "best_index": 1,
+          "diversity": 0.38636363636363635,
+          "diversity_pair_count": 66,
+          "diversity_work_units": 264,
+          "generation": 3,
+          "generation_best_total": 2570,
+          "global_best_genome": "cfac76c5",
+          "global_best_total": 2570,
+          "invalid_count": 0,
+          "valid_count": 12
+        },
+        {
+          "best_index": 3,
+          "diversity": 0.44696969696969696,
+          "diversity_pair_count": 66,
+          "diversity_work_units": 264,
+          "generation": 4,
+          "generation_best_total": 2570,
+          "global_best_genome": "cfac76c5",
+          "global_best_total": 2570,
+          "invalid_count": 0,
+          "valid_count": 12
+        },
+        {
+          "best_index": 0,
+          "diversity": 0.3522727272727273,
+          "diversity_pair_count": 66,
+          "diversity_work_units": 264,
+          "generation": 5,
+          "generation_best_total": 2570,
+          "global_best_genome": "cfac76c5",
+          "global_best_total": 2570,
+          "invalid_count": 0,
+          "valid_count": 12
+        },
+        {
+          "best_index": 0,
+          "diversity": 0.1893939393939394,
+          "diversity_pair_count": 66,
+          "diversity_work_units": 264,
+          "generation": 6,
+          "generation_best_total": 2570,
+          "global_best_genome": "cfac76c5",
+          "global_best_total": 2570,
+          "invalid_count": 0,
+          "valid_count": 12
+        }
+      ]
+    },
+    {
+      "adapter_id": "scheduler-tuning",
+      "authority": {
+        "accelerated_structure": null,
+        "limitation": "models one immutable queue; logical worker identities and candidate-order commits, not native thread timing, are authoritative",
+        "probabilistic_authority": false,
+        "projection_complete": true,
+        "reference_form": "explicit fixed fixture and ordered core evidence",
+        "source_optimizer_claimed": false
+      },
+      "capabilities": {
+        "bounded_parallel_evaluation": true,
+        "checkpoint_resume": false,
+        "deterministic_replay": true,
+        "hard_constraints": true,
+        "soft_penalties": true
+      },
+      "configuration": {
+        "application_stop_generation": 0,
+        "checkpoint_context_identity": "0000000000000000",
+        "checkpoint_problem_identity": "5503000000000001",
+        "checkpoint_required_bytes": 0,
+        "crossover": "uniform-byte-v1",
+        "crossover_rate": 0.75,
+        "diversity_floor_enabled": false,
+        "elite_count": 1,
+        "evaluation_callback_thread_safety": "thread-safe",
+        "evaluation_worker_count": 3,
+        "evaluation_worker_scratch_bytes": 600,
+        "fitness_target_enabled": false,
+        "generation_limit": 6,
+        "genome_size": 4,
+        "max_checkpoint_bytes": 0,
+        "max_child_population_bytes": 48,
+        "max_diversity_work": 264,
+        "max_evaluation_bytes": 4096,
+        "max_genome_bytes": 4,
+        "max_population_bytes": 48,
+        "mutation": "nonzero-xor-byte-v1",
+        "mutation_rate": 0.35,
+        "population_recycling": true,
+        "population_size": 12,
+        "random_seed": 55003,
+        "rank_base_weight": 1,
+        "rank_step_weight": 1,
+        "selection": "stable-linear-rank-v1",
+        "stagnation_patience": 0
+      },
+      "domain": "bounded deterministic scheduler-parameter search",
+      "evaluation_schedules": [
+        {
+          "assignments": [
+            {
+              "commit_order": 0,
+              "committed": false,
+              "dispatch_wave": 0,
+              "disposition": "excluded",
+              "population_index": 0,
+              "worker_identity": 1
+            },
+            {
+              "commit_order": 0,
+              "committed": false,
+              "dispatch_wave": 0,
+              "disposition": "excluded",
+              "population_index": 1,
+              "worker_identity": 2
+            },
+            {
+              "commit_order": 0,
+              "committed": false,
+              "dispatch_wave": 0,
+              "disposition": "excluded",
+              "population_index": 2,
+              "worker_identity": 3
+            },
+            {
+              "commit_order": 0,
+              "committed": false,
+              "dispatch_wave": 1,
+              "disposition": "excluded",
+              "population_index": 3,
+              "worker_identity": 1
+            },
+            {
+              "commit_order": 0,
+              "committed": true,
+              "dispatch_wave": 1,
+              "disposition": "completed",
+              "population_index": 4,
+              "worker_identity": 2
+            },
+            {
+              "commit_order": 1,
+              "committed": true,
+              "dispatch_wave": 1,
+              "disposition": "completed",
+              "population_index": 5,
+              "worker_identity": 3
+            },
+            {
+              "commit_order": 2,
+              "committed": true,
+              "dispatch_wave": 2,
+              "disposition": "completed",
+              "population_index": 6,
+              "worker_identity": 1
+            },
+            {
+              "commit_order": 0,
+              "committed": false,
+              "dispatch_wave": 2,
+              "disposition": "excluded",
+              "population_index": 7,
+              "worker_identity": 2
+            },
+            {
+              "commit_order": 0,
+              "committed": false,
+              "dispatch_wave": 2,
+              "disposition": "excluded",
+              "population_index": 8,
+              "worker_identity": 3
+            },
+            {
+              "commit_order": 0,
+              "committed": false,
+              "dispatch_wave": 3,
+              "disposition": "excluded",
+              "population_index": 9,
+              "worker_identity": 1
+            },
+            {
+              "commit_order": 3,
+              "committed": true,
+              "dispatch_wave": 3,
+              "disposition": "completed",
+              "population_index": 10,
+              "worker_identity": 2
+            },
+            {
+              "commit_order": 0,
+              "committed": false,
+              "dispatch_wave": 3,
+              "disposition": "excluded",
+              "population_index": 11,
+              "worker_identity": 3
+            }
+          ],
+          "committed_count": 4,
+          "complete": true,
+          "completed_count": 4,
+          "generation": 0,
+          "hard_invalid_count": 8,
+          "outcome": "committed",
+          "scheduled_count": 4,
+          "scratch_bytes": 600,
+          "validated_count": 12,
+          "worker_count": 3
+        },
+        {
+          "assignments": [
+            {
+              "commit_order": 0,
+              "committed": false,
+              "dispatch_wave": 0,
+              "disposition": "excluded",
+              "population_index": 0,
+              "worker_identity": 1
+            },
+            {
+              "commit_order": 0,
+              "committed": true,
+              "dispatch_wave": 0,
+              "disposition": "completed",
+              "population_index": 1,
+              "worker_identity": 2
+            },
+            {
+              "commit_order": 1,
+              "committed": true,
+              "dispatch_wave": 0,
+              "disposition": "completed",
+              "population_index": 2,
+              "worker_identity": 3
+            },
+            {
+              "commit_order": 2,
+              "committed": true,
+              "dispatch_wave": 1,
+              "disposition": "completed",
+              "population_index": 3,
+              "worker_identity": 1
+            },
+            {
+              "commit_order": 3,
+              "committed": true,
+              "dispatch_wave": 1,
+              "disposition": "completed",
+              "population_index": 4,
+              "worker_identity": 2
+            },
+            {
+              "commit_order": 4,
+              "committed": true,
+              "dispatch_wave": 1,
+              "disposition": "completed",
+              "population_index": 5,
+              "worker_identity": 3
+            },
+            {
+              "commit_order": 5,
+              "committed": true,
+              "dispatch_wave": 2,
+              "disposition": "completed",
+              "population_index": 6,
+              "worker_identity": 1
+            },
+            {
+              "commit_order": 6,
+              "committed": true,
+              "dispatch_wave": 2,
+              "disposition": "completed",
+              "population_index": 7,
+              "worker_identity": 2
+            },
+            {
+              "commit_order": 7,
+              "committed": true,
+              "dispatch_wave": 2,
+              "disposition": "completed",
+              "population_index": 8,
+              "worker_identity": 3
+            },
+            {
+              "commit_order": 8,
+              "committed": true,
+              "dispatch_wave": 3,
+              "disposition": "completed",
+              "population_index": 9,
+              "worker_identity": 1
+            },
+            {
+              "commit_order": 0,
+              "committed": false,
+              "dispatch_wave": 3,
+              "disposition": "excluded",
+              "population_index": 10,
+              "worker_identity": 2
+            },
+            {
+              "commit_order": 9,
+              "committed": true,
+              "dispatch_wave": 3,
+              "disposition": "completed",
+              "population_index": 11,
+              "worker_identity": 3
+            }
+          ],
+          "committed_count": 10,
+          "complete": true,
+          "completed_count": 10,
+          "generation": 1,
+          "hard_invalid_count": 2,
+          "outcome": "committed",
+          "scheduled_count": 10,
+          "scratch_bytes": 600,
+          "validated_count": 12,
+          "worker_count": 3
+        },
+        {
+          "assignments": [
+            {
+              "commit_order": 0,
+              "committed": true,
+              "dispatch_wave": 0,
+              "disposition": "completed",
+              "population_index": 0,
+              "worker_identity": 1
+            },
+            {
+              "commit_order": 0,
+              "committed": false,
+              "dispatch_wave": 0,
+              "disposition": "excluded",
+              "population_index": 1,
+              "worker_identity": 2
+            },
+            {
+              "commit_order": 1,
+              "committed": true,
+              "dispatch_wave": 0,
+              "disposition": "completed",
+              "population_index": 2,
+              "worker_identity": 3
+            },
+            {
+              "commit_order": 2,
+              "committed": true,
+              "dispatch_wave": 1,
+              "disposition": "completed",
+              "population_index": 3,
+              "worker_identity": 1
+            },
+            {
+              "commit_order": 0,
+              "committed": false,
+              "dispatch_wave": 1,
+              "disposition": "excluded",
+              "population_index": 4,
+              "worker_identity": 2
+            },
+            {
+              "commit_order": 3,
+              "committed": true,
+              "dispatch_wave": 1,
+              "disposition": "completed",
+              "population_index": 5,
+              "worker_identity": 3
+            },
+            {
+              "commit_order": 4,
+              "committed": true,
+              "dispatch_wave": 2,
+              "disposition": "completed",
+              "population_index": 6,
+              "worker_identity": 1
+            },
+            {
+              "commit_order": 5,
+              "committed": true,
+              "dispatch_wave": 2,
+              "disposition": "completed",
+              "population_index": 7,
+              "worker_identity": 2
+            },
+            {
+              "commit_order": 0,
+              "committed": false,
+              "dispatch_wave": 2,
+              "disposition": "excluded",
+              "population_index": 8,
+              "worker_identity": 3
+            },
+            {
+              "commit_order": 6,
+              "committed": true,
+              "dispatch_wave": 3,
+              "disposition": "completed",
+              "population_index": 9,
+              "worker_identity": 1
+            },
+            {
+              "commit_order": 7,
+              "committed": true,
+              "dispatch_wave": 3,
+              "disposition": "completed",
+              "population_index": 10,
+              "worker_identity": 2
+            },
+            {
+              "commit_order": 8,
+              "committed": true,
+              "dispatch_wave": 3,
+              "disposition": "completed",
+              "population_index": 11,
+              "worker_identity": 3
+            }
+          ],
+          "committed_count": 9,
+          "complete": true,
+          "completed_count": 9,
+          "generation": 2,
+          "hard_invalid_count": 3,
+          "outcome": "committed",
+          "scheduled_count": 9,
+          "scratch_bytes": 600,
+          "validated_count": 12,
+          "worker_count": 3
+        },
+        {
+          "assignments": [
+            {
+              "commit_order": 0,
+              "committed": true,
+              "dispatch_wave": 0,
+              "disposition": "completed",
+              "population_index": 0,
+              "worker_identity": 1
+            },
+            {
+              "commit_order": 1,
+              "committed": true,
+              "dispatch_wave": 0,
+              "disposition": "completed",
+              "population_index": 1,
+              "worker_identity": 2
+            },
+            {
+              "commit_order": 2,
+              "committed": true,
+              "dispatch_wave": 0,
+              "disposition": "completed",
+              "population_index": 2,
+              "worker_identity": 3
+            },
+            {
+              "commit_order": 3,
+              "committed": true,
+              "dispatch_wave": 1,
+              "disposition": "completed",
+              "population_index": 3,
+              "worker_identity": 1
+            },
+            {
+              "commit_order": 4,
+              "committed": true,
+              "dispatch_wave": 1,
+              "disposition": "completed",
+              "population_index": 4,
+              "worker_identity": 2
+            },
+            {
+              "commit_order": 0,
+              "committed": false,
+              "dispatch_wave": 1,
+              "disposition": "excluded",
+              "population_index": 5,
+              "worker_identity": 3
+            },
+            {
+              "commit_order": 5,
+              "committed": true,
+              "dispatch_wave": 2,
+              "disposition": "completed",
+              "population_index": 6,
+              "worker_identity": 1
+            },
+            {
+              "commit_order": 0,
+              "committed": false,
+              "dispatch_wave": 2,
+              "disposition": "excluded",
+              "population_index": 7,
+              "worker_identity": 2
+            },
+            {
+              "commit_order": 6,
+              "committed": true,
+              "dispatch_wave": 2,
+              "disposition": "completed",
+              "population_index": 8,
+              "worker_identity": 3
+            },
+            {
+              "commit_order": 7,
+              "committed": true,
+              "dispatch_wave": 3,
+              "disposition": "completed",
+              "population_index": 9,
+              "worker_identity": 1
+            },
+            {
+              "commit_order": 8,
+              "committed": true,
+              "dispatch_wave": 3,
+              "disposition": "completed",
+              "population_index": 10,
+              "worker_identity": 2
+            },
+            {
+              "commit_order": 9,
+              "committed": true,
+              "dispatch_wave": 3,
+              "disposition": "completed",
+              "population_index": 11,
+              "worker_identity": 3
+            }
+          ],
+          "committed_count": 10,
+          "complete": true,
+          "completed_count": 10,
+          "generation": 3,
+          "hard_invalid_count": 2,
+          "outcome": "committed",
+          "scheduled_count": 10,
+          "scratch_bytes": 600,
+          "validated_count": 12,
+          "worker_count": 3
+        },
+        {
+          "assignments": [
+            {
+              "commit_order": 0,
+              "committed": true,
+              "dispatch_wave": 0,
+              "disposition": "completed",
+              "population_index": 0,
+              "worker_identity": 1
+            },
+            {
+              "commit_order": 1,
+              "committed": true,
+              "dispatch_wave": 0,
+              "disposition": "completed",
+              "population_index": 1,
+              "worker_identity": 2
+            },
+            {
+              "commit_order": 2,
+              "committed": true,
+              "dispatch_wave": 0,
+              "disposition": "completed",
+              "population_index": 2,
+              "worker_identity": 3
+            },
+            {
+              "commit_order": 3,
+              "committed": true,
+              "dispatch_wave": 1,
+              "disposition": "completed",
+              "population_index": 3,
+              "worker_identity": 1
+            },
+            {
+              "commit_order": 4,
+              "committed": true,
+              "dispatch_wave": 1,
+              "disposition": "completed",
+              "population_index": 4,
+              "worker_identity": 2
+            },
+            {
+              "commit_order": 0,
+              "committed": false,
+              "dispatch_wave": 1,
+              "disposition": "excluded",
+              "population_index": 5,
+              "worker_identity": 3
+            },
+            {
+              "commit_order": 5,
+              "committed": true,
+              "dispatch_wave": 2,
+              "disposition": "completed",
+              "population_index": 6,
+              "worker_identity": 1
+            },
+            {
+              "commit_order": 6,
+              "committed": true,
+              "dispatch_wave": 2,
+              "disposition": "completed",
+              "population_index": 7,
+              "worker_identity": 2
+            },
+            {
+              "commit_order": 7,
+              "committed": true,
+              "dispatch_wave": 2,
+              "disposition": "completed",
+              "population_index": 8,
+              "worker_identity": 3
+            },
+            {
+              "commit_order": 8,
+              "committed": true,
+              "dispatch_wave": 3,
+              "disposition": "completed",
+              "population_index": 9,
+              "worker_identity": 1
+            },
+            {
+              "commit_order": 9,
+              "committed": true,
+              "dispatch_wave": 3,
+              "disposition": "completed",
+              "population_index": 10,
+              "worker_identity": 2
+            },
+            {
+              "commit_order": 10,
+              "committed": true,
+              "dispatch_wave": 3,
+              "disposition": "completed",
+              "population_index": 11,
+              "worker_identity": 3
+            }
+          ],
+          "committed_count": 11,
+          "complete": true,
+          "completed_count": 11,
+          "generation": 4,
+          "hard_invalid_count": 1,
+          "outcome": "committed",
+          "scheduled_count": 11,
+          "scratch_bytes": 600,
+          "validated_count": 12,
+          "worker_count": 3
+        },
+        {
+          "assignments": [
+            {
+              "commit_order": 0,
+              "committed": true,
+              "dispatch_wave": 0,
+              "disposition": "completed",
+              "population_index": 0,
+              "worker_identity": 1
+            },
+            {
+              "commit_order": 1,
+              "committed": true,
+              "dispatch_wave": 0,
+              "disposition": "completed",
+              "population_index": 1,
+              "worker_identity": 2
+            },
+            {
+              "commit_order": 2,
+              "committed": true,
+              "dispatch_wave": 0,
+              "disposition": "completed",
+              "population_index": 2,
+              "worker_identity": 3
+            },
+            {
+              "commit_order": 3,
+              "committed": true,
+              "dispatch_wave": 1,
+              "disposition": "completed",
+              "population_index": 3,
+              "worker_identity": 1
+            },
+            {
+              "commit_order": 4,
+              "committed": true,
+              "dispatch_wave": 1,
+              "disposition": "completed",
+              "population_index": 4,
+              "worker_identity": 2
+            },
+            {
+              "commit_order": 5,
+              "committed": true,
+              "dispatch_wave": 1,
+              "disposition": "completed",
+              "population_index": 5,
+              "worker_identity": 3
+            },
+            {
+              "commit_order": 6,
+              "committed": true,
+              "dispatch_wave": 2,
+              "disposition": "completed",
+              "population_index": 6,
+              "worker_identity": 1
+            },
+            {
+              "commit_order": 7,
+              "committed": true,
+              "dispatch_wave": 2,
+              "disposition": "completed",
+              "population_index": 7,
+              "worker_identity": 2
+            },
+            {
+              "commit_order": 8,
+              "committed": true,
+              "dispatch_wave": 2,
+              "disposition": "completed",
+              "population_index": 8,
+              "worker_identity": 3
+            },
+            {
+              "commit_order": 0,
+              "committed": false,
+              "dispatch_wave": 3,
+              "disposition": "excluded",
+              "population_index": 9,
+              "worker_identity": 1
+            },
+            {
+              "commit_order": 9,
+              "committed": true,
+              "dispatch_wave": 3,
+              "disposition": "completed",
+              "population_index": 10,
+              "worker_identity": 2
+            },
+            {
+              "commit_order": 10,
+              "committed": true,
+              "dispatch_wave": 3,
+              "disposition": "completed",
+              "population_index": 11,
+              "worker_identity": 3
+            }
+          ],
+          "committed_count": 11,
+          "complete": true,
+          "completed_count": 11,
+          "generation": 5,
+          "hard_invalid_count": 1,
+          "outcome": "committed",
+          "scheduled_count": 11,
+          "scratch_bytes": 600,
+          "validated_count": 12,
+          "worker_count": 3
+        },
+        {
+          "assignments": [
+            {
+              "commit_order": 0,
+              "committed": true,
+              "dispatch_wave": 0,
+              "disposition": "completed",
+              "population_index": 0,
+              "worker_identity": 1
+            },
+            {
+              "commit_order": 1,
+              "committed": true,
+              "dispatch_wave": 0,
+              "disposition": "completed",
+              "population_index": 1,
+              "worker_identity": 2
+            },
+            {
+              "commit_order": 2,
+              "committed": true,
+              "dispatch_wave": 0,
+              "disposition": "completed",
+              "population_index": 2,
+              "worker_identity": 3
+            },
+            {
+              "commit_order": 3,
+              "committed": true,
+              "dispatch_wave": 1,
+              "disposition": "completed",
+              "population_index": 3,
+              "worker_identity": 1
+            },
+            {
+              "commit_order": 4,
+              "committed": true,
+              "dispatch_wave": 1,
+              "disposition": "completed",
+              "population_index": 4,
+              "worker_identity": 2
+            },
+            {
+              "commit_order": 5,
+              "committed": true,
+              "dispatch_wave": 1,
+              "disposition": "completed",
+              "population_index": 5,
+              "worker_identity": 3
+            },
+            {
+              "commit_order": 6,
+              "committed": true,
+              "dispatch_wave": 2,
+              "disposition": "completed",
+              "population_index": 6,
+              "worker_identity": 1
+            },
+            {
+              "commit_order": 7,
+              "committed": true,
+              "dispatch_wave": 2,
+              "disposition": "completed",
+              "population_index": 7,
+              "worker_identity": 2
+            },
+            {
+              "commit_order": 0,
+              "committed": false,
+              "dispatch_wave": 2,
+              "disposition": "excluded",
+              "population_index": 8,
+              "worker_identity": 3
+            },
+            {
+              "commit_order": 8,
+              "committed": true,
+              "dispatch_wave": 3,
+              "disposition": "completed",
+              "population_index": 9,
+              "worker_identity": 1
+            },
+            {
+              "commit_order": 9,
+              "committed": true,
+              "dispatch_wave": 3,
+              "disposition": "completed",
+              "population_index": 10,
+              "worker_identity": 2
+            },
+            {
+              "commit_order": 10,
+              "committed": true,
+              "dispatch_wave": 3,
+              "disposition": "completed",
+              "population_index": 11,
+              "worker_identity": 3
+            }
+          ],
+          "committed_count": 11,
+          "complete": true,
+          "completed_count": 11,
+          "generation": 6,
+          "hard_invalid_count": 1,
+          "outcome": "committed",
+          "scheduled_count": 11,
+          "scratch_bytes": 600,
+          "validated_count": 12,
+          "worker_count": 3
+        }
+      ],
+      "evo_version": "0.33.0",
+      "fixture": {
+        "hard_constraint": "logical lanes <= batch and quantum + backoff <= 10",
+        "jobs": [
+          {
+            "duration": 5,
+            "id": "job-0",
+            "priority": 9
+          },
+          {
+            "duration": 2,
+            "id": "job-1",
+            "priority": 5
+          },
+          {
+            "duration": 7,
+            "id": "job-2",
+            "priority": 8
+          },
+          {
+            "duration": 3,
+            "id": "job-3",
+            "priority": 4
+          },
+          {
+            "duration": 4,
+            "id": "job-4",
+            "priority": 7
+          },
+          {
+            "duration": 6,
+            "id": "job-5",
+            "priority": 6
+          }
+        ],
+        "parameters": [
+          "quantum",
+          "logical-lanes",
+          "batch",
+          "backoff"
+        ],
+        "soft_penalty": "90 per batch unit above 6"
+      },
+      "fixture_id": "six-job-queue-v1",
+      "replay": {
+        "exact": true,
+        "run_count": 2
+      },
+      "result": {
+        "best_fitness": {
+          "constraint_penalty": 180,
+          "correctness": 1000,
+          "maintainability": 100,
+          "memory_use": 91,
+          "performance": 2637,
+          "reliability": 460,
+          "total": 4017
+        },
+        "best_genome": "272f7748",
+        "generations_completed": 6,
+        "random_seed": 55003,
+        "termination_reason": "generation-limit"
+      },
+      "schema_version": "1.0.0",
+      "trace": [
+        {
+          "best_index": 5,
+          "diversity": 1,
+          "diversity_pair_count": 6,
+          "diversity_work_units": 24,
+          "generation": 0,
+          "generation_best_total": 3737,
+          "global_best_genome": "482f7748",
+          "global_best_total": 3737,
+          "invalid_count": 8,
+          "valid_count": 4
+        },
+        {
+          "best_index": 8,
+          "diversity": 0.75,
+          "diversity_pair_count": 45,
+          "diversity_work_units": 180,
+          "generation": 1,
+          "generation_best_total": 3857,
+          "global_best_genome": "a32f7748",
+          "global_best_total": 3857,
+          "invalid_count": 2,
+          "valid_count": 10
+        },
+        {
+          "best_index": 3,
+          "diversity": 0.5138888888888888,
+          "diversity_pair_count": 36,
+          "diversity_work_units": 144,
+          "generation": 2,
+          "generation_best_total": 3857,
+          "global_best_genome": "a32f7748",
+          "global_best_total": 3857,
+          "invalid_count": 3,
+          "valid_count": 9
+        },
+        {
+          "best_index": 1,
+          "diversity": 0.3277777777777778,
+          "diversity_pair_count": 45,
+          "diversity_work_units": 180,
+          "generation": 3,
+          "generation_best_total": 3857,
+          "global_best_genome": "a32f7748",
+          "global_best_total": 3857,
+          "invalid_count": 2,
+          "valid_count": 10
+        },
+        {
+          "best_index": 6,
+          "diversity": 0.32727272727272727,
+          "diversity_pair_count": 55,
+          "diversity_work_units": 220,
+          "generation": 4,
+          "generation_best_total": 4017,
+          "global_best_genome": "272f7748",
+          "global_best_total": 4017,
+          "invalid_count": 1,
+          "valid_count": 11
+        },
+        {
+          "best_index": 11,
+          "diversity": 0.32272727272727275,
+          "diversity_pair_count": 55,
+          "diversity_work_units": 220,
+          "generation": 5,
+          "generation_best_total": 4017,
+          "global_best_genome": "272f7748",
+          "global_best_total": 4017,
+          "invalid_count": 1,
+          "valid_count": 11
+        },
+        {
+          "best_index": 9,
+          "diversity": 0.44545454545454544,
+          "diversity_pair_count": 55,
+          "diversity_work_units": 220,
+          "generation": 6,
+          "generation_best_total": 4017,
+          "global_best_genome": "272f7748",
+          "global_best_total": 4017,
+          "invalid_count": 1,
+          "valid_count": 11
+        }
+      ]
+    },
+    {
+      "adapter_id": "fpga-placement",
+      "authority": {
+        "accelerated_structure": null,
+        "limitation": "uses a small integer placement model and invokes no vendor placer, timing engine, bitstream generator, or hardware",
+        "probabilistic_authority": false,
+        "projection_complete": true,
+        "reference_form": "explicit fixed fixture and ordered core evidence",
+        "source_optimizer_claimed": false
+      },
+      "capabilities": {
+        "bounded_parallel_evaluation": false,
+        "checkpoint_resume": false,
+        "deterministic_replay": true,
+        "hard_constraints": true,
+        "soft_penalties": true
+      },
+      "configuration": {
+        "application_stop_generation": 3,
+        "checkpoint_context_identity": "0000000000000000",
+        "checkpoint_problem_identity": "5504000000000001",
+        "checkpoint_required_bytes": 0,
+        "crossover": "uniform-byte-v1",
+        "crossover_rate": 0.75,
+        "diversity_floor_enabled": false,
+        "elite_count": 1,
+        "evaluation_callback_thread_safety": "thread-safe",
+        "evaluation_worker_count": 0,
+        "evaluation_worker_scratch_bytes": 0,
+        "fitness_target_enabled": false,
+        "generation_limit": 6,
+        "genome_size": 4,
+        "max_checkpoint_bytes": 0,
+        "max_child_population_bytes": 48,
+        "max_diversity_work": 264,
+        "max_evaluation_bytes": 4096,
+        "max_genome_bytes": 4,
+        "max_population_bytes": 48,
+        "mutation": "nonzero-xor-byte-v1",
+        "mutation_rate": 0.35,
+        "population_recycling": true,
+        "population_size": 12,
+        "random_seed": 55004,
+        "rank_base_weight": 1,
+        "rank_step_weight": 1,
+        "selection": "stable-linear-rank-v1",
+        "stagnation_patience": 0
+      },
+      "domain": "bounded FPGA placement-parameter exploration",
+      "evo_version": "0.33.0",
+      "fixture": {
+        "budgets": {
+          "bram": 12,
+          "lut": 900,
+          "target_period": 10
+        },
+        "grid": {
+          "height": 8,
+          "width": 8
+        },
+        "hard_constraint": "x + y <= 10, pipeline <= 6, and bank < 12",
+        "parameters": [
+          "x",
+          "y",
+          "pipeline-depth",
+          "memory-bank"
+        ],
+        "soft_penalties": [
+          "timing above target",
+          "LUT use above budget"
+        ]
+      },
+      "fixture_id": "fpga-grid-model-v1",
+      "replay": {
+        "exact": true,
+        "run_count": 2
+      },
+      "result": {
+        "best_fitness": {
+          "constraint_penalty": 250,
+          "correctness": 1000,
+          "maintainability": 100,
+          "memory_use": 1025,
+          "performance": 1560,
+          "reliability": 420,
+          "total": 2830
+        },
+        "best_genome": "3a43fe97",
+        "generations_completed": 3,
+        "random_seed": 55004,
+        "termination_reason": "application-requested"
+      },
+      "schema_version": "1.0.0",
+      "trace": [
+        {
+          "best_index": 9,
+          "diversity": 1,
+          "diversity_pair_count": 45,
+          "diversity_work_units": 180,
+          "generation": 0,
+          "generation_best_total": 2770,
+          "global_best_genome": "3a436597",
+          "global_best_total": 2770,
+          "invalid_count": 2,
+          "valid_count": 10
+        },
+        {
+          "best_index": 0,
+          "diversity": 0.928030303030303,
+          "diversity_pair_count": 66,
+          "diversity_work_units": 264,
+          "generation": 1,
+          "generation_best_total": 2770,
+          "global_best_genome": "3a436597",
+          "global_best_total": 2770,
+          "invalid_count": 0,
+          "valid_count": 12
+        },
+        {
+          "best_index": 4,
+          "diversity": 0.821969696969697,
+          "diversity_pair_count": 66,
+          "diversity_work_units": 264,
+          "generation": 2,
+          "generation_best_total": 2830,
+          "global_best_genome": "3a43fe97",
+          "global_best_total": 2830,
+          "invalid_count": 0,
+          "valid_count": 12
+        },
+        {
+          "best_index": 11,
+          "diversity": 0.7007575757575758,
+          "diversity_pair_count": 66,
+          "diversity_work_units": 264,
+          "generation": 3,
+          "generation_best_total": 2830,
+          "global_best_genome": "3a43fe97",
+          "global_best_total": 2830,
+          "invalid_count": 0,
+          "valid_count": 12
+        }
+      ]
+    }
+  ],
+  "schema": "catalyst.evo-reference-adapters.v1",
+  "schema_version": "1.0.0"
+}

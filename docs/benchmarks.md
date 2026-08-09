@@ -65,6 +65,30 @@ runtime storage are explicitly excluded.
 ADR-0033 fixes the benchmark, schema, tier, tolerance, and failure contract.
 EVO-HRA-005 audits the ordered evidence and derived projection under ADR-0026.
 
+## Reference Adapter Evidence
+
+Version 0.33.0 defines `catalyst.evo-reference-adapters.v1` and
+`EVO-ADAPTERS-001`. It is deterministic integration evidence rather than a
+runtime benchmark: no timing or performance threshold is measured or claimed.
+
+The artifact contains four fixed installed-consumer records in stable order.
+Every record includes its complete fixture, search configuration, hard
+constraint, soft penalty, limitation, final result, and generation trace. The
+repository-scoring record adds all candidates from a generation-two checkpoint
+and exact resume comparisons. The scheduler record adds every candidate's
+logical worker, dispatch wave, final disposition, and commit evidence for each
+generation.
+
+Each program runs twice and must match directly. A bounded no-shell validator
+checks all stable fields, constructs the combined object, and requires exact
+equality to the reviewed complete golden JSON before writing the canonical
+artifact or its Markdown projection. No digest, aggregate, cache, compressed
+index, or probabilistic precheck can substitute for an explicit record.
+
+Independent workflow jobs build the adapters against fresh CMake and Autotools
+staged installations. ADR-0034 fixes execution, ownership, failure, product,
+and evidence boundaries; EVO-HRA-006 audits the stable registry under ADR-0026.
+
 ## Source-Optimization Experiments
 
 Every source-optimization experiment additionally records:

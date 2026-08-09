@@ -37,6 +37,7 @@ The governing product records are:
 - `docs/adr/ADR-0031-deterministic-population-storage-recycling.md`
 - `docs/adr/ADR-0032-deterministic-bounded-parallel-evaluation.md`
 - `docs/adr/ADR-0033-reproducible-core-benchmark-evidence.md`
+- `docs/adr/ADR-0034-reference-consumer-adapters.md`
 - `docs/specs/EVO-001-library-contract.md`
 - `docs/specs/EVO-002-source-optimizer-contract.md`
 - `docs/roadmap.md`
@@ -107,6 +108,11 @@ seeds, generation traces, and raw samples remain authority, while aggregates
 and the scoped FNV locator are derived and non-authoritative. The Markdown
 summary is regenerated only from validated JSON, and EVO-HRA-005 retains the
 reconciliation audit.
+ADR-0034 assesses 0.33.0 installed reference adapters: their immutable fixture
+records and bounded arrays are direct reference forms, the stable JSON registry
+retains every configuration, trace, checkpoint candidate, and logical worker
+assignment, and Markdown is derived only after exact golden validation.
+EVO-HRA-006 retains this adapter-specific reconciliation.
 
 ## Roadmap Scope
 
@@ -123,6 +129,8 @@ The core track includes:
 - Opt-in deterministic population-storage recycling
 - Opt-in bounded deterministic parallel fitness evaluation
 - Benchmarking and engineering evidence
+- Installed reference consumer adapters with replay, resume, and bounded
+  parallel-evaluation evidence
 
 The source-optimizer track adds:
 
@@ -154,7 +162,7 @@ repository.
 - `docs/` — architecture, theory, algorithms, and evidence guidance
 
 The source-optimizer implementation directories will be introduced only by
-their dependency-ordered roadmap issues. Their absence in version 0.32.0 is an
+their dependency-ordered roadmap issues. Their absence in version 0.33.0 is an
 explicit current boundary, not an implicit feature claim.
 
 ## Authoritative Native Builds
@@ -194,7 +202,7 @@ declared Clang/LLVM and GNU profiles.
 
 ## Status
 
-**Current implementation boundary:** EVO 0.32.0 implements the deterministic
+**Current implementation boundary:** EVO 0.33.0 implements the deterministic
 evolutionary-search core. It does not yet ingest a C project, build a Clang AST
 or LLVM IR model, transform source, compile evolved candidates, or emit an
 optimized source patch. Those product boundaries are tracked in the 1.0
@@ -371,6 +379,17 @@ reporting-only; exact library-requested heap bytes state their scope and
 exclusions. CMake and GNU Autotools expose bounded smoke and intentionally
 dispatched extended targets, and Markdown is derived only by parsing and
 validating the JSON artifact.
+
+EVO 0.33.0 adds four bounded reference consumers built only against staged
+CMake or Autotools installations: repository scoring, compiler-option model
+search, scheduler tuning, and FPGA placement exploration. Every adapter uses a
+fixed explicit fixture, hard constraints, soft penalties, resource budgets,
+complete generation traces, and exact second-run replay. Repository scoring
+proves format-3 checkpoint inspection and resume; scheduler tuning proves
+three-worker evaluation with complete candidate-ordered schedules. Canonical
+JSON must equal the reviewed golden before its Markdown projection is written.
+These adapters introduce no accelerator and make no source-optimizer claim;
+compiler options neither analyze nor emit C source.
 
 Version 0.3.0 added the independently tested private population-storage
 foundation: checked `population_size * genome_size` arithmetic, a

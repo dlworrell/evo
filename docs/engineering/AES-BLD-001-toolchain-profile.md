@@ -45,6 +45,13 @@ sources and the same thirty-three normative targets. Both frontends:
 - install `libcatalyst_evo.a`, the public header, and `catalyst-evo.pc`;
 - support an out-of-tree build without network access after bootstrap.
 
+The AEMS consumer inventory contains five public-only translation units: the
+installed smoke consumer plus repository-scoring, compiler-options, scheduler,
+and FPGA reference adapters. A separate workflow independently stages CMake
+and Autotools installations, builds all four adapters through installed
+pkg-config metadata, validates exact golden JSON, and retains the generated
+JSON/Markdown evidence. Adapter compilation never adds a private include path.
+
 Generated CMake and Autotools paths are isolated from source inputs.
 
 ## Observable evidence
@@ -56,6 +63,10 @@ The AEMS gate performs four distinct checks:
 3. Clang-Tidy and Clang ASan/UBSan runs;
 4. staged install, package metadata, public-symbol, consumer, uninstall, and
    source-distribution parity.
+
+The repository-owned `Reference Adapters` workflow adds the issue-#55
+installed-consumer semantic gate to those native parity checks; it does not
+replace or weaken AEMS authority.
 
 The CMake staged library is inspected with `llvm-nm`; the GNU Autotools staged
 library is independently inspected with GNU `nm`. A matching result therefore

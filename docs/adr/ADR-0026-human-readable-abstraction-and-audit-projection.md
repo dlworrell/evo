@@ -191,6 +191,14 @@ non-authoritative, and the Markdown projection is regenerated only by parsing
 and validating the canonical JSON. EVO-HRA-005 retains the benchmark evidence
 and projection audit.
 
+ADR-0034 performs the change-specific assessment for EVO 0.33.0. Installed
+reference consumers use direct immutable fixtures and bounded capture arrays,
+then retain a complete stable JSON registry with exact replay, generation
+traces, checkpoint candidates, and logical worker schedules. No accelerator is
+introduced; exact golden-object comparison remains authority and Markdown is
+derived only after validation. EVO-HRA-006 retains the adapter evidence and
+projection audit.
+
 ## Consequences
 
 - EVO may use efficient internal data structures without exposing their

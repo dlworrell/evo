@@ -11,10 +11,10 @@ codebases. It emits the highest-ranked fully verified source candidate found
 within a recorded bounded search as a reviewable patch and reproducibility
 package.
 
-The completed EVO 0.32.0 code is the deterministic C17 evolutionary-search
+The completed EVO 0.33.0 code is the deterministic C17 evolutionary-search
 core. It is necessary infrastructure, not the completed source optimizer.
 
-Core issues #39 through #54 are represented in that boundary, including
+Core issues #39 through #55 are represented in that boundary, including
 versioned constraints, diversity, convergence/stagnation, and caller-bounded
 deterministic elite preservation, stable rank-based parent selection, and
 explicit reference byte-genome crossover/mutation operators and evidence-driven
@@ -27,8 +27,11 @@ reference oracle and projects complete stable candidate assignment and commit
 order independent of runtime scheduling. Reproducible core benchmarks retain
 explicit correctness oracles, generation traces, and raw measurements while
 deriving a validated human-readable projection from canonical JSON. Issue #55
-remains the next core integration work. The source-optimizer dependency spine
-remains unchanged.
+adds four installed reference consumers with exact replay, checkpoint/resume,
+bounded parallel evaluation, constraints, stopping, complete JSON evidence,
+and explicit source-optimizer non-claims. The core integration track is
+complete at this boundary; issue #58 is the next dependency-ready
+source-optimizer implementation work. The dependency spine remains unchanged.
 
 ## Cross-Cutting Human-Readable Abstraction Gate
 

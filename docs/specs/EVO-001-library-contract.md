@@ -1,13 +1,13 @@
 # EVO-001: Evolutionary Optimization Library Contract
 
 Status: Baseline
-Version: 0.32.0
+Version: 0.33.0
 Owner: EVO
 
 ## Scope Boundary
 
 This specification governs the reusable deterministic C17 evolutionary-search
-core implemented through version 0.32.0. It does not define C-project
+core implemented through version 0.33.0. It does not define C-project
 ingestion, Clang/LLVM analysis, structured source transformations, isolated
 candidate builds, baseline-versus-candidate measurement, optimized patches, or
 product-level replay artifacts.
@@ -122,6 +122,14 @@ and raw measurement repetitions in canonical JSON. Aggregates and the scoped
 FNV locator are derived, non-authoritative values. The human-readable report is
 regenerated only by parsing and validating the JSON. ADR-0033 and the retained
 EVO-HRA-005 audit define and verify this evidence boundary.
+
+Version 0.33.0 also adds no accelerated core structure. Four external
+reference consumers use immutable fixtures and direct bounded arrays, retain a
+stable ordered JSON registry with complete generation traces, and explicitly
+project all checkpoint candidates or logical worker assignments when those
+capabilities are used. Exact golden-object comparison is authority; the
+Markdown summary is derived only afterward. ADR-0034 and the retained
+EVO-HRA-006 audit define and verify this installed-consumer evidence boundary.
 
 ## Public Interface
 
@@ -1963,7 +1971,14 @@ order, allocation behavior, or RNG schedule. It advances only EVO's package
 and public version macros and adds repository benchmark/schema/projection
 entry points outside the installed library ABI.
 
-## Current 0.32.0 Conformance Boundary
+Version 0.33.0 likewise changes no public type, member offset, enum value,
+function signature, installed symbol, core policy version, checkpoint format,
+callback order, allocation behavior, or RNG schedule. It advances only EVO's
+package and public version macros and adds external reference consumers,
+evidence schema/golden/validator entry points, documentation, and independent
+staged-install verification outside the installed library ABI.
+
+## Current 0.33.0 Conformance Boundary
 
 The current implementation exposes generation-zero compatibility plus bounded
 multi-generation execution:
@@ -2410,6 +2425,7 @@ Autotools, and AES-BLD-001 inventories.
 - `docs/adr/ADR-0031-deterministic-population-storage-recycling.md`
 - `docs/adr/ADR-0032-deterministic-bounded-parallel-evaluation.md`
 - `docs/adr/ADR-0033-reproducible-core-benchmark-evidence.md`
+- `docs/adr/ADR-0034-reference-consumer-adapters.md`
 - `docs/architecture.md`
 - `docs/algorithms.md`
 - `docs/benchmarks.md`
@@ -2419,6 +2435,7 @@ Autotools, and AES-BLD-001 inventories.
 - `docs/engineering/reports/EVO-HRA-003-population-storage-recycling-audit.md`
 - `docs/engineering/reports/EVO-HRA-004-parallel-evaluation-audit.md`
 - `docs/engineering/reports/EVO-HRA-005-core-benchmark-evidence-audit.md`
+- `docs/engineering/reports/EVO-HRA-006-reference-adapter-audit.md`
 - `docs/engineering/SECURE-C-CXX.md`
 - `docs/engineering/AES-SEC-001-review-dispositions.json`
 - `https://github.com/dlworrell/evo/issues/4`
@@ -2451,4 +2468,6 @@ Autotools, and AES-BLD-001 inventories.
 - `https://github.com/dlworrell/evo/issues/51`
 - `https://github.com/dlworrell/evo/issues/52`
 - `https://github.com/dlworrell/evo/issues/53`
+- `https://github.com/dlworrell/evo/issues/54`
+- `https://github.com/dlworrell/evo/issues/55`
 - `https://github.com/dlworrell/AEMS/issues/18`
