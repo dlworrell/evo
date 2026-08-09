@@ -1141,6 +1141,242 @@ close_directories:
     return status;
 }
 
+static evo_project_status_t evo_project_verify_snapshot_file(
+    int snapshot_root_fd,
+    const evo_project_file_record_t *record)
+{
+    unsigned char buffer[8192];
+    evo_project_fingerprint_t fingerprint;
+    struct stat metadata;
+    int file_fd = evo_project_open_relative(
+        snapshot_root_fd, record->path, O_RDONLY | O_NONBLOCK, 0);
+    evo_project_status_t status = EVO_PROJECT_SUCCESS;
+    uint64_t byte_count = 0U;
+
+    if (file_fd < 0 || fstat(file_fd, &metadata) != 0 ||
+        !S_ISREG(metadata.st_mode) || metadata.st_size < 0 ||
+        (uint64_t)metadata.st_size != record->size ||
+        (unsigned int)(metadata.st_mode & (mode_t)07777) !=
+            (record->source_mode & 0555U)) {
+        if (file_fd >= 0) {
+            (void)close(file_fd);
+        }
+        return EVO_PROJECT_ERROR_SOURCE_CHANGED;
+    }
+    evo_project_fingerprint_begin(&fingerprint);
+    for (;;) {
+        ssize_t read_count;
+
+        do {
+            read_count = read(file_fd, buffer, sizeof(buffer));
+        } while (read_count < 0 && errno == EINTR);
+        if (read_count < 0) {
+            status = EVO_PROJECT_ERROR_SOURCE_IO;
+            break;
+        }
+        if (read_count == 0) {
+            break;
+        }
+        if (byte_count > UINT64_MAX - (uint64_t)read_count) {
+            status = EVO_PROJECT_ERROR_RESOURCE_LIMIT;
+            break;
+        }
+        byte_count += (uint64_t)read_count;
+        evo_project_fingerprint_bytes(
+            &fingerprint, buffer, (size_t)read_count);
+    }
+    if (status == EVO_PROJECT_SUCCESS &&
+        (byte_count != record->size ||
+         fingerprint.value != record->content_fingerprint)) {
+        status = EVO_PROJECT_ERROR_SOURCE_CHANGED;
+    }
+    if (close(file_fd) != 0 && status == EVO_PROJECT_SUCCESS) {
+        status = EVO_PROJECT_ERROR_SOURCE_IO;
+    }
+    return status;
+}
+
+static bool evo_project_snapshot_directory_expected(
+    const evo_project_baseline_owner_t *owner,
+    const char *relative_path)
+{
+    const size_t path_size = strlen(relative_path);
+    size_t index;
+
+    if (path_size == 0U) {
+        return true;
+    }
+    for (index = 0U; index < owner->file_count; index += 1U) {
+        if (strncmp(owner->files[index].path, relative_path, path_size) == 0 &&
+            owner->files[index].path[path_size] == '/') {
+            return true;
+        }
+    }
+    return false;
+}
+
+static evo_project_status_t evo_project_verify_snapshot_directories(
+    const evo_project_baseline_owner_t *owner,
+    int directory_fd,
+    const char *relative_path)
+{
+    struct stat directory_metadata;
+    DIR *directory;
+    struct dirent *entry;
+    int iteration_fd;
+
+    if (fstat(directory_fd, &directory_metadata) != 0 ||
+        !S_ISDIR(directory_metadata.st_mode) ||
+        (unsigned int)(directory_metadata.st_mode & (mode_t)07777) != 0500U) {
+        return EVO_PROJECT_ERROR_SOURCE_CHANGED;
+    }
+    iteration_fd = dup(directory_fd);
+    if (iteration_fd < 0) {
+        return EVO_PROJECT_ERROR_SOURCE_IO;
+    }
+    directory = fdopendir(iteration_fd);
+    if (directory == NULL) {
+        (void)close(iteration_fd);
+        return EVO_PROJECT_ERROR_SOURCE_IO;
+    }
+    errno = 0;
+    while ((entry = readdir(directory)) != NULL) {
+        struct stat metadata;
+
+        if (strcmp(entry->d_name, ".") == 0 ||
+            strcmp(entry->d_name, "..") == 0) {
+            errno = 0;
+            continue;
+        }
+        if (fstatat(
+                directory_fd,
+                entry->d_name,
+                &metadata,
+                AT_SYMLINK_NOFOLLOW) != 0) {
+            (void)closedir(directory);
+            return EVO_PROJECT_ERROR_SOURCE_CHANGED;
+        }
+        if (S_ISDIR(metadata.st_mode)) {
+            const size_t prefix_size = strlen(relative_path);
+            const size_t name_size = strlen(entry->d_name);
+            char *child_path;
+            int child_fd;
+            evo_project_status_t status;
+
+            if (prefix_size > SIZE_MAX - name_size ||
+                prefix_size + name_size > SIZE_MAX - 2U ||
+                prefix_size + name_size + (prefix_size > 0U ? 1U : 0U) >
+                    owner->manifest.budget.max_path_bytes) {
+                (void)closedir(directory);
+                return EVO_PROJECT_ERROR_SOURCE_CHANGED;
+            }
+            child_path = evo_project_relative_child(
+                relative_path,
+                entry->d_name,
+                owner->manifest.budget.max_path_bytes);
+            if (child_path == NULL) {
+                (void)closedir(directory);
+                return EVO_PROJECT_ERROR_OUT_OF_MEMORY;
+            }
+            if (!evo_project_snapshot_directory_expected(owner, child_path)) {
+                evo_project_release(child_path);
+                (void)closedir(directory);
+                return EVO_PROJECT_ERROR_SOURCE_CHANGED;
+            }
+            child_fd = openat(
+                directory_fd,
+                entry->d_name,
+                O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC,
+                0);
+            if (child_fd < 0) {
+                evo_project_release(child_path);
+                (void)closedir(directory);
+                return EVO_PROJECT_ERROR_SOURCE_CHANGED;
+            }
+            status = evo_project_verify_snapshot_directories(
+                owner, child_fd, child_path);
+            evo_project_release(child_path);
+            if (close(child_fd) != 0 && status == EVO_PROJECT_SUCCESS) {
+                status = EVO_PROJECT_ERROR_SOURCE_IO;
+            }
+            if (status != EVO_PROJECT_SUCCESS) {
+                (void)closedir(directory);
+                return status;
+            }
+        } else if (!S_ISREG(metadata.st_mode)) {
+            (void)closedir(directory);
+            return EVO_PROJECT_ERROR_SOURCE_CHANGED;
+        }
+        errno = 0;
+    }
+    if (errno != 0 || closedir(directory) != 0) {
+        return EVO_PROJECT_ERROR_SOURCE_IO;
+    }
+    return EVO_PROJECT_SUCCESS;
+}
+
+evo_project_status_t evo_project_snapshot_verify_baseline(
+    const evo_project_baseline_owner_t *owner)
+{
+    evo_project_file_record_t *current_files = NULL;
+    size_t current_count = 0U;
+    uint64_t current_bytes = 0U;
+    evo_project_status_t status;
+    int snapshot_fd = -1;
+    size_t index;
+
+    if (owner == NULL || owner->snapshot_path == NULL || !owner->committed) {
+        return EVO_PROJECT_ERROR_INVALID_ARGUMENT;
+    }
+    status = evo_project_collect_source(
+        owner->snapshot_path,
+        &owner->manifest,
+        &current_files,
+        &current_count,
+        &current_bytes);
+    if (status != EVO_PROJECT_SUCCESS) {
+        return status == EVO_PROJECT_ERROR_OUT_OF_MEMORY ||
+                       status == EVO_PROJECT_ERROR_RESOURCE_LIMIT
+                   ? status
+                   : EVO_PROJECT_ERROR_SOURCE_CHANGED;
+    }
+    if (current_count != owner->file_count ||
+        current_bytes != owner->total_file_bytes) {
+        evo_project_release_files(current_files, current_count);
+        return EVO_PROJECT_ERROR_SOURCE_CHANGED;
+    }
+    for (index = 0U; index < current_count; index += 1U) {
+        if (strcmp(current_files[index].path, owner->files[index].path) != 0 ||
+            current_files[index].size != owner->files[index].size ||
+            current_files[index].source_mode !=
+                (owner->files[index].source_mode & 0555U)) {
+            evo_project_release_files(current_files, current_count);
+            return EVO_PROJECT_ERROR_SOURCE_CHANGED;
+        }
+    }
+    evo_project_release_files(current_files, current_count);
+    snapshot_fd = open(
+        owner->snapshot_path,
+        O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
+    if (snapshot_fd < 0) {
+        return EVO_PROJECT_ERROR_SOURCE_CHANGED;
+    }
+    status = evo_project_verify_snapshot_directories(owner, snapshot_fd, "");
+    if (status == EVO_PROJECT_SUCCESS) {
+        for (index = 0U; index < owner->file_count; index += 1U) {
+            status = evo_project_verify_snapshot_file(
+                snapshot_fd, &owner->files[index]);
+            if (status != EVO_PROJECT_SUCCESS) {
+                break;
+            }
+        }
+    }
+    if (close(snapshot_fd) != 0 && status == EVO_PROJECT_SUCCESS) {
+        status = EVO_PROJECT_ERROR_SOURCE_IO;
+    }
+    return status;
+}
+
 static evo_project_status_t evo_project_remove_directory_contents(int directory_fd)
 {
     DIR *directory;

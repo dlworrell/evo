@@ -180,6 +180,24 @@ target_link_libraries(
 )
 add_test(NAME evo_project_ingestion_test COMMAND evo_project_ingestion_test)
 
+add_executable(evo_project_analysis_test project_analysis_test.c)
+target_include_directories(
+    evo_project_analysis_test
+    PRIVATE
+        ${PROJECT_SOURCE_DIR}/src
+)
+target_compile_definitions(
+    evo_project_analysis_test
+    PRIVATE
+        EVO_TEST_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+)
+target_link_libraries(
+    evo_project_analysis_test
+    PRIVATE
+        catalyst_evo_project_foundation
+)
+add_test(NAME evo_project_analysis_test COMMAND evo_project_analysis_test)
+
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux"
    AND CMAKE_C_COMPILER_ID MATCHES "GNU|Clang"
    AND NOT BUILD_SHARED_LIBS)

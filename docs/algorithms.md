@@ -2,9 +2,10 @@
 
 This document distinguishes algorithms implemented by the reusable
 `catalyst_evo` core from the structured program transformations and evaluation
-algorithm required by the EVO 1.0 source optimizer. Version 0.34.0 implements
-the core plus project-ingestion and immutable-baseline preparation; it does not
-yet implement source-analysis or transformation algorithms.
+algorithm required by the EVO 1.0 source optimizer. Version 0.35.0 implements
+the core plus project ingestion, immutable-baseline preparation, and the
+normalized Clang/LLVM analysis and hotspot-ranking model; it does not yet
+implement source-transformation algorithms.
 
 ## EVO Core Initial Release
 
@@ -1012,6 +1013,30 @@ an ordered translation-unit description, runs declared baseline gates through
 an execution provider, and rechecks every source byte before committing
 evidence. These are deterministic capture and validation operations, not a
 claim that a source-evolution algorithm has run.
+
+Version 0.35.0 analyzes only an eligible committed baseline through one
+declared bounded provider. The provider receives the immutable snapshot and
+normalized compilation units and returns explicit source-location,
+declaration, call, control-flow, data-flow, compiler-optimization, and optional
+runtime-sample records. EVO deep-copies them, validates every stable reference,
+and sorts each domain by record identity. Generated-source locations are
+unsupported under the version-1 baseline policy.
+
+Runtime profile state is explicit: `not-configured`, `unavailable`, or
+`available`. Only the last may supply positive sample-count records.
+Opportunity records are the union of locations with missed compiler
+optimizations or positive runtime samples. Their exact order is:
+
+1. runtime evidence present before absent;
+2. descending summed runtime samples;
+3. descending missed-optimization record count; and
+4. ascending stable source-location identity.
+
+This is an evidence-prioritization order, not a predicted speedup or permission
+to transform source. The complete arrays and direct scans are the reference
+form; `analysis.json` and `analysis.md` expose the same retained state. The
+analyzer re-verifies every committed snapshot byte and mode after the provider
+and publishes no output if the provider mutated its authority.
 
 The source optimizer does not treat source text as a byte genome. Raw textual
 mutation and crossover cannot preserve token, declaration, macro, type,

@@ -100,6 +100,13 @@ suppresses benchmarking; a failed required benchmark yields the distinct
 `benchmark-ineligible` state. FNV labels are deterministic diagnostics, not
 performance, authentication, or correctness authority.
 
+Version 0.35.0 may ingest positive sample-count records from one explicitly
+available declared runtime profile and map them to stable source identities.
+Unavailable or unconfigured profiling remains explicit and never becomes zero
+runtime cost. Hotspot counts and compiler misses prioritize later investigation
+only; they are not baseline-versus-candidate measurements, proof of a speedup,
+or permission to publish a transformation.
+
 Every source-optimization experiment additionally records:
 
 - immutable baseline source and dependency identities

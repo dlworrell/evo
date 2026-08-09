@@ -689,6 +689,28 @@ static bool evo_project_json_validate_utf8(const char *value, size_t size)
     return true;
 }
 
+bool evo_project_json_text_valid(
+    const char *value,
+    size_t maximum_bytes,
+    bool allow_empty)
+{
+    size_t size = 0U;
+
+    if (value == NULL || maximum_bytes == 0U) {
+        return false;
+    }
+    while (value[size] != '\0') {
+        const unsigned char byte = (unsigned char)value[size];
+
+        if (size >= maximum_bytes || byte < 0x20U || byte == 0x7fU) {
+            return false;
+        }
+        size += 1U;
+    }
+    return (allow_empty || size > 0U) &&
+           evo_project_json_validate_utf8(value, size);
+}
+
 static bool evo_project_json_decode_unicode(
     const char *text,
     size_t end,

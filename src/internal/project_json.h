@@ -65,6 +65,11 @@ evo_project_json_status_t evo_project_json_decode_string(
     size_t maximum_bytes,
     char **decoded);
 
+bool evo_project_json_text_valid(
+    const char *value,
+    size_t maximum_bytes,
+    bool allow_empty);
+
 bool evo_project_json_parse_u64(
     const char *text,
     const evo_project_json_token_t *token,

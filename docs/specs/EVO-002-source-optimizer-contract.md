@@ -1,9 +1,9 @@
 # EVO-002: Source-to-Source C Optimizer Contract
 
-Status: Implemented through the 0.34.0 ingestion boundary; draft 1.0 target
-Version: 0.34.0
+Status: Implemented through the 0.35.0 analysis boundary; draft 1.0 target
+Version: 0.35.0
 Owner: EVO
-Governing ADRs: ADR-0016, ADR-0026, and ADR-0035
+Governing ADRs: ADR-0016, ADR-0026, ADR-0035, and ADR-0036
 
 ## Purpose
 
@@ -15,10 +15,10 @@ search as a reviewable patch and reproducibility package.
 
 This specification defines the product layer above the reusable C17
 evolutionary-search core governed by EVO-001. Nothing in this draft claims that
-the complete source optimizer is implemented in version 0.34.0. That release
-implements only the strict project-ingestion and immutable-baseline boundary
-defined below; every later section remains a 1.0 target until its roadmap issue
-lands.
+the complete source optimizer is implemented in version 0.35.0. This release
+implements the strict project-ingestion, immutable-baseline, and normalized
+analysis/hotspot boundaries defined below; every later section remains a 1.0
+target until its roadmap issue lands.
 
 ## Claim Boundary
 
@@ -111,6 +111,12 @@ authority, audit projection, resource budget, failure behavior, and
 equivalence evidence, or explicitly state that this rule is not applicable.
 ADR-0026 governs the complete contract.
 
+The implemented 0.35.0 analysis model introduces no accelerated structure.
+Complete bounded arrays and direct scans remain authority, and canonical JSON
+plus Markdown enumerate the same ordered records. ADR-0036 and EVO-HRA-008
+retain this issue-specific assessment; it does not pre-approve later analysis
+indexes, transformation catalogues, candidate caches, or schedulers.
+
 ## Optimization Manifest
 
 Every run begins from a versioned manifest. It records at least:
@@ -197,6 +203,41 @@ schema versions are part of the analysis identity.
 
 Analysis ranks supported opportunities but does not modify source or guarantee
 that a proposed change will improve performance.
+
+The implemented 0.35.0 boundary accepts only an eligible committed baseline.
+One declared bounded provider receives the read-only snapshot and complete
+normalized compilation-unit registry together with exact provider, Clang,
+LLVM, target, flags, runtime-profile, and resource-policy identities. Provider
+results are borrowed only at callback return. EVO deep-copies, bounds,
+validates, cross-references, and canonically orders every retained record.
+
+Stable source locations distinguish spelling and macro-expansion locations;
+each expansion references one explicit spelling record. Generated-source
+locations return `unsupported-evidence` under the v1 ingestion policy.
+Declarations name normalized translation units and locations. Calls,
+control-flow, data-flow, compiler records, and runtime records must resolve to
+accepted declarations and locations. Unknown enums, duplicate identities,
+missing references, undeclared workloads, zero sample counts, malformed text
+or ranges, and over-limit output fail closed before evidence publication.
+
+Runtime profile state is exactly `not-configured`, `unavailable`, or
+`available`. The first has no identity, the other two have one, and only an
+available profile may carry positive `sample-count` records. Absence therefore
+never becomes a measured zero. EVO derives opportunities from missed compiler
+records and positive runtime samples and ranks them by runtime-evidence
+presence, descending summed samples, descending missed-record count, then
+stable location identity.
+
+After every provider return, including an error return, EVO re-enumerates the
+committed baseline snapshot and verifies every path, size, hardened mode, and
+byte fingerprint. Drift returns `baseline-changed`. A successful atomic output
+contains bounded read-only `analysis.json` and `analysis.md`; both expose
+complete translation-unit, source-location, structural, compiler, runtime, and
+opportunity records from one owner. The output uses the lower of the caller's
+outer evidence limit and the immutable manifest's declared evidence budget.
+Analysis invokes no evolutionary operator and performs no source write.
+ADR-0036 defines the complete ownership, ranking, failure, identity, and
+evidence contract.
 
 ## Transformation-Recipe Contract
 
@@ -414,11 +455,13 @@ that proof passes and all non-deferred roadmap requirements are reconciled.
 - `docs/adr/ADR-0030-versioned-checkpoint-and-deterministic-resume.md`
 - `docs/adr/ADR-0031-deterministic-population-storage-recycling.md`
 - `docs/adr/ADR-0035-immutable-project-ingestion-and-baselines.md`
+- `docs/adr/ADR-0036-clang-llvm-analysis-and-hotspot-model.md`
 - `docs/architecture.md`
 - `docs/algorithms.md`
 - `docs/benchmarks.md`
 - `docs/engineering/reports/EVO-HRA-001-human-readable-abstraction-audit.md`
 - `docs/engineering/reports/EVO-HRA-002-checkpoint-audit.md`
 - `docs/engineering/reports/EVO-HRA-003-population-storage-recycling-audit.md`
+- `docs/engineering/reports/EVO-HRA-008-project-analysis-audit.md`
 - `docs/roadmap.md`
 - GitHub issues #38, #56 through #69, #83, and #93
