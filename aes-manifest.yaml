@@ -8,7 +8,7 @@ repository:
   owner: dlworrell
   role: evolutionary-optimization-library
   ownership: project-owned
-  lifecycle: project-zero
+  lifecycle: engineering-ready
   primary_branch: main
   issue_tracker: https://github.com/dlworrell/evo/issues
 
@@ -27,7 +27,6 @@ governance:
       - dlworrell/Catylist
       - dlworrell/AES
       - dlworrell/AEMS
-      - dlworrell/P0
       - dlworrell/repo_templates
     downstream:
       - dlworrell/AEMS
@@ -44,10 +43,10 @@ standards:
     - AES-BLD-001
 
 project_zero:
-  state: CERTIFICATION
+  state: ENGINEERING_READY
   certification:
-    status: candidate
-    evidence: docs/engineering/reports/EVO-P0-001-certification-candidate.md
+    status: approved
+    evidence: docs/engineering/reports/EVO-P0-002-engineering-ready-certification.md
   accepted_deferrals: []
 
 automation:

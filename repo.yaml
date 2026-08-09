@@ -6,12 +6,11 @@ repository:
   classification_status: pending-catylist-review
   purpose: Source-to-source evolutionary analysis and optimization of C codebases over a deterministic C17 search core.
   owner: dlworrell
-  lifecycle: project-zero
+  lifecycle: engineering-ready
   authority_chain:
     - Catylist
     - AES
     - AEMS
-    - Project Zero
     - repo_templates
     - EVO
   governing_documents:

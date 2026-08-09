@@ -27,11 +27,10 @@ cmake --build build --parallel
 ctest --test-dir build --output-on-failure
 ```
 
-Run the Project Zero baseline locally with:
-
-```sh
-bash scripts/project-zero verify
-```
+Project Zero onboarding is complete and is not rerun for ordinary changes.
+Use the repository's build, test, AES/AEMS, security, analyzer, sanitizer, and
+build-parity gates. The retained Project Zero tooling is manual-only and is
+used again only when Catylist or AEMS explicitly requests reassessment.
 
 Changes affecting core search behavior, execution mode, or performance
 evidence must also run the bounded canonical benchmark:

@@ -1,16 +1,20 @@
 project_zero:
   profile: .aems/project-zero/profiles/default/profile.json
   repository_state: existing
+  status: completed
+  completed_at: 2026-08-09
+  certification:
+    state: ENGINEERING_READY
+    evidence: docs/engineering/reports/EVO-P0-002-engineering-ready-certification.md
+    reviewed_commit: 49b56148d81671f605ceaf1a544370fc0c6283da
+    reviewed_tree: 849b0867e0418c4d9b3736a89e8802f5b62cfdb7
+  reassessment:
+    automatic: false
+    authority_request_required: true
   lifecycle_workflows:
     - .github/workflows/p0.yml
-    - .github/workflows/verify.yml
-    - .github/workflows/documentation.yml
-    - .github/workflows/compliance.yml
-    - .github/workflows/benchmarks.yml
-    - .github/workflows/reference-adapters.yml
-    - .github/workflows/project-ingestion.yml
-    - .github/workflows/optimization.yml
-    - .github/workflows/release.yml
+    - .github/workflows/project-zero.yml
+    - .github/workflows/project-zero-self-test.yml
   remediation:
     direct_default_branch_writes: false
     overwrite_existing_files: false
