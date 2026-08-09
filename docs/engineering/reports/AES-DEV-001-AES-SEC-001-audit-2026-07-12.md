@@ -155,3 +155,27 @@ failure behavior, complete registry, and source-optimizer non-claim. Real
 repository mutation, compiler execution, operating-system scheduler changes,
 FPGA tooling, remote publication, and untrusted fixture ingestion remain
 outside this assessment.
+
+## EVO 0.34.0 Project-Ingestion Amendment (2026-08-09)
+
+The private project-ingestion foundation accepts untrusted manifest,
+compilation-database, path, filesystem, and execution-provider data. It owns no
+process launcher: project commands cross one explicit callback boundary with
+network disabled and bounded time, memory, processes, storage, and output.
+
+| Requirement | 0.34.0 status | Retained evidence |
+|---|---|---|
+| Dangerous C primitives | Reviewed | One private runtime unit contains the only zeroed-allocation, release, and bounded-formatting calls; it rejects invalid allocation dimensions, while callers check every result and retain explicit owner/byte invariants; bounded byte loops replace unchecked copy/string primitives |
+| Filesystem authority | Pass | One realpath-authorized source root is read through no-follow traversal; symlinks and special files reject; only a caller-selected output outside that root is reserved and mutated |
+| Command boundary | Pass | Exact manifest argv and resource policy are passed to a caller provider; the foundation performs no shell parsing, process spawn, network access, or environment inheritance |
+| Input bounds | Pass | Manifest bytes/tokens/depth/strings, roots, paths, files, compilation database, translation units, argv, evidence, command output, time, memory, processes, and storage have manifest and caller limits |
+| Atomicity and cleanup | Pass | An incomplete marker identifies the owned transaction; failures remove only that output without following symlinks; source drift, provider corruption, or evidence overflow commits no baseline |
+| Identity boundary | Pass | Exact read-only bytes and complete registries are authority; FNV labels are explicitly deterministic, non-authenticating, and non-authoritative |
+| Explainability | Pass | `baseline.json` and `baseline.md` enumerate every file, compilation unit, policy list, and gate disposition in stable order; EVO-HRA-007 retains the ADR-0026 audit |
+
+ADR-0035 defines the ownership, path, normalization, provider, failure, and
+evidence invariants. The normative test covers missing/duplicate/malformed,
+overlapping/out-of-root, oversized, symlinked, ambiguous, corrupt-provider, and
+concurrent-source-mutation paths. Provider process isolation, Clang input
+handling, candidate execution, authentication across trust boundaries, and the
+installed executable remain separately reviewable later milestones.

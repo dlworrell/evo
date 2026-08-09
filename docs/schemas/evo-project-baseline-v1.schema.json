@@ -1,0 +1,196 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/dlworrell/evo/blob/main/docs/schemas/evo-project-baseline-v1.schema.json",
+  "title": "EVO project baseline evidence v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "schema_version", "state", "manifest", "baseline", "files", "compilation_units", "commands", "human_readable_abstraction"],
+  "properties": {
+    "schema": {"const": "catalyst.evo-project-baseline.v1"},
+    "schema_version": {"const": 1},
+    "state": {"enum": ["eligible", "build-failed", "correctness-failed", "benchmark-ineligible"]},
+    "manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "id", "fingerprint", "source_declared_identity", "permitted_roots", "compilation_database", "generated_source_policy", "generated_sources", "build_frontend", "benchmark_required", "language", "targets", "dependencies", "toolchains", "environment", "workloads", "constraints", "search", "budgets", "artifacts"],
+      "properties": {
+        "schema": {"const": "catalyst.evo-project-manifest.v1"},
+        "id": {"type": "string", "minLength": 1},
+        "fingerprint": {"$ref": "#/$defs/fingerprint"},
+        "source_declared_identity": {"type": "string", "minLength": 1},
+        "permitted_roots": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/relativePath"}},
+        "compilation_database": {"$ref": "#/$defs/relativePath"},
+        "generated_source_policy": {"const": "reject"},
+        "generated_sources": {"type": "array", "maxItems": 0},
+        "build_frontend": {"enum": ["cmake", "autotools"]},
+        "benchmark_required": {"type": "boolean"},
+        "language": {"type": "string", "minLength": 1},
+        "targets": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "dependencies": {"type": "array", "items": {"$ref": "#/$defs/namedIdentity"}},
+        "toolchains": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/namedIdentity"}},
+        "environment": {"type": "array", "items": {"$ref": "#/$defs/environmentEntry"}},
+        "workloads": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "constraints": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "search": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["seed", "population", "generations", "workers"],
+          "properties": {
+            "seed": {"type": "integer", "minimum": 0},
+            "population": {"type": "integer", "minimum": 1},
+            "generations": {"type": "integer", "minimum": 1},
+            "workers": {"type": "integer", "minimum": 1}
+          }
+        },
+        "budgets": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["max_files", "max_file_bytes", "max_total_bytes", "max_path_bytes", "max_compilation_database_bytes", "max_command_output_bytes", "max_evidence_bytes", "command_timeout_ms", "max_memory_bytes", "max_processes", "max_storage_bytes", "network_access"],
+          "properties": {
+            "max_files": {"type": "integer", "minimum": 1},
+            "max_file_bytes": {"type": "integer", "minimum": 1},
+            "max_total_bytes": {"type": "integer", "minimum": 1},
+            "max_path_bytes": {"type": "integer", "minimum": 1},
+            "max_compilation_database_bytes": {"type": "integer", "minimum": 1},
+            "max_command_output_bytes": {"type": "integer", "minimum": 1},
+            "max_evidence_bytes": {"type": "integer", "minimum": 1},
+            "command_timeout_ms": {"type": "integer", "minimum": 1},
+            "max_memory_bytes": {"type": "integer", "minimum": 1},
+            "max_processes": {"type": "integer", "minimum": 1},
+            "max_storage_bytes": {"type": "integer", "minimum": 1},
+            "network_access": {"const": false}
+          }
+        },
+        "artifacts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["retention", "cleanup"],
+          "properties": {
+            "retention": {"const": "baseline-only"},
+            "cleanup": {"const": "remove-derived-workspace"}
+          }
+        }
+      }
+    },
+    "baseline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fingerprint", "fingerprint_authoritative", "identity_authority", "execution_provider", "snapshot", "workspace_retained", "file_count", "total_file_bytes", "normalized_build_schema", "normalized_build_fingerprint", "compilation_unit_count"],
+      "properties": {
+        "fingerprint": {"$ref": "#/$defs/fingerprint"},
+        "fingerprint_authoritative": {"const": false},
+        "identity_authority": {"const": "read-only snapshot bytes plus complete ordered registry"},
+        "execution_provider": {"type": "string", "minLength": 1},
+        "snapshot": {"const": "snapshot"},
+        "workspace_retained": {"const": false},
+        "file_count": {"type": "integer", "minimum": 1},
+        "total_file_bytes": {"type": "integer", "minimum": 1},
+        "normalized_build_schema": {"const": "catalyst.evo-project-build-description.v1"},
+        "normalized_build_fingerprint": {"$ref": "#/$defs/fingerprint"},
+        "compilation_unit_count": {"type": "integer", "minimum": 1}
+      }
+    },
+    "compilation_units": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["file", "directory", "output", "form", "arguments"],
+            "properties": {
+              "file": {"$ref": "#/$defs/relativePath"},
+              "directory": {"oneOf": [{"const": "."}, {"$ref": "#/$defs/relativePath"}]},
+              "output": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/relativePath"}]},
+              "form": {"const": "arguments"},
+              "arguments": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["file", "directory", "output", "form", "command"],
+            "properties": {
+              "file": {"$ref": "#/$defs/relativePath"},
+              "directory": {"oneOf": [{"const": "."}, {"$ref": "#/$defs/relativePath"}]},
+              "output": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/relativePath"}]},
+              "form": {"const": "command"},
+              "command": {"type": "string", "minLength": 1}
+            }
+          }
+        ]
+      }
+    },
+    "files": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "size", "mode", "content_fingerprint", "fingerprint_authoritative"],
+        "properties": {
+          "path": {"type": "string", "minLength": 1},
+          "size": {"type": "integer", "minimum": 0},
+          "mode": {"type": "string", "pattern": "^[0-7]{4}$"},
+          "content_fingerprint": {"$ref": "#/$defs/fingerprint"},
+          "fingerprint_authoritative": {"const": false}
+        }
+      }
+    },
+    "commands": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["stage", "argv", "disposition", "exit_code", "output_bytes", "output_fingerprint", "fingerprint_authoritative"],
+        "properties": {
+          "stage": {"enum": ["configure", "compile", "correctness", "benchmark"]},
+          "argv": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+          "disposition": {"enum": ["not-run", "passed", "failed", "timed-out"]},
+          "exit_code": {"type": "integer", "minimum": -1, "maximum": 255},
+          "output_bytes": {"type": "integer", "minimum": 0},
+          "output_fingerprint": {"$ref": "#/$defs/fingerprint"},
+          "fingerprint_authoritative": {"const": false}
+        }
+      }
+    },
+    "human_readable_abstraction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["accelerated_structure", "reference_authority", "projection", "projection_complete", "stable_order", "probabilistic_authority"],
+      "properties": {
+        "accelerated_structure": {"type": "null"},
+        "reference_authority": {"type": "string", "minLength": 1},
+        "projection": {"const": "baseline.md"},
+        "projection_complete": {"const": true},
+        "stable_order": {"type": "string", "minLength": 1},
+        "probabilistic_authority": {"const": false}
+      }
+    }
+  },
+  "$defs": {
+    "fingerprint": {"type": "string", "pattern": "^fnv1a64-v1:[0-9a-f]{16}$"},
+    "relativePath": {"type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.?(?:/|$))[^\\\\:]+$"},
+    "namedIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "identity"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "identity": {"type": "string", "minLength": 1}
+      }
+    },
+    "environmentEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "value"],
+      "properties": {
+        "name": {"type": "string", "pattern": "^[A-Z_][A-Z0-9_]*$"},
+        "value": {"type": "string"}
+      }
+    }
+  }
+}

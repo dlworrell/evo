@@ -1,0 +1,12 @@
+[
+  {
+    "directory": ".",
+    "file": "src/value.c",
+    "arguments": ["cc", "-std=c17", "-Iinclude", "-c", "src/value.c"]
+  },
+  {
+    "directory": ".",
+    "file": "tests/value_test.c",
+    "arguments": ["cc", "-std=c17", "-Iinclude", "tests/value_test.c", "src/value.c", "-o", "value_test"]
+  }
+]

@@ -199,6 +199,13 @@ introduced; exact golden-object comparison remains authority and Markdown is
 derived only after validation. EVO-HRA-006 retains the adapter evidence and
 projection audit.
 
+ADR-0035 performs the change-specific assessment for EVO 0.34.0. Project
+ingestion uses direct bounded arrays and scans; exact snapshot bytes plus the
+complete file, compilation-unit, policy, and gate registries remain authority.
+Its FNV labels are diagnostic only, and JSON/Markdown expose the same stable
+domain records without a cache, compact index, filter, or hidden registry.
+EVO-HRA-007 retains the ingestion evidence and projection audit.
+
 ## Consequences
 
 - EVO may use efficient internal data structures without exposing their
@@ -260,5 +267,7 @@ reconstructable pages and windows satisfy the audit contract.
   records the implemented 0.25.0 audit and its limitations.
 - EVO-HRA-002, EVO-HRA-003, and EVO-HRA-004 record the checkpoint, recycler,
   and bounded-worker assessments for later accelerated boundaries.
+- EVO-HRA-005, EVO-HRA-006, and EVO-HRA-007 record the benchmark, adapter, and
+  project-ingestion evidence assessments.
 - Parent roadmap issue #38 and the affected child issues record the gate.
 - Governance issue: `https://github.com/dlworrell/evo/issues/83`

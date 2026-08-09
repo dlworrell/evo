@@ -2,8 +2,9 @@
 
 This document distinguishes algorithms implemented by the reusable
 `catalyst_evo` core from the structured program transformations and evaluation
-algorithm required by the EVO 1.0 source optimizer. Version 0.33.0 implements
-only the core boundary described below.
+algorithm required by the EVO 1.0 source optimizer. Version 0.34.0 implements
+the core plus project-ingestion and immutable-baseline preparation; it does not
+yet implement source-analysis or transformation algorithms.
 
 ## EVO Core Initial Release
 
@@ -1004,6 +1005,14 @@ Human-Readable Abstraction assessment.
 
 ## Structured C Source Evolution
 
+Version 0.34.0 first establishes exact input authority. It parses a bounded
+manifest, enumerates authorized files in stable order, copies immutable
+snapshot and derived-workspace trees, normalizes the compilation database into
+an ordered translation-unit description, runs declared baseline gates through
+an execution provider, and rechecks every source byte before committing
+evidence. These are deterministic capture and validation operations, not a
+claim that a source-evolution algorithm has run.
+
 The source optimizer does not treat source text as a byte genome. Raw textual
 mutation and crossover cannot preserve token, declaration, macro, type,
 control-flow, ownership, or semantic boundaries reliably and are prohibited.
@@ -1079,5 +1088,6 @@ instructions.
 The report calls this result the highest-ranked verified candidate discovered
 within the recorded bounded search contract. It does not claim a globally
 optimal equivalent program. Issues #58 through #69 implement this algorithmic
-boundary in dependency order; issue #56 stabilizes it for 1.0 only after the
-end-to-end source proof succeeds.
+boundary in dependency order. Issue #93 separately requires the installed
+standalone executable, and issue #56 stabilizes 1.0 only after the end-to-end
+source proof succeeds through that executable.

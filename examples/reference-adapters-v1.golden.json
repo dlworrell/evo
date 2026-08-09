@@ -240,7 +240,7 @@
         "stagnation_patience": 0
       },
       "domain": "bounded repository scoring weight search",
-      "evo_version": "0.33.0",
+      "evo_version": "0.34.0",
       "fixture": {
         "hard_constraint": "sum(weights) <= 24",
         "repositories": [
@@ -433,7 +433,7 @@
         "stagnation_patience": 3
       },
       "domain": "bounded compiler build-configuration search",
-      "evo_version": "0.33.0",
+      "evo_version": "0.34.0",
       "fixture": {
         "baseline_runtime_units": 1000,
         "baseline_size_units": 400,
@@ -1379,7 +1379,7 @@
           "worker_count": 3
         }
       ],
-      "evo_version": "0.33.0",
+      "evo_version": "0.34.0",
       "fixture": {
         "hard_constraint": "logical lanes <= batch and quantum + backoff <= 10",
         "jobs": [
@@ -1579,7 +1579,7 @@
         "stagnation_patience": 0
       },
       "domain": "bounded FPGA placement-parameter exploration",
-      "evo_version": "0.33.0",
+      "evo_version": "0.34.0",
       "fixture": {
         "budgets": {
           "bram": 12,

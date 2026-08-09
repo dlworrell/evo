@@ -11,8 +11,11 @@ codebases. It emits the highest-ranked fully verified source candidate found
 within a recorded bounded search as a reviewable patch and reproducibility
 package.
 
-The completed EVO 0.33.0 code is the deterministic C17 evolutionary-search
-core. It is necessary infrastructure, not the completed source optimizer.
+EVO 0.34.0 contains the completed deterministic C17 evolutionary-search core
+and the first private source-optimizer foundation: strict project-manifest
+ingestion, immutable baseline snapshots, normalized compilation-unit evidence,
+and bounded baseline-gate orchestration. It is not the completed source
+optimizer or a standalone installed application.
 
 Core issues #39 through #55 are represented in that boundary, including
 versioned constraints, diversity, convergence/stagnation, and caller-bounded
@@ -30,8 +33,9 @@ deriving a validated human-readable projection from canonical JSON. Issue #55
 adds four installed reference consumers with exact replay, checkpoint/resume,
 bounded parallel evaluation, constraints, stopping, complete JSON evidence,
 and explicit source-optimizer non-claims. The core integration track is
-complete at this boundary; issue #58 is the next dependency-ready
-source-optimizer implementation work. The dependency spine remains unchanged.
+complete at this boundary. Issue #58 implements project ingestion without
+claiming Clang analysis, candidate evolution, or a CLI; issue #59 is the next
+dependency-ready source-optimizer implementation work.
 
 ## Cross-Cutting Human-Readable Abstraction Gate
 
@@ -70,7 +74,7 @@ spine below.
 | Structured source evolution | #60–#62 | Recipes, AST-aware catalogue, and isolated source materialization |
 | Candidate assurance | #63–#64 | Build/correctness gates and reproducible performance fitness |
 | Whole-codebase search | #65–#66 | Recipe evolution and bounded external-process orchestration |
-| Product interface/artifacts | #67–#68 | Analyze/evolve/replay/report and optimized patch evidence |
+| Product interface/artifacts | #67, #93, #68 | Product commands, installed standalone executable, and optimized patch evidence |
 | Product proof/release | #69, #56 | End-to-end source proof and 1.0 stabilization |
 
 ## Dependency Spine
@@ -99,15 +103,17 @@ Source optimizer:
 
 `#49 + #60 + #61 + #63 + #64 → #65`
 
-`#51 + #53 + #65 → #66 → #67 → #68 → #69 → #56`
+`#51 + #53 + #65 → #66 → #67 → #93 → #68 → #69 → #56`
 
 ## 1.0 Gate
 
-The release must prove actual source evolution. Compiler-option changes alone
+The release must prove actual source evolution through the installed
+standalone executable. Compiler-option changes or a private test harness alone
 are insufficient. The retained proof must include a real C baseline, at least
 one source-level change, supported builds, all declared correctness and
-security gates, statistically defensible improvement, a reviewable patch, and
-successful replay.
+security gates, statistically defensible improvement, a reviewable patch,
+successful replay, and staged CMake/Autotools invocation of the documented
+analyze/evolve/replay/report command surface.
 Any accelerated structure exercised by that proof must also produce its
 declared human-readable audit projection and pass reference-equivalence
 verification.

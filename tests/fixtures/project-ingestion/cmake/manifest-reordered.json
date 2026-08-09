@@ -1,0 +1,46 @@
+{
+  "artifacts": {"cleanup": "remove-derived-workspace", "retention": "baseline-only"},
+  "budgets": {
+    "network_access": false,
+    "max_storage_bytes": 1048576,
+    "max_processes": 8,
+    "max_memory_bytes": 268435456,
+    "command_timeout_ms": 30000,
+    "max_evidence_bytes": 262144,
+    "max_command_output_bytes": 16384,
+    "max_compilation_database_bytes": 65536,
+    "max_path_bytes": 512,
+    "max_total_bytes": 262144,
+    "max_file_bytes": 65536,
+    "max_files": 32
+  },
+  "search": {"workers": 1, "generations": 4, "population": 8, "seed": 17},
+  "constraints": ["no-input-write", "fixture-tests-pass"],
+  "workloads": ["small-value-loop-v1"],
+  "environment": [
+    {"value": "C", "name": "LC_ALL"},
+    {"value": "C", "name": "LANG"}
+  ],
+  "toolchains": [
+    {"identity": "declared-c17-provider", "name": "c-compiler"},
+    {"identity": "cmake-3.20-or-newer", "name": "build-frontend"}
+  ],
+  "dependencies": [{"identity": "iso-c17", "name": "c-runtime"}],
+  "target": {"platforms": ["portable-posix-c17"], "language": "c17"},
+  "build": {
+    "benchmark_required": true,
+    "benchmark": ["build/value_benchmark", "--fixture", "small"],
+    "correctness": ["ctest", "--test-dir", "build", "--output-on-failure"],
+    "compile": ["cmake", "--build", "build", "--parallel", "1"],
+    "configure": ["cmake", "-S", ".", "-B", "build", "-DCMAKE_BUILD_TYPE=Release"],
+    "frontend": "cmake"
+  },
+  "source": {
+    "generated_source_policy": "reject",
+    "compilation_database": "compile_commands.json",
+    "permitted_roots": ["tests", "src", "include", "compile_commands.json", "CMakeLists.txt"],
+    "declared_identity": "fixture-cmake-source-v1"
+  },
+  "manifest_id": "fixture-cmake-v1",
+  "schema": "catalyst.evo-project-manifest.v1"
+}

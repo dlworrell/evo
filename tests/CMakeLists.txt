@@ -162,6 +162,24 @@ if(NOT MSVC)
 endif()
 add_test(NAME evo_seed_schedule_experiment COMMAND evo_seed_schedule_experiment)
 
+add_executable(evo_project_ingestion_test project_ingestion_test.c)
+target_include_directories(
+    evo_project_ingestion_test
+    PRIVATE
+        ${PROJECT_SOURCE_DIR}/src
+)
+target_compile_definitions(
+    evo_project_ingestion_test
+    PRIVATE
+        EVO_TEST_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+)
+target_link_libraries(
+    evo_project_ingestion_test
+    PRIVATE
+        catalyst_evo_project_foundation
+)
+add_test(NAME evo_project_ingestion_test COMMAND evo_project_ingestion_test)
+
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux"
    AND CMAKE_C_COMPILER_ID MATCHES "GNU|Clang"
    AND NOT BUILD_SHARED_LIBS)

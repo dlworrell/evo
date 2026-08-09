@@ -1,9 +1,9 @@
 # EVO-002: Source-to-Source C Optimizer Contract
 
-Status: Draft 1.0 target
-Version: 0.1
+Status: Implemented through the 0.34.0 ingestion boundary; draft 1.0 target
+Version: 0.34.0
 Owner: EVO
-Governing ADRs: ADR-0016 and ADR-0026
+Governing ADRs: ADR-0016, ADR-0026, and ADR-0035
 
 ## Purpose
 
@@ -15,7 +15,10 @@ search as a reviewable patch and reproducibility package.
 
 This specification defines the product layer above the reusable C17
 evolutionary-search core governed by EVO-001. Nothing in this draft claims that
-the source optimizer is implemented in version 0.33.0.
+the complete source optimizer is implemented in version 0.34.0. That release
+implements only the strict project-ingestion and immutable-baseline boundary
+defined below; every later section remains a 1.0 target until its roadmap issue
+lands.
 
 ## Claim Boundary
 
@@ -132,6 +135,17 @@ EVO must reject incomplete or inconsistent required policy before executing
 project-controlled commands. EVO may not silently infer missing correctness or
 performance requirements and present them as user policy.
 
+Version 0.34.0 fixes `catalyst.evo-project-manifest.v1`. It requires one
+declared source identity, non-overlapping permitted relative roots, one
+retained compilation database, generated-source rejection policy, a CMake or
+Autotools frontend, exact argv vectors for configure/compile/correctness and
+benchmark stages, benchmark-required policy, C17 target identity, ordered
+dependency/toolchain/environment/workload/constraint registries, deterministic
+search settings, nested resource budgets with network disabled, and explicit
+retention/cleanup policy. Unknown or duplicate fields and unsupported policy
+values reject; caller outer limits must be at least as strict as every
+manifest-requested resource.
+
 ## Baseline Contract
 
 EVO captures the complete authorized input identity before candidate work. The
@@ -148,6 +162,27 @@ Baseline preparation must:
 
 No analysis, candidate, or artifact operation may modify the input project or
 baseline snapshot.
+
+The implemented 0.34.0 capture uses one atomic output transaction. It copies
+each authorized regular file into a read-only snapshot and separate writable
+derived workspace, parses the compilation database into a complete stable
+translation-unit registry, runs the four baseline gates only through a
+caller-supplied bounded execution provider, byte-verifies the source after the
+gates, and removes the workspace. While the incomplete marker remains,
+publication temporarily restores owner-write permission only on the snapshot
+root so its parent entry can move out of the staging directory; no callback
+remains reachable, all descendants remain read-only, and the root is
+immediately re-hardened and synchronized. EVO then commits canonical
+JSON/Markdown evidence and makes the complete output read-only. The capture API
+and target remain private and uninstalled until the product interface is fixed.
+
+`catalyst.evo-project-baseline.v1` distinguishes ingestion errors through the
+capture status and commits valid captures as `eligible`, `build-failed`,
+`correctness-failed`, or `benchmark-ineligible`. A failed ingestion publishes
+no completed baseline. Exact snapshot bytes and complete ordered registries are
+authority. Versioned FNV-1a labels are replay diagnostics only and provide no
+authentication or sole identity authority. ADR-0035 defines the complete
+ownership, normalization, failure, and evidence contract.
 
 ## Analysis Contract
 
@@ -272,6 +307,38 @@ Any incompatible identity rejects resume before executing a candidate. Every
 worker is joined, terminated, and cleaned before failure or checkpoint state is
 published.
 
+## Standalone Application Contract
+
+EVO 1.0 requires a real installed executable, not only private C functions,
+library examples, workflow scripts, or an in-tree test harness. CMake and GNU
+Autotools installations must place the same executable in the documented
+binary directory and staged-package tests must invoke that installed path
+without source-tree or private-header access.
+
+The executable provides stable `--help` and `--version` behavior and explicit
+`analyze`, `evolve`, `replay`, and `report` operations. Each operation accepts
+documented manifest, input, output, checkpoint, and evidence paths as
+applicable; it may not infer a hidden repository, working directory, network
+service, credential, cache, or asset as authority. Relative-path resolution,
+existing-output behavior, atomic publication, standard input/output/error use,
+terminal versus non-terminal behavior, and platform support are part of the
+versioned interface.
+
+Exit statuses distinguish at least usage/configuration rejection, failed
+ingestion, failed baseline build, failed correctness, benchmark ineligibility,
+analysis/materialization/candidate failure, no eligible champion, replay
+mismatch, interrupted execution, and internal failure. Human diagnostics go to
+standard error; canonical evidence and explicitly requested machine output do
+not become interleaved with prose. Signals and cancellation stop new work,
+join or terminate owned workers, preserve only contractually complete
+checkpoints/artifacts, clean incomplete workspaces, and return the documented
+status.
+
+Issue #67 defines product orchestration and command semantics. Issue #93 is the
+delivery gate for the installed executable, package parity, help/version,
+subcommands, paths, exit statuses, signals, and clean-environment behavior.
+Artifact publication and the end-to-end proof cannot bypass that gate.
+
 ## Champion and Artifact Contract
 
 The emitted champion must have passed the complete finalist gate. The artifact
@@ -327,9 +394,11 @@ proves that it can:
 4. pass every declared correctness, security, sanitizer, analyzer, and ABI
    gate;
 5. demonstrate a statistically defensible improvement against the baseline;
-6. emit a readable patch and complete evidence bundle; and
+6. emit a readable patch and complete evidence bundle;
 7. recreate the same source candidate from recorded inputs, versions,
-   configuration, and seed.
+   configuration, and seed; and
+8. perform analyze, evolve, replay, and report through the installed standalone
+   executable from both staged build frontends.
 
 Issue #69 owns this reference proof. Issue #56 may stabilize 1.0 only after
 that proof passes and all non-deferred roadmap requirements are reconciled.
@@ -342,6 +411,7 @@ that proof passes and all non-deferred roadmap requirements are reconciled.
 - `docs/adr/ADR-0026-human-readable-abstraction-and-audit-projection.md`
 - `docs/adr/ADR-0030-versioned-checkpoint-and-deterministic-resume.md`
 - `docs/adr/ADR-0031-deterministic-population-storage-recycling.md`
+- `docs/adr/ADR-0035-immutable-project-ingestion-and-baselines.md`
 - `docs/architecture.md`
 - `docs/algorithms.md`
 - `docs/benchmarks.md`
@@ -349,4 +419,4 @@ that proof passes and all non-deferred roadmap requirements are reconciled.
 - `docs/engineering/reports/EVO-HRA-002-checkpoint-audit.md`
 - `docs/engineering/reports/EVO-HRA-003-population-storage-recycling-audit.md`
 - `docs/roadmap.md`
-- GitHub issues #38, #56 through #69, and #83
+- GitHub issues #38, #56 through #69, #83, and #93

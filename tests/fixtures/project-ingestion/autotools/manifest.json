@@ -1,0 +1,66 @@
+{
+  "schema": "catalyst.evo-project-manifest.v1",
+  "manifest_id": "fixture-autotools-v1",
+  "source": {
+    "declared_identity": "fixture-autotools-source-v1",
+    "permitted_roots": [
+      "Makefile.am",
+      "compile_commands.json",
+      "configure.ac",
+      "include",
+      "src",
+      "tests"
+    ],
+    "compilation_database": "compile_commands.json",
+    "generated_source_policy": "reject"
+  },
+  "build": {
+    "frontend": "autotools",
+    "configure": ["autoreconf", "-fi"],
+    "compile": ["make", "-j1"],
+    "correctness": ["make", "check"],
+    "benchmark": ["tests/value_benchmark", "--fixture", "small"],
+    "benchmark_required": true
+  },
+  "target": {
+    "language": "c17",
+    "platforms": ["portable-posix-c17"]
+  },
+  "dependencies": [
+    {"name": "c-runtime", "identity": "iso-c17"}
+  ],
+  "toolchains": [
+    {"name": "build-frontend", "identity": "autoconf-2.69-automake-1.16"},
+    {"name": "c-compiler", "identity": "declared-c17-provider"}
+  ],
+  "environment": [
+    {"name": "LANG", "value": "C"},
+    {"name": "LC_ALL", "value": "C"}
+  ],
+  "workloads": ["small-value-loop-v1"],
+  "constraints": ["fixture-tests-pass", "no-input-write"],
+  "search": {
+    "seed": 19,
+    "population": 8,
+    "generations": 4,
+    "workers": 1
+  },
+  "budgets": {
+    "max_files": 32,
+    "max_file_bytes": 65536,
+    "max_total_bytes": 262144,
+    "max_path_bytes": 512,
+    "max_compilation_database_bytes": 65536,
+    "max_command_output_bytes": 16384,
+    "max_evidence_bytes": 262144,
+    "command_timeout_ms": 30000,
+    "max_memory_bytes": 268435456,
+    "max_processes": 8,
+    "max_storage_bytes": 1048576,
+    "network_access": false
+  },
+  "artifacts": {
+    "retention": "baseline-only",
+    "cleanup": "remove-derived-workspace"
+  }
+}

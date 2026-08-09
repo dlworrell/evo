@@ -300,6 +300,65 @@
       "reviewed_at": "2026-08-08",
       "reassess_after": "2027-08-08",
       "resolution_commit": null
+    },
+    {
+      "finding_id": "aes-sec-001:e76910fbc2d072456e2e3f9fb85f2d0d238fc1916adc52fc3b0583b13f0f9cc2",
+      "source_fingerprint": "sha256:25239b5ab2a798454588d2b030b2117d1e39c9f440c90a3859ba5dee0148a35d",
+      "path": "src/project_runtime.c",
+      "line": 14,
+      "symbol": "calloc",
+      "classification": "approved-invariant",
+      "rationale": "The private project-runtime boundary centralizes every source-optimizer allocation request in one stateless function. It rejects zero dimensions, proves count multiplied by element_size is representable by checking count against SIZE_MAX divided by element_size, and invokes calloc only with those validated dimensions. Every caller checks the returned pointer before use and retains the allocation in a type-specific sole owner; the wrapper retains no pointer, cache, registry, or authority. Failure returns null without attaching an owner or invoking a consumer callback.",
+      "invariant": "calloc(count, element_size) executes only when count and element_size are both nonzero and their product is representable as size_t. A successful result is zero-initialized and is transferred directly to one checked caller-defined owner. A null result is handled before dereference, publication, or callback use. No allocation identity or derived decision is retained by project_runtime, and all project files, compilation units, manifest policies, generated-source records, and gate results remain explicit authority with a human-readable audit projection.",
+      "evidence": [
+        "src/internal/project_runtime.h",
+        "src/project_runtime.c",
+        "src/project_manifest.c",
+        "src/project_snapshot.c",
+        "src/project_compilation_database.c",
+        "src/project_json.c",
+        "src/project_ingestion.c",
+        "src/project_evidence.c",
+        "tests/project_ingestion_test.c",
+        "docs/adr/ADR-0035-immutable-project-ingestion-and-baselines.md",
+        "docs/engineering/reports/EVO-HRA-007-project-ingestion-audit.md",
+        "https://github.com/dlworrell/evo/issues/58"
+      ],
+      "owner": "dlworrell",
+      "reviewer": "dlworrell",
+      "reviewed_at": "2026-08-09",
+      "reassess_after": "2027-08-09",
+      "resolution_commit": null
+    },
+    {
+      "finding_id": "aes-sec-001:64d25e950ec7b9669ed5fa29b6e9f0496bcdf0b89ba20d22f9677db45a9ebf0c",
+      "source_fingerprint": "sha256:5224d5fd75c6183d750b65c38625a464d8545b696b56cf110a48e36df7c38a7b",
+      "path": "src/project_runtime.c",
+      "line": 19,
+      "symbol": "free",
+      "classification": "approved-invariant",
+      "rationale": "The private project-runtime boundary centralizes release for allocations owned by the source-optimizer foundation. The wrapper is null-safe under the C free contract, retains no pointer or state, and cannot create a second owner. Type-specific cleanup paths retain sole-owner responsibility, release subordinate owners before containers where required, and clear or discard their owning object after release. Allocation-failure, ingestion-failure, retry, complete destruction, and sanitizer tests exercise those cleanup paths.",
+      "invariant": "evo_project_release receives only a null pointer or the caller's sole allocation owner and invokes free exactly once for that call. The wrapper stores no alias and returns no view. Callers invalidate the released owner through their type-specific cleanup or immediate object teardown; non-owning views do not outlive that cleanup boundary. Releasing null is a no-op, and repeated destruction is safe only through the caller's cleared or reset owner state, never by passing the same live value twice.",
+      "evidence": [
+        "src/internal/project_runtime.h",
+        "src/project_runtime.c",
+        "src/project_manifest.c",
+        "src/project_snapshot.c",
+        "src/project_compilation_database.c",
+        "src/project_json.c",
+        "src/project_ingestion.c",
+        "src/project_evidence.c",
+        "tests/project_ingestion_test.c",
+        "tests/allocation_failure_test.c",
+        "docs/adr/ADR-0035-immutable-project-ingestion-and-baselines.md",
+        "docs/engineering/reports/EVO-HRA-007-project-ingestion-audit.md",
+        "https://github.com/dlworrell/evo/issues/58"
+      ],
+      "owner": "dlworrell",
+      "reviewer": "dlworrell",
+      "reviewed_at": "2026-08-09",
+      "reassess_after": "2027-08-09",
+      "resolution_commit": null
     }
   ]
 }

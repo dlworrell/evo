@@ -44,7 +44,7 @@
         },
         "domain": {"type": "string", "minLength": 1},
         "fixture_id": {"type": "string", "minLength": 1},
-        "evo_version": {"const": "0.33.0"},
+        "evo_version": {"const": "0.34.0"},
         "fixture": {"type": "object"},
         "configuration": {"type": "object"},
         "capabilities": {"type": "object"},
