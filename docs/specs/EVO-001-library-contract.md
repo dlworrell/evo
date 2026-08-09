@@ -1,13 +1,13 @@
 # EVO-001: Evolutionary Optimization Library Contract
 
 Status: Baseline
-Version: 0.33.0
+Version: 0.34.0
 Owner: EVO
 
 ## Scope Boundary
 
 This specification governs the reusable deterministic C17 evolutionary-search
-core implemented through version 0.33.0. It does not define C-project
+core packaged through version 0.34.0. It does not define C-project
 ingestion, Clang/LLVM analysis, structured source transformations, isolated
 candidate builds, baseline-versus-candidate measurement, optimized patches, or
 product-level replay artifacts.
@@ -130,6 +130,13 @@ project all checkpoint candidates or logical worker assignments when those
 capabilities are used. Exact golden-object comparison is authority; the
 Markdown summary is derived only afterward. ADR-0034 and the retained
 EVO-HRA-006 audit define and verify this installed-consumer evidence boundary.
+
+Version 0.34.0 changes no accelerated core structure. The new private
+source-optimizer foundation is outside the installed EVO-001 API and uses exact
+snapshot bytes plus explicit bounded file, compilation-unit, policy, and gate
+registries. Its versioned FNV labels are non-authoritative diagnostics and its
+complete JSON/Markdown projections derive from the same owner. ADR-0035,
+EVO-002, and EVO-HRA-007 govern that separate boundary.
 
 ## Public Interface
 
@@ -1978,7 +1985,14 @@ package and public version macros and adds external reference consumers,
 evidence schema/golden/validator entry points, documentation, and independent
 staged-install verification outside the installed library ABI.
 
-## Current 0.33.0 Conformance Boundary
+Version 0.34.0 likewise changes no public type, member offset, enum value,
+function signature, installed symbol, core policy version, checkpoint format,
+callback order, allocation behavior, or RNG schedule. It advances the package
+and public version macros and adds an uninstalled private project-ingestion
+foundation, schemas, fixtures, evidence, documentation, and independent
+verification outside the stable library ABI.
+
+## Current 0.34.0 Conformance Boundary
 
 The current implementation exposes generation-zero compatibility plus bounded
 multi-generation execution:
@@ -2388,8 +2402,8 @@ The deterministic checkpoint-fuzz test rejects every truncation, a one-bit
 mutation at every serialized byte, and 2,048 seeded arbitrary byte ranges.
 The separate `tests/fuzz/checkpoint_fuzz.c` entry point exposes the same
 allocation-free untrusted parser to libFuzzer. Build-manifest parity requires
-exactly 26 production sources and 33 normative targets in CMake, GNU
-Autotools, and AES-BLD-001 inventories.
+exactly 26 installed-core sources plus eight private source-foundation sources
+and 34 normative targets in CMake, GNU Autotools, and AES-BLD-001 inventories.
 
 ## Related Records
 
@@ -2426,6 +2440,7 @@ Autotools, and AES-BLD-001 inventories.
 - `docs/adr/ADR-0032-deterministic-bounded-parallel-evaluation.md`
 - `docs/adr/ADR-0033-reproducible-core-benchmark-evidence.md`
 - `docs/adr/ADR-0034-reference-consumer-adapters.md`
+- `docs/adr/ADR-0035-immutable-project-ingestion-and-baselines.md`
 - `docs/architecture.md`
 - `docs/algorithms.md`
 - `docs/benchmarks.md`
@@ -2436,6 +2451,7 @@ Autotools, and AES-BLD-001 inventories.
 - `docs/engineering/reports/EVO-HRA-004-parallel-evaluation-audit.md`
 - `docs/engineering/reports/EVO-HRA-005-core-benchmark-evidence-audit.md`
 - `docs/engineering/reports/EVO-HRA-006-reference-adapter-audit.md`
+- `docs/engineering/reports/EVO-HRA-007-project-ingestion-audit.md`
 - `docs/engineering/SECURE-C-CXX.md`
 - `docs/engineering/AES-SEC-001-review-dispositions.json`
 - `https://github.com/dlworrell/evo/issues/4`

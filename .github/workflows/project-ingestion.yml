@@ -1,0 +1,65 @@
+name: Project Ingestion
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cmake-clang:
+    runs-on: ubuntu-24.04
+    env:
+      CC: clang
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Configure project-ingestion foundation
+        run: >-
+          cmake -S . -B build/project-ingestion-cmake
+          -DCMAKE_BUILD_TYPE=Debug
+          -DBUILD_TESTING=ON
+
+      - name: Build and run the normative ingestion target
+        run: |
+          cmake --build build/project-ingestion-cmake \
+            --target evo_project_ingestion_test --parallel
+          ctest --test-dir build/project-ingestion-cmake \
+            --output-on-failure -R '^evo_project_ingestion_test$'
+
+      - name: Validate schemas and independent fixture golden
+        run: |
+          python3 -m json.tool docs/schemas/evo-project-manifest-v1.schema.json >/dev/null
+          python3 -m json.tool docs/schemas/evo-project-baseline-v1.schema.json >/dev/null
+          python3 tests/validate_project_ingestion.py
+
+  autotools-gcc:
+    runs-on: ubuntu-24.04
+    env:
+      CC: gcc
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Autotools dependencies
+        run: sudo apt-get update && sudo apt-get install -y autoconf automake libtool
+
+      - name: Configure project-ingestion foundation
+        run: |
+          autoreconf -fi
+          mkdir -p build/project-ingestion-autotools
+          cd build/project-ingestion-autotools
+          ../../configure --enable-warnings-as-errors
+
+      - name: Build and run the normative ingestion target
+        run: |
+          make -C build/project-ingestion-autotools \
+            tests/evo_project_ingestion_test
+          build/project-ingestion-autotools/tests/evo_project_ingestion_test
+
+      - name: Validate independent fixture golden
+        run: python3 tests/validate_project_ingestion.py

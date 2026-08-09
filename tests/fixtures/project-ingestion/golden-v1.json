@@ -1,0 +1,47 @@
+{
+  "schema": "catalyst.evo-project-ingestion-golden.v1",
+  "execution_provider": "evo-test-execution-provider-v1",
+  "fixtures": [
+    {
+      "id": "fixture-cmake-v1",
+      "frontend": "cmake",
+      "manifest_fingerprint": "fnv1a64-v1:8eb75ed14a510f89",
+      "baseline_fingerprint": "fnv1a64-v1:cf7551a9cd56b691",
+      "normalized_build_fingerprint": "fnv1a64-v1:68c5c9e07e0f8c2c",
+      "state": "eligible",
+      "compilation_units": [
+        {"file": "src/value.c", "directory": ".", "output": null, "form": "arguments", "arguments": ["cc", "-std=c17", "-Iinclude", "-c", "src/value.c"]},
+        {"file": "tests/value_test.c", "directory": ".", "output": null, "form": "arguments", "arguments": ["cc", "-std=c17", "-Iinclude", "tests/value_test.c", "src/value.c", "-o", "value_test"]}
+      ],
+      "files": [
+        {"path": "CMakeLists.txt", "size": 477, "mode": "0644", "content_fingerprint": "fnv1a64-v1:2a27cf71ccea2f71"},
+        {"path": "compile_commands.json", "size": 302, "mode": "0644", "content_fingerprint": "fnv1a64-v1:603998fad9196784"},
+        {"path": "include/value.h", "size": 115, "mode": "0644", "content_fingerprint": "fnv1a64-v1:222df387fd2a5018"},
+        {"path": "src/value.c", "size": 81, "mode": "0644", "content_fingerprint": "fnv1a64-v1:dc9019f5f1f1c5e8"},
+        {"path": "tests/value_benchmark.c", "size": 374, "mode": "0644", "content_fingerprint": "fnv1a64-v1:ce1047042cd5b7e5"},
+        {"path": "tests/value_test.c", "size": 82, "mode": "0644", "content_fingerprint": "fnv1a64-v1:4fd2052891883e15"}
+      ]
+    },
+    {
+      "id": "fixture-autotools-v1",
+      "frontend": "autotools",
+      "manifest_fingerprint": "fnv1a64-v1:ec52a4f523da9734",
+      "baseline_fingerprint": "fnv1a64-v1:300add83f452b5a5",
+      "normalized_build_fingerprint": "fnv1a64-v1:68c5c9e07e0f8c2c",
+      "state": "eligible",
+      "compilation_units": [
+        {"file": "src/value.c", "directory": ".", "output": null, "form": "arguments", "arguments": ["cc", "-std=c17", "-Iinclude", "-c", "src/value.c"]},
+        {"file": "tests/value_test.c", "directory": ".", "output": null, "form": "arguments", "arguments": ["cc", "-std=c17", "-Iinclude", "tests/value_test.c", "src/value.c", "-o", "value_test"]}
+      ],
+      "files": [
+        {"path": "Makefile.am", "size": 409, "mode": "0644", "content_fingerprint": "fnv1a64-v1:fe2f4cfef23c77f2"},
+        {"path": "compile_commands.json", "size": 302, "mode": "0644", "content_fingerprint": "fnv1a64-v1:603998fad9196784"},
+        {"path": "configure.ac", "size": 162, "mode": "0644", "content_fingerprint": "fnv1a64-v1:9ebaeb9ef3426cc8"},
+        {"path": "include/value.h", "size": 115, "mode": "0644", "content_fingerprint": "fnv1a64-v1:222df387fd2a5018"},
+        {"path": "src/value.c", "size": 81, "mode": "0644", "content_fingerprint": "fnv1a64-v1:cf1eb3cfe18a345d"},
+        {"path": "tests/value_benchmark.c", "size": 374, "mode": "0644", "content_fingerprint": "fnv1a64-v1:0718e2d92e04d33c"},
+        {"path": "tests/value_test.c", "size": 82, "mode": "0644", "content_fingerprint": "fnv1a64-v1:4b4f5705a2f11618"}
+      ]
+    }
+  ]
+}

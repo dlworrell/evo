@@ -8,6 +8,7 @@ project_zero:
     - .github/workflows/compliance.yml
     - .github/workflows/benchmarks.yml
     - .github/workflows/reference-adapters.yml
+    - .github/workflows/project-ingestion.yml
     - .github/workflows/optimization.yml
     - .github/workflows/release.yml
   remediation:

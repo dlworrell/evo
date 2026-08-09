@@ -91,6 +91,15 @@ and evidence boundaries; EVO-HRA-006 audits the stable registry under ADR-0026.
 
 ## Source-Optimization Experiments
 
+Version 0.34.0 baseline capture records benchmark eligibility but performs no
+candidate comparison and claims no optimization. Its canonical baseline
+evidence retains the exact workload registry, declared benchmark command,
+provider identity, gate disposition, bounded output metadata, immutable source
+registry, and normalized compilation units. A failed correctness gate
+suppresses benchmarking; a failed required benchmark yields the distinct
+`benchmark-ineligible` state. FNV labels are deterministic diagnostics, not
+performance, authentication, or correctness authority.
+
 Every source-optimization experiment additionally records:
 
 - immutable baseline source and dependency identities

@@ -38,6 +38,7 @@ The governing product records are:
 - `docs/adr/ADR-0032-deterministic-bounded-parallel-evaluation.md`
 - `docs/adr/ADR-0033-reproducible-core-benchmark-evidence.md`
 - `docs/adr/ADR-0034-reference-consumer-adapters.md`
+- `docs/adr/ADR-0035-immutable-project-ingestion-and-baselines.md`
 - `docs/specs/EVO-001-library-contract.md`
 - `docs/specs/EVO-002-source-optimizer-contract.md`
 - `docs/roadmap.md`
@@ -113,6 +114,12 @@ records and bounded arrays are direct reference forms, the stable JSON registry
 retains every configuration, trace, checkpoint candidate, and logical worker
 assignment, and Markdown is derived only after exact golden validation.
 EVO-HRA-006 retains this adapter-specific reconciliation.
+ADR-0035 assesses 0.34.0 project ingestion: immutable snapshot bytes and
+complete ordered file, compilation-unit, policy, and gate registries are exact
+authority; versioned FNV labels are diagnostic only; and JSON plus Markdown
+expose the whole baseline in stable domain order. The implementation uses
+bounded arrays and direct scans rather than an accelerated structure.
+EVO-HRA-007 retains this ingestion-specific audit.
 
 ## Roadmap Scope
 
@@ -134,7 +141,7 @@ The core track includes:
 
 The source-optimizer track adds:
 
-- C project ingestion and immutable baseline capture
+- Implemented C project ingestion and immutable baseline capture
 - Clang AST, LLVM IR, compiler-evidence, and runtime-hotspot analysis
 - Versioned structured source-transformation recipes
 - AST-aware C source transformations and isolated candidate materialization
@@ -161,9 +168,10 @@ repository.
 - `benchmarks/` — performance and algorithm benchmarks
 - `docs/` — architecture, theory, algorithms, and evidence guidance
 
-The source-optimizer implementation directories will be introduced only by
-their dependency-ordered roadmap issues. Their absence in version 0.33.0 is an
-explicit current boundary, not an implicit feature claim.
+The first private source-optimizer foundation units are present in 0.34.0.
+Clang analysis, transformations, candidate evaluation, orchestration, and the
+installed executable remain dependency-ordered roadmap work; their absence is
+an explicit boundary, not an implicit feature claim.
 
 ## Authoritative Native Builds
 
@@ -189,8 +197,9 @@ make
 make check
 ```
 
-`CMakePresets.json`, `configure.ac`, and `Makefile.am` enumerate the same C17
-library sources and normative tests. CI also compares staged install
+`CMakePresets.json`, `configure.ac`, and `Makefile.am` enumerate the same 26
+installed-core sources, eight private source-foundation sources, and 34
+normative tests. CI also compares staged install
 manifests, public symbols, package metadata, and a downstream consumer built
 against each installed result. See
 `docs/engineering/AES-BLD-001-toolchain-profile.md`.
@@ -202,12 +211,15 @@ declared Clang/LLVM and GNU profiles.
 
 ## Status
 
-**Current implementation boundary:** EVO 0.33.0 implements the deterministic
-evolutionary-search core. It does not yet ingest a C project, build a Clang AST
-or LLVM IR model, transform source, compile evolved candidates, or emit an
-optimized source patch. Those product boundaries are tracked in the 1.0
-roadmap beginning with issues #58 through #69. Issue #57 governs the mission
-reconciliation, and issue #56 remains the final 1.0 stabilization gate.
+**Current implementation boundary:** EVO 0.34.0 implements the deterministic
+evolutionary-search core plus strict C-project manifest ingestion, immutable
+baseline capture, normalized compilation-unit evidence, and declared baseline
+gate orchestration through a caller-supplied execution provider. It does not
+yet build a Clang AST or LLVM IR model, transform source, evaluate evolved
+candidates, or emit an optimized patch. It is also not yet an installed
+standalone optimizer executable: issue #67 defines product commands and issue
+#93 requires the actual installed binary before artifact and end-to-end work.
+Issue #56 remains the final 1.0 stabilization gate.
 
 EVO 0.16.0 composes the complete deterministic generation pipeline into a
 bounded public `evo_run`. Generation zero is constructed, initialized,
@@ -390,6 +402,19 @@ three-worker evaluation with complete candidate-ordered schedules. Canonical
 JSON must equal the reviewed golden before its Markdown projection is written.
 These adapters introduce no accelerator and make no source-optimizer claim;
 compiler options neither analyze nor emit C source.
+
+EVO 0.34.0 adds the first private source-optimizer foundation. A strict
+versioned manifest declares authorized roots, identities, exact CMake or
+Autotools commands, target/workload policy, and nested resource budgets. EVO
+copies authorized regular files into a read-only snapshot and a separate
+derived workspace, normalizes the retained compilation database into a stable
+translation-unit registry, invokes baseline gates only through an explicit
+bounded provider, and then byte-verifies the input against the snapshot. A
+successful atomic output contains `baseline.json`, `baseline.md`, and the
+read-only snapshot; transient workspace artifacts are removed. The FNV labels
+are deterministic diagnostics rather than authentication or sole identity
+authority. This release performs no Clang analysis or source transformation
+and installs no optimizer executable.
 
 Version 0.3.0 added the independently tested private population-storage
 foundation: checked `population_size * genome_size` arithmetic, a

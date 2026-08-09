@@ -110,7 +110,15 @@
       "src/observer.c",
       "src/stopping.c",
       "src/checkpoint.c",
-      "src/rng.c"
+      "src/rng.c",
+      "src/project_runtime.c",
+      "src/project_json.c",
+      "src/project_fingerprint.c",
+      "src/project_manifest.c",
+      "src/project_compilation_database.c",
+      "src/project_snapshot.c",
+      "src/project_evidence.c",
+      "src/project_ingestion.c"
     ],
     "normative_tests": [
       {
@@ -310,6 +318,12 @@
         "source": "tests/allocation_failure_test.c",
         "cmake": "evo_allocation_failure_test",
         "autotools": "tests/evo_allocation_failure_test"
+      },
+      {
+        "id": "project-ingestion",
+        "source": "tests/project_ingestion_test.c",
+        "cmake": "evo_project_ingestion_test",
+        "autotools": "tests/evo_project_ingestion_test"
       }
     ],
     "consumer_sources": [

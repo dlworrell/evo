@@ -1,0 +1,8 @@
+[
+  {
+    "directory": ".",
+    "file": "src/value.c",
+    "arguments": ["cc", "-c", "src/value.c"],
+    "command": "cc -c src/value.c"
+  }
+]

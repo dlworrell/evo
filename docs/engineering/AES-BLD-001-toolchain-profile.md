@@ -28,8 +28,9 @@ records their versions as evidence.
 
 ## Frontend parity
 
-`CMakeLists.txt` and `Makefile.am` enumerate all twenty-six production
-sources and the same thirty-three normative targets. Both frontends:
+`CMakeLists.txt` and `Makefile.am` enumerate all twenty-six installed-core
+sources, eight private source-foundation sources, and the same thirty-four
+normative targets. Both frontends:
 
 - compile the project as C17 with the same warning policy;
 - default to warnings-as-errors;
@@ -40,6 +41,8 @@ sources and the same thirty-three normative targets. Both frontends:
   macro when available, and otherwise compile the same volatile-byte secure-
   erasure fallback;
 - build the private seed-schedule research support only for tests;
+- build the uninstalled project-ingestion foundation and its normative fixture
+  test without changing the staged core library surface;
 - build the private core-benchmark executable and expose equivalent bounded
   smoke and explicitly requested extended evidence targets;
 - install `libcatalyst_evo.a`, the public header, and `catalyst-evo.pc`;
@@ -67,6 +70,10 @@ The AEMS gate performs four distinct checks:
 The repository-owned `Reference Adapters` workflow adds the issue-#55
 installed-consumer semantic gate to those native parity checks; it does not
 replace or weaken AEMS authority.
+The repository-owned `Project Ingestion` workflow independently runs the
+issue-#58 target and Python golden/schema validation through CMake/Clang and
+Autotools/GCC. It likewise supplements rather than replaces the complete AEMS
+matrix.
 
 The CMake staged library is inspected with `llvm-nm`; the GNU Autotools staged
 library is independently inspected with GNU `nm`. A matching result therefore

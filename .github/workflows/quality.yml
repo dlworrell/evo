@@ -47,7 +47,10 @@ jobs:
       - name: Run clang-tidy
         shell: bash
         run: |
-          mapfile -t files < <(find src tests benchmarks -type f -name '*.c' | sort)
+          mapfile -t files < <(
+            find src tests benchmarks -type f -name '*.c' \
+              ! -path 'tests/fixtures/*' | sort
+          )
           if [ ${#files[@]} -eq 0 ]; then
             echo "No C source files found."
             exit 0

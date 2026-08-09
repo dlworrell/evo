@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(catalyst_evo VERSION 0.33.0 LANGUAGES C)
+project(catalyst_evo VERSION 0.34.0 LANGUAGES C)
 
 include(CTest)
 include(CheckSymbolExists)
@@ -73,6 +73,24 @@ add_library(catalyst_evo STATIC
     src/rng.c
 )
 add_library(catalyst_evo::catalyst_evo ALIAS catalyst_evo)
+
+# The source-optimizer foundation is deliberately separate from the installed
+# stable core until its product-facing API is fixed by the later CLI milestone.
+add_library(catalyst_evo_project_foundation STATIC
+    src/project_runtime.c
+    src/project_json.c
+    src/project_fingerprint.c
+    src/project_manifest.c
+    src/project_compilation_database.c
+    src/project_snapshot.c
+    src/project_evidence.c
+    src/project_ingestion.c
+)
+target_include_directories(catalyst_evo_project_foundation
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+target_compile_features(catalyst_evo_project_foundation PRIVATE c_std_17)
 
 target_include_directories(catalyst_evo
     PUBLIC

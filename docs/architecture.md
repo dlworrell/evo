@@ -54,10 +54,12 @@ a human-readable report derived from validated canonical JSON.
 
 ### Source analysis and transformation
 
-The planned source layer captures an immutable C-project baseline and declared
-build graph, then uses a versioned Clang/LLVM provider to produce stable source
-identities, structural evidence, compiler optimization records, and configured
-runtime hotspot evidence. It maps analysis opportunities into versioned
+The source layer begins in 0.34.0 with strict manifest parsing, an immutable
+C-project baseline, a complete ordered file registry, and a normalized
+compilation-unit build description. Later work uses a versioned Clang/LLVM
+provider to produce stable source identities, structural evidence, compiler
+optimization records, and configured runtime hotspot evidence. It maps
+analysis opportunities into versioned
 structured transformation recipes.
 
 Source genomes never contain arbitrary C text for byte-wise mutation or
@@ -126,14 +128,15 @@ ADR-0026 defines the complete rule.
 
 ## Current Conformance Boundary
 
-Only the evolutionary-search core and its bounded reference consumers exist in
-version 0.33.0. Source ingestion,
-analysis, transformation, candidate materialization, external-process
-isolation, target-code measurement, product commands, and optimized-patch
-artifacts are planned by issues #58 through #69. Documentation of those
-planned boundaries is not an implementation claim.
+Version 0.34.0 contains the evolutionary-search core, its bounded reference
+consumers, and a private project-ingestion/baseline foundation. Clang analysis,
+transformation, candidate materialization, provider-owned external-process
+isolation, target-code measurement, product commands, the installed standalone
+executable, and optimized-patch artifacts remain planned by issues #59 through
+#69 and #93. Documentation of those planned boundaries is not an
+implementation claim.
 
-The 0.33.0 core uses explicit bounded arrays, direct deterministic scans, and
+The 0.34.0 core uses explicit bounded arrays, direct deterministic scans, and
 one direct constant-space adaptive-rate record rather than compressed,
 probabilistic, cached, or indexed run authority. Its
 reference byte operators act directly on those exact arrays and introduce no
@@ -161,8 +164,12 @@ remain explicitly non-authoritative. EVO-HRA-005 audits this boundary. The
 installed reference adapters likewise retain direct immutable fixtures,
 complete traces, checkpoint candidates, and logical worker assignments in a
 stable JSON registry. Their exact golden object is authority and their
-Markdown table is derived; EVO-HRA-006 audits this boundary. The current core
-therefore has no opaque accelerated authority requiring
+Markdown table is derived; EVO-HRA-006 audits this boundary. Project ingestion
+also retains direct bounded file, compilation-unit, manifest-policy, and gate
+arrays plus exact snapshot bytes. Its FNV labels are diagnostics only and its
+complete JSON/Markdown registries derive from the same owner; EVO-HRA-007
+audits this boundary. The current implementation therefore has no opaque
+accelerated authority requiring
 remediation. This audit does not pre-approve later variable pools, compressed
 checkpoints, persistent or distributed schedulers, analysis, recipe,
 orchestration, or artifact implementations.
@@ -882,7 +889,7 @@ promotion, checkpoint capture, resume, and final bounded-run evidence.
 6. Record statistics and evidence.
 7. Stop on convergence, stagnation, generation limit, or an application-defined condition.
 
-Version 0.33.0 publicly implements steps 1 through 5 for at most
+Version 0.34.0 publicly implements steps 1 through 5 for at most
 `generation_limit` bounded transitions, with caller-bounded elite policy
 version 1, explicit consumer/reference byte-operator policy, and bounded
 diversity measurement in step 5. It implements the constant-space statistics
@@ -933,9 +940,17 @@ The 1.0 product flow is:
 12. Replay by verifying every recorded identity, rematerializing the same
     source candidate, and rerunning the declared validation and comparison.
 
+Version 0.34.0 implements steps 1 through 3 only. It validates
+`catalyst.evo-project-manifest.v1`, copies exact authorized bytes to an
+immutable snapshot and separate derived workspace, normalizes the retained
+compilation database, invokes declared gates through a bounded provider, and
+commits complete baseline evidence only after byte-for-byte source
+reverification. It performs no step 4 analysis and exposes no installed
+product executable.
+
 Parallel source optimization schedules isolated external processes and commits
 logical evidence in stable candidate order. It is distinct from the core's
-planned in-process callback parallelism.
+implemented in-process callback parallelism.
 
 ## Correctness Boundary
 

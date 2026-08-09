@@ -22,14 +22,15 @@ repository:
   components:
     - id: catalyst_evo
       class: reusable-library
-      status: implemented-0.33.0
+      status: implemented-0.34.0
       contract: docs/specs/EVO-001-library-contract.md
     - id: evo-source-optimizer
       class: engineering-application
-      status: planned-for-1.0
+      status: ingestion-foundation-implemented-0.34.0
       contract: docs/specs/EVO-002-source-optimizer-contract.md
   outputs:
     - deterministic C17 evolutionary-search library
+    - immutable C-project baseline snapshot and normalized build evidence
     - C source analysis and structured transformation evidence
     - highest-ranked verified candidate source patch
     - baseline comparison and deterministic replay bundle

@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/dlworrell/evo/blob/main/docs/schemas/evo-project-manifest-v1.schema.json",
+  "title": "EVO project manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "manifest_id",
+    "source",
+    "build",
+    "target",
+    "dependencies",
+    "toolchains",
+    "environment",
+    "workloads",
+    "constraints",
+    "search",
+    "budgets",
+    "artifacts"
+  ],
+  "properties": {
+    "schema": {"const": "catalyst.evo-project-manifest.v1"},
+    "manifest_id": {"type": "string", "minLength": 1},
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["declared_identity", "permitted_roots", "compilation_database", "generated_source_policy"],
+      "properties": {
+        "declared_identity": {"type": "string", "minLength": 1},
+        "permitted_roots": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "compilation_database": {"type": "string", "minLength": 1},
+        "generated_source_policy": {"const": "reject"}
+      }
+    },
+    "build": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["frontend", "configure", "compile", "correctness", "benchmark", "benchmark_required"],
+      "properties": {
+        "frontend": {"enum": ["cmake", "autotools"]},
+        "configure": {"$ref": "#/$defs/argv"},
+        "compile": {"$ref": "#/$defs/argv"},
+        "correctness": {"$ref": "#/$defs/argv"},
+        "benchmark": {"$ref": "#/$defs/argv"},
+        "benchmark_required": {"type": "boolean"}
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["language", "platforms"],
+      "properties": {
+        "language": {"type": "string", "minLength": 1},
+        "platforms": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+      }
+    },
+    "dependencies": {"type": "array", "items": {"$ref": "#/$defs/namedIdentity"}},
+    "toolchains": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/namedIdentity"}},
+    "environment": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "value"],
+        "properties": {
+          "name": {"type": "string", "pattern": "^[A-Z_][A-Z0-9_]*$"},
+          "value": {"type": "string"}
+        }
+      }
+    },
+    "workloads": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "constraints": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "search": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["seed", "population", "generations", "workers"],
+      "properties": {
+        "seed": {"type": "integer", "minimum": 0},
+        "population": {"type": "integer", "minimum": 1},
+        "generations": {"type": "integer", "minimum": 1},
+        "workers": {"type": "integer", "minimum": 1}
+      }
+    },
+    "budgets": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["max_files", "max_file_bytes", "max_total_bytes", "max_path_bytes", "max_compilation_database_bytes", "max_command_output_bytes", "max_evidence_bytes", "command_timeout_ms", "max_memory_bytes", "max_processes", "max_storage_bytes", "network_access"],
+      "properties": {
+        "max_files": {"type": "integer", "minimum": 1},
+        "max_file_bytes": {"type": "integer", "minimum": 1},
+        "max_total_bytes": {"type": "integer", "minimum": 1},
+        "max_path_bytes": {"type": "integer", "minimum": 1},
+        "max_compilation_database_bytes": {"type": "integer", "minimum": 1},
+        "max_command_output_bytes": {"type": "integer", "minimum": 1},
+        "max_evidence_bytes": {"type": "integer", "minimum": 1},
+        "command_timeout_ms": {"type": "integer", "minimum": 1},
+        "max_memory_bytes": {"type": "integer", "minimum": 1},
+        "max_processes": {"type": "integer", "minimum": 1},
+        "max_storage_bytes": {"type": "integer", "minimum": 1},
+        "network_access": {"const": false}
+      }
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["retention", "cleanup"],
+      "properties": {
+        "retention": {"const": "baseline-only"},
+        "cleanup": {"const": "remove-derived-workspace"}
+      }
+    }
+  },
+  "$defs": {
+    "argv": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+    "namedIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "identity"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "identity": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}

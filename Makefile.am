@@ -72,12 +72,33 @@ noinst_HEADERS = \
 	src/internal/run_state.h \
 	src/internal/checkpoint.h \
 	src/internal/result_storage.h \
+	src/internal/project_runtime.h \
+	src/internal/project_json.h \
+	src/internal/project_fingerprint.h \
+	src/internal/project_manifest.h \
+	src/internal/project_compilation_database.h \
+	src/internal/project_ingestion.h \
+	src/internal/project_baseline_owner.h \
+	src/internal/project_snapshot.h \
+	src/internal/project_evidence.h \
 	tests/research/seed_schedule_research.h
 
-noinst_LTLIBRARIES = libevo_seed_schedule_research.la
+noinst_LTLIBRARIES = \
+	libevo_seed_schedule_research.la \
+	libevo_project_foundation.la
 libevo_seed_schedule_research_la_SOURCES = \
 	tests/research/seed_schedule_research.c
 libevo_seed_schedule_research_la_LIBADD = libcatalyst_evo.la
+
+libevo_project_foundation_la_SOURCES = \
+	src/project_runtime.c \
+	src/project_json.c \
+	src/project_fingerprint.c \
+	src/project_manifest.c \
+	src/project_compilation_database.c \
+	src/project_snapshot.c \
+	src/project_evidence.c \
+	src/project_ingestion.c
 
 check_PROGRAMS = \
 	tests/evo_smoke_test \
@@ -110,6 +131,7 @@ check_PROGRAMS = \
 	tests/evo_checkpoint_fuzz_test \
 	tests/evo_seed_schedule_research_test \
 	tests/evo_seed_schedule_experiment \
+	tests/evo_project_ingestion_test \
 	benchmarks/evo_core_benchmark \
 	tests/evo_secure_erasure_test \
 	tests/evo_allocation_failure_test
@@ -218,6 +240,13 @@ tests_evo_seed_schedule_experiment_SOURCES = \
 tests_evo_seed_schedule_experiment_LDADD = \
 	libevo_seed_schedule_research.la libcatalyst_evo.la -lm
 
+tests_evo_project_ingestion_test_SOURCES = \
+	tests/project_ingestion_test.c
+tests_evo_project_ingestion_test_CPPFLAGS = \
+	$(AM_CPPFLAGS) -DEVO_TEST_SOURCE_DIR=\"$(abs_srcdir)\"
+tests_evo_project_ingestion_test_LDADD = \
+	libevo_project_foundation.la
+
 benchmarks_evo_core_benchmark_SOURCES = benchmarks/core_benchmark.c
 benchmarks_evo_core_benchmark_LDADD = libcatalyst_evo.la -lm
 benchmarks_evo_core_benchmark_CPPFLAGS = \
@@ -284,6 +313,7 @@ EXTRA_DIST = \
 	.clang-tidy \
 	.github/workflows/aes-bld-001.yml \
 	.github/workflows/reference-adapters.yml \
+	.github/workflows/project-ingestion.yml \
 	CMakeLists.txt \
 	CMakePresets.json \
 	benchmarks/CMakeLists.txt \
@@ -293,6 +323,9 @@ EXTRA_DIST = \
 	catalyst-evo.pc.in \
 	consumer/consumer.c \
 	docs/adr/ADR-0034-reference-consumer-adapters.md \
+	docs/adr/ADR-0035-immutable-project-ingestion-and-baselines.md \
+	docs/schemas/evo-project-manifest-v1.schema.json \
+	docs/schemas/evo-project-baseline-v1.schema.json \
 	examples/CMakeLists.txt \
 	examples/Makefile \
 	examples/README.md \
@@ -310,6 +343,26 @@ EXTRA_DIST = \
 	examples/validate_reference_adapters.py \
 	docs/engineering/AES-BLD-001-toolchain-profile.md \
 	docs/engineering/reports/EVO-HRA-006-reference-adapter-audit.md \
+	docs/engineering/reports/EVO-HRA-007-project-ingestion-audit.md \
+	tests/validate_project_ingestion.py \
+	tests/fixtures/project-ingestion/golden-v1.json \
+	tests/fixtures/project-ingestion/cmake/manifest.json \
+	tests/fixtures/project-ingestion/cmake/manifest-reordered.json \
+	tests/fixtures/project-ingestion/cmake/project/CMakeLists.txt \
+	tests/fixtures/project-ingestion/cmake/project/compile_commands.json \
+	tests/fixtures/project-ingestion/cmake/project/bad_compile_commands.json \
+	tests/fixtures/project-ingestion/cmake/project/include/value.h \
+	tests/fixtures/project-ingestion/cmake/project/src/value.c \
+	tests/fixtures/project-ingestion/cmake/project/tests/value_test.c \
+	tests/fixtures/project-ingestion/cmake/project/tests/value_benchmark.c \
+	tests/fixtures/project-ingestion/autotools/manifest.json \
+	tests/fixtures/project-ingestion/autotools/project/Makefile.am \
+	tests/fixtures/project-ingestion/autotools/project/configure.ac \
+	tests/fixtures/project-ingestion/autotools/project/compile_commands.json \
+	tests/fixtures/project-ingestion/autotools/project/include/value.h \
+	tests/fixtures/project-ingestion/autotools/project/src/value.c \
+	tests/fixtures/project-ingestion/autotools/project/tests/value_test.c \
+	tests/fixtures/project-ingestion/autotools/project/tests/value_benchmark.c \
 	tests/fuzz/checkpoint_fuzz.c \
 	build-aux/.gitkeep \
 	m4/.gitkeep
