@@ -2,7 +2,7 @@
 
 This document distinguishes algorithms implemented by the reusable
 `catalyst_evo` core from the structured program transformations and evaluation
-algorithm required by the EVO 1.0 source optimizer. Version 0.32.0 implements
+algorithm required by the EVO 1.0 source optimizer. Version 0.33.0 implements
 only the core boundary described below.
 
 ## EVO Core Initial Release
@@ -977,6 +977,30 @@ max, and the scoped FNV locator are derived conveniences rather than
 authority. A separate validator parses that JSON and generates the Markdown
 audit projection.
 ADR-0033 and EVO-HRA-005 fix the full evidence and abstraction contract.
+
+## Installed Reference Adapter Execution
+
+Version 0.33.0 changes no core algorithm. Four external consumers encode an
+explicit four-byte domain configuration, provide a pure evaluator and hard
+validity predicate, and invoke the same public bounded run under fixed
+rank-selection, byte-operator, elite, diversity, recycling, and resource
+policy.
+
+Each adapter executes twice and compares the complete public result and every
+observer record directly. Repository scoring additionally copies and inspects
+the generation-two format-3 checkpoint, resumes through the public API, and
+compares the exact final result and uninterrupted trace suffix. Scheduler
+tuning requests three workers only after declaring its immutable evaluator
+thread-safe and retains every public candidate assignment in stable order.
+Compiler options uses patience stopping; FPGA placement uses an application
+stop callback.
+
+The fixed fixtures and evidence arrays are the exact reference form. The
+combined JSON orders all adapters and retains configurations, constraints,
+penalties, traces, checkpoint candidates, schedules, outcomes, and limitations.
+Validation requires direct equality to a reviewed complete golden object before
+deriving Markdown. ADR-0034 and EVO-HRA-006 fix the installed boundary and
+Human-Readable Abstraction assessment.
 
 ## Structured C Source Evolution
 

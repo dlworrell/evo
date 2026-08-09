@@ -283,6 +283,7 @@ EXTRA_DIST = \
 	.aems/aes-bld-001-waivers.json \
 	.clang-tidy \
 	.github/workflows/aes-bld-001.yml \
+	.github/workflows/reference-adapters.yml \
 	CMakeLists.txt \
 	CMakePresets.json \
 	benchmarks/CMakeLists.txt \
@@ -291,7 +292,24 @@ EXTRA_DIST = \
 	benchmarks/validate_core_benchmark.py \
 	catalyst-evo.pc.in \
 	consumer/consumer.c \
+	docs/adr/ADR-0034-reference-consumer-adapters.md \
+	examples/CMakeLists.txt \
+	examples/Makefile \
+	examples/README.md \
+	examples/common/reference_adapter.h \
+	examples/compiler/README.md \
+	examples/compiler/compiler_options.c \
+	examples/fpga-placement/README.md \
+	examples/fpga-placement/fpga_placement.c \
+	examples/reference-adapters-v1.golden.json \
+	examples/reference-adapters-v1.schema.json \
+	examples/repository-scoring/README.md \
+	examples/repository-scoring/repository_scoring.c \
+	examples/scheduler/README.md \
+	examples/scheduler/scheduler_tuning.c \
+	examples/validate_reference_adapters.py \
 	docs/engineering/AES-BLD-001-toolchain-profile.md \
+	docs/engineering/reports/EVO-HRA-006-reference-adapter-audit.md \
 	tests/fuzz/checkpoint_fuzz.c \
 	build-aux/.gitkeep \
 	m4/.gitkeep

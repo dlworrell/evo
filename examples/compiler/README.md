@@ -1,20 +1,19 @@
-# Compiler-Option Search Core Example
+# Compiler-Option Search Reference Adapter
 
-This planned example exercises the generic `catalyst_evo` core by exploring
-compiler pass selection and ordering, inlining thresholds, instruction
-selection, register allocation, code-size versus speed tradeoffs, and memory-
-bank placement.
-
-Fitness may include execution cycles, binary size, bank crossings, build time,
-and test correctness. Candidate configurations that fail tests are rejected.
+`compiler_options.c` searches a small deterministic model containing
+optimization level, unroll level, inline level, and vectorization enablement.
+Two unsupported combinations are hard invalid. Modeled size growth above 180
+units is a visible soft penalty already included in `fitness.total`. A bounded
+stagnation policy terminates the run when improvement stops.
 
 ## Boundary
 
-This is a build-configuration adapter. It does not parse a C project, analyze
-its AST or LLVM IR, evolve structured source transformations, or emit optimized
-C source. Successful completion therefore proves only that the reusable core
-can search compiler options; it does not satisfy the EVO 1.0 source-to-source
-product contract in `docs/specs/EVO-002-source-optimizer-contract.md`.
+This is build-configuration search only. It does not invoke a compiler, parse
+a C project, analyze AST or LLVM IR, evolve a pass pipeline, transform source,
+measure a binary, or emit optimized C source. Successful completion proves
+only that the reusable core can search the explicit fixture model; it does not
+satisfy the EVO 1.0 source-to-source product contract in
+`docs/specs/EVO-002-source-optimizer-contract.md`.
 
 The actual source-optimization reference proof is tracked by issues #58
 through #69 and must emit at least one reviewable source-level change.

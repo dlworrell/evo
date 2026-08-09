@@ -126,13 +126,14 @@ ADR-0026 defines the complete rule.
 
 ## Current Conformance Boundary
 
-Only the evolutionary-search core exists in version 0.32.0. Source ingestion,
+Only the evolutionary-search core and its bounded reference consumers exist in
+version 0.33.0. Source ingestion,
 analysis, transformation, candidate materialization, external-process
 isolation, target-code measurement, product commands, and optimized-patch
 artifacts are planned by issues #58 through #69. Documentation of those
 planned boundaries is not an implementation claim.
 
-The 0.32.0 core uses explicit bounded arrays, direct deterministic scans, and
+The 0.33.0 core uses explicit bounded arrays, direct deterministic scans, and
 one direct constant-space adaptive-rate record rather than compressed,
 probabilistic, cached, or indexed run authority. Its
 reference byte operators act directly on those exact arrays and introduce no
@@ -157,7 +158,11 @@ from decisions. The maintained benchmark retains complete cases, seeds,
 generation traces, and raw samples as canonical JSON; its Markdown projection
 is regenerated from that artifact, and aggregates and the scoped FNV locator
 remain explicitly non-authoritative. EVO-HRA-005 audits this boundary. The
-current core therefore has no opaque accelerated authority requiring
+installed reference adapters likewise retain direct immutable fixtures,
+complete traces, checkpoint candidates, and logical worker assignments in a
+stable JSON registry. Their exact golden object is authority and their
+Markdown table is derived; EVO-HRA-006 audits this boundary. The current core
+therefore has no opaque accelerated authority requiring
 remediation. This audit does not pre-approve later variable pools, compressed
 checkpoints, persistent or distributed schedulers, analysis, recipe,
 orchestration, or artifact implementations.
@@ -178,6 +183,8 @@ orchestration, or artifact implementations.
 - Statistics and evidence
 - Versioned checkpoint inspection, capture, and deterministic resume
 - Reproducible random-number generation
+- Installed reference consumers with exact replay, resume, schedule, and
+  evidence projections
 
 ## Population Storage Boundary
 
@@ -875,7 +882,7 @@ promotion, checkpoint capture, resume, and final bounded-run evidence.
 6. Record statistics and evidence.
 7. Stop on convergence, stagnation, generation limit, or an application-defined condition.
 
-Version 0.32.0 publicly implements steps 1 through 5 for at most
+Version 0.33.0 publicly implements steps 1 through 5 for at most
 `generation_limit` bounded transitions, with caller-bounded elite policy
 version 1, explicit consumer/reference byte-operator policy, and bounded
 diversity measurement in step 5. It implements the constant-space statistics
@@ -893,6 +900,10 @@ The `EVO-CORE-001` evidence layer exercises that unchanged core under four
 serial/parallel and allocate/recycle modes, gates exact semantic equivalence,
 and records reporting-only performance measurements outside algorithm
 authority.
+The external adapter layer then maps four explicit domain fixtures to the
+public problem/configuration API, runs only against an installed package, and
+retains complete deterministic JSON evidence. It changes no core step or
+source-optimizer boundary.
 
 ## Source-Optimizer Execution Flow
 

@@ -42,7 +42,7 @@ jobs:
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DBUILD_TESTING=ON
 
       - name: Run cppcheck
-        run: cppcheck --enable=warning,performance,portability --error-exitcode=1 --inline-suppr -I include src tests benchmarks
+        run: cppcheck --enable=warning,performance,portability --error-exitcode=1 --inline-suppr -I include src tests benchmarks examples
 
       - name: Run clang-tidy
         shell: bash
@@ -53,3 +53,7 @@ jobs:
             exit 0
           fi
           clang-tidy -p build "${files[@]}"
+          mapfile -t example_files < <(find examples -type f -name '*.c' | sort)
+          if [ ${#example_files[@]} -ne 0 ]; then
+            clang-tidy "${example_files[@]}" -- -std=c17 -Iinclude -pthread
+          fi

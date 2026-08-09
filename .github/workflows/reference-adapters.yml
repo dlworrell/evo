@@ -1,0 +1,97 @@
+name: Reference Adapters
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cmake-staged-install:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Configure and install EVO with CMake
+        run: >-
+          cmake -S . -B build/library-cmake
+          -DCMAKE_BUILD_TYPE=Release
+          -DBUILD_TESTING=OFF
+          -DCMAKE_INSTALL_PREFIX="${RUNNER_TEMP}/evo-cmake"
+
+      - name: Build and stage EVO with CMake
+        run: |
+          cmake --build build/library-cmake --parallel
+          cmake --install build/library-cmake
+
+      - name: Build adapters against the CMake installation
+        env:
+          PKG_CONFIG_PATH: ${{ runner.temp }}/evo-cmake/lib/pkgconfig
+          CMAKE_PREFIX_PATH: ${{ runner.temp }}/evo-cmake
+        run: >-
+          cmake -S examples -B build/adapters-cmake
+          -DCMAKE_BUILD_TYPE=Release
+
+      - name: Validate CMake-installed adapter evidence
+        env:
+          PKG_CONFIG_PATH: ${{ runner.temp }}/evo-cmake/lib/pkgconfig
+        run: |
+          cmake --build build/adapters-cmake --parallel
+          python3 examples/validate_reference_adapters.py \
+            --repository build/adapters-cmake/evo_repository_scoring_adapter \
+            --compiler build/adapters-cmake/evo_compiler_options_adapter \
+            --scheduler build/adapters-cmake/evo_scheduler_tuning_adapter \
+            --fpga build/adapters-cmake/evo_fpga_placement_adapter \
+            --json build/adapters-cmake/EVO-ADAPTERS-001.json \
+            --markdown build/adapters-cmake/EVO-ADAPTERS-001.md
+
+      - name: Publish CMake adapter summary
+        run: cat build/adapters-cmake/EVO-ADAPTERS-001.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload CMake adapter evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: evo-reference-adapters-cmake-${{ github.run_id }}
+          path: build/adapters-cmake/EVO-ADAPTERS-001.*
+          retention-days: 90
+
+  autotools-staged-install:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Autotools dependencies
+        run: sudo apt-get update && sudo apt-get install -y autoconf automake libtool
+
+      - name: Configure and install EVO with Autotools
+        run: |
+          autoreconf -fi
+          mkdir -p build/library-autotools
+          cd build/library-autotools
+          ../../configure \
+            --prefix="${RUNNER_TEMP}/evo-autotools" \
+            --enable-warnings-as-errors
+          make -j2
+          make install
+
+      - name: Build and validate adapters against the Autotools installation
+        env:
+          PKG_CONFIG_PATH: ${{ runner.temp }}/evo-autotools/lib/pkgconfig
+        run: >-
+          make -C examples validate
+          BUILD_DIR="${GITHUB_WORKSPACE}/build/adapters-autotools"
+
+      - name: Publish Autotools adapter summary
+        run: cat build/adapters-autotools/EVO-ADAPTERS-001.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Autotools adapter evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: evo-reference-adapters-autotools-${{ github.run_id }}
+          path: build/adapters-autotools/EVO-ADAPTERS-001.*
+          retention-days: 90

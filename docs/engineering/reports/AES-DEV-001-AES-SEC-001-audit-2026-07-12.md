@@ -131,3 +131,27 @@ ADR-0033 and EVO-HRA-005 define the benchmark's execution, evidence,
 measurement, and human-readable projection boundaries. Benchmark artifact
 ingestion into the installed library, network publication, shell evaluation,
 and performance-threshold enforcement remain outside this assessment.
+
+## EVO 0.33.0 Reference-Adapter Amendment (2026-08-09)
+
+The four reference adapters are external installed-package consumers. They add
+no library ABI, private include, network service, filesystem mutation target,
+or heavyweight external toolchain. Their deterministic fixture/evidence
+boundary is independently staged through CMake and Autotools.
+
+| Requirement | 0.33.0 status | Retained evidence |
+|---|---|---|
+| Dangerous C primitives | Pass | Adapter snapshots and genomes use explicit bounded byte loops; no banned C allocation, copy, string, formatting-to-buffer, process, or filesystem primitive is introduced |
+| Process invocation | Pass | The Python driver invokes four exact program paths with argument vectors, `shell=False`, a 15-second timeout, and captured output |
+| Bounded input/output | Pass | Programs use fixed fixture/capture/checkpoint arrays; the driver limits each stdout to 128 KiB and golden/schema/artifact documents to 256 KiB |
+| Ownership and cleanup | Pass | Borrowed views are copied only during synchronous callbacks; each zero-initialized result is destroyed once on every path; caller checkpoint arrays are never released by EVO |
+| Callback concurrency | Pass | Only scheduler evaluation opts in; it reads an immutable fixture, writes no shared state, and retains the complete post-join logical schedule |
+| Output authority | Pass | C programs write stdout only; exact combined golden equality precedes canonical JSON and derived Markdown writes |
+| Product boundary | Pass | Every record sets `source_optimizer_claimed: false`; compiler configuration search explicitly parses, transforms, and emits no C source |
+| Explainability | Pass | Fixed fixtures, configurations, traces, checkpoint candidates, schedules, limitations, and replay results remain explicit; EVO-HRA-006 retains the ADR-0026 audit |
+
+ADR-0034 and EVO-HRA-006 define the installed boundary, resource policy,
+failure behavior, complete registry, and source-optimizer non-claim. Real
+repository mutation, compiler execution, operating-system scheduler changes,
+FPGA tooling, remote publication, and untrusted fixture ingestion remain
+outside this assessment.

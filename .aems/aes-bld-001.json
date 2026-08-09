@@ -313,7 +313,11 @@
       }
     ],
     "consumer_sources": [
-      "consumer/consumer.c"
+      "consumer/consumer.c",
+      "examples/repository-scoring/repository_scoring.c",
+      "examples/compiler/compiler_options.c",
+      "examples/scheduler/scheduler_tuning.c",
+      "examples/fpga-placement/fpga_placement.c"
     ],
     "option_mappings": [
       {
