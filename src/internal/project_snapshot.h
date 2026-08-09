@@ -10,6 +10,9 @@ evo_project_status_t evo_project_snapshot_prepare(
 evo_project_status_t evo_project_snapshot_verify_source(
     const evo_project_baseline_owner_t *owner);
 
+evo_project_status_t evo_project_snapshot_verify_baseline(
+    const evo_project_baseline_owner_t *owner);
+
 evo_project_status_t evo_project_snapshot_remove_workspace(
     evo_project_baseline_owner_t *owner);
 

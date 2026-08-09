@@ -39,6 +39,7 @@ The governing product records are:
 - `docs/adr/ADR-0033-reproducible-core-benchmark-evidence.md`
 - `docs/adr/ADR-0034-reference-consumer-adapters.md`
 - `docs/adr/ADR-0035-immutable-project-ingestion-and-baselines.md`
+- `docs/adr/ADR-0036-clang-llvm-analysis-and-hotspot-model.md`
 - `docs/specs/EVO-001-library-contract.md`
 - `docs/specs/EVO-002-source-optimizer-contract.md`
 - `docs/roadmap.md`
@@ -120,6 +121,12 @@ authority; versioned FNV labels are diagnostic only; and JSON plus Markdown
 expose the whole baseline in stable domain order. The implementation uses
 bounded arrays and direct scans rather than an accelerated structure.
 EVO-HRA-007 retains this ingestion-specific audit.
+ADR-0036 assesses 0.35.0 project analysis: complete ordered translation-unit,
+source-location, declaration, relationship, compiler, runtime, and opportunity
+arrays remain exact authority. Direct scans replace a hidden analysis index,
+unavailable profiling remains distinct from zero runtime cost, and
+`analysis.json` plus `analysis.md` project the same retained owner.
+EVO-HRA-008 retains this analysis-specific audit.
 
 ## Roadmap Scope
 
@@ -142,7 +149,8 @@ The core track includes:
 The source-optimizer track adds:
 
 - Implemented C project ingestion and immutable baseline capture
-- Clang AST, LLVM IR, compiler-evidence, and runtime-hotspot analysis
+- Implemented normalized Clang/LLVM provider-evidence and runtime-hotspot
+  model
 - Versioned structured source-transformation recipes
 - AST-aware C source transformations and isolated candidate materialization
 - CMake/Clang/LLVM build and correctness gates with independent
@@ -168,10 +176,11 @@ repository.
 - `benchmarks/` — performance and algorithm benchmarks
 - `docs/` — architecture, theory, algorithms, and evidence guidance
 
-The first private source-optimizer foundation units are present in 0.34.0.
-Clang analysis, transformations, candidate evaluation, orchestration, and the
-installed executable remain dependency-ordered roadmap work; their absence is
-an explicit boundary, not an implicit feature claim.
+The private source-optimizer foundation now includes 0.34.0 immutable project
+ingestion and the 0.35.0 normalized Clang/LLVM analysis and hotspot model.
+Transformations, candidate evaluation, orchestration, and the installed
+executable remain dependency-ordered roadmap work; their absence is an
+explicit boundary, not an implicit feature claim.
 
 ## Authoritative Native Builds
 
@@ -198,7 +207,7 @@ make check
 ```
 
 `CMakePresets.json`, `configure.ac`, and `Makefile.am` enumerate the same 26
-installed-core sources, eight private source-foundation sources, and 34
+installed-core sources, eleven private source-foundation sources, and 35
 normative tests. CI also compares staged install
 manifests, public symbols, package metadata, and a downstream consumer built
 against each installed result. See
@@ -211,11 +220,14 @@ declared Clang/LLVM and GNU profiles.
 
 ## Status
 
-**Current implementation boundary:** EVO 0.34.0 implements the deterministic
+**Current implementation boundary:** EVO 0.35.0 implements the deterministic
 evolutionary-search core plus strict C-project manifest ingestion, immutable
 baseline capture, normalized compilation-unit evidence, and declared baseline
-gate orchestration through a caller-supplied execution provider. It does not
-yet build a Clang AST or LLVM IR model, transform source, evaluate evolved
+gate orchestration through a caller-supplied execution provider. It also
+accepts versioned bounded Clang/LLVM provider records, validates and normalizes
+program structure and compiler/runtime evidence, ranks evidence-backed
+opportunities, and emits complete read-only analysis projections without
+modifying source. It does not yet transform source, evaluate evolved
 candidates, or emit an optimized patch. It is also not yet an installed
 standalone optimizer executable: issue #67 defines product commands and issue
 #93 requires the actual installed binary before artifact and end-to-end work.
@@ -415,6 +427,17 @@ read-only snapshot; transient workspace artifacts are removed. The FNV labels
 are deterministic diagnostics rather than authentication or sole identity
 authority. This release performs no Clang analysis or source transformation
 and installs no optimizer executable.
+
+EVO 0.35.0 adds the private analysis boundary over an eligible committed
+baseline. A declared provider receives only the read-only snapshot and
+normalized compilation units, then returns versioned spelling/macro locations,
+declarations, calls, control/data flow, compiler optimization records, and
+optional positive runtime samples. EVO deep-copies and cross-validates every
+record, separates unavailable profiling from measured cost, deterministically
+ranks supported opportunities, re-verifies snapshot bytes and modes, and
+atomically publishes `analysis.json` plus `analysis.md`. Explicit arrays and
+direct scans remain authority; no analysis index, cache, source write,
+evolutionary operator, transformation, or executable is introduced.
 
 Version 0.3.0 added the independently tested private population-storage
 foundation: checked `population_size * genome_size` arithmetic, a

@@ -179,3 +179,31 @@ overlapping/out-of-root, oversized, symlinked, ambiguous, corrupt-provider, and
 concurrent-source-mutation paths. Provider process isolation, Clang input
 handling, candidate execution, authentication across trust boundaries, and the
 installed executable remain separately reviewable later milestones.
+
+## EVO 0.35.0 Project-Analysis Amendment (2026-08-09)
+
+The private project-analysis boundary accepts untrusted provider records over
+an eligible committed snapshot. It owns no compiler or process launcher:
+Clang/LLVM execution remains behind one declared provider boundary carrying
+the baseline's network-disabled time, memory, process, storage, and output
+policy.
+
+| Requirement | 0.35.0 status | Retained evidence |
+|---|---|---|
+| Dangerous C primitives | Reviewed | The existing private runtime unit remains the only allocation/release/format boundary; analysis evidence uses bounded writers and reviewed no-follow filesystem calls with explicit return handling |
+| Provider authority | Pass | The provider receives read-only snapshot and normalized-unit views, returns borrowed records once, and cannot publish, retain authority, invoke an evolutionary operator, or authorize a transformation |
+| Input bounds | Pass | Strings, paths, translation units, every record domain, opportunities, and combined evidence are bounded before allocation or publication; aggregation checks integer limits |
+| Structural consistency | Pass | Enums, UTF-8, ranges, stable identities, units, locations, declarations, workloads, macro spelling, and every cross-record edge validate before commitment |
+| Snapshot isolation | Pass | Every committed snapshot path, size, hardened mode, and byte fingerprint is rechecked after every provider return, including provider errors; malicious mutation returns `baseline-changed` with no analysis output |
+| Atomicity and cleanup | Pass | Output preflight precedes the provider; an incomplete marker owns publication; failure removes only the exact partial output and never the baseline or input project |
+| Identity boundary | Pass | Complete ordered records remain authority; provider/toolchain/profile identities are retained and FNV labels remain explicitly diagnostic and non-authenticating |
+| Explainability | Pass | `analysis.json` and `analysis.md` enumerate every translation unit, source location, structural relationship, compiler record, runtime record, and opportunity; EVO-HRA-008 retains the ADR-0026 audit |
+
+ADR-0036 defines the provider, ownership, resource, ranking, path, snapshot,
+failure, and evidence invariants. The normative test covers stable replay,
+headers, macros, multiple translation units, unavailable profiling, malformed
+and inconsistent providers, generated-source rejection, aliases, output
+isolation, and provider-side snapshot mutation. Concrete provider process
+isolation, source transformation, candidate execution, authentication across
+trust boundaries, and the installed executable remain later reviewable
+milestones.

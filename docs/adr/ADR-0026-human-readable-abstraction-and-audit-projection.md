@@ -206,6 +206,13 @@ Its FNV labels are diagnostic only, and JSON/Markdown expose the same stable
 domain records without a cache, compact index, filter, or hidden registry.
 EVO-HRA-007 retains the ingestion evidence and projection audit.
 
+ADR-0036 performs the change-specific assessment for EVO 0.35.0. Project
+analysis retains complete ordered translation-unit, source-location,
+relationship, compiler, runtime, and opportunity arrays with direct scans.
+No analysis index, cache, compressed form, or probabilistic authority is
+introduced; JSON and Markdown project the same owner. EVO-HRA-008 retains the
+analysis evidence and projection audit.
+
 ## Consequences
 
 - EVO may use efficient internal data structures without exposing their
@@ -267,7 +274,7 @@ reconstructable pages and windows satisfy the audit contract.
   records the implemented 0.25.0 audit and its limitations.
 - EVO-HRA-002, EVO-HRA-003, and EVO-HRA-004 record the checkpoint, recycler,
   and bounded-worker assessments for later accelerated boundaries.
-- EVO-HRA-005, EVO-HRA-006, and EVO-HRA-007 record the benchmark, adapter, and
-  project-ingestion evidence assessments.
+- EVO-HRA-005 through EVO-HRA-008 record the benchmark, adapter,
+  project-ingestion, and project-analysis evidence assessments.
 - Parent roadmap issue #38 and the affected child issues record the gate.
 - Governance issue: `https://github.com/dlworrell/evo/issues/83`

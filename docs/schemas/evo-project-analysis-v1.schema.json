@@ -1,0 +1,284 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/dlworrell/evo/blob/main/docs/schemas/evo-project-analysis-v1.schema.json",
+  "title": "EVO project analysis evidence v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "schema_version",
+    "baseline_fingerprint",
+    "analysis_fingerprint",
+    "provider",
+    "runtime_profile",
+    "translation_units",
+    "source_locations",
+    "declarations",
+    "calls",
+    "control_flows",
+    "data_flows",
+    "compiler_optimizations",
+    "runtime_hotspots",
+    "opportunities",
+    "human_readable_abstraction",
+    "source_modified",
+    "evolutionary_operator_invoked"
+  ],
+  "properties": {
+    "schema": {"const": "catalyst.evo-project-analysis.v1"},
+    "schema_version": {"const": 1},
+    "baseline_fingerprint": {"$ref": "#/$defs/fingerprint"},
+    "analysis_fingerprint": {"$ref": "#/$defs/fingerprint"},
+    "provider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["identity", "clang", "llvm", "target", "flags"],
+      "properties": {
+        "identity": {"$ref": "#/$defs/text"},
+        "clang": {"$ref": "#/$defs/text"},
+        "llvm": {"$ref": "#/$defs/text"},
+        "target": {"$ref": "#/$defs/text"},
+        "flags": {"$ref": "#/$defs/text"}
+      }
+    },
+    "runtime_profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "identity"],
+      "properties": {
+        "state": {"enum": ["not-configured", "unavailable", "available"]},
+        "identity": {
+          "oneOf": [
+            {"type": "null"},
+            {"$ref": "#/$defs/text"}
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"state": {"const": "not-configured"}}},
+          "then": {"properties": {"identity": {"type": "null"}}},
+          "else": {"properties": {"identity": {"$ref": "#/$defs/text"}}}
+        }
+      ]
+    },
+    "translation_units": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/relativePath"}
+    },
+    "source_locations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/sourceLocation"}
+    },
+    "declarations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/declaration"}
+    },
+    "calls": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/call"}
+    },
+    "control_flows": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/controlFlow"}
+    },
+    "data_flows": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/dataFlow"}
+    },
+    "compiler_optimizations": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/optimization"}
+    },
+    "runtime_hotspots": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/runtimeHotspot"}
+    },
+    "opportunities": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/opportunity"}
+    },
+    "human_readable_abstraction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reference_form",
+        "projection",
+        "complete",
+        "probabilistic_authority"
+      ],
+      "properties": {
+        "reference_form": {
+          "const": "complete-ordered-record-arrays-and-direct-scans"
+        },
+        "projection": {"const": "analysis.md"},
+        "complete": {"const": true},
+        "probabilistic_authority": {"const": false}
+      }
+    },
+    "source_modified": {"const": false},
+    "evolutionary_operator_invoked": {"const": false}
+  },
+  "$defs": {
+    "text": {"type": "string", "minLength": 1},
+    "identity": {"type": "string", "minLength": 1},
+    "fingerprint": {
+      "type": "string",
+      "pattern": "^fnv1a64-v1:[0-9a-f]{16}$"
+    },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.?(?:/|$))[^\\\\:]+$"
+    },
+    "sourceLocation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "identity",
+        "file",
+        "line",
+        "column",
+        "end_line",
+        "end_column",
+        "kind",
+        "spelling_identity"
+      ],
+      "properties": {
+        "identity": {"$ref": "#/$defs/identity"},
+        "file": {"$ref": "#/$defs/relativePath"},
+        "line": {"type": "integer", "minimum": 1},
+        "column": {"type": "integer", "minimum": 1},
+        "end_line": {"type": "integer", "minimum": 1},
+        "end_column": {"type": "integer", "minimum": 1},
+        "kind": {"enum": ["spelling", "macro-expansion"]},
+        "spelling_identity": {
+          "oneOf": [
+            {"type": "null"},
+            {"$ref": "#/$defs/identity"}
+          ]
+        }
+      }
+    },
+    "declaration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "identity",
+        "name",
+        "translation_unit",
+        "location_identity",
+        "kind",
+        "linkage",
+        "definition"
+      ],
+      "properties": {
+        "identity": {"$ref": "#/$defs/identity"},
+        "name": {"$ref": "#/$defs/text"},
+        "translation_unit": {"$ref": "#/$defs/relativePath"},
+        "location_identity": {"$ref": "#/$defs/identity"},
+        "kind": {"enum": ["function", "variable", "type"]},
+        "linkage": {"enum": ["none", "internal", "external"]},
+        "definition": {"type": "boolean"}
+      }
+    },
+    "call": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["identity", "caller", "callee", "location_identity", "kind"],
+      "properties": {
+        "identity": {"$ref": "#/$defs/identity"},
+        "caller": {"$ref": "#/$defs/identity"},
+        "callee": {"$ref": "#/$defs/identity"},
+        "location_identity": {"$ref": "#/$defs/identity"},
+        "kind": {"enum": ["direct", "indirect"]}
+      }
+    },
+    "controlFlow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["identity", "function", "from", "to", "location_identity", "kind"],
+      "properties": {
+        "identity": {"$ref": "#/$defs/identity"},
+        "function": {"$ref": "#/$defs/identity"},
+        "from": {"$ref": "#/$defs/identity"},
+        "to": {"$ref": "#/$defs/identity"},
+        "location_identity": {"$ref": "#/$defs/identity"},
+        "kind": {
+          "enum": [
+            "fallthrough",
+            "branch-true",
+            "branch-false",
+            "back-edge",
+            "return"
+          ]
+        }
+      }
+    },
+    "dataFlow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["identity", "function", "declaration", "location_identity", "kind"],
+      "properties": {
+        "identity": {"$ref": "#/$defs/identity"},
+        "function": {"$ref": "#/$defs/identity"},
+        "declaration": {"$ref": "#/$defs/identity"},
+        "location_identity": {"$ref": "#/$defs/identity"},
+        "kind": {"enum": ["read", "write", "address", "escape"]}
+      }
+    },
+    "optimization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["identity", "pass", "function", "location_identity", "message", "disposition"],
+      "properties": {
+        "identity": {"$ref": "#/$defs/identity"},
+        "pass": {"$ref": "#/$defs/text"},
+        "function": {"$ref": "#/$defs/identity"},
+        "location_identity": {"$ref": "#/$defs/identity"},
+        "message": {"$ref": "#/$defs/text"},
+        "disposition": {"enum": ["passed", "missed", "analysis"]}
+      }
+    },
+    "runtimeHotspot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["identity", "workload", "function", "location_identity", "metric", "value"],
+      "properties": {
+        "identity": {"$ref": "#/$defs/identity"},
+        "workload": {"$ref": "#/$defs/identity"},
+        "function": {"$ref": "#/$defs/identity"},
+        "location_identity": {"$ref": "#/$defs/identity"},
+        "metric": {"const": "sample-count"},
+        "value": {"type": "integer", "minimum": 1}
+      }
+    },
+    "opportunity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rank", "kind", "location_identity", "missed_optimization_count", "runtime_sample_count"],
+      "properties": {
+        "rank": {"type": "integer", "minimum": 1},
+        "kind": {
+          "enum": [
+            "compiler-missed",
+            "runtime-hotspot",
+            "compiler-missed-and-runtime-hotspot"
+          ]
+        },
+        "location_identity": {"$ref": "#/$defs/identity"},
+        "missed_optimization_count": {"type": "integer", "minimum": 0},
+        "runtime_sample_count": {
+          "oneOf": [
+            {"type": "null"},
+            {"type": "integer", "minimum": 1}
+          ]
+        }
+      }
+    }
+  }
+}

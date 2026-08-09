@@ -81,6 +81,10 @@ noinst_HEADERS = \
 	src/internal/project_baseline_owner.h \
 	src/internal/project_snapshot.h \
 	src/internal/project_evidence.h \
+	src/internal/project_analysis.h \
+	src/internal/project_analysis_owner.h \
+	src/internal/project_analysis_model.h \
+	src/internal/project_analysis_evidence.h \
 	tests/research/seed_schedule_research.h
 
 noinst_LTLIBRARIES = \
@@ -98,7 +102,10 @@ libevo_project_foundation_la_SOURCES = \
 	src/project_compilation_database.c \
 	src/project_snapshot.c \
 	src/project_evidence.c \
-	src/project_ingestion.c
+	src/project_ingestion.c \
+	src/project_analysis_model.c \
+	src/project_analysis_evidence.c \
+	src/project_analysis.c
 
 check_PROGRAMS = \
 	tests/evo_smoke_test \
@@ -132,6 +139,7 @@ check_PROGRAMS = \
 	tests/evo_seed_schedule_research_test \
 	tests/evo_seed_schedule_experiment \
 	tests/evo_project_ingestion_test \
+	tests/evo_project_analysis_test \
 	benchmarks/evo_core_benchmark \
 	tests/evo_secure_erasure_test \
 	tests/evo_allocation_failure_test
@@ -247,6 +255,13 @@ tests_evo_project_ingestion_test_CPPFLAGS = \
 tests_evo_project_ingestion_test_LDADD = \
 	libevo_project_foundation.la
 
+tests_evo_project_analysis_test_SOURCES = \
+	tests/project_analysis_test.c
+tests_evo_project_analysis_test_CPPFLAGS = \
+	$(AM_CPPFLAGS) -DEVO_TEST_SOURCE_DIR=\"$(abs_srcdir)\"
+tests_evo_project_analysis_test_LDADD = \
+	libevo_project_foundation.la
+
 benchmarks_evo_core_benchmark_SOURCES = benchmarks/core_benchmark.c
 benchmarks_evo_core_benchmark_LDADD = libcatalyst_evo.la -lm
 benchmarks_evo_core_benchmark_CPPFLAGS = \
@@ -314,6 +329,7 @@ EXTRA_DIST = \
 	.github/workflows/aes-bld-001.yml \
 	.github/workflows/reference-adapters.yml \
 	.github/workflows/project-ingestion.yml \
+	.github/workflows/project-analysis.yml \
 	CMakeLists.txt \
 	CMakePresets.json \
 	benchmarks/CMakeLists.txt \
@@ -324,8 +340,10 @@ EXTRA_DIST = \
 	consumer/consumer.c \
 	docs/adr/ADR-0034-reference-consumer-adapters.md \
 	docs/adr/ADR-0035-immutable-project-ingestion-and-baselines.md \
+	docs/adr/ADR-0036-clang-llvm-analysis-and-hotspot-model.md \
 	docs/schemas/evo-project-manifest-v1.schema.json \
 	docs/schemas/evo-project-baseline-v1.schema.json \
+	docs/schemas/evo-project-analysis-v1.schema.json \
 	examples/CMakeLists.txt \
 	examples/Makefile \
 	examples/README.md \
@@ -344,7 +362,10 @@ EXTRA_DIST = \
 	docs/engineering/AES-BLD-001-toolchain-profile.md \
 	docs/engineering/reports/EVO-HRA-006-reference-adapter-audit.md \
 	docs/engineering/reports/EVO-HRA-007-project-ingestion-audit.md \
+	docs/engineering/reports/EVO-HRA-008-project-analysis-audit.md \
 	tests/validate_project_ingestion.py \
+	tests/validate_project_analysis.py \
+	tests/fixtures/project-analysis/golden-v1.json \
 	tests/fixtures/project-ingestion/golden-v1.json \
 	tests/fixtures/project-ingestion/cmake/manifest.json \
 	tests/fixtures/project-ingestion/cmake/manifest-reordered.json \

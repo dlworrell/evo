@@ -12,7 +12,7 @@ from typing import Any
 
 SCHEMA_ID = "catalyst.evo-reference-adapters.v1"
 SCHEMA_VERSION = "1.0.0"
-EVO_VERSION = "0.34.0"
+EVO_VERSION = "0.35.0"
 ADAPTER_IDS = [
     "repository-scoring",
     "compiler-options",

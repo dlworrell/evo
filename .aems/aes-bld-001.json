@@ -118,7 +118,10 @@
       "src/project_compilation_database.c",
       "src/project_snapshot.c",
       "src/project_evidence.c",
-      "src/project_ingestion.c"
+      "src/project_ingestion.c",
+      "src/project_analysis_model.c",
+      "src/project_analysis_evidence.c",
+      "src/project_analysis.c"
     ],
     "normative_tests": [
       {
@@ -324,6 +327,12 @@
         "source": "tests/project_ingestion_test.c",
         "cmake": "evo_project_ingestion_test",
         "autotools": "tests/evo_project_ingestion_test"
+      },
+      {
+        "id": "project-analysis",
+        "source": "tests/project_analysis_test.c",
+        "cmake": "evo_project_analysis_test",
+        "autotools": "tests/evo_project_analysis_test"
       }
     ],
     "consumer_sources": [
