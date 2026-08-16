@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/dlworrell/evo/docs/schemas/evo-project-assurance-v1.schema.json",
+  "title": "EVO project candidate assurance evidence v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "candidate_fingerprint",
+    "policy_id",
+    "policy_fingerprint",
+    "execution_provider_identity",
+    "stage",
+    "gate_count",
+    "gates",
+    "performance_eligible",
+    "champion_eligible",
+    "projection_complete",
+    "probabilistic_authority",
+    "source_modified",
+    "snapshot_modified",
+    "assurance_fingerprint"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "candidate_fingerprint": {"type": "string", "minLength": 1},
+    "policy_id": {"type": "string", "minLength": 1},
+    "policy_fingerprint": {"type": "string", "minLength": 1},
+    "execution_provider_identity": {"type": "string", "minLength": 1},
+    "stage": {"enum": ["fast", "finalist"]},
+    "gate_count": {"type": "integer", "minimum": 1},
+    "gates": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/gate"}
+    },
+    "performance_eligible": {"type": "boolean"},
+    "champion_eligible": {"type": "boolean"},
+    "projection_complete": {"const": true},
+    "probabilistic_authority": {"const": false},
+    "source_modified": {"type": "boolean"},
+    "snapshot_modified": {"type": "boolean"},
+    "assurance_fingerprint": {"type": "string", "minLength": 1}
+  },
+  "$defs": {
+    "gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "gate_id",
+        "profile_id",
+        "stage",
+        "required",
+        "arguments",
+        "environment_keys",
+        "working_directory",
+        "timeout_ms",
+        "max_memory_bytes",
+        "max_processes",
+        "max_storage_bytes",
+        "max_output_bytes",
+        "network_access",
+        "workspace_only_filesystem",
+        "shell_interpretation",
+        "disposition",
+        "exit_code",
+        "signal_number",
+        "stdout_bytes",
+        "stdout_fingerprint",
+        "stderr_bytes",
+        "stderr_fingerprint",
+        "toolchain_fingerprint",
+        "diagnostic_excerpt",
+        "filesystem_policy_enforced",
+        "network_policy_enforced",
+        "process_group_clean",
+        "source_modified",
+        "snapshot_modified"
+      ],
+      "properties": {
+        "gate_id": {"type": "string", "minLength": 1},
+        "profile_id": {"type": "string", "minLength": 1},
+        "stage": {"enum": ["fast", "finalist"]},
+        "required": {"type": "boolean"},
+        "arguments": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "environment_keys": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"}
+        },
+        "working_directory": {"type": "string", "minLength": 1},
+        "timeout_ms": {"type": "integer", "minimum": 1},
+        "max_memory_bytes": {"type": "integer", "minimum": 1},
+        "max_processes": {"type": "integer", "minimum": 1},
+        "max_storage_bytes": {"type": "integer", "minimum": 1},
+        "max_output_bytes": {"type": "integer", "minimum": 1},
+        "network_access": {"type": "boolean"},
+        "workspace_only_filesystem": {"const": true},
+        "shell_interpretation": {"const": false},
+        "disposition": {
+          "enum": [
+            "not-run",
+            "passed",
+            "failed",
+            "timed-out",
+            "signaled",
+            "resource-exhausted",
+            "unavailable",
+            "policy-failed",
+            "cleanup-failed"
+          ]
+        },
+        "exit_code": {"type": "integer", "minimum": -1, "maximum": 255},
+        "signal_number": {"type": "integer", "minimum": 0, "maximum": 255},
+        "stdout_bytes": {"type": "integer", "minimum": 0},
+        "stdout_fingerprint": {"type": "string", "minLength": 1},
+        "stderr_bytes": {"type": "integer", "minimum": 0},
+        "stderr_fingerprint": {"type": "string", "minLength": 1},
+        "toolchain_fingerprint": {"type": "string", "minLength": 1},
+        "diagnostic_excerpt": {"type": "string"},
+        "filesystem_policy_enforced": {"type": "boolean"},
+        "network_policy_enforced": {"type": "boolean"},
+        "process_group_clean": {"type": "boolean"},
+        "source_modified": {"type": "boolean"},
+        "snapshot_modified": {"type": "boolean"}
+      }
+    }
+  }
+}

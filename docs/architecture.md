@@ -70,7 +70,11 @@ range validation, deterministic edit/no-change evidence, and complete
 catalogue/application projections. Version 0.38.0 adds deterministic isolated
 candidate materialization from immutable baseline bytes and exact application
 records, overlap rejection, retain/discard workspace policy, normalized patch
-output, and canonical candidate evidence.
+output, and canonical candidate evidence. Version 0.39.0 adds a private
+candidate-assurance transaction with exact fast/finalist gate policy,
+deterministic gate traces, dual-profile finalist authority, and a caller-
+supplied execution-provider boundary that must enforce declared process,
+filesystem, network, resource, cleanup, and immutable-input obligations.
 
 Source genomes never contain arbitrary C text for byte-wise mutation or
 crossover. One genome represents a complete transformation recipe containing
@@ -138,14 +142,16 @@ ADR-0026 defines the complete rule.
 
 ## Current Conformance Boundary
 
-Version 0.38.0 contains the evolutionary-search core, its bounded reference
+Version 0.39.0 contains the evolutionary-search core, its bounded reference
 consumers, private project ingestion, a private normalized analysis and hotspot
 model, a private canonical transformation-recipe model, a private initial AST-
-aware C transformation catalogue, and private isolated candidate
-materialization. Provider-owned build/correctness process isolation, target-
-code measurement, product commands, the installed standalone executable, and
-final optimized-patch artifacts remain planned by issues #63 through #69 and
-#93. Documentation of those planned boundaries is not an implementation claim.
+aware C transformation catalogue, private isolated candidate materialization,
+and private candidate assurance. Candidate process execution remains owned by
+the caller-supplied execution provider; EVO validates the declared policy and
+commits its exact attested outcome rather than pretending to provide a portable
+OS sandbox itself. Target-code measurement, product commands, the installed
+standalone executable, and final optimized-patch artifacts remain planned by
+issues #64 through #69 and #93. Documentation of those planned boundaries is not an implementation claim.
 
 The 0.37.0 package's core uses explicit bounded arrays, direct deterministic
 scans, and one direct constant-space adaptive-rate record rather than compressed,
@@ -194,9 +200,12 @@ No AST cache, transformation index, or probabilistic authority participates;
 EVO-HRA-010 audits this boundary. Candidate materialization likewise uses
 direct bounded scans and exact byte ranges; its normalized patch and candidate
 JSON/Markdown expose every committed change while overlap and stale authority
-fail closed. EVO-HRA-011 audits this 0.38.0 boundary. The current
-implementation therefore has no opaque accelerated authority requiring
-remediation. This audit does not pre-approve later
+fail closed. EVO-HRA-011 audits this 0.38.0 boundary. Candidate assurance
+likewise uses direct bounded gate arrays and exact execution-provider outcomes;
+skipped and rejected gates remain explicit in the ordered JSON/Markdown trace,
+and no cache or probabilistic result can grant performance or champion
+authority. EVO-HRA-012 audits this 0.39.0 boundary. The current implementation
+therefore has no opaque accelerated authority requiring remediation. This audit does not pre-approve later
 variable pools, compressed checkpoints, persistent or distributed schedulers,
 transformation lookup indexes, candidate caches, orchestration, or artifact
 implementations.

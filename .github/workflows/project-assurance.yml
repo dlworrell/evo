@@ -1,0 +1,87 @@
+name: Project Assurance
+
+on:
+  push:
+    paths:
+      - 'src/project_assurance*.c'
+      - 'src/internal/project_assurance*.h'
+      - 'tests/project_assurance_test.c'
+      - 'tests/validate_project_assurance.py'
+      - 'docs/adr/ADR-0040-isolated-candidate-correctness-gates.md'
+      - 'docs/engineering/reports/EVO-HRA-012-candidate-correctness-gates-audit.md'
+      - 'docs/schemas/evo-project-assurance-v1.schema.json'
+      - '.aems/aes-bld-001.json'
+      - 'CMakeLists.txt'
+      - 'tests/CMakeLists.txt'
+      - 'Makefile.am'
+      - 'configure.ac'
+      - '.github/workflows/project-assurance.yml'
+  pull_request:
+    paths:
+      - 'src/project_assurance*.c'
+      - 'src/internal/project_assurance*.h'
+      - 'tests/project_assurance_test.c'
+      - 'tests/validate_project_assurance.py'
+      - 'docs/adr/ADR-0040-isolated-candidate-correctness-gates.md'
+      - 'docs/engineering/reports/EVO-HRA-012-candidate-correctness-gates-audit.md'
+      - 'docs/schemas/evo-project-assurance-v1.schema.json'
+      - '.aems/aes-bld-001.json'
+      - 'CMakeLists.txt'
+      - 'tests/CMakeLists.txt'
+      - 'Makefile.am'
+      - 'configure.ac'
+      - '.github/workflows/project-assurance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cmake-clang:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure with Clang and sanitizers
+        run: cmake -S . -B build-assurance -DCMAKE_C_COMPILER=clang -DEVO_ENABLE_SANITIZERS=ON
+      - name: Build assurance target
+        run: cmake --build build-assurance --target evo_project_assurance_test --parallel 2
+      - name: Run assurance target
+        env:
+          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: ctest --test-dir build-assurance -R '^evo_project_assurance_test$' --output-on-failure
+      - name: Independent assurance validation
+        run: python3 tests/validate_project_assurance.py
+      - name: Clang static analysis
+        run: |
+          cmake -S . -B build-analyze -DCMAKE_C_COMPILER=clang
+          cmake --build build-analyze --target catalyst_evo_project_foundation --parallel 2
+
+  autotools-gcc:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bootstrap Autotools
+        run: autoreconf -fi
+      - name: Configure with GCC
+        run: ./configure CC=gcc
+      - name: Build assurance test
+        run: make -j2 tests/evo_project_assurance_test
+      - name: Run normative assurance check
+        run: make check TESTS=tests/evo_project_assurance_test
+      - name: Independent assurance validation
+        run: python3 tests/validate_project_assurance.py
+
+  cmake-macos-clang:
+    runs-on: macos-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure with Apple Clang
+        run: cmake -S . -B build-assurance -DCMAKE_C_COMPILER=clang
+      - name: Build assurance target
+        run: cmake --build build-assurance --target evo_project_assurance_test --parallel 2
+      - name: Run assurance target
+        run: ctest --test-dir build-assurance -R '^evo_project_assurance_test$' --output-on-failure
