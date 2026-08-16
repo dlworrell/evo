@@ -79,7 +79,11 @@ Version 0.40.0 adds a private measurement transaction over performance-eligible
 assurance results. It records deterministic paired baseline/candidate samples,
 exact platform/toolchain/environment/dataset/binary condition identity,
 declared outlier/stability/tolerance policy, deterministic aggregates, and
-finite EVO fitness only for complete stable evidence.
+finite EVO fitness only for complete stable evidence. Version 0.41.0 adds a
+private structured recipe-search transaction over those foundations: canonical
+recipe population initialization, whole-record and typed-parameter operators,
+bounded deterministic repair/rejection, exact downstream evaluation identity,
+and complete ordered operator plus generation lineage evidence.
 
 Source genomes never contain arbitrary C text for byte-wise mutation or
 crossover. One genome represents a complete transformation recipe containing
@@ -153,18 +157,18 @@ ADR-0026 defines the complete rule.
 
 ## Current Conformance Boundary
 
-Version 0.40.0 contains the evolutionary-search core, its bounded reference
+Version 0.41.0 contains the evolutionary-search core, its bounded reference
 consumers, private project ingestion, a private normalized analysis and hotspot
 model, a private canonical transformation-recipe model, a private initial AST-
 aware C transformation catalogue, private isolated candidate materialization,
-private candidate assurance, and private reproducible candidate measurement
-with finite fitness mapping. Candidate process execution and target workload
+private candidate assurance, private reproducible candidate measurement with
+finite fitness mapping, and private deterministic structured recipe search. Candidate process execution and target workload
 sampling remain owned by caller-supplied providers; EVO validates declared
 policy, condition identity, ordered outcomes, and exact evidence rather than
 pretending to provide a portable OS sandbox or universal timing environment.
-Whole-run orchestration, product commands, the installed standalone executable,
-and final optimized-patch artifacts remain planned by issues #65 through #69
-and #93. Documentation of those planned boundaries is not an implementation claim.
+Bounded external-process orchestration, product commands, the installed
+standalone executable, and final optimized-patch artifacts remain planned by
+issues #66 through #69 and #93. Documentation of those planned boundaries is not an implementation claim.
 
 The 0.37.0 package's core uses explicit bounded arrays, direct deterministic
 scans, and one direct constant-space adaptive-rate record rather than compressed,
@@ -221,9 +225,13 @@ authority. EVO-HRA-012 audits this 0.39.0 boundary. Candidate measurement
 likewise retains direct bounded workload/sample arrays and exact provider
 outcomes; deterministic medians, exclusions, stability, comparisons, and
 fitness are derived from that complete record, with no cache, sketch, or
-probabilistic ranking authority. EVO-HRA-013 audits this 0.40.0 boundary. The
-current implementation therefore has no opaque accelerated authority requiring
-remediation. This audit does not pre-approve later
+probabilistic ranking authority. EVO-HRA-013 audits this 0.40.0 boundary.
+Structured recipe search likewise uses direct bounded record/population arrays,
+exact operator events, complete lineage records, and deterministic scans; no
+cache, compressed population, lookup index, membership filter, or probabilistic
+shortcut participates in acceptance, rejection, ranking, selection, or
+termination. EVO-HRA-014 audits this 0.41.0 boundary. The current implementation
+therefore has no opaque accelerated authority requiring remediation. This audit does not pre-approve later
 variable pools, compressed checkpoints, persistent or distributed schedulers,
 transformation lookup indexes, candidate caches, orchestration, or artifact
 implementations.
