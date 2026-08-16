@@ -11,8 +11,8 @@ codebases. It emits the highest-ranked fully verified source candidate found
 within a recorded bounded search as a reviewable patch and reproducibility
 package.
 
-EVO 0.38.0 contains the completed deterministic C17 evolutionary-search core
-and the first five private source-optimizer foundations: strict project-manifest
+EVO 0.39.0 contains the completed deterministic C17 evolutionary-search core
+and the first six private source-optimizer foundations: strict project-manifest
 ingestion, immutable baseline snapshots, normalized compilation-unit evidence,
 bounded baseline-gate orchestration, and a versioned Clang/LLVM structural,
 compiler, runtime-hotspot, and opportunity model. It is not the completed
@@ -26,6 +26,11 @@ complete capability/application audit view without materializing source. The
 fifth composes those exact applications into isolated complete source trees,
 rejects overlapping edits, and emits deterministic reviewable patch, changed-
 file, candidate-identity, and replay evidence without compiling target code.
+The sixth adds exact ordered fast/finalist candidate-assurance policy and
+evidence: a caller-supplied isolated execution provider must attest declared
+filesystem, network, resource, cleanup, and immutable-input policy; required
+fast gates control performance admission and complete finalist gates across
+both declared build profiles control champion admission.
 
 Core issues #39 through #55 are represented in that boundary, including
 versioned constraints, diversity, convergence/stagnation, and caller-bounded
@@ -48,8 +53,9 @@ claiming candidate evolution or a CLI; issue #59 implements bounded normalized
 analysis without source writes or evolutionary operators. Issue #60 implements
 the recipe representation without materializing source; issue #61 implements
 the initial AST-aware catalogue without writing source; and issue #62
-implements deterministic isolated candidate materialization. Issue #63 is the
-next dependency-ready source-optimizer implementation work.
+implements deterministic isolated candidate materialization. Issue #63
+implements candidate build/correctness assurance. Issue #64 is the next
+dependency-ready source-optimizer implementation work.
 
 ## Cross-Cutting Human-Readable Abstraction Gate
 

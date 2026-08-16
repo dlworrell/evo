@@ -1,6 +1,6 @@
 # ADR-0040: Isolated Candidate Build and Correctness Gates
 
-Status: Proposed
+Status: Accepted
 
 Date: 2026-08-16
 
@@ -39,16 +39,17 @@ uninstalled source-optimizer foundation.
    is ineligible for process execution because no retained candidate tree is
    available.
 3. Gate policy is data, not shell text. Commands are represented as executable
-   path plus bounded argv entries. EVO never invokes a shell to interpret a
-   policy command and never concatenates candidate-controlled bytes into a
-   command line.
-4. Each process starts from a minimal allow-listed environment. Working
-   directory, executable, argv, inherited descriptors, writable directories,
-   network policy, timeout, process count, output byte limits, and termination
-   behavior are explicit gate-policy fields.
-5. Candidate processes run only inside an isolated assurance workspace derived
-   from the committed candidate tree. The input repository and immutable
-   baseline are never writable and are not used as process working directories.
+   path plus bounded argv entries. EVO rejects direct shell executables and never
+   reconstructs a shell command from policy or candidate bytes.
+4. Portable process creation and OS sandboxing are owned by a caller-supplied
+   execution provider. EVO passes the exact bounded gate view and requires the
+   provider outcome to attest filesystem-policy enforcement, network-policy
+   enforcement, complete process-group cleanup, and unchanged source/baseline
+   authority before that outcome can become committed gate evidence.
+5. The provider must execute candidate-controlled tools only in the committed
+   candidate workspace under the declared working-directory, environment,
+   network, timeout, process, memory, storage, output, and cleanup policy. The
+   input repository and immutable baseline are never writable execution state.
 6. The default network policy is deny. A gate that requires network access must
    declare it explicitly and is not part of the default fast or finalist
    profiles.

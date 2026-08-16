@@ -131,7 +131,10 @@
       "src/project_transformation.c",
       "src/project_candidate_runtime.c",
       "src/project_candidate_model.c",
-      "src/project_candidate.c"
+      "src/project_candidate.c",
+      "src/project_assurance_model.c",
+      "src/project_assurance_runtime.c",
+      "src/project_assurance.c"
     ],
     "normative_tests": [
       {
@@ -361,6 +364,12 @@
         "source": "tests/project_candidate_test.c",
         "cmake": "evo_project_candidate_test",
         "autotools": "tests/evo_project_candidate_test"
+      },
+      {
+        "id": "project-assurance",
+        "source": "tests/project_assurance_test.c",
+        "cmake": "evo_project_assurance_test",
+        "autotools": "tests/evo_project_assurance_test"
       }
     ],
     "consumer_sources": [

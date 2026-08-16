@@ -2,7 +2,7 @@
 
 Date: 2026-08-16
 
-Audited design: EVO 0.39.0 candidate build/correctness-gate boundary
+Audited implementation: EVO 0.39.0 candidate build/correctness-gate boundary
 
 Governing records: ADR-0026, ADR-0040, EVO-002, issue #63
 
@@ -66,15 +66,18 @@ authority.
 
 ## Process Boundary
 
-Candidate-controlled source is treated as untrusted process input. The gate
-runner does not invoke a shell for policy commands, does not inherit ambient
-credentials by default, and does not use the source repository or immutable
-baseline as writable working state.
+Candidate-controlled source is treated as untrusted process input. EVO does not
+claim a portable in-library OS sandbox: a caller-supplied execution provider owns
+process creation and isolation. The exact gate view is argv-only and carries the
+declared environment, working-directory, filesystem/network, timeout, process,
+memory, storage, and output policy. The provider must attest enforcement and
+complete process-group cleanup in its exact outcome; missing enforcement is a
+policy rejection, not an implicit pass.
 
-The default network policy is deny. Writable build/output roots are explicit.
-Process-group termination and cleanup are bounded and observable in the gate
-trace. Failure to terminate or clean the assurance workspace is itself a gate
-failure.
+The default network policy is deny. The input repository and immutable baseline
+are never authorized as writable execution state. Failure to enforce the declared
+filesystem/network boundary, terminate descendants, or prove cleanup is itself a
+gate failure and cannot grant performance or champion authority.
 
 ## Accelerator Assessment
 
