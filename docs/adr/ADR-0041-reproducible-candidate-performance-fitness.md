@@ -1,6 +1,6 @@
 # ADR-0041: Reproducible Candidate Performance Measurement and Fitness
 
-Status: Proposed
+Status: Accepted
 
 Date: 2026-08-16
 

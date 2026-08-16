@@ -1,15 +1,15 @@
 # EVO-001: Evolutionary Optimization Library Contract
 
 Status: Baseline
-Version: 0.39.0
+Version: 0.40.0
 Owner: EVO
 
 ## Scope Boundary
 
 This specification governs the reusable deterministic C17 evolutionary-search
-core packaged through version 0.39.0. Version 0.39.0 changes no installed
+core packaged through version 0.40.0. Version 0.40.0 changes no installed
 core semantics; its new implementation is confined to the private source-
-optimizer candidate-assurance foundation. This contract does not define C-project
+optimizer candidate-measurement and fitness foundation. This contract does not define C-project
 ingestion, Clang/LLVM analysis, structured source transformations, isolated
 candidate builds, baseline-versus-candidate measurement, optimized patches, or
 product-level replay artifacts.

@@ -2,7 +2,7 @@
 
 Date: 2026-08-16
 
-Audited design: EVO 0.40.0 candidate measurement and fitness boundary
+Audited implementation: EVO 0.40.0 candidate measurement and fitness boundary
 
 Governing records: ADR-0026, ADR-0041, EVO-002, issue #64
 
