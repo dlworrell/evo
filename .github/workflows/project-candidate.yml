@@ -51,6 +51,8 @@ jobs:
             >/dev/null
           python3 tests/validate_project_candidate.py
 
+  # macOS canonicalizes temporary-directory aliases differently than Linux;
+  # keep candidate output-containment behavior covered on both path models.
   cmake-macos-clang:
     runs-on: macos-latest
     env:
