@@ -402,7 +402,7 @@ static bool test_fixture_prepare(test_fixture_t *fixture)
     }
     written = evo_project_format(
         fixture->root, sizeof(fixture->root), "%s", canonical_root);
-    free(canonical_root);
+    evo_project_release(canonical_root);
     if (written <= 0 || (size_t)written >= sizeof(fixture->root)) {
         return false;
     }
