@@ -90,3 +90,19 @@ jobs:
             tests/fixtures/project-transformation/before.c \
             tests/fixtures/project-transformation/after.c
           python3 tests/validate_project_transformation.py
+
+  format-preview:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install clang-format
+        run: sudo apt-get update && sudo apt-get install -y clang-format
+
+      - name: Print the canonical formatting patch
+        run: |
+          mapfile -t files < <(find include src tests benchmarks examples \
+            -type f \( -name '*.c' -o -name '*.h' \) | sort)
+          clang-format -i "${files[@]}"
+          git diff --no-ext-diff -- "${files[@]}"
