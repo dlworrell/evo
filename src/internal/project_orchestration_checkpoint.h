@@ -61,7 +61,7 @@ typedef struct evo_project_orchestration_checkpoint {
 } evo_project_orchestration_checkpoint_t;
 
 evo_project_orchestration_checkpoint_status_t
- e vo_project_orchestration_checkpoint_create(
+ evo_project_orchestration_checkpoint_create(
     const evo_project_orchestration_checkpoint_identity_t *identity,
     const void *core_checkpoint,
     size_t core_checkpoint_size,
