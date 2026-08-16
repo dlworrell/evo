@@ -395,9 +395,7 @@ static bool test_fixture_prepare(test_fixture_t *fixture)
     if (root == NULL) {
         return false;
     }
-    written = evo_project_format(
-        fixture->root, sizeof(fixture->root), "%s", root);
-    if (written <= 0 || (size_t)written >= sizeof(fixture->root)) {
+    if (realpath(root, fixture->root) == NULL) {
         return false;
     }
     written = evo_project_format(
