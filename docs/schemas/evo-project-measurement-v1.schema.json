@@ -74,7 +74,7 @@
     "fitness_available": {"type": "boolean"},
     "correctness_preserved": {"const": true},
     "fitness": {"$ref": "#/$defs/fitness"},
-    "fitness_weights": {"$ref": "#/$defs/fitness"},
+    "fitness_weights": {"$ref": "#/$defs/weights"},
     "projection_complete": {"const": true},
     "probabilistic_authority": {"const": false},
     "measurement_fingerprint": {"type": "string", "minLength": 1}
@@ -208,6 +208,26 @@
         "maintainability": {"type": "number"},
         "constraint_penalty": {"type": "number"},
         "total": {"type": "number"}
+      }
+    },
+    "weights": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "correctness",
+        "performance",
+        "memory_use",
+        "reliability",
+        "maintainability",
+        "constraint_penalty"
+      ],
+      "properties": {
+        "correctness": {"type": "number", "minimum": 0},
+        "performance": {"type": "number", "minimum": 0},
+        "memory_use": {"type": "number", "minimum": 0},
+        "reliability": {"type": "number", "minimum": 0},
+        "maintainability": {"type": "number", "minimum": 0},
+        "constraint_penalty": {"type": "number", "minimum": 0}
       }
     }
   }
