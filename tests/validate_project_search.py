@@ -59,7 +59,7 @@ def main() -> int:
     )
     require("max_repair_passes" in header, "bounded repair policy missing")
     require("evo_project_search_owner" in owner, "private search owner missing")
-    require("evo_search_mutable_recipe" in internal, "structured mutable recipe missing")
+    require("evo_project_search_mutable_recipe" in internal, "structured mutable recipe missing")
 
     for operation in (
         "evo_search_add_operation",
