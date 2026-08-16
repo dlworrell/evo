@@ -8,7 +8,11 @@ on:
       - 'src/project_search*.c'
       - 'src/internal/project_search*.h'
       - 'tests/project_search_test.c'
+      - 'tests/validate_project_search.py'
       - 'tests/CMakeLists.txt'
+      - 'docs/adr/ADR-0042-structured-recipe-evolution.md'
+      - 'docs/engineering/reports/EVO-HRA-014-structured-recipe-evolution-audit.md'
+      - 'docs/schemas/evo-project-search-v1.schema.json'
       - 'CMakeLists.txt'
       - 'Makefile.am'
       - '.github/workflows/search-scaffold-sync.yml'
@@ -26,62 +30,33 @@ jobs:
         with:
           ref: agent/evolve-compatible-source-recipes
           fetch-depth: 0
-      - name: Preserve null parameter view for zero-parameter records
+      - name: Clear diagnostics and canonicalize sources
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          path = Path('src/project_search_runtime.c')
-          text = path.read_text()
-          old = '        proposal->parameters = evo_search_parameters(mutable_recipe, index);\n'
-          new = '''        proposal->parameters =\n            record->parameter_count == 0U\n                ? NULL\n                : evo_search_parameters(mutable_recipe, index);\n'''
-          if old not in text and new not in text:
-              raise SystemExit('proposal parameter assignment marker not found')
-          text = text.replace(old, new, 1)
-          path.write_text(text)
-          PY
           rm -f .github/search-test-diagnostic.txt
-          clang-format -i src/project_search_runtime.c tests/project_search_test.c
+          clang-format -i \
+            src/internal/project_search.h \
+            src/internal/project_search_owner.h \
+            src/internal/project_search_internal.h \
+            src/project_search_model.c \
+            src/project_search_runtime.c \
+            src/project_search.c \
+            tests/project_search_test.c
           git config user.name 'Donovan Worrell'
           git config user.email 'donovan.worrell@just-a-geek.com'
-          git add -A .github/search-test-diagnostic.txt src/project_search_runtime.c tests/project_search_test.c
+          git add -A .github/search-test-diagnostic.txt src/internal/project_search.h src/internal/project_search_owner.h src/internal/project_search_internal.h src/project_search_model.c src/project_search_runtime.c src/project_search.c tests/project_search_test.c
           if ! git diff --cached --quiet; then
-            git commit -m 'fix: preserve empty structured recipe parameter view'
+            git commit -m 'chore: clear structured search diagnostics'
             git push origin HEAD:agent/evolve-compatible-source-recipes
           fi
-      - name: Add local status diagnostics
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          path = Path('tests/project_search_test.c')
-          text = path.read_text()
-          needle = '        test_check(status == EVO_PROJECT_RECIPE_SUCCESS, "structured mutation succeeds");'
-          replacement = '''        if (status != EVO_PROJECT_RECIPE_SUCCESS) {\n            (void)fprintf(stderr, "structured operation %s status: %s\\n", evo_project_search_operator_kind_name(operations[index]), evo_project_recipe_status_name(status));\n        }\n''' + needle
-          if needle in text and 'structured operation %s status' not in text:
-              text = text.replace(needle, replacement, 1)
-          path.write_text(text)
-          PY
-          clang-format -i tests/project_search_test.c
+      - name: Verify independent structured-search contract
+        run: python3 tests/validate_project_search.py
       - name: Verify CMake normative test
         run: |
-          set +e
-          {
-            cmake -S . -B build-search -DCMAKE_C_COMPILER=clang
-            cmake --build build-search --target evo_project_search_test --parallel 2
-            ctest --test-dir build-search -R '^evo_project_search_test$' --output-on-failure
-          } > /tmp/search-test-diagnostic.txt 2>&1
-          status=$?
-          cat /tmp/search-test-diagnostic.txt
-          if [ "$status" -ne 0 ]; then
-            cp /tmp/search-test-diagnostic.txt .github/search-test-diagnostic.txt
-            git checkout -- tests/project_search_test.c
-            git add .github/search-test-diagnostic.txt
-            git commit -m 'diagnostic: capture structured search post-fix status'
-            git push origin HEAD:agent/evolve-compatible-source-recipes
-            exit "$status"
-          fi
+          cmake -S . -B build-search -DCMAKE_C_COMPILER=clang
+          cmake --build build-search --target evo_project_search_test --parallel 2
+          ctest --test-dir build-search -R '^evo_project_search_test$' --output-on-failure
       - name: Verify Autotools normative test
         run: |
-          git checkout -- tests/project_search_test.c
           autoreconf -fi
           ./configure CC=gcc
           make -j2 tests/evo_project_search_test
