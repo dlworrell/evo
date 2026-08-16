@@ -138,7 +138,6 @@ static bool evo_measurement_outcome_valid(
     const evo_project_measurement_outcome_t *outcome)
 {
     if (outcome->schema_version != EVO_PROJECT_MEASUREMENT_SCHEMA_VERSION ||
-        outcome->condition_fingerprint != owner->condition_fingerprint_value ||
         outcome->reliability_ppm > EVO_PROJECT_MEASUREMENT_PPM_SCALE ||
         outcome->maintainability_ppm > EVO_PROJECT_MEASUREMENT_PPM_SCALE ||
         (outcome->timed_out && outcome->failed)) {

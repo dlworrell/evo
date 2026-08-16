@@ -30,7 +30,8 @@ typedef enum fake_mode {
     FAKE_SLOWER = 3,
     FAKE_UNSTABLE = 4,
     FAKE_INCOMPLETE = 5,
-    FAKE_OUTLIER = 6
+    FAKE_OUTLIER = 6,
+    FAKE_CONDITION_MISMATCH = 7
 } fake_mode_t;
 
 typedef struct fake_context {
@@ -89,6 +90,13 @@ static evo_project_measurement_status_t fake_provider(
         case FAKE_OUTLIER:
             runtime = request->pair_index == 1U ? UINT64_C(5000000)
                                                 : UINT64_C(800000);
+            break;
+        case FAKE_CONDITION_MISMATCH:
+            runtime = UINT64_C(800000);
+            if (request->phase == EVO_PROJECT_MEASUREMENT_RECORDED &&
+                request->pair_index == 1U) {
+                outcome->condition_fingerprint ^= UINT64_C(1);
+            }
             break;
         default:
             return EVO_PROJECT_MEASUREMENT_ERROR_PROVIDER;
@@ -259,6 +267,20 @@ static int run_case(
         CHECK(saw_outlier);
         CHECK(measurement.workloads[0].candidate.included_count == 4U);
     }
+    if (mode == FAKE_CONDITION_MISMATCH) {
+        bool saw_condition_mismatch = false;
+        for (index = 0U; index < measurement.sample_count; index += 1U) {
+            if (measurement.samples[index].excluded &&
+                measurement.samples[index].exclusion_reason != NULL &&
+                strcmp(
+                    measurement.samples[index].exclusion_reason,
+                    "condition-mismatch") == 0) {
+                saw_condition_mismatch = true;
+            }
+        }
+        CHECK(saw_condition_mismatch);
+        CHECK(!measurement.fitness_available);
+    }
     if (fingerprint != NULL) {
         const int fingerprint_written = evo_project_format(
             fingerprint,
@@ -332,6 +354,13 @@ int main(void)
               FAKE_OUTLIER,
               EVO_PROJECT_MEASUREMENT_FASTER,
               true,
+              NULL) == 0);
+    CHECK(run_case(
+              root,
+              "condition-mismatch",
+              FAKE_CONDITION_MISMATCH,
+              EVO_PROJECT_MEASUREMENT_INCOMPLETE,
+              false,
               NULL) == 0);
     CHECK(run_case(
               root,

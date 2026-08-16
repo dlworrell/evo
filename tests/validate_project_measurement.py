@@ -53,6 +53,8 @@ def main() -> int:
     require("fitness_weights" in header, "explicit fitness weights missing")
     require("performance_eligible" in model, "assurance admission check missing")
     require("runtime-median-deviation" in runtime, "outlier evidence missing")
+    require("condition-mismatch" in runtime, "condition mismatch evidence missing")
+    require("isfinite(mix_weight_total)" in model, "memory/binary mix overflow guard missing")
     require("EVO_PROJECT_MEASUREMENT_UNSTABLE" in runtime, "unstable classification missing")
     require("correctness_preserved" in runtime, "correctness separation missing")
     require("best verified candidate found within the recorded bounded search contract" in runtime, "bounded result wording missing")
@@ -87,6 +89,7 @@ def main() -> int:
         "FAKE_UNSTABLE",
         "FAKE_INCOMPLETE",
         "FAKE_OUTLIER",
+        "FAKE_CONDITION_MISMATCH",
         "replay-a",
         "replay-b",
     ):

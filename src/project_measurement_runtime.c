@@ -124,7 +124,12 @@ bool evo_measurement_record_sample(
     sample->binary_size_bytes = outcome->binary_size_bytes;
     sample->reliability_ppm = outcome->reliability_ppm;
     sample->maintainability_ppm = outcome->maintainability_ppm;
-    if (!outcome->completed) {
+    if (outcome->condition_fingerprint != owner->condition_fingerprint_value) {
+        if (!evo_measurement_set_exclusion(
+                owner, index, "condition-mismatch")) {
+            return false;
+        }
+    } else if (!outcome->completed) {
         if (!evo_measurement_set_exclusion(owner, index, "incomplete-provider-sample")) {
             return false;
         }
@@ -156,6 +161,7 @@ static size_t evo_measurement_collect_runtime(
         const evo_project_measurement_sample_t *sample = &owner->samples[index];
 
         if (evo_measurement_sample_matches(sample, workload_id, subject) &&
+            sample->condition_fingerprint == owner->condition_fingerprint_value &&
             sample->completed && !sample->timed_out && !sample->failed &&
             (include_excluded || !sample->excluded)) {
             values[count] = sample->runtime_ns;
@@ -295,7 +301,8 @@ static bool evo_measurement_workload_has_incomplete_sample(
         const evo_project_measurement_sample_t *sample = &owner->samples[index];
 
         if (strcmp(sample->workload_id, workload_id) == 0 &&
-            (!sample->completed || sample->timed_out || sample->failed)) {
+            (sample->condition_fingerprint != owner->condition_fingerprint_value ||
+             !sample->completed || sample->timed_out || sample->failed)) {
             return true;
         }
     }

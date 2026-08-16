@@ -44,6 +44,9 @@ static bool evo_measurement_workload_valid(
     const evo_project_measurement_config_t *config,
     const evo_project_measurement_workload_policy_t *policy)
 {
+    const double mix_weight_total = policy->peak_memory_mix_weight +
+                                    policy->binary_size_mix_weight;
+
     if (!evo_measurement_text_valid(
             policy->workload_id, config->limits.max_string_bytes) ||
         policy->repetition_count == 0U ||
@@ -63,7 +66,7 @@ static bool evo_measurement_workload_valid(
         policy->workload_weight == 0.0 ||
         !evo_measurement_weight_valid(policy->peak_memory_mix_weight) ||
         !evo_measurement_weight_valid(policy->binary_size_mix_weight) ||
-        policy->peak_memory_mix_weight + policy->binary_size_mix_weight <= 0.0) {
+        !isfinite(mix_weight_total) || mix_weight_total <= 0.0) {
         return false;
     }
     if (policy->outlier_policy == EVO_PROJECT_MEASUREMENT_OUTLIER_ABSOLUTE_MEDIAN &&
