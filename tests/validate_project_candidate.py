@@ -14,6 +14,7 @@ PUBLIC_HEADER = ROOT / "src/internal/project_candidate.h"
 MODEL = ROOT / "src/project_candidate_model.c"
 MATERIALIZER = ROOT / "src/project_candidate.c"
 RUNTIME = ROOT / "src/project_candidate_runtime.c"
+CMAKE_TESTS = ROOT / "tests/CMakeLists.txt"
 
 
 def require(condition: bool, message: str) -> None:
@@ -61,6 +62,7 @@ def main() -> None:
     model = MODEL.read_text(encoding="utf-8")
     materializer = MATERIALIZER.read_text(encoding="utf-8")
     runtime = RUNTIME.read_text(encoding="utf-8")
+    cmake_tests = CMAKE_TESTS.read_text(encoding="utf-8")
     adr = ADR.read_text(encoding="utf-8")
     hra = HRA.read_text(encoding="utf-8")
     adr_normalized = " ".join(adr.split())
@@ -85,6 +87,15 @@ def main() -> None:
     require("probabilistic_authority = false" in materializer, "result must reject probabilistic authority")
     require("source_modified = false" in materializer, "result must state source is unchanged")
     require("snapshot_modified = false" in materializer, "result must state snapshot is unchanged")
+    require(
+        "add_executable(evo_project_candidate_test project_candidate_test.c)" in cmake_tests,
+        "candidate test must be declared in the canonical CTest inventory",
+    )
+    require(
+        "NAME evo_project_candidate_test" in cmake_tests
+        and "COMMAND evo_project_candidate_test" in cmake_tests,
+        "candidate target must be registered with CTest",
+    )
 
     combined = "\n".join((model, materializer, runtime))
     for forbidden in ("rand(", "random(", "bloom", "last-writer-wins"):
