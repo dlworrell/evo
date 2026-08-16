@@ -1,1 +1,0 @@
-/usr/bin/clang -fsanitize=address,undefined -Xlinker --dependency-file=CMakeFiles/evo_core_benchmark.dir/link.d CMakeFiles/evo_core_benchmark.dir/core_benchmark.c.o -o evo_core_benchmark  ../libcatalyst_evo.a -lm

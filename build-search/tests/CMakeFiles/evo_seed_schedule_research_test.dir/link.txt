@@ -1,1 +1,0 @@
-/usr/bin/clang -fsanitize=address,undefined -Xlinker --dependency-file=CMakeFiles/evo_seed_schedule_research_test.dir/link.d CMakeFiles/evo_seed_schedule_research_test.dir/seed_schedule_research_test.c.o -o evo_seed_schedule_research_test  libevo_seed_schedule_research.a ../libcatalyst_evo.a -lm

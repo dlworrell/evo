@@ -1,1 +1,0 @@
-/usr/bin/clang -fsanitize=address,undefined -Xlinker --dependency-file=CMakeFiles/evo_parent_pair_test.dir/link.d CMakeFiles/evo_parent_pair_test.dir/parent_pair_test.c.o -o evo_parent_pair_test  ../libcatalyst_evo.a -lm

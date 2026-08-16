@@ -1,1 +1,0 @@
-/usr/bin/clang -fsanitize=address,undefined -Xlinker --dependency-file=CMakeFiles/evo_diversity_test.dir/link.d CMakeFiles/evo_diversity_test.dir/diversity_test.c.o -o evo_diversity_test  ../libcatalyst_evo.a -lm

@@ -1,2 +1,0 @@
-/usr/bin/ar qc libevo_seed_schedule_research.a CMakeFiles/evo_seed_schedule_research.dir/research/seed_schedule_research.c.o
-/usr/bin/ranlib libevo_seed_schedule_research.a

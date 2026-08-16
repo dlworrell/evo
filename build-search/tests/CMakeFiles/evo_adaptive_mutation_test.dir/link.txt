@@ -1,1 +1,0 @@
-/usr/bin/clang -fsanitize=address,undefined -Xlinker --dependency-file=CMakeFiles/evo_adaptive_mutation_test.dir/link.d CMakeFiles/evo_adaptive_mutation_test.dir/adaptive_mutation_test.c.o -o evo_adaptive_mutation_test  ../libcatalyst_evo.a -lm
