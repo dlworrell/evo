@@ -186,6 +186,7 @@ bool evo_measurement_config_valid(const evo_project_measurement_config_t *config
 char *evo_measurement_duplicate(const char *value)
 {
     size_t size;
+    size_t index;
     char *copy;
 
     if (value == NULL) {
@@ -194,7 +195,9 @@ char *evo_measurement_duplicate(const char *value)
     size = strlen(value) + 1U;
     copy = evo_project_allocate_zeroed(size, sizeof(*copy));
     if (copy != NULL) {
-        (void)memcpy(copy, value, size);
+        for (index = 0U; index < size; index += 1U) {
+            copy[index] = value[index];
+        }
     }
     return copy;
 }

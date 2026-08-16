@@ -14,14 +14,14 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#define CHECK(condition)                                                        \
-    do {                                                                        \
-        if (!(condition)) {                                                     \
-            (void)fprintf(                                                      \
-                stderr, "measurement test failure at %s:%d: %s\n",           \
-                __FILE__, __LINE__, #condition);                                \
-            return 1;                                                           \
-        }                                                                       \
+#define CHECK(condition)                                           \
+    do {                                                           \
+        if (!(condition)) {                                        \
+            (void)fprintf(                                         \
+                stderr, "measurement test failure at %s:%d: %s\n", \
+                __FILE__, __LINE__, #condition);                   \
+            return 1;                                              \
+        }                                                          \
     } while (0)
 
 typedef enum fake_mode {
@@ -100,16 +100,9 @@ static evo_project_measurement_status_t fake_provider(
 
 static bool make_assurance(evo_project_assurance_t *assurance)
 {
-    const int written = evo_project_format(
-        assurance->assurance_fingerprint,
-        sizeof(assurance->assurance_fingerprint),
-        "%s",
-        "fnv1a64:2222222222222222");
+    int written;
 
     *assurance = (evo_project_assurance_t){0};
-    if (written <= 0 || (size_t)written >= sizeof(assurance->assurance_fingerprint)) {
-        return false;
-    }
     assurance->schema_version = EVO_PROJECT_ASSURANCE_SCHEMA_VERSION;
     assurance->candidate_fingerprint = "fnv1a64:1111111111111111";
     written = evo_project_format(
@@ -117,7 +110,8 @@ static bool make_assurance(evo_project_assurance_t *assurance)
         sizeof(assurance->assurance_fingerprint),
         "%s",
         "fnv1a64:2222222222222222");
-    if (written <= 0 || (size_t)written >= sizeof(assurance->assurance_fingerprint)) {
+    if (written <= 0 ||
+        (size_t)written >= sizeof(assurance->assurance_fingerprint)) {
         return false;
     }
     assurance->performance_eligible = true;
