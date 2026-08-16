@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Independent structural checks for EVO candidate measurement v1."""
 
+# This validator is also the direct-push trigger for the integrated v0.40 boundary.
+
 from __future__ import annotations
 
 import json
