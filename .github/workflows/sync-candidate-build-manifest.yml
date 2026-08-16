@@ -1,0 +1,56 @@
+name: Sync Candidate Build Manifest
+
+on:
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+      - name: Update AES-BLD-001 profile
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path('.aems/aes-bld-001.json')
+          data = json.loads(path.read_text(encoding='utf-8'))
+          build = data['build']
+          sources = build['production_sources']
+          additions = [
+              'src/project_candidate_runtime.c',
+              'src/project_candidate_model.c',
+              'src/project_candidate.c',
+          ]
+          for source in additions:
+              if source not in sources:
+                  sources.append(source)
+
+          tests = build['normative_tests']
+          if not any(item.get('id') == 'project-candidate' for item in tests):
+              tests.append({
+                  'id': 'project-candidate',
+                  'source': 'tests/project_candidate_test.c',
+                  'cmake': 'evo_project_candidate_test',
+                  'autotools': 'tests/evo_project_candidate_test',
+              })
+
+          path.write_text(json.dumps(data, indent=2) + '\n', encoding='utf-8')
+          PY
+          if git diff --quiet -- .aems/aes-bld-001.json; then
+            echo "Build manifest already synchronized."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .aems/aes-bld-001.json
+          git commit -m "build: register candidate materialization parity inputs"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
