@@ -442,7 +442,7 @@ static evo_project_search_config_t test_search_config(
 {
     return (evo_project_search_config_t){
         .recipe_context = test_recipe_context(fixture),
-        .genome_size = 8192U,
+        .genome_size = 16384U,
         .population_size = 4U,
         .generation_limit = 1U,
         .tournament_size = 2U,
@@ -493,7 +493,7 @@ static evo_project_recipe_status_t test_build_recipe(
         .context = test_recipe_context(fixture),
         .record_count = record_count,
         .records = records,
-        .genome_size = 8192U,
+        .genome_size = 16384U,
     };
 
     return evo_project_recipe_build(&config, recipe);
