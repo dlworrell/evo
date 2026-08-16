@@ -1016,8 +1016,7 @@ static evo_project_recipe_status_t evo_search_parameterize_operation(
                     if (strcmp(
                             schema->choices[choice_index],
                             parameter->choice_value) == 0) {
-                        parameter->choice_value = schema->choices[
-                            (choice_index + 1U) % schema->choice_count];
+                        parameter->choice_value = schema->choices[(choice_index + 1U) % schema->choice_count];
                         return EVO_PROJECT_RECIPE_SUCCESS;
                     }
                 }
