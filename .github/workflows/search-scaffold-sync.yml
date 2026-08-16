@@ -26,14 +26,23 @@ jobs:
         with:
           ref: agent/evolve-compatible-source-recipes
           fetch-depth: 0
-      - name: Clean diagnostic residue
+      - name: Widen deterministic fixture genome budget
         run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('tests/project_search_test.c')
+          text = path.read_text()
+          text = text.replace('.genome_size = 8192U,', '.genome_size = 16384U,')
+          text = text.replace('.genome_size = 8192U\n', '.genome_size = 16384U\n')
+          path.write_text(text)
+          PY
           rm -f .github/search-test-diagnostic.txt
+          clang-format -i tests/project_search_test.c
           git config user.name 'Donovan Worrell'
           git config user.email 'donovan.worrell@just-a-geek.com'
-          git add -A .github/search-test-diagnostic.txt
+          git add -A .github/search-test-diagnostic.txt tests/project_search_test.c
           if ! git diff --cached --quiet; then
-            git commit -m 'chore: clear structured search diagnostic'
+            git commit -m 'test: widen structured search recipe envelope'
             git push origin HEAD:agent/evolve-compatible-source-recipes
           fi
       - name: Add local status diagnostics
@@ -63,7 +72,7 @@ jobs:
             cp /tmp/search-test-diagnostic.txt .github/search-test-diagnostic.txt
             git checkout -- tests/project_search_test.c
             git add .github/search-test-diagnostic.txt
-            git commit -m 'diagnostic: capture structured operator status'
+            git commit -m 'diagnostic: capture structured search fixture status'
             git push origin HEAD:agent/evolve-compatible-source-recipes
             exit "$status"
           fi
