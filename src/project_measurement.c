@@ -297,6 +297,21 @@ static evo_project_measurement_status_t evo_measurement_execute(
     return EVO_PROJECT_MEASUREMENT_SUCCESS;
 }
 
+static void evo_measurement_result_fingerprint_double(
+    evo_project_fingerprint_t *fingerprint,
+    double value)
+{
+    char text[48];
+    const int written =
+        evo_project_format(text, sizeof(text), "%.17g", value);
+
+    if (written > 0 && (size_t)written < sizeof(text)) {
+        evo_project_fingerprint_string(fingerprint, text);
+    } else {
+        evo_project_fingerprint_string(fingerprint, "invalid-double");
+    }
+}
+
 uint64_t evo_measurement_result_fingerprint(
     const evo_project_measurement_owner_t *owner)
 {
@@ -336,8 +351,20 @@ uint64_t evo_measurement_result_fingerprint(
     }
     evo_project_fingerprint_u64(
         &fingerprint, (uint64_t)owner->view.overall_comparison);
-    evo_project_fingerprint_bytes(
-        &fingerprint, &owner->view.fitness, sizeof(owner->view.fitness));
+    evo_measurement_result_fingerprint_double(
+        &fingerprint, owner->view.fitness.correctness);
+    evo_measurement_result_fingerprint_double(
+        &fingerprint, owner->view.fitness.performance);
+    evo_measurement_result_fingerprint_double(
+        &fingerprint, owner->view.fitness.memory_use);
+    evo_measurement_result_fingerprint_double(
+        &fingerprint, owner->view.fitness.reliability);
+    evo_measurement_result_fingerprint_double(
+        &fingerprint, owner->view.fitness.maintainability);
+    evo_measurement_result_fingerprint_double(
+        &fingerprint, owner->view.fitness.constraint_penalty);
+    evo_measurement_result_fingerprint_double(
+        &fingerprint, owner->view.fitness.total);
     evo_project_fingerprint_u64(
         &fingerprint, owner->view.fitness_available ? 1U : 0U);
     return fingerprint.value;
@@ -413,6 +440,6 @@ void evo_project_measurement_destroy(evo_project_measurement_t *measurement)
         return;
     }
     owner = measurement->private_owner;
-    (void)memset(measurement, 0, sizeof(*measurement));
+    *measurement = (evo_project_measurement_t){0};
     evo_measurement_release_owner(owner);
 }

@@ -294,8 +294,7 @@ static bool evo_measurement_workload_has_incomplete_sample(
     for (index = 0U; index < owner->view.sample_count; index += 1U) {
         const evo_project_measurement_sample_t *sample = &owner->samples[index];
 
-        if (sample->phase == EVO_PROJECT_MEASUREMENT_RECORDED &&
-            strcmp(sample->workload_id, workload_id) == 0 &&
+        if (strcmp(sample->workload_id, workload_id) == 0 &&
             (!sample->completed || sample->timed_out || sample->failed)) {
             return true;
         }
@@ -865,8 +864,10 @@ bool evo_measurement_build_evidence(
     evo_candidate_buffer_t json = {0};
     evo_candidate_buffer_t markdown = {0};
 
-    if (!evo_candidate_buffer_open(&json, 4096U) ||
-        !evo_candidate_buffer_open(&markdown, 4096U)) {
+    if (!evo_candidate_buffer_open(
+            &json, config->limits.max_evidence_bytes) ||
+        !evo_candidate_buffer_open(
+            &markdown, config->limits.max_evidence_bytes)) {
         evo_candidate_buffer_close(&json);
         evo_candidate_buffer_close(&markdown);
         return false;
