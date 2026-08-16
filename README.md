@@ -41,6 +41,7 @@ The governing product records are:
 - `docs/adr/ADR-0035-immutable-project-ingestion-and-baselines.md`
 - `docs/adr/ADR-0036-clang-llvm-analysis-and-hotspot-model.md`
 - `docs/adr/ADR-0037-versioned-source-transformation-recipes.md`
+- `docs/adr/ADR-0038-ast-aware-c-transformation-catalogue.md`
 - `docs/specs/EVO-001-library-contract.md`
 - `docs/specs/EVO-002-source-optimizer-contract.md`
 - `docs/roadmap.md`
@@ -134,6 +135,12 @@ analysis provenance remain authority. Canonical JSON is embedded in each fixed
 genome, Markdown enumerates the same logical records, and decode reconstructs
 all derived facts from live authority before exact-byte comparison.
 EVO-HRA-009 retains this recipe-specific audit.
+ADR-0038 assesses 0.37.0 AST-aware C transformations: three stable static
+capability entries and direct dispatch remain authority, while every accepted
+application retains one exact half-open before range and replacement or an
+explicit no-change result. Complete catalogue/application JSON and derived
+Markdown expose all AST, provider, assumption, obligation, and rejection
+facts. EVO-HRA-010 retains this transformation-specific audit.
 
 ## Roadmap Scope
 
@@ -159,7 +166,8 @@ The source-optimizer track adds:
 - Implemented normalized Clang/LLVM provider-evidence and runtime-hotspot
   model
 - Implemented versioned structured source-transformation recipes
-- AST-aware C source transformations and isolated candidate materialization
+- Implemented initial AST-aware C source-transformation catalogue
+- Isolated candidate materialization
 - CMake/Clang/LLVM build and correctness gates with independent
   Autotools/GNU validation
 - Reproducible baseline-versus-candidate performance measurement
@@ -184,11 +192,12 @@ repository.
 - `docs/` — architecture, theory, algorithms, and evidence guidance
 
 The private source-optimizer foundation now includes 0.34.0 immutable project
-ingestion, the 0.35.0 normalized Clang/LLVM analysis and hotspot model, and the
-0.36.0 canonical versioned transformation-recipe model. AST-aware
-transformation implementations, source materialization, candidate evaluation,
-orchestration, and the installed executable remain dependency-ordered roadmap
-work; their absence is an explicit boundary, not an implicit feature claim.
+ingestion, the 0.35.0 normalized Clang/LLVM analysis and hotspot model, the
+0.36.0 canonical versioned transformation-recipe model, and the 0.37.0 initial
+AST-aware C transformation catalogue. Source materialization, candidate
+evaluation, orchestration, and the installed executable remain dependency-
+ordered roadmap work; their absence is an explicit boundary, not an implicit
+feature claim.
 
 ## Authoritative Native Builds
 
@@ -215,7 +224,7 @@ make check
 ```
 
 `CMakePresets.json`, `configure.ac`, and `Makefile.am` enumerate the same 26
-installed-core sources, fourteen private source-foundation sources, and 36
+installed-core sources, eighteen private source-foundation sources, and 37
 normative tests. CI also compares staged install
 manifests, public symbols, package metadata, and a downstream consumer built
 against each installed result. See
@@ -228,22 +237,23 @@ declared Clang/LLVM and GNU profiles.
 
 ## Status
 
-**Current implementation boundary:** EVO 0.36.0 implements the deterministic
+**Current implementation boundary:** EVO 0.37.0 implements the deterministic
 evolutionary-search core plus strict C-project manifest ingestion, immutable
 baseline capture, normalized compilation-unit evidence, and declared baseline
 gate orchestration through a caller-supplied execution provider. It also
 accepts versioned bounded Clang/LLVM provider records, validates and normalizes
 program structure and compiler/runtime evidence, ranks evidence-backed
 opportunities, and emits complete read-only analysis projections without
-modifying source. It now validates bounded transformation catalogues and
+modifying source. It validates bounded transformation catalogues and
 proposal records, resolves dependency/conflict closure, produces a fixed
 canonical recipe genome plus complete audit projection, and strictly rebuilds
-decoded recipes against live authority. It does not yet implement AST-aware
-source transformations, materialize or evaluate evolved candidates, or emit an
-optimized patch. It is also not yet an installed standalone optimizer
-executable: issue #67 defines product commands and issue #93 requires the
-actual installed binary before artifact and end-to-end work. Issue #56 remains
-the final 1.0 stabilization gate.
+decoded recipes against live authority. It now implements three narrow
+AST-aware C transformations that emit one exact owned edit or deterministic
+no-change result without writing source. It does not yet materialize or
+evaluate evolved candidates or emit an optimized patch. It is also not yet an
+installed standalone optimizer executable: issue #67 defines product commands
+and issue #93 requires the actual installed binary before artifact and end-to-
+end work. Issue #56 remains the final 1.0 stabilization gate.
 
 EVO 0.16.0 composes the complete deterministic generation pipeline into a
 bounded public `evo_run`. Generation zero is constructed, initialized,
@@ -463,6 +473,19 @@ analysis, and catalogue before exact-byte acceptance. A complete Markdown
 projection accompanies the in-memory recipe. This release writes no source,
 invokes no operator, materializes no candidate, and installs no optimizer
 executable.
+
+EVO 0.37.0 adds the private AST-aware C transformation boundary. One exact
+static catalogue defines stable version-1 compound-assignment, double-
+negation-condition, and unsigned-power-of-two-shift operations with bounded
+parameters, accepted AST forms, deterministic formatting, semantic
+assumptions, validation obligations, idempotence, and explicit rejection
+policy. A normalized provider supplies language facts over the immutable
+snapshot; EVO independently resolves the recipe range, checks source tokens
+and literal bytes, and re-verifies the complete baseline before and after the
+callback. A successful application owns one exact half-open edit or an
+`already-satisfied` no-change record plus canonical JSON and Markdown. This
+release writes no source, materializes no candidate, invokes no compiler gate,
+and installs no optimizer executable.
 
 Version 0.3.0 added the independently tested private population-storage
 foundation: checked `population_size * genome_size` arithmetic, a

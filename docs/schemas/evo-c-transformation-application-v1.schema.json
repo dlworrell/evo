@@ -1,0 +1,381 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/dlworrell/evo/blob/main/docs/schemas/evo-c-transformation-application-v1.schema.json",
+  "title": "EVO AST-aware C transformation application v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "schema_version",
+    "application_fingerprint",
+    "baseline_fingerprint",
+    "analysis_fingerprint",
+    "recipe_fingerprint",
+    "catalogue",
+    "record_identity",
+    "transformation",
+    "parameters",
+    "provider",
+    "target",
+    "ast",
+    "disposition",
+    "edit",
+    "formatting_policy",
+    "idempotence_policy",
+    "semantic_assumptions",
+    "validation_obligations",
+    "human_readable_abstraction",
+    "snapshot_modified",
+    "candidate_materialized"
+  ],
+  "properties": {
+    "schema": {"const": "catalyst.evo-c-transformation-application.v1"},
+    "schema_version": {"const": 1},
+    "application_fingerprint": {"$ref": "#/$defs/fingerprint"},
+    "baseline_fingerprint": {"$ref": "#/$defs/fingerprint"},
+    "analysis_fingerprint": {"$ref": "#/$defs/fingerprint"},
+    "recipe_fingerprint": {"$ref": "#/$defs/fingerprint"},
+    "catalogue": {"$ref": "#/$defs/versionedIdentity"},
+    "record_identity": {"$ref": "#/$defs/text"},
+    "transformation": {"$ref": "#/$defs/versionedIdentity"},
+    "parameters": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/parameter"}
+    },
+    "provider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["identity", "version", "clang"],
+      "properties": {
+        "identity": {"$ref": "#/$defs/text"},
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "clang": {"$ref": "#/$defs/text"}
+      }
+    },
+    "target": {"$ref": "#/$defs/target"},
+    "ast": {"$ref": "#/$defs/ast"},
+    "disposition": {"enum": ["edit", "already-satisfied"]},
+    "edit": {"$ref": "#/$defs/edit"},
+    "formatting_policy": {"$ref": "#/$defs/text"},
+    "idempotence_policy": {"const": "already-satisfied-no-change-v1"},
+    "semantic_assumptions": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/text"}
+    },
+    "validation_obligations": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/text"}
+    },
+    "human_readable_abstraction": {
+      "const": {
+        "reference_form": "exact-source-edit-and-direct-dispatch",
+        "projection": "complete-application-json-and-derived-markdown",
+        "complete": true,
+        "probabilistic_authority": false
+      }
+    },
+    "snapshot_modified": {"const": false},
+    "candidate_materialized": {"const": false}
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "disposition": {"const": "edit"},
+        "edit": {
+          "properties": {
+            "after": {
+              "properties": {
+                "replacement_size": {"type": "integer", "minimum": 1},
+                "replacement_text": {"type": "string", "minLength": 1}
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "disposition": {"const": "already-satisfied"},
+        "edit": {
+          "properties": {
+            "after": {
+              "properties": {
+                "replacement_size": {"const": 0},
+                "replacement_text": {"type": "null"}
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "text": {"type": "string", "minLength": 1},
+    "fingerprint": {
+      "type": "string",
+      "pattern": "^fnv1a64-v1:[0-9a-f]{16}$"
+    },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.?(?:/|$))[^\\\\:]+$"
+    },
+    "versionedIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["identity", "version"],
+      "properties": {
+        "identity": {"$ref": "#/$defs/text"},
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        }
+      }
+    },
+    "parameter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "identity",
+        "kind",
+        "integer_value",
+        "boolean_value",
+        "choice_value"
+      ],
+      "properties": {
+        "identity": {"$ref": "#/$defs/text"},
+        "kind": {"enum": ["integer", "boolean", "choice"]},
+        "integer_value": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": -9223372036854775808,
+              "maximum": 9223372036854775807
+            },
+            {"type": "null"}
+          ]
+        },
+        "boolean_value": {
+          "oneOf": [{"type": "boolean"}, {"type": "null"}]
+        },
+        "choice_value": {
+          "oneOf": [{"$ref": "#/$defs/text"}, {"type": "null"}]
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "kind": {"const": "integer"},
+            "integer_value": {"type": "integer"},
+            "boolean_value": {"type": "null"},
+            "choice_value": {"type": "null"}
+          }
+        },
+        {
+          "properties": {
+            "kind": {"const": "boolean"},
+            "integer_value": {"type": "null"},
+            "boolean_value": {"type": "boolean"},
+            "choice_value": {"type": "null"}
+          }
+        },
+        {
+          "properties": {
+            "kind": {"const": "choice"},
+            "integer_value": {"type": "null"},
+            "boolean_value": {"type": "null"},
+            "choice_value": {"$ref": "#/$defs/text"}
+          }
+        }
+      ]
+    },
+    "byteRange": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start", "end"],
+      "properties": {
+        "start": {"type": "integer", "minimum": 0},
+        "end": {"type": "integer", "minimum": 1}
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "location_identity",
+        "file",
+        "line",
+        "column",
+        "end_line",
+        "end_column",
+        "kind",
+        "spelling_identity",
+        "byte_range"
+      ],
+      "properties": {
+        "location_identity": {"$ref": "#/$defs/text"},
+        "file": {"$ref": "#/$defs/relativePath"},
+        "line": {"type": "integer", "minimum": 1, "maximum": 4294967295},
+        "column": {"type": "integer", "minimum": 1, "maximum": 4294967295},
+        "end_line": {"type": "integer", "minimum": 1, "maximum": 4294967295},
+        "end_column": {"type": "integer", "minimum": 1, "maximum": 4294967295},
+        "kind": {"const": "spelling"},
+        "spelling_identity": {"type": "null"},
+        "byte_range": {"$ref": "#/$defs/byteRange"}
+      }
+    },
+    "ast": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "form",
+        "operator",
+        "condition_context",
+        "ranges",
+        "primary_declaration_identity",
+        "duplicate_declaration_identity",
+        "literal_value",
+        "result_width_bits",
+        "facts"
+      ],
+      "properties": {
+        "form": {
+          "enum": [
+            "assignment-binary",
+            "assignment-compound",
+            "double-negated-condition",
+            "scalar-condition",
+            "unsigned-multiply-power-of-two",
+            "unsigned-shift-power-of-two"
+          ]
+        },
+        "operator": {
+          "enum": [
+            "none",
+            "add",
+            "bitwise-and",
+            "bitwise-or",
+            "bitwise-xor",
+            "multiply",
+            "subtract",
+            "shift-left"
+          ]
+        },
+        "condition_context": {
+          "enum": ["none", "do-while", "for", "if", "while"]
+        },
+        "ranges": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["primary", "duplicate_primary", "operand", "literal"],
+          "properties": {
+            "primary": {"$ref": "#/$defs/nullableByteRange"},
+            "duplicate_primary": {"$ref": "#/$defs/nullableByteRange"},
+            "operand": {"$ref": "#/$defs/nullableByteRange"},
+            "literal": {"$ref": "#/$defs/nullableByteRange"}
+          }
+        },
+        "primary_declaration_identity": {
+          "oneOf": [{"$ref": "#/$defs/text"}, {"type": "null"}]
+        },
+        "duplicate_declaration_identity": {
+          "oneOf": [{"$ref": "#/$defs/text"}, {"type": "null"}]
+        },
+        "literal_value": {"type": "integer", "minimum": 0},
+        "result_width_bits": {"type": "integer", "minimum": 0, "maximum": 64},
+        "facts": {"$ref": "#/$defs/astFacts"}
+      }
+    },
+    "nullableByteRange": {
+      "oneOf": [
+        {"$ref": "#/$defs/byteRange"},
+        {"type": "null"}
+      ]
+    },
+    "astFacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "primary_plain_identifier",
+        "volatile_access",
+        "result_unsigned_integer",
+        "result_type_matches_primary",
+        "scalar_operand",
+        "contains_macro",
+        "contains_comment",
+        "contains_preprocessor",
+        "language_extension",
+        "ambiguous_target",
+        "alias_assumption_required"
+      ],
+      "properties": {
+        "primary_plain_identifier": {"type": "boolean"},
+        "volatile_access": {"type": "boolean"},
+        "result_unsigned_integer": {"type": "boolean"},
+        "result_type_matches_primary": {"type": "boolean"},
+        "scalar_operand": {"type": "boolean"},
+        "contains_macro": {"const": false},
+        "contains_comment": {"const": false},
+        "contains_preprocessor": {"const": false},
+        "language_extension": {"const": false},
+        "ambiguous_target": {"const": false},
+        "alias_assumption_required": {"const": false}
+      }
+    },
+    "beforeEdit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start", "end", "size", "fingerprint", "text"],
+      "properties": {
+        "start": {"type": "integer", "minimum": 0},
+        "end": {"type": "integer", "minimum": 1},
+        "size": {"type": "integer", "minimum": 1},
+        "fingerprint": {"$ref": "#/$defs/fingerprint"},
+        "text": {"type": "string", "minLength": 1}
+      }
+    },
+    "afterEdit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "start",
+        "end",
+        "replacement_size",
+        "replacement_fingerprint",
+        "replacement_text"
+      ],
+      "properties": {
+        "start": {"type": "integer", "minimum": 0},
+        "end": {"type": "integer", "minimum": 0},
+        "replacement_size": {"type": "integer", "minimum": 0},
+        "replacement_fingerprint": {"$ref": "#/$defs/fingerprint"},
+        "replacement_text": {
+          "oneOf": [
+            {"type": "string", "minLength": 1},
+            {"type": "null"}
+          ]
+        }
+      }
+    },
+    "edit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["before", "after"],
+      "properties": {
+        "before": {"$ref": "#/$defs/beforeEdit"},
+        "after": {"$ref": "#/$defs/afterEdit"}
+      }
+    }
+  }
+}

@@ -124,7 +124,11 @@
       "src/project_analysis.c",
       "src/project_recipe_model.c",
       "src/project_recipe_encoding.c",
-      "src/project_recipe.c"
+      "src/project_recipe.c",
+      "src/project_transformation_catalogue.c",
+      "src/project_transformation_model.c",
+      "src/project_transformation_evidence.c",
+      "src/project_transformation.c"
     ],
     "normative_tests": [
       {
@@ -342,6 +346,12 @@
         "source": "tests/project_recipe_test.c",
         "cmake": "evo_project_recipe_test",
         "autotools": "tests/evo_project_recipe_test"
+      },
+      {
+        "id": "project-transformation",
+        "source": "tests/project_transformation_test.c",
+        "cmake": "evo_project_transformation_test",
+        "autotools": "tests/evo_project_transformation_test"
       }
     ],
     "consumer_sources": [

@@ -2,11 +2,12 @@
 
 This document distinguishes algorithms implemented by the reusable
 `catalyst_evo` core from the structured program transformations and evaluation
-algorithm required by the EVO 1.0 source optimizer. Version 0.36.0 implements
+algorithm required by the EVO 1.0 source optimizer. Version 0.37.0 implements
 the core plus project ingestion, immutable-baseline preparation, and the
 normalized Clang/LLVM analysis and hotspot-ranking model plus canonical
-transformation-recipe representation and validation; it does not yet implement
-AST-aware source-transformation application.
+transformation-recipe representation and validation plus three non-writing
+AST-aware source-transformation applications; it does not yet materialize a
+candidate source tree.
 
 ## EVO Core Initial Release
 
@@ -1087,6 +1088,36 @@ forged provenance, stale ranges, unknown fields, and nonzero padding cannot
 become replay authority. The FNV label is diagnostic only. No raw source byte,
 clock, process identity, address, entropy input, callback, or hidden repair is
 part of recipe construction.
+
+## AST-Aware Transformation Application
+
+Version 0.37.0 implements catalogue version 1 with three exact operations:
+
+1. `assignment-to-compound` maps a plain nonvolatile same-declaration
+   `x = x op operand` AST to canonical `x op= operand` spelling for selected
+   arithmetic/bitwise operators;
+2. `double-negation-condition` removes the two leading `!` tokens from a
+   scalar `if`, `while`, `do-while`, or `for` controlling expression while
+   preserving the operand bytes; and
+3. `unsigned-multiply-to-shift` maps unsigned multiplication by a verified
+   decimal power-of-two constant to the parenthesized `(primary << N)` form
+   when the shift is nonzero, within the declared maximum, below the result
+   width, and type-preserving according to provider evidence.
+
+Application combines normalized provider facts with immutable-source
+authority. EVO independently resolves the recipe's one-based line/column range
+to a zero-based half-open byte range, requires the provider target to match,
+checks every AST subrange and relevant token/literal byte, and verifies the
+snapshot before and after the provider. Macro targets, comments, directives,
+extensions, alias assumptions, ambiguous targets, and failed semantic
+preconditions reject with stable reasons.
+
+The result is one owned exact edit or `already-satisfied` no-change record.
+Reapplication of the emitted form never produces a second edit. Canonical JSON
+and Markdown retain complete catalogue, recipe, provider, AST, range,
+replacement, formatting, semantic-assumption, and validation-obligation
+evidence. The operation does not write source or create a candidate workspace;
+issue #62 owns composition and isolated materialization.
 
 ## Source-Recipe Initialization
 

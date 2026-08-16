@@ -235,3 +235,34 @@ missing/ambiguous dependencies, cycles, conflicts, aliases, budget exhaustion,
 and exact source preservation. AST-aware transformation bodies, source
 materialization, candidate execution, cross-trust authentication, and the
 installed executable remain later reviewable milestones.
+
+## EVO 0.37.0 AST-Transformation Amendment (2026-08-15)
+
+The private transformation boundary accepts a live baseline/analysis/recipe
+chain and one normalized provider result. It reads only the immutable snapshot
+and emits owned evidence for one exact edit or no-change result. It has no
+source-write, candidate-workspace, compiler, shell, process, or network
+authority.
+
+| Requirement | 0.37.0 status | Retained evidence |
+|---|---|---|
+| Dangerous C primitives | Reviewed | Allocation/release/formatting remain behind the private runtime; every `memcpy` is preceded by contained-range and checked-size arithmetic, and filesystem reads use component-by-component `openat` with `O_NOFOLLOW`, exact regular-file mode/size checks, and handled return values |
+| Provider authority | Pass | Provider output is borrowed for one call, must match the live recipe target, and is checked against exact source tokens, declaration identity, type facts, literal bytes, and stable unsupported-case flags; provider failure or snapshot mutation publishes nothing |
+| Structural consistency | Pass | AST schema/form, target and subranges, operator/context, source tokens, decimal constant, result width, transformation parameter, and already-satisfied form validate before edit evidence is built |
+| Semantic boundary | Pass | Only three narrow versioned transforms are implemented; plain-identifier, scalar-condition, unsigned-type, width, same-declaration, and no-alias assumptions are explicit, while macros, comments, directives, extensions, ambiguous targets, and unproved alias cases reject |
+| Input bounds | Pass | Source, path, string, replacement, registry, application, Markdown, and total evidence limits validate before traversal/allocation; file and combined evidence remain capped by immutable manifest budgets |
+| Snapshot isolation | Pass | Snapshot path, size, hardened mode, and byte fingerprint are verified before source use, after provider return, and after evidence construction; no production path opens the snapshot for writing |
+| Atomicity and cleanup | Pass | One owner deep-copies every retained identity, policy, exact before/replacement byte, and projection; any failure destroys partial state and leaves the caller application inactive; active results reject before provider execution |
+| Identity boundary | Pass | Exact live authorities, ranges, source bytes, and replacements remain required; all FNV labels are deterministic diagnostics and never authentication or sole acceptance authority |
+| Explainability | Pass | Registry JSON/Markdown enumerate every capability and rejection policy; application JSON/Markdown expose the complete AST decision, edit, provenance, assumptions, and obligations; EVO-HRA-010 retains the ADR-0026 audit |
+
+ADR-0038 defines the provider, AST, token, semantic, formatting, ownership,
+resource, failure, identity, and evidence invariants. The normative test covers
+positive, negative, exact-boundary, malformed, replay, and idempotence cases
+for every transformation; all unsupported categories; stale authority; budget
+exhaustion; and provider-time snapshot mutation. The dedicated workflow adds
+Clang ASan/UBSan, static analysis, strict C17 fixture compilation, and an
+independent schema/fingerprint/range-composition validator. Candidate
+materialization, process isolation for a concrete Clang provider, candidate
+execution, cross-trust authentication, and the installed executable remain
+later reviewable milestones.
