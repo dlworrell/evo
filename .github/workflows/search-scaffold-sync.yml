@@ -7,6 +7,8 @@ on:
     paths:
       - 'src/project_search*.c'
       - 'src/internal/project_search*.h'
+      - 'CMakeLists.txt'
+      - 'Makefile.am'
       - '.github/workflows/search-scaffold-sync.yml'
   workflow_dispatch:
 
@@ -16,12 +18,55 @@ permissions:
 jobs:
   sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
           ref: agent/evolve-compatible-source-recipes
           fetch-depth: 0
+      - name: Integrate source and link boundaries
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          cmake = Path('CMakeLists.txt')
+          lines = cmake.read_text().splitlines()
+          if not any('src/project_search.c' in line for line in lines):
+              index = lines.index('    src/project_measurement.c')
+              lines[index + 1:index + 1] = [
+                  '    src/project_search_model.c',
+                  '    src/project_search_runtime.c',
+                  '    src/project_search.c',
+              ]
+          link_line = 'target_link_libraries(catalyst_evo_project_foundation PUBLIC catalyst_evo)'
+          if link_line not in lines:
+              index = lines.index('target_compile_features(catalyst_evo_project_foundation PRIVATE c_std_17)')
+              lines.insert(index + 1, link_line)
+          cmake.write_text('\n'.join(lines) + '\n')
+
+          makefile = Path('Makefile.am')
+          lines = makefile.read_text().splitlines()
+          slash = chr(92)
+          if not any('src/internal/project_search.h' in line for line in lines):
+              index = next(i for i, line in enumerate(lines) if 'src/internal/project_measurement_internal.h' in line)
+              lines[index + 1:index + 1] = [
+                  '\tsrc/internal/project_search.h ' + slash,
+                  '\tsrc/internal/project_search_owner.h ' + slash,
+                  '\tsrc/internal/project_search_internal.h ' + slash,
+              ]
+          if not any('src/project_search.c' in line for line in lines):
+              index = next(i for i, line in enumerate(lines) if line.strip() == 'src/project_measurement.c')
+              lines[index] = '\tsrc/project_measurement.c ' + slash
+              lines[index + 1:index + 1] = [
+                  '\tsrc/project_search_model.c ' + slash,
+                  '\tsrc/project_search_runtime.c ' + slash,
+                  '\tsrc/project_search.c',
+              ]
+          if not any(line.startswith('libevo_project_foundation_la_LIBADD') for line in lines):
+              search_index = next(i for i, line in enumerate(lines) if line.strip() == 'src/project_search.c')
+              lines.insert(search_index + 1, 'libevo_project_foundation_la_LIBADD = libcatalyst_evo.la -lm')
+          makefile.write_text('\n'.join(lines) + '\n')
+          PY
       - name: Canonicalize C formatting
         run: >-
           clang-format -i
@@ -31,12 +76,21 @@ jobs:
           src/project_search_model.c
           src/project_search_runtime.c
           src/project_search.c
-      - name: Commit formatting
+      - name: Commit integration
         run: |
           git config user.name 'Donovan Worrell'
           git config user.email 'donovan.worrell@just-a-geek.com'
-          git add src/internal/project_search.h src/internal/project_search_owner.h src/internal/project_search_internal.h src/project_search_model.c src/project_search_runtime.c src/project_search.c
+          git add CMakeLists.txt Makefile.am src/internal/project_search.h src/internal/project_search_owner.h src/internal/project_search_internal.h src/project_search_model.c src/project_search_runtime.c src/project_search.c
           if ! git diff --cached --quiet; then
-            git commit -m 'style: canonicalize structured search sources'
+            git commit -m 'build: integrate structured recipe search foundation'
             git push origin HEAD:agent/evolve-compatible-source-recipes
           fi
+      - name: Verify CMake build
+        run: |
+          cmake -S . -B build-search -DCMAKE_C_COMPILER=clang
+          cmake --build build-search --target catalyst_evo_project_foundation --parallel 2
+      - name: Verify Autotools build
+        run: |
+          autoreconf -fi
+          ./configure CC=gcc
+          make -j2 libevo_project_foundation.la
