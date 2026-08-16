@@ -122,7 +122,7 @@ static bool evo_orchestration_checkpoint_serialized_size(
     const evo_project_orchestration_checkpoint_limits_t *limits,
     size_t *size_out)
 {
-    size_t size = 72U;
+    size_t size = 80U;
     size_t index;
 
     for (index = 0U; index < EVO_ORCHESTRATION_CHECKPOINT_STRING_COUNT;
@@ -327,7 +327,7 @@ static bool evo_orchestration_checkpoint_parse(
     uint64_t total_size;
     uint64_t core_size;
 
-    if (size < 72U || !evo_orchestration_checkpoint_magic_valid(bytes, size)) {
+    if (size < 80U || !evo_orchestration_checkpoint_magic_valid(bytes, size)) {
         return false;
     }
     view->format_version = evo_orchestration_read_u32_at(bytes, 8U);
@@ -627,7 +627,7 @@ evo_project_orchestration_checkpoint_validate(
     if (checkpoint->private_owner != NULL || checkpoint->format_version != 0U) {
         return EVO_PROJECT_ORCHESTRATION_CHECKPOINT_ERROR_RESULT_ACTIVE;
     }
-    if (serialized_size < 72U || serialized_size > limits->max_checkpoint_bytes) {
+    if (serialized_size < 80U || serialized_size > limits->max_checkpoint_bytes) {
         return EVO_PROJECT_ORCHESTRATION_CHECKPOINT_ERROR_RESOURCE_LIMIT;
     }
     if (!evo_orchestration_checkpoint_magic_valid(input, serialized_size) ||
