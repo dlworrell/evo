@@ -130,7 +130,6 @@ endif()
 if(BUILD_TESTING)
     add_subdirectory(benchmarks)
     add_subdirectory(tests)
-    include(tests/project_candidate.cmake)
 endif()
 
 set(prefix "${CMAKE_INSTALL_PREFIX}")
