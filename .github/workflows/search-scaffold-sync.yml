@@ -26,71 +26,6 @@ jobs:
         with:
           ref: agent/evolve-compatible-source-recipes
           fetch-depth: 0
-      - name: Integrate structured search build and normative test
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-
-          cmake = Path('CMakeLists.txt')
-          lines = cmake.read_text().splitlines()
-          if not any('src/project_search.c' in line for line in lines):
-              index = lines.index('    src/project_measurement.c')
-              lines[index + 1:index + 1] = [
-                  '    src/project_search_model.c',
-                  '    src/project_search_runtime.c',
-                  '    src/project_search.c',
-              ]
-          link_line = 'target_link_libraries(catalyst_evo_project_foundation PUBLIC catalyst_evo)'
-          if link_line not in lines:
-              index = lines.index('target_compile_features(catalyst_evo_project_foundation PRIVATE c_std_17)')
-              lines.insert(index + 1, link_line)
-          cmake.write_text('\n'.join(lines) + '\n')
-
-          tests = Path('tests/CMakeLists.txt')
-          text = tests.read_text()
-          if 'evo_project_search_test' not in text:
-              marker = '''add_test(\n    NAME evo_project_measurement_test\n    COMMAND evo_project_measurement_test\n)\n'''
-              block = marker + '''\nadd_executable(evo_project_search_test project_search_test.c)\ntarget_include_directories(\n    evo_project_search_test\n    PRIVATE\n        ${PROJECT_SOURCE_DIR}/src\n)\ntarget_link_libraries(\n    evo_project_search_test\n    PRIVATE\n        catalyst_evo_project_foundation\n)\nadd_test(\n    NAME evo_project_search_test\n    COMMAND evo_project_search_test\n)\n'''
-              if marker not in text:
-                  raise SystemExit('canonical measurement CTest marker not found')
-              text = text.replace(marker, block, 1)
-          tests.write_text(text)
-
-          makefile = Path('Makefile.am')
-          lines = makefile.read_text().splitlines()
-          slash = chr(92)
-          if not any('src/internal/project_search.h' in line for line in lines):
-              index = next(i for i, line in enumerate(lines) if 'src/internal/project_measurement_internal.h' in line)
-              lines[index + 1:index + 1] = [
-                  '\tsrc/internal/project_search.h ' + slash,
-                  '\tsrc/internal/project_search_owner.h ' + slash,
-                  '\tsrc/internal/project_search_internal.h ' + slash,
-              ]
-          if not any('src/project_search.c' in line for line in lines):
-              index = next(i for i, line in enumerate(lines) if line.strip() == 'src/project_measurement.c')
-              lines[index] = '\tsrc/project_measurement.c ' + slash
-              lines[index + 1:index + 1] = [
-                  '\tsrc/project_search_model.c ' + slash,
-                  '\tsrc/project_search_runtime.c ' + slash,
-                  '\tsrc/project_search.c',
-              ]
-          if not any(line.startswith('libevo_project_foundation_la_LIBADD') for line in lines):
-              search_index = next(i for i, line in enumerate(lines) if line.strip() == 'src/project_search.c')
-              lines.insert(search_index + 1, 'libevo_project_foundation_la_LIBADD = libcatalyst_evo.la -lm')
-          if not any('tests/evo_project_search_test' in line for line in lines):
-              check_index = next(i for i, line in enumerate(lines) if 'tests/evo_project_measurement_test' in line and line.rstrip().endswith(slash))
-              lines.insert(check_index + 1, '\ttests/evo_project_search_test ' + slash)
-              ldadd_index = next(i for i, line in enumerate(lines) if line.startswith('tests_evo_project_measurement_test_LDADD'))
-              insert_at = ldadd_index + 2
-              lines[insert_at:insert_at] = [
-                  '',
-                  'tests_evo_project_search_test_SOURCES = ' + slash,
-                  '\ttests/project_search_test.c',
-                  'tests_evo_project_search_test_LDADD = ' + slash,
-                  '\tlibevo_project_foundation.la',
-              ]
-          makefile.write_text('\n'.join(lines) + '\n')
-          PY
       - name: Canonicalize C formatting
         run: >-
           clang-format -i
@@ -101,20 +36,32 @@ jobs:
           src/project_search_runtime.c
           src/project_search.c
           tests/project_search_test.c
-      - name: Commit integration
+      - name: Commit formatting
         run: |
           git config user.name 'Donovan Worrell'
           git config user.email 'donovan.worrell@just-a-geek.com'
-          git add CMakeLists.txt tests/CMakeLists.txt Makefile.am src/internal/project_search.h src/internal/project_search_owner.h src/internal/project_search_internal.h src/project_search_model.c src/project_search_runtime.c src/project_search.c tests/project_search_test.c
+          git add src/internal/project_search.h src/internal/project_search_owner.h src/internal/project_search_internal.h src/project_search_model.c src/project_search_runtime.c src/project_search.c tests/project_search_test.c
           if ! git diff --cached --quiet; then
-            git commit -m 'test: integrate structured recipe search oracle'
+            git commit -m 'style: canonicalize structured search oracle'
             git push origin HEAD:agent/evolve-compatible-source-recipes
           fi
       - name: Verify CMake normative test
         run: |
-          cmake -S . -B build-search -DCMAKE_C_COMPILER=clang
-          cmake --build build-search --target evo_project_search_test --parallel 2
-          ctest --test-dir build-search -R '^evo_project_search_test$' --output-on-failure
+          set +e
+          {
+            cmake -S . -B build-search -DCMAKE_C_COMPILER=clang
+            cmake --build build-search --target evo_project_search_test --parallel 2
+            ctest --test-dir build-search -R '^evo_project_search_test$' --output-on-failure
+          } > /tmp/search-test-diagnostic.txt 2>&1
+          status=$?
+          cat /tmp/search-test-diagnostic.txt
+          if [ "$status" -ne 0 ]; then
+            cp /tmp/search-test-diagnostic.txt .github/search-test-diagnostic.txt
+            git add .github/search-test-diagnostic.txt
+            git commit -m 'diagnostic: capture structured search test failure'
+            git push origin HEAD:agent/evolve-compatible-source-recipes
+            exit "$status"
+          fi
       - name: Verify Autotools normative test
         run: |
           autoreconf -fi
