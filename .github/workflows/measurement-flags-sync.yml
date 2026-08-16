@@ -1,0 +1,39 @@
+name: Measurement Optimization Flags Sync
+
+on:
+  push:
+    branches:
+      - agent/reproducible-candidate-fitness
+    paths:
+      - '.github/workflows/measurement-flags-sync.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/reproducible-candidate-fitness
+      - name: Bind optimization flags into condition identity
+        run: python3 .github/measurement_flags_sync.py
+      - name: Canonicalize measurement C formatting
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-format
+          clang-format -i \
+            src/internal/project_measurement.h \
+            src/project_measurement_model.c \
+            src/project_measurement_runtime.c \
+            tests/project_measurement_test.c
+      - name: Commit explicit optimization-flags provenance
+        run: |
+          git config user.name "Donovan Worrell"
+          git config user.email "donovan.worrell@just-a-geek.com"
+          git rm .github/workflows/measurement-flags-sync.yml .github/measurement_flags_sync.py
+          git add src/internal/project_measurement.h src/project_measurement_model.c src/project_measurement_runtime.c docs/schemas/evo-project-measurement-v1.schema.json tests/project_measurement_test.c tests/validate_project_measurement.py docs/adr/ADR-0041-reproducible-candidate-performance-fitness.md docs/engineering/reports/EVO-HRA-013-candidate-performance-fitness-audit.md
+          git commit -m "fix: bind optimization flags into measurement identity"
+          git push origin HEAD:agent/reproducible-candidate-fitness
