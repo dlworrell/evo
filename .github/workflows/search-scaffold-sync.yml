@@ -19,7 +19,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   sync:
@@ -27,27 +27,16 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: agent/evolve-compatible-source-recipes
-          fetch-depth: 0
-      - name: Clear diagnostics and canonicalize sources
-        run: |
-          rm -f .github/search-test-diagnostic.txt
-          clang-format -i \
-            src/internal/project_search.h \
-            src/internal/project_search_owner.h \
-            src/internal/project_search_internal.h \
-            src/project_search_model.c \
-            src/project_search_runtime.c \
-            src/project_search.c \
-            tests/project_search_test.c
-          git config user.name 'Donovan Worrell'
-          git config user.email 'donovan.worrell@just-a-geek.com'
-          git add -A .github/search-test-diagnostic.txt src/internal/project_search.h src/internal/project_search_owner.h src/internal/project_search_internal.h src/project_search_model.c src/project_search_runtime.c src/project_search.c tests/project_search_test.c
-          if ! git diff --cached --quiet; then
-            git commit -m 'chore: clear structured search diagnostics'
-            git push origin HEAD:agent/evolve-compatible-source-recipes
-          fi
+      - name: Verify canonical formatting
+        run: >-
+          clang-format --dry-run --Werror
+          src/internal/project_search.h
+          src/internal/project_search_owner.h
+          src/internal/project_search_internal.h
+          src/project_search_model.c
+          src/project_search_runtime.c
+          src/project_search.c
+          tests/project_search_test.c
       - name: Verify independent structured-search contract
         run: python3 tests/validate_project_search.py
       - name: Verify CMake normative test
