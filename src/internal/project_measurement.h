@@ -226,6 +226,9 @@ void evo_project_measurement_destroy(evo_project_measurement_t *measurement);
 const char *evo_project_measurement_status_name(evo_project_measurement_status_t status);
 const char *evo_project_measurement_subject_name(evo_project_measurement_subject_t subject);
 const char *evo_project_measurement_phase_name(evo_project_measurement_phase_t phase);
+const char *evo_project_measurement_order_name(evo_project_measurement_order_t order);
+const char *evo_project_measurement_outlier_policy_name(
+    evo_project_measurement_outlier_policy_t policy);
 const char *evo_project_measurement_comparison_name(evo_project_measurement_comparison_t comparison);
 
 #endif

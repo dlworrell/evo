@@ -623,6 +623,18 @@ static bool evo_measurement_build_json(
                 json, ",\"minimum_included_repetitions\":") ||
             !evo_candidate_buffer_append_size(
                 json, policy->minimum_included_repetitions) ||
+            !evo_candidate_buffer_append_text(json, ",\"order\":") ||
+            !evo_candidate_buffer_append_json_string(
+                json, evo_project_measurement_order_name(policy->order)) ||
+            !evo_candidate_buffer_append_text(json, ",\"outlier_policy\":") ||
+            !evo_candidate_buffer_append_json_string(
+                json,
+                evo_project_measurement_outlier_policy_name(
+                    policy->outlier_policy)) ||
+            !evo_candidate_buffer_append_text(
+                json, ",\"outlier_deviation_ns\":") ||
+            !evo_candidate_buffer_append_u64(
+                json, policy->outlier_deviation_ns) ||
             !evo_candidate_buffer_append_text(json, ",\"max_runtime_range_ppm\":") ||
             !evo_measurement_append_u32(json, policy->max_runtime_range_ppm) ||
             !evo_candidate_buffer_append_text(
@@ -631,6 +643,18 @@ static bool evo_measurement_build_json(
             !evo_candidate_buffer_append_text(
                 json, ",\"minimum_improvement_ppm\":") ||
             !evo_measurement_append_u32(json, policy->minimum_improvement_ppm) ||
+            !evo_candidate_buffer_append_text(json, ",\"timeout_ms\":") ||
+            !evo_candidate_buffer_append_u64(json, policy->timeout_ms) ||
+            !evo_candidate_buffer_append_text(json, ",\"workload_weight\":") ||
+            !evo_measurement_append_double(json, policy->workload_weight) ||
+            !evo_candidate_buffer_append_text(
+                json, ",\"peak_memory_mix_weight\":") ||
+            !evo_measurement_append_double(
+                json, policy->peak_memory_mix_weight) ||
+            !evo_candidate_buffer_append_text(
+                json, ",\"binary_size_mix_weight\":") ||
+            !evo_measurement_append_double(
+                json, policy->binary_size_mix_weight) ||
             !evo_candidate_buffer_append_text(json, ",\"baseline\":") ||
             !evo_measurement_append_aggregate_json(json, &result->baseline) ||
             !evo_candidate_buffer_append_text(json, ",\"candidate\":") ||
@@ -758,12 +782,36 @@ static bool evo_measurement_build_json(
     return true;
 }
 
+static bool evo_measurement_append_fitness_row(
+    evo_candidate_buffer_t *markdown,
+    const char *name,
+    double value,
+    double weight,
+    bool subtract)
+{
+    char row[256];
+    const double contribution = subtract ? -(value * weight) : value * weight;
+    const int written = evo_project_format(
+        row,
+        sizeof(row),
+        "| %s | %.17g | %.17g | %.17g |\n",
+        name,
+        value,
+        weight,
+        contribution);
+
+    return written > 0 && (size_t)written < sizeof(row) &&
+           evo_candidate_buffer_append_text(markdown, row);
+}
+
 static bool evo_measurement_build_markdown(
     const evo_project_measurement_config_t *config,
     const evo_project_measurement_owner_t *owner,
     evo_candidate_buffer_t *markdown)
 {
     size_t index;
+    char total_row[128];
+    int total_written;
 
     if (!evo_candidate_buffer_append_text(
             markdown, "# EVO Candidate Measurement and Fitness\n\n") ||
@@ -775,8 +823,33 @@ static bool evo_measurement_build_markdown(
         !evo_candidate_buffer_append_text(markdown, owner->view.baseline_identity) ||
         !evo_candidate_buffer_append_text(markdown, "`\n- Policy: `") ||
         !evo_candidate_buffer_append_text(markdown, owner->view.policy_id) ||
-        !evo_candidate_buffer_append_text(markdown, "`\n- Condition: `") ||
+        !evo_candidate_buffer_append_text(markdown, "`\n- Policy fingerprint: `") ||
+        !evo_candidate_buffer_append_text(markdown, owner->view.policy_fingerprint) ||
+        !evo_candidate_buffer_append_text(markdown, "`\n- Measurement provider: `") ||
+        !evo_candidate_buffer_append_text(
+            markdown, owner->view.measurement_provider_identity) ||
+        !evo_candidate_buffer_append_text(markdown, "`\n- Condition fingerprint: `") ||
         !evo_candidate_buffer_append_text(markdown, owner->view.condition_fingerprint) ||
+        !evo_candidate_buffer_append_text(markdown, "`\n- Hardware: `") ||
+        !evo_candidate_buffer_append_text(markdown, config->condition.hardware_identity) ||
+        !evo_candidate_buffer_append_text(markdown, "`\n- Operating system: `") ||
+        !evo_candidate_buffer_append_text(
+            markdown, config->condition.operating_system_identity) ||
+        !evo_candidate_buffer_append_text(markdown, "`\n- Compiler: `") ||
+        !evo_candidate_buffer_append_text(markdown, config->condition.compiler_identity) ||
+        !evo_candidate_buffer_append_text(markdown, "`\n- Linker: `") ||
+        !evo_candidate_buffer_append_text(markdown, config->condition.linker_identity) ||
+        !evo_candidate_buffer_append_text(markdown, "`\n- Environment: `") ||
+        !evo_candidate_buffer_append_text(
+            markdown, config->condition.environment_identity) ||
+        !evo_candidate_buffer_append_text(markdown, "`\n- Dataset: `") ||
+        !evo_candidate_buffer_append_text(markdown, config->condition.dataset_identity) ||
+        !evo_candidate_buffer_append_text(markdown, "`\n- Baseline binary: `") ||
+        !evo_candidate_buffer_append_text(
+            markdown, config->condition.baseline_binary_identity) ||
+        !evo_candidate_buffer_append_text(markdown, "`\n- Candidate binary: `") ||
+        !evo_candidate_buffer_append_text(
+            markdown, config->condition.candidate_binary_identity) ||
         !evo_candidate_buffer_append_text(markdown, "`\n- Overall comparison: **") ||
         !evo_candidate_buffer_append_text(
             markdown,
@@ -789,18 +862,53 @@ static bool evo_measurement_build_markdown(
             "**\n\nCorrectness authority is unchanged from candidate assurance; performance evidence cannot alter it.\n\n") ||
         !evo_candidate_buffer_append_text(
             markdown,
-            "## Workloads\n\n| Workload | Comparison | Baseline ns | Candidate ns | Baseline range ppm | Candidate range ppm | Included B/C |\n|---|---|---:|---:|---:|---:|---:|\n")) {
+            "## Workload policy\n\n| Workload | Order | Warmups | Repetitions | Min included | Outlier policy | Outlier deviation ns | Max range ppm | Tolerance ppm | Min improvement ppm | Timeout ms | Weight | Peak-memory mix | Binary-size mix |\n|---|---|---:|---:|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|\n")) {
+        return false;
+    }
+
+    for (index = 0U; index < config->workload_count; index += 1U) {
+        const evo_project_measurement_workload_policy_t *policy =
+            &config->workloads[index];
+        char row[768];
+        const int written = evo_project_format(
+            row,
+            sizeof(row),
+            "| %s | %s | %zu | %zu | %zu | %s | %llu | %u | %u | %u | %llu | %.17g | %.17g | %.17g |\n",
+            policy->workload_id,
+            evo_project_measurement_order_name(policy->order),
+            policy->warmup_count,
+            policy->repetition_count,
+            policy->minimum_included_repetitions,
+            evo_project_measurement_outlier_policy_name(policy->outlier_policy),
+            (unsigned long long)policy->outlier_deviation_ns,
+            policy->max_runtime_range_ppm,
+            policy->comparison_tolerance_ppm,
+            policy->minimum_improvement_ppm,
+            (unsigned long long)policy->timeout_ms,
+            policy->workload_weight,
+            policy->peak_memory_mix_weight,
+            policy->binary_size_mix_weight);
+
+        if (written <= 0 || (size_t)written >= sizeof(row) ||
+            !evo_candidate_buffer_append_text(markdown, row)) {
+            return false;
+        }
+    }
+
+    if (!evo_candidate_buffer_append_text(
+            markdown,
+            "\n## Workload results\n\n| Workload | Comparison | Baseline ns | Candidate ns | Baseline range ppm | Candidate range ppm | Included B/C | Runtime improvement | Memory improvement | Reliability improvement | Maintainability improvement |\n|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|\n")) {
         return false;
     }
 
     for (index = 0U; index < owner->view.workload_count; index += 1U) {
         const evo_project_measurement_workload_result_t *result =
             &owner->workloads[index];
-        char row[256];
+        char row[768];
         const int written = evo_project_format(
             row,
             sizeof(row),
-            "| %s | %s | %llu | %llu | %u | %u | %zu/%zu |\n",
+            "| %s | %s | %llu | %llu | %u | %u | %zu/%zu | %.17g | %.17g | %.17g | %.17g |\n",
             result->workload_id,
             evo_project_measurement_comparison_name(result->comparison),
             (unsigned long long)result->baseline.runtime_ns,
@@ -808,7 +916,11 @@ static bool evo_measurement_build_markdown(
             result->baseline.runtime_range_ppm,
             result->candidate.runtime_range_ppm,
             result->baseline.included_count,
-            result->candidate.included_count);
+            result->candidate.included_count,
+            result->runtime_improvement,
+            result->memory_improvement,
+            result->reliability_improvement,
+            result->maintainability_improvement);
 
         if (written <= 0 || (size_t)written >= sizeof(row) ||
             !evo_candidate_buffer_append_text(markdown, row)) {
@@ -818,26 +930,40 @@ static bool evo_measurement_build_markdown(
 
     if (!evo_candidate_buffer_append_text(
             markdown,
-            "\n## Raw sample trace\n\n| Seq | Workload | Phase | Subject | Runtime ns | Memory bytes | Binary bytes | Excluded |\n|---:|---|---|---|---:|---:|---:|---|\n")) {
+            "\n## Raw sample trace\n\n| Seq | Pair | Workload | Phase | Subject | Completed | Timed out | Failed | Condition | Runtime ns | Memory bytes | Binary bytes | Reliability ppm | Maintainability ppm | Exclusion |\n|---:|---:|---|---|---|---|---|---|---|---:|---:|---:|---:|---:|---|\n")) {
         return false;
     }
     for (index = 0U; index < owner->view.sample_count; index += 1U) {
         const evo_project_measurement_sample_t *sample = &owner->samples[index];
-        char row[320];
-        const int written = evo_project_format(
+        char row[1024];
+        char condition[EVO_PROJECT_FINGERPRINT_TEXT_SIZE];
+        const char *exclusion = sample->excluded
+                                    ? (sample->exclusion_reason == NULL
+                                           ? "excluded"
+                                           : sample->exclusion_reason)
+                                    : "none";
+        int written;
+
+        evo_project_fingerprint_format(sample->condition_fingerprint, condition);
+        written = evo_project_format(
             row,
             sizeof(row),
-            "| %zu | %s | %s | %s | %llu | %llu | %llu | %s |\n",
+            "| %zu | %zu | %s | %s | %s | %s | %s | %s | %s | %llu | %llu | %llu | %u | %u | %s |\n",
             sample->sequence_index,
+            sample->pair_index,
             sample->workload_id,
             evo_project_measurement_phase_name(sample->phase),
             evo_project_measurement_subject_name(sample->subject),
+            sample->completed ? "yes" : "no",
+            sample->timed_out ? "yes" : "no",
+            sample->failed ? "yes" : "no",
+            condition,
             (unsigned long long)sample->runtime_ns,
             (unsigned long long)sample->peak_memory_bytes,
             (unsigned long long)sample->binary_size_bytes,
-            sample->excluded
-                ? (sample->exclusion_reason == NULL ? "yes" : sample->exclusion_reason)
-                : "no");
+            sample->reliability_ppm,
+            sample->maintainability_ppm,
+            exclusion);
 
         if (written <= 0 || (size_t)written >= sizeof(row) ||
             !evo_candidate_buffer_append_text(markdown, row)) {
@@ -847,13 +973,61 @@ static bool evo_measurement_build_markdown(
 
     if (!evo_candidate_buffer_append_text(
             markdown,
-            "\n## Fitness\n\nThe scalar total is derived only from the recorded EVO fitness components and caller-declared weights. No default consumer objective is supplied.\n\n") ||
+            "\n## Fitness\n\n| Component | Value | Weight | Contribution |\n|---|---:|---:|---:|\n") ||
+        !evo_measurement_append_fitness_row(
+            markdown,
+            "correctness",
+            owner->view.fitness.correctness,
+            config->fitness_weights.correctness,
+            false) ||
+        !evo_measurement_append_fitness_row(
+            markdown,
+            "performance",
+            owner->view.fitness.performance,
+            config->fitness_weights.performance,
+            false) ||
+        !evo_measurement_append_fitness_row(
+            markdown,
+            "memory_use",
+            owner->view.fitness.memory_use,
+            config->fitness_weights.memory_use,
+            false) ||
+        !evo_measurement_append_fitness_row(
+            markdown,
+            "reliability",
+            owner->view.fitness.reliability,
+            config->fitness_weights.reliability,
+            false) ||
+        !evo_measurement_append_fitness_row(
+            markdown,
+            "maintainability",
+            owner->view.fitness.maintainability,
+            config->fitness_weights.maintainability,
+            false) ||
+        !evo_measurement_append_fitness_row(
+            markdown,
+            "constraint_penalty",
+            owner->view.fitness.constraint_penalty,
+            config->fitness_weights.constraint_penalty,
+            true)) {
+        return false;
+    }
+
+    total_written = evo_project_format(
+        total_row,
+        sizeof(total_row),
+        "\nRecorded scalar total: `%.17g`\n\n",
+        owner->view.fitness.total);
+    if (total_written <= 0 || (size_t)total_written >= sizeof(total_row) ||
+        !evo_candidate_buffer_append_text(markdown, total_row) ||
+        !evo_candidate_buffer_append_text(
+            markdown,
+            "The scalar total is the sum of the recorded component contributions above. No default consumer objective is supplied.\n\n") ||
         !evo_candidate_buffer_append_text(
             markdown,
             "A later selected result may be described only as the **best verified candidate found within the recorded bounded search contract**; this evidence does not claim a globally optimal program.\n")) {
         return false;
     }
-    (void)config;
     return true;
 }
 

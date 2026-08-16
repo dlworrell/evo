@@ -339,6 +339,32 @@ const char *evo_project_measurement_phase_name(
     }
 }
 
+const char *evo_project_measurement_order_name(
+    evo_project_measurement_order_t order)
+{
+    switch (order) {
+    case EVO_PROJECT_MEASUREMENT_ALTERNATE_BASELINE_FIRST:
+        return "alternate-baseline-first";
+    case EVO_PROJECT_MEASUREMENT_ALTERNATE_CANDIDATE_FIRST:
+        return "alternate-candidate-first";
+    default:
+        return "unknown";
+    }
+}
+
+const char *evo_project_measurement_outlier_policy_name(
+    evo_project_measurement_outlier_policy_t policy)
+{
+    switch (policy) {
+    case EVO_PROJECT_MEASUREMENT_OUTLIER_NONE:
+        return "none";
+    case EVO_PROJECT_MEASUREMENT_OUTLIER_ABSOLUTE_MEDIAN:
+        return "absolute-median";
+    default:
+        return "unknown";
+    }
+}
+
 const char *evo_project_measurement_comparison_name(
     evo_project_measurement_comparison_t comparison)
 {

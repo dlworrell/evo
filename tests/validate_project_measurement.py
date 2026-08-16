@@ -56,6 +56,18 @@ def main() -> int:
     require("EVO_PROJECT_MEASUREMENT_UNSTABLE" in runtime, "unstable classification missing")
     require("correctness_preserved" in runtime, "correctness separation missing")
     require("best verified candidate found within the recorded bounded search contract" in runtime, "bounded result wording missing")
+    for field in (
+        "order",
+        "outlier_policy",
+        "outlier_deviation_ns",
+        "timeout_ms",
+        "workload_weight",
+        "peak_memory_mix_weight",
+        "binary_size_mix_weight",
+    ):
+        require(field in runtime, f"canonical policy projection missing: {field}")
+    require("Measurement provider" in runtime and "## Workload policy" in runtime, "Markdown condition/policy projection missing")
+    require("| Component | Value | Weight | Contribution |" in runtime, "Markdown fitness derivation missing")
     require("config->limits.max_evidence_bytes" in runtime, "evidence buffer is not resource bounded")
     require("evo_measurement_result_fingerprint_double" in transaction, "canonical floating fitness identity missing")
     require("&owner->view.fitness, sizeof(owner->view.fitness)" not in transaction, "raw struct bytes must not define measurement identity")
@@ -118,6 +130,17 @@ def main() -> int:
         require(field in required, f"schema required field missing: {field}")
     require(schema["properties"]["correctness_preserved"].get("const") is True, "schema must preserve correctness authority")
     require(schema["properties"]["probabilistic_authority"].get("const") is False, "schema must forbid probabilistic authority")
+    workload_required = set(schema["$defs"]["workload"]["required"])
+    for field in (
+        "order",
+        "outlier_policy",
+        "outlier_deviation_ns",
+        "timeout_ms",
+        "workload_weight",
+        "peak_memory_mix_weight",
+        "binary_size_mix_weight",
+    ):
+        require(field in workload_required, f"schema workload policy field missing: {field}")
     require("total" not in schema["$defs"]["weights"]["required"], "fitness weights must not invent a total weight")
 
     require("Status: Accepted" in adr, "ADR-0041 is not accepted")

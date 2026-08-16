@@ -218,6 +218,23 @@ static int run_case(
               measurement.canonical_json,
               "\"correctness_preserved\":true") != NULL);
     CHECK(strstr(
+              measurement.canonical_json,
+              "\"order\":\"alternate-baseline-first\"") != NULL);
+    CHECK(strstr(
+              measurement.canonical_json,
+              "\"outlier_policy\":\"none\"") != NULL ||
+          mode == FAKE_OUTLIER);
+    CHECK(strstr(measurement.canonical_json, "\"workload_weight\":1") != NULL);
+    CHECK(strstr(
+              measurement.canonical_json,
+              "\"peak_memory_mix_weight\":1") != NULL);
+    CHECK(strstr(
+              measurement.canonical_json,
+              "\"binary_size_mix_weight\":1") != NULL);
+    CHECK(strstr(measurement.audit_markdown, "Measurement provider") != NULL);
+    CHECK(strstr(measurement.audit_markdown, "hardware:test-host") != NULL);
+    CHECK(strstr(measurement.audit_markdown, "| performance |") != NULL);
+    CHECK(strstr(
               measurement.audit_markdown,
               "best verified candidate found within the recorded bounded search contract") !=
           NULL);
