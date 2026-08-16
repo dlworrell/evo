@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Independent structural checks for EVO candidate measurement v1."""
 
-# This validator is also the direct-push trigger for the integrated v0.40 boundary.
-
 from __future__ import annotations
 
 import json
@@ -51,6 +49,9 @@ def main() -> int:
     require("EVO_PROJECT_MEASUREMENT_UNSTABLE" in runtime, "unstable classification missing")
     require("correctness_preserved" in runtime, "correctness separation missing")
     require("best verified candidate found within the recorded bounded search contract" in runtime, "bounded result wording missing")
+    require("config->limits.max_evidence_bytes" in runtime, "evidence buffer is not resource bounded")
+    require("evo_measurement_result_fingerprint_double" in transaction, "canonical floating fitness identity missing")
+    require("&owner->view.fitness, sizeof(owner->view.fitness)" not in transaction, "raw struct bytes must not define measurement identity")
 
     for forbidden in ("system(", "popen(", "/bin/sh -c"):
         require(forbidden not in model + runtime + transaction, f"forbidden execution path present: {forbidden}")
@@ -105,6 +106,7 @@ def main() -> int:
         require(field in required, f"schema required field missing: {field}")
     require(schema["properties"]["correctness_preserved"].get("const") is True, "schema must preserve correctness authority")
     require(schema["properties"]["probabilistic_authority"].get("const") is False, "schema must forbid probabilistic authority")
+    require("total" not in schema["$defs"]["weights"]["required"], "fitness weights must not invent a total weight")
 
     require("Raw samples are authority" in adr, "ADR raw-sample authority missing")
     require("Incomplete or unstable measurements" in adr, "ADR unstable/incomplete rule missing")
