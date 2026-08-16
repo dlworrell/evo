@@ -67,6 +67,7 @@ typedef struct evo_project_measurement_condition {
     const char *operating_system_identity;
     const char *compiler_identity;
     const char *linker_identity;
+    const char *optimization_flags_identity;
     const char *environment_identity;
     const char *dataset_identity;
     const char *baseline_binary_identity;

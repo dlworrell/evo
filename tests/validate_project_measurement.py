@@ -51,6 +51,7 @@ def main() -> int:
     require("max_runtime_range_ppm" in header, "stability policy missing")
     require("comparison_tolerance_ppm" in header and "minimum_improvement_ppm" in header, "comparison policy missing")
     require("fitness_weights" in header, "explicit fitness weights missing")
+    require("optimization_flags_identity" in header, "optimization-flags condition identity missing")
     require("performance_eligible" in model, "assurance admission check missing")
     require("runtime-median-deviation" in runtime, "outlier evidence missing")
     require("condition-mismatch" in runtime, "condition mismatch evidence missing")
@@ -131,6 +132,8 @@ def main() -> int:
         "measurement_fingerprint",
     ):
         require(field in required, f"schema required field missing: {field}")
+    condition_required = set(schema["properties"]["condition"]["required"])
+    require("optimization_flags_identity" in condition_required, "schema optimization-flags identity missing")
     require(schema["properties"]["correctness_preserved"].get("const") is True, "schema must preserve correctness authority")
     require(schema["properties"]["probabilistic_authority"].get("const") is False, "schema must forbid probabilistic authority")
     workload_required = set(schema["$defs"]["workload"]["required"])

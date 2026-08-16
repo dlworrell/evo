@@ -168,6 +168,8 @@ static evo_project_measurement_config_t make_config(
     config.condition.operating_system_identity = "os:test";
     config.condition.compiler_identity = "compiler:test";
     config.condition.linker_identity = "linker:test";
+    config.condition.optimization_flags_identity =
+        "optimization-flags:-O3-fixed";
     config.condition.environment_identity = "environment:clean";
     config.condition.dataset_identity = "dataset:fixed-v1";
     config.condition.baseline_binary_identity = "binary:baseline-v1";
@@ -241,6 +243,9 @@ static int run_case(
               "\"binary_size_mix_weight\":1") != NULL);
     CHECK(strstr(measurement.audit_markdown, "Measurement provider") != NULL);
     CHECK(strstr(measurement.audit_markdown, "hardware:test-host") != NULL);
+    CHECK(strstr(
+              measurement.audit_markdown,
+              "optimization-flags:-O3-fixed") != NULL);
     CHECK(strstr(measurement.audit_markdown, "| performance |") != NULL);
     CHECK(strstr(
               measurement.audit_markdown,

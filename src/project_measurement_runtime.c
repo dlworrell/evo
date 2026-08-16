@@ -593,6 +593,11 @@ static bool evo_measurement_build_json(
         !evo_measurement_append_json_field(
             json, "linker_identity", config->condition.linker_identity, true) ||
         !evo_measurement_append_json_field(
+            json,
+            "optimization_flags_identity",
+            config->condition.optimization_flags_identity,
+            true) ||
+        !evo_measurement_append_json_field(
             json, "environment_identity", config->condition.environment_identity, true) ||
         !evo_measurement_append_json_field(
             json, "dataset_identity", config->condition.dataset_identity, true) ||
@@ -846,6 +851,10 @@ static bool evo_measurement_build_markdown(
         !evo_candidate_buffer_append_text(markdown, config->condition.compiler_identity) ||
         !evo_candidate_buffer_append_text(markdown, "`\n- Linker: `") ||
         !evo_candidate_buffer_append_text(markdown, config->condition.linker_identity) ||
+        !evo_candidate_buffer_append_text(
+            markdown, "`\n- Optimization flags: `") ||
+        !evo_candidate_buffer_append_text(
+            markdown, config->condition.optimization_flags_identity) ||
         !evo_candidate_buffer_append_text(markdown, "`\n- Environment: `") ||
         !evo_candidate_buffer_append_text(
             markdown, config->condition.environment_identity) ||

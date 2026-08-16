@@ -36,7 +36,7 @@ EVO 0.40.0 adds a private version-1 candidate measurement transaction.
 4. A caller-supplied measurement provider executes one requested subject sample
    and returns bounded raw evidence. The provider must attest the exact recorded
    condition fingerprint covering hardware, operating system, compiler/linker,
-   environment, dataset, and binary identities.
+   optimization flags, environment, dataset, and binary identities.
 5. Raw samples are authority. Warmups are retained but never aggregated.
    Measured samples may be excluded only by the declared deterministic policy;
    every exclusion remains visible in canonical evidence.

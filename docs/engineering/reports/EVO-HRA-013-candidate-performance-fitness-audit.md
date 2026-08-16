@@ -19,7 +19,7 @@ all required evidence is complete and stable.
 | Correctness admission | Committed ADR-0040 assurance with `performance_eligible=true` | Assurance identity and unchanged correctness component |
 | Workload policy | Direct bounded workload-policy array | Ordered workload policy records |
 | Pair ordering | Deterministic policy plus pair index | Explicit subject, phase, pair index, and sequence index |
-| Condition identity | Exact hardware/OS/toolchain/environment/dataset/binary strings | Condition fingerprint plus named identities |
+| Condition identity | Exact hardware/OS/compiler/linker/optimization-flags/environment/dataset/binary strings | Condition fingerprint plus named identities |
 | Raw measurement | Direct bounded sample array | Every warmup/measured sample and provider disposition |
 | Exclusion | Declared deterministic median-deviation policy | Per-sample excluded flag and reason |
 | Aggregation | Included samples and deterministic median | Baseline/candidate aggregates for each metric |
@@ -46,8 +46,9 @@ because it was excluded, failed, or inconvenient.
 ## Comparable Conditions
 
 Every provider outcome must match the transaction condition fingerprint.
-Hardware, operating system, compiler/linker, environment, dataset, baseline
-binary, candidate binary, baseline identity, and candidate identity are bound
+Hardware, operating system, compiler/linker, optimization flags, environment,
+dataset, baseline binary, candidate binary, baseline identity, and candidate
+identity are bound
 into evidence. A mismatch makes the measurement incomplete rather than silently
 comparing unlike runs.
 

@@ -140,6 +140,9 @@ bool evo_measurement_config_valid(const evo_project_measurement_config_t *config
         !evo_measurement_text_valid(
             config->condition.linker_identity, config->limits.max_string_bytes) ||
         !evo_measurement_text_valid(
+            config->condition.optimization_flags_identity,
+            config->limits.max_string_bytes) ||
+        !evo_measurement_text_valid(
             config->condition.environment_identity,
             config->limits.max_string_bytes) ||
         !evo_measurement_text_valid(
@@ -220,6 +223,8 @@ uint64_t evo_measurement_condition_fingerprint(
         &fingerprint, config->condition.operating_system_identity);
     evo_project_fingerprint_string(&fingerprint, config->condition.compiler_identity);
     evo_project_fingerprint_string(&fingerprint, config->condition.linker_identity);
+    evo_project_fingerprint_string(
+        &fingerprint, config->condition.optimization_flags_identity);
     evo_project_fingerprint_string(
         &fingerprint, config->condition.environment_identity);
     evo_project_fingerprint_string(&fingerprint, config->condition.dataset_identity);
