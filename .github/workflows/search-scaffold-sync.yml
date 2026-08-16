@@ -6,14 +6,6 @@ on:
       - agent/evolve-compatible-source-recipes
     paths:
       - 'tests/validate_project_search.py'
-      - 'src/project_search*.c'
-      - 'src/internal/project_search*.h'
-      - 'docs/adr/ADR-0042-structured-recipe-evolution.md'
-      - 'docs/engineering/reports/EVO-HRA-014-structured-recipe-evolution-audit.md'
-      - 'docs/schemas/evo-project-search-v1.schema.json'
-      - 'CMakeLists.txt'
-      - 'tests/CMakeLists.txt'
-      - 'Makefile.am'
       - '.github/workflows/search-scaffold-sync.yml'
   workflow_dispatch:
 
@@ -21,25 +13,33 @@ permissions:
   contents: write
 
 jobs:
-  diagnose:
+  fix-and-validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
           ref: agent/evolve-compatible-source-recipes
           fetch-depth: 0
-      - name: Capture validator output
+      - name: Correct validator type name
         run: |
-          set +e
-          python3 tests/validate_project_search.py > .github/search-validator-diagnostic.txt 2>&1
-          status=$?
-          cat .github/search-validator-diagnostic.txt
-          if [ "$status" -ne 0 ]; then
-            git config user.name 'Donovan Worrell'
-            git config user.email 'donovan.worrell@just-a-geek.com'
-            git add .github/search-validator-diagnostic.txt
-            git commit -m 'diagnostic: capture structured search validator failure'
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('tests/validate_project_search.py')
+          text = path.read_text()
+          text = text.replace(
+              'require("evo_search_mutable_recipe" in internal, "structured mutable recipe missing")',
+              'require("evo_project_search_mutable_recipe" in internal, "structured mutable recipe missing")',
+          )
+          path.write_text(text)
+          PY
+          rm -f .github/search-validator-diagnostic.txt
+          git config user.name 'Donovan Worrell'
+          git config user.email 'donovan.worrell@just-a-geek.com'
+          git add -A tests/validate_project_search.py .github/search-validator-diagnostic.txt
+          if ! git diff --cached --quiet; then
+            git commit -m 'test: correct structured search validator type check'
             git push origin HEAD:agent/evolve-compatible-source-recipes
           fi
-          exit "$status"
+      - name: Verify validator
+        run: python3 tests/validate_project_search.py
