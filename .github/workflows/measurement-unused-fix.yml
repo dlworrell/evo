@@ -1,0 +1,49 @@
+name: Measurement Compile Fix
+
+on:
+  push:
+    branches:
+      - agent/reproducible-candidate-fitness
+    paths:
+      - '.github/workflows/measurement-unused-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/reproducible-candidate-fitness
+      - name: Remove obsolete outcome-validator owner parameter
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/project_measurement.c')
+          text = p.read_text()
+          old = '''static bool evo_measurement_outcome_valid(
+              const evo_project_measurement_owner_t *owner,
+              const evo_project_measurement_outcome_t *outcome)'''
+          new = '''static bool evo_measurement_outcome_valid(
+              const evo_project_measurement_outcome_t *outcome)'''
+          if old not in text:
+              raise SystemExit('outcome validator signature anchor missing')
+          text = text.replace(old, new, 1)
+          old = '!evo_measurement_outcome_valid(owner, &outcome)'
+          new = '!evo_measurement_outcome_valid(&outcome)'
+          if old not in text:
+              raise SystemExit('outcome validator call anchor missing')
+          p.write_text(text.replace(old, new, 1))
+          PY
+          clang-format -i src/project_measurement.c
+      - name: Commit compile fix
+        run: |
+          git config user.name "Donovan Worrell"
+          git config user.email "donovan.worrell@just-a-geek.com"
+          git rm .github/workflows/measurement-unused-fix.yml
+          git add src/project_measurement.c
+          git commit -m "fix: remove obsolete measurement validator parameter"
+          git push origin HEAD:agent/reproducible-candidate-fitness
