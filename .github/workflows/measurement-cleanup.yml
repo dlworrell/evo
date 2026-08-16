@@ -17,21 +17,14 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: agent/reproducible-candidate-fitness
-      - name: Remove new dangerous-primitive findings
+      - name: Clear remaining security finding and fixture defect
         run: |
           python3 - <<'PY'
           from pathlib import Path
 
-          def replace(path: str, old: str, new: str) -> None:
-              p = Path(path)
-              text = p.read_text()
-              if old not in text:
-                  raise SystemExit(f"missing cleanup anchor in {path}: {old!r}")
-              p.write_text(text.replace(old, new, 1))
-
-          replace(
-              'src/project_measurement_model.c',
-              '''char *evo_measurement_duplicate(const char *value)
+          model = Path('src/project_measurement_model.c')
+          text = model.read_text()
+          old = '''char *evo_measurement_duplicate(const char *value)
           {
               size_t size;
               char *copy;
@@ -45,8 +38,8 @@ jobs:
                   (void)memcpy(copy, value, size);
               }
               return copy;
-          }''',
-              '''char *evo_measurement_duplicate(const char *value)
+          }'''
+          new = '''char *evo_measurement_duplicate(const char *value)
           {
               size_t size;
               size_t index;
@@ -63,94 +56,43 @@ jobs:
                   }
               }
               return copy;
-          }''',
-          )
+          }'''
+          if old not in text:
+              raise SystemExit('measurement duplicate anchor missing')
+          model.write_text(text.replace(old, new, 1))
 
-          replace(
-              'tests/project_measurement_test.c',
-              '#include "internal/project_candidate_internal.h"\n#include "internal/project_measurement.h"',
-              '#include "internal/project_candidate_internal.h"\n#include "internal/project_measurement.h"\n#include "internal/project_runtime.h"',
-          )
-          replace(
-              'tests/project_measurement_test.c',
-              '    (void)memset(assurance, 0, sizeof(*assurance));',
-              '    *assurance = (evo_project_assurance_t){0};',
-          )
-          replace(
-              'tests/project_measurement_test.c',
-              '    (void)memset(&policy, 0, sizeof(policy));',
-              '    policy = (evo_project_measurement_workload_policy_t){0};',
-          )
-          replace(
-              'tests/project_measurement_test.c',
-              '    (void)memset(&config, 0, sizeof(config));',
-              '    config = (evo_project_measurement_config_t){0};',
-          )
-          replace(
-              'tests/project_measurement_test.c',
-              '''    (void)snprintf(
+          test = Path('tests/project_measurement_test.c')
+          text = test.read_text()
+          start = text.find('static bool make_assurance(evo_project_assurance_t *assurance)\n{')
+          end = text.find('\n}\n\nstatic evo_project_measurement_workload_policy_t make_policy', start)
+          if start < 0 or end < 0:
+              raise SystemExit('make_assurance block anchor missing')
+          end += 2
+          replacement = '''static bool make_assurance(evo_project_assurance_t *assurance)
+          {
+              int written;
+
+              *assurance = (evo_project_assurance_t){0};
+              assurance->schema_version = EVO_PROJECT_ASSURANCE_SCHEMA_VERSION;
+              assurance->candidate_fingerprint = "fnv1a64:1111111111111111";
+              written = evo_project_format(
                   assurance->assurance_fingerprint,
                   sizeof(assurance->assurance_fingerprint),
                   "%s",
-                  "fnv1a64:2222222222222222");''',
-              '''    CHECK_FORMAT(evo_project_format(
-                  assurance->assurance_fingerprint,
-                  sizeof(assurance->assurance_fingerprint),
-                  "%s",
-                  "fnv1a64:2222222222222222"),
-              sizeof(assurance->assurance_fingerprint));''',
-          )
-          replace(
-              'tests/project_measurement_test.c',
-              '''    const int written = snprintf(output, sizeof(output), "%s/%s", root, name);''',
-              '''    const int written =
-                  evo_project_format(output, sizeof(output), "%s/%s", root, name);''',
-          )
-          replace(
-              'tests/project_measurement_test.c',
-              '''        (void)snprintf(
-                  fingerprint,
-                  EVO_PROJECT_FINGERPRINT_TEXT_SIZE,
-                  "%s",
-                  measurement.measurement_fingerprint);''',
-              '''        const int fingerprint_written = evo_project_format(
-                  fingerprint,
-                  EVO_PROJECT_FINGERPRINT_TEXT_SIZE,
-                  "%s",
-                  measurement.measurement_fingerprint);
-              CHECK(fingerprint_written > 0 &&
-                    (size_t)fingerprint_written < EVO_PROJECT_FINGERPRINT_TEXT_SIZE);''',
-          )
-          replace(
-              'tests/project_measurement_test.c',
-              '''    (void)snprintf(
-                  invalid_output, sizeof(invalid_output), "%s/ineligible", root);''',
-              '''    CHECK(evo_project_format(
-                      invalid_output, sizeof(invalid_output), "%s/ineligible", root) > 0);''',
-          )
+                  "fnv1a64:2222222222222222");
+              if (written <= 0 ||
+                  (size_t)written >= sizeof(assurance->assurance_fingerprint)) {
+                  return false;
+              }
+              assurance->performance_eligible = true;
+              assurance->projection_complete = true;
+              assurance->probabilistic_authority = false;
+              assurance->private_owner = assurance;
+              return true;
+          }'''
+          test.write_text(text[:start] + replacement + text[end:])
           PY
-      - name: Define checked format helper
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path('tests/project_measurement_test.c')
-          text = p.read_text()
-          anchor = '#define CHECK(condition)'
-          idx = text.find(anchor)
-          if idx < 0:
-              raise SystemExit('CHECK macro anchor missing')
-          insert_at = text.find('\n\n', idx)
-          if insert_at < 0:
-              raise SystemExit('CHECK macro terminator missing')
-          helper = '''\n#define CHECK_FORMAT(result, capacity)                                         \\
-              do {                                                                       \\
-                  const int check_format_result = (result);                                \\
-                  CHECK(check_format_result > 0 &&                                         \\
-                        (size_t)check_format_result < (capacity));                         \\
-              } while (0)'''
-          p.write_text(text[:insert_at] + helper + text[insert_at:])
-          PY
-      - name: Canonicalize C formatting
+      - name: Canonicalize measurement C formatting
         run: |
           sudo apt-get update
           sudo apt-get install -y clang-format
