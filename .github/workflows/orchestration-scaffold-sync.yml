@@ -7,7 +7,7 @@ on:
     paths:
       - 'src/project_orchestration*.c'
       - 'src/internal/project_orchestration*.h'
-      - 'tests/project_orchestration_test.c'
+      - 'tests/project_orchestration*.c'
       - '.github/workflows/orchestration-scaffold-sync.yml'
   workflow_dispatch:
 
@@ -24,7 +24,7 @@ jobs:
           ref: agent/bounded-source-orchestration
           fetch-depth: 0
 
-      - name: Integrate orchestration sources and normative test
+      - name: Integrate orchestration sources and normative tests
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -38,6 +38,9 @@ jobs:
                   '    src/project_orchestration_runtime.c',
                   '    src/project_orchestration.c',
               ]
+          if not any('src/project_orchestration_checkpoint.c' in line for line in lines):
+              index = lines.index('    src/project_orchestration.c')
+              lines.insert(index + 1, '    src/project_orchestration_checkpoint.c')
           cmake.write_text('\n'.join(lines) + '\n')
 
           tests = Path('tests/CMakeLists.txt')
@@ -47,6 +50,12 @@ jobs:
               block = marker + '''\nadd_executable(evo_project_orchestration_test project_orchestration_test.c)\ntarget_include_directories(\n    evo_project_orchestration_test\n    PRIVATE\n        ${PROJECT_SOURCE_DIR}/src\n)\ntarget_link_libraries(\n    evo_project_orchestration_test\n    PRIVATE\n        catalyst_evo_project_foundation\n)\nadd_test(\n    NAME evo_project_orchestration_test\n    COMMAND evo_project_orchestration_test\n)\n'''
               if marker not in text:
                   raise SystemExit('canonical project search CTest marker missing')
+              text = text.replace(marker, block, 1)
+          if 'evo_project_orchestration_checkpoint_test' not in text:
+              marker = '''add_test(\n    NAME evo_project_orchestration_test\n    COMMAND evo_project_orchestration_test\n)\n'''
+              block = marker + '''\nadd_executable(\n    evo_project_orchestration_checkpoint_test\n    project_orchestration_checkpoint_test.c\n)\ntarget_include_directories(\n    evo_project_orchestration_checkpoint_test\n    PRIVATE\n        ${PROJECT_SOURCE_DIR}/src\n)\ntarget_link_libraries(\n    evo_project_orchestration_checkpoint_test\n    PRIVATE\n        catalyst_evo_project_foundation\n)\nadd_test(\n    NAME evo_project_orchestration_checkpoint_test\n    COMMAND evo_project_orchestration_checkpoint_test\n)\n'''
+              if marker not in text:
+                  raise SystemExit('canonical orchestration CTest marker missing')
               text = text.replace(marker, block, 1)
           tests.write_text(text)
 
@@ -62,6 +71,10 @@ jobs:
                   '\tsrc/internal/project_orchestration_owner.h ' + slash,
                   '\tsrc/internal/project_orchestration_internal.h ' + slash,
               ]
+          if not any('src/internal/project_orchestration_checkpoint.h' in line for line in lines):
+              index = next(i for i, line in enumerate(lines)
+                           if 'src/internal/project_orchestration_internal.h' in line)
+              lines.insert(index + 1, '\tsrc/internal/project_orchestration_checkpoint.h ' + slash)
           if not any('src/project_orchestration.c' in line for line in lines):
               index = next(i for i, line in enumerate(lines)
                            if line.strip() == 'src/project_search.c')
@@ -71,6 +84,11 @@ jobs:
                   '\tsrc/project_orchestration_runtime.c ' + slash,
                   '\tsrc/project_orchestration.c',
               ]
+          if not any('src/project_orchestration_checkpoint.c' in line for line in lines):
+              index = next(i for i, line in enumerate(lines)
+                           if line.strip() == 'src/project_orchestration.c')
+              lines[index] = '\tsrc/project_orchestration.c ' + slash
+              lines.insert(index + 1, '\tsrc/project_orchestration_checkpoint.c')
           if not any('tests/evo_project_orchestration_test' in line for line in lines):
               index = next(i for i, line in enumerate(lines)
                            if 'tests/evo_project_search_test' in line and line.rstrip().endswith(slash))
@@ -85,6 +103,20 @@ jobs:
                   'tests_evo_project_orchestration_test_LDADD = ' + slash,
                   '\tlibevo_project_foundation.la',
               ]
+          if not any('tests/evo_project_orchestration_checkpoint_test' in line for line in lines):
+              index = next(i for i, line in enumerate(lines)
+                           if 'tests/evo_project_orchestration_test' in line and line.rstrip().endswith(slash))
+              lines.insert(index + 1, '\ttests/evo_project_orchestration_checkpoint_test ' + slash)
+              marker = next(i for i, line in enumerate(lines)
+                            if line.startswith('tests_evo_project_orchestration_test_LDADD'))
+              insert_at = marker + 2
+              lines[insert_at:insert_at] = [
+                  '',
+                  'tests_evo_project_orchestration_checkpoint_test_SOURCES = ' + slash,
+                  '\ttests/project_orchestration_checkpoint_test.c',
+                  'tests_evo_project_orchestration_checkpoint_test_LDADD = ' + slash,
+                  '\tlibevo_project_foundation.la',
+              ]
           makefile.write_text('\n'.join(lines) + '\n')
           PY
 
@@ -94,10 +126,13 @@ jobs:
           src/internal/project_orchestration.h
           src/internal/project_orchestration_owner.h
           src/internal/project_orchestration_internal.h
+          src/internal/project_orchestration_checkpoint.h
           src/project_orchestration_model.c
           src/project_orchestration_runtime.c
           src/project_orchestration.c
+          src/project_orchestration_checkpoint.c
           tests/project_orchestration_test.c
+          tests/project_orchestration_checkpoint_test.c
 
       - name: Commit build integration
         run: |
@@ -110,24 +145,27 @@ jobs:
             src/internal/project_orchestration.h \
             src/internal/project_orchestration_owner.h \
             src/internal/project_orchestration_internal.h \
+            src/internal/project_orchestration_checkpoint.h \
             src/project_orchestration_model.c \
             src/project_orchestration_runtime.c \
             src/project_orchestration.c \
-            tests/project_orchestration_test.c
+            src/project_orchestration_checkpoint.c \
+            tests/project_orchestration_test.c \
+            tests/project_orchestration_checkpoint_test.c
           if ! git diff --cached --quiet; then
-            git commit -m 'build: integrate bounded orchestration foundation'
+            git commit -m 'build: integrate orchestration checkpoint foundation'
             git push origin HEAD:agent/bounded-source-orchestration
           fi
 
-      - name: Verify CMake Clang normative test
+      - name: Verify CMake Clang normative tests
         run: |
           cmake -S . -B build-orchestration -DCMAKE_C_COMPILER=clang
-          cmake --build build-orchestration --target evo_project_orchestration_test --parallel 2
-          ctest --test-dir build-orchestration -R '^evo_project_orchestration_test$' --output-on-failure
+          cmake --build build-orchestration --target evo_project_orchestration_test evo_project_orchestration_checkpoint_test --parallel 2
+          ctest --test-dir build-orchestration -R '^evo_project_orchestration(_checkpoint)?_test$' --output-on-failure
 
-      - name: Verify Autotools GCC normative test
+      - name: Verify Autotools GCC normative tests
         run: |
           autoreconf -fi
           ./configure CC=gcc
-          make -j2 tests/evo_project_orchestration_test
-          make check TESTS=tests/evo_project_orchestration_test
+          make -j2 tests/evo_project_orchestration_test tests/evo_project_orchestration_checkpoint_test
+          make check TESTS='tests/evo_project_orchestration_test tests/evo_project_orchestration_checkpoint_test'
