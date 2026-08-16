@@ -26,23 +26,26 @@ jobs:
         with:
           ref: agent/evolve-compatible-source-recipes
           fetch-depth: 0
-      - name: Widen deterministic fixture genome budget
+      - name: Preserve null parameter view for zero-parameter records
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          path = Path('tests/project_search_test.c')
+          path = Path('src/project_search_runtime.c')
           text = path.read_text()
-          text = text.replace('.genome_size = 8192U,', '.genome_size = 16384U,')
-          text = text.replace('.genome_size = 8192U\n', '.genome_size = 16384U\n')
+          old = '        proposal->parameters = evo_search_parameters(mutable_recipe, index);\n'
+          new = '''        proposal->parameters =\n            record->parameter_count == 0U\n                ? NULL\n                : evo_search_parameters(mutable_recipe, index);\n'''
+          if old not in text and new not in text:
+              raise SystemExit('proposal parameter assignment marker not found')
+          text = text.replace(old, new, 1)
           path.write_text(text)
           PY
           rm -f .github/search-test-diagnostic.txt
-          clang-format -i tests/project_search_test.c
+          clang-format -i src/project_search_runtime.c tests/project_search_test.c
           git config user.name 'Donovan Worrell'
           git config user.email 'donovan.worrell@just-a-geek.com'
-          git add -A .github/search-test-diagnostic.txt tests/project_search_test.c
+          git add -A .github/search-test-diagnostic.txt src/project_search_runtime.c tests/project_search_test.c
           if ! git diff --cached --quiet; then
-            git commit -m 'test: widen structured search recipe envelope'
+            git commit -m 'fix: preserve empty structured recipe parameter view'
             git push origin HEAD:agent/evolve-compatible-source-recipes
           fi
       - name: Add local status diagnostics
@@ -72,7 +75,7 @@ jobs:
             cp /tmp/search-test-diagnostic.txt .github/search-test-diagnostic.txt
             git checkout -- tests/project_search_test.c
             git add .github/search-test-diagnostic.txt
-            git commit -m 'diagnostic: capture structured search fixture status'
+            git commit -m 'diagnostic: capture structured search post-fix status'
             git push origin HEAD:agent/evolve-compatible-source-recipes
             exit "$status"
           fi
