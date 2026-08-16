@@ -1,0 +1,55 @@
+name: Fix Candidate CTest Parity
+
+on:
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+      - name: Register the candidate test in the canonical CTest inventory
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          root = Path('CMakeLists.txt')
+          text = root.read_text(encoding='utf-8')
+          old = '''if(BUILD_TESTING)\n    add_subdirectory(benchmarks)\n    add_subdirectory(tests)\n    include(tests/project_candidate.cmake)\nendif()\n'''
+          new = '''if(BUILD_TESTING)\n    add_subdirectory(benchmarks)\n    add_subdirectory(tests)\nendif()\n'''
+          if text.count(old) != 1:
+              raise SystemExit('root candidate include block not found')
+          root.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          tests = Path('tests/CMakeLists.txt')
+          text = tests.read_text(encoding='utf-8')
+          anchor = '''add_test(\n    NAME evo_project_transformation_test\n    COMMAND evo_project_transformation_test\n)\n\n'''
+          block = '''add_test(\n    NAME evo_project_transformation_test\n    COMMAND evo_project_transformation_test\n)\n\nadd_executable(evo_project_candidate_test project_candidate_test.c)\ntarget_include_directories(\n    evo_project_candidate_test\n    PRIVATE\n        ${PROJECT_SOURCE_DIR}/src\n)\ntarget_link_libraries(\n    evo_project_candidate_test\n    PRIVATE\n        catalyst_evo_project_foundation\n)\nadd_test(\n    NAME evo_project_candidate_test\n    COMMAND evo_project_candidate_test\n)\n\n'''
+          if text.count(anchor) != 1:
+              raise SystemExit('transformation CTest anchor not found')
+          if 'add_executable(evo_project_candidate_test project_candidate_test.c)' in text:
+              raise SystemExit('candidate test already registered in tests/CMakeLists.txt')
+          tests.write_text(text.replace(anchor, block, 1), encoding='utf-8')
+
+          makefile = Path('Makefile.am')
+          text = makefile.read_text(encoding='utf-8')
+          dist_line = '\\ttests/project_candidate.cmake \\\\\\n'
+          if text.count(dist_line) != 1:
+              raise SystemExit('project_candidate.cmake EXTRA_DIST line not found')
+          makefile.write_text(text.replace(dist_line, '', 1), encoding='utf-8')
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm \
+            .github/workflows/fix-candidate-cmake-parity.yml \
+            tests/project_candidate.cmake
+          git add CMakeLists.txt tests/CMakeLists.txt Makefile.am
+          git commit -m "build: register candidate test in canonical CTest inventory"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
