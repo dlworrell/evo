@@ -1,0 +1,83 @@
+name: Project Candidate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cmake-clang:
+    runs-on: ubuntu-24.04
+    env:
+      CC: clang
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Configure candidate foundation with sanitizers
+        run: >-
+          cmake -S . -B build/project-candidate-cmake
+          -DCMAKE_BUILD_TYPE=Debug
+          -DBUILD_TESTING=ON
+          -DEVO_ENABLE_SANITIZERS=ON
+
+      - name: Build and run the normative candidate target
+        run: |
+          cmake --build build/project-candidate-cmake \
+            --target evo_project_candidate_test --parallel
+          ctest --test-dir build/project-candidate-cmake \
+            --output-on-failure -R '^evo_project_candidate_test$'
+
+      - name: Analyze candidate materialization implementation
+        run: |
+          for file in \
+            src/project_candidate.c \
+            src/project_candidate_model.c \
+            src/project_candidate_runtime.c; do
+            clang --analyze -Xanalyzer -analyzer-output=text \
+              -std=c17 -Wall -Wextra -Wpedantic -Wconversion \
+              -Wsign-conversion -Wshadow -Werror \
+              -Iinclude -Isrc "$file"
+          done
+
+      - name: Validate candidate schema and independent boundary checks
+        run: |
+          python3 -m json.tool \
+            docs/schemas/evo-project-candidate-v1.schema.json \
+            >/dev/null
+          python3 tests/validate_project_candidate.py
+
+  autotools-gcc:
+    runs-on: ubuntu-24.04
+    env:
+      CC: gcc
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Autotools dependencies
+        run: sudo apt-get update && sudo apt-get install -y autoconf automake libtool
+
+      - name: Configure candidate foundation
+        run: |
+          autoreconf -fi
+          mkdir -p build/project-candidate-autotools
+          cd build/project-candidate-autotools
+          ../../configure --enable-warnings-as-errors
+
+      - name: Build and run the normative candidate target
+        run: |
+          make -C build/project-candidate-autotools \
+            tests/evo_project_candidate_test
+          build/project-candidate-autotools/tests/evo_project_candidate_test
+
+      - name: Validate candidate schema and independent boundary checks
+        run: |
+          python3 -m json.tool \
+            docs/schemas/evo-project-candidate-v1.schema.json \
+            >/dev/null
+          python3 tests/validate_project_candidate.py
