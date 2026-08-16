@@ -486,12 +486,12 @@ static evo_project_transformation_status_t evo_transform_copy_common(
     const evo_project_recipe_record_t *record,
     evo_project_transformation_application_owner_t *owner)
 {
-#define EVO_DUPLICATE_FIELD(member_name, source_value)                    \
-    do {                                                                  \
-        owner->member_name = evo_transform_duplicate(source_value);       \
-        if (owner->member_name == NULL) {                                 \
-            return EVO_PROJECT_TRANSFORMATION_ERROR_OUT_OF_MEMORY;        \
-        }                                                                 \
+#define EVO_DUPLICATE_FIELD(member_name, source_value)              \
+    do {                                                            \
+        owner->member_name = evo_transform_duplicate(source_value); \
+        if (owner->member_name == NULL) {                           \
+            return EVO_PROJECT_TRANSFORMATION_ERROR_OUT_OF_MEMORY;  \
+        }                                                           \
     } while (false)
 
     EVO_DUPLICATE_FIELD(

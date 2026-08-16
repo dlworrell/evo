@@ -24,36 +24,33 @@ static const char *const evo_condition_context_choices[] = {
     "do-while", "for", "if", "while"};
 
 static const evo_project_transformation_parameter_schema_t
-    evo_assignment_parameter_schemas[] = {{
-        "operator",
-        EVO_PROJECT_RECIPE_PARAMETER_CHOICE,
-        true,
-        0,
-        0,
-        sizeof(evo_assignment_operator_choices) /
-            sizeof(evo_assignment_operator_choices[0]),
-        evo_assignment_operator_choices}};
+    evo_assignment_parameter_schemas[] = {{"operator",
+                                           EVO_PROJECT_RECIPE_PARAMETER_CHOICE,
+                                           true,
+                                           0,
+                                           0,
+                                           sizeof(evo_assignment_operator_choices) /
+                                               sizeof(evo_assignment_operator_choices[0]),
+                                           evo_assignment_operator_choices}};
 
 static const evo_project_transformation_parameter_schema_t
-    evo_condition_parameter_schemas[] = {{
-        "context",
-        EVO_PROJECT_RECIPE_PARAMETER_CHOICE,
-        true,
-        0,
-        0,
-        sizeof(evo_condition_context_choices) /
-            sizeof(evo_condition_context_choices[0]),
-        evo_condition_context_choices}};
+    evo_condition_parameter_schemas[] = {{"context",
+                                          EVO_PROJECT_RECIPE_PARAMETER_CHOICE,
+                                          true,
+                                          0,
+                                          0,
+                                          sizeof(evo_condition_context_choices) /
+                                              sizeof(evo_condition_context_choices[0]),
+                                          evo_condition_context_choices}};
 
 static const evo_project_transformation_parameter_schema_t
-    evo_shift_parameter_schemas[] = {{
-        "maximum-shift",
-        EVO_PROJECT_RECIPE_PARAMETER_INTEGER,
-        true,
-        1,
-        63,
-        0U,
-        NULL}};
+    evo_shift_parameter_schemas[] = {{"maximum-shift",
+                                      EVO_PROJECT_RECIPE_PARAMETER_INTEGER,
+                                      true,
+                                      1,
+                                      63,
+                                      0U,
+                                      NULL}};
 
 static const char *const evo_assignment_preconditions[] = {
     "ast-provider-v1",
@@ -505,7 +502,7 @@ static void evo_generate_registry_markdown(
         "| Transformation | Version | AST forms | Formatting | Idempotence |\n"
         "|---|---:|---|---|---|\n");
     for (index = 0U; index <
-                         sizeof(evo_capabilities) / sizeof(evo_capabilities[0]);
+                     sizeof(evo_capabilities) / sizeof(evo_capabilities[0]);
          index += 1U) {
         const evo_project_transformation_capability_t *capability =
             &evo_capabilities[index];
@@ -687,7 +684,7 @@ evo_project_transformation_find_capability(
         return NULL;
     }
     for (index = 0U; index <
-                         sizeof(evo_capabilities) / sizeof(evo_capabilities[0]);
+                     sizeof(evo_capabilities) / sizeof(evo_capabilities[0]);
          index += 1U) {
         if (evo_capabilities[index].implementation_version ==
                 implementation_version &&

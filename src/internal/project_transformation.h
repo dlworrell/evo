@@ -168,11 +168,10 @@ typedef struct evo_project_transformation_request {
     bool network_access;
 } evo_project_transformation_request_t;
 
-typedef evo_project_transformation_status_t
-    (*evo_project_transformation_ast_provider_fn)(
-        const evo_project_transformation_request_t *request,
-        void *context,
-        evo_project_transformation_ast_result_t *result);
+typedef evo_project_transformation_status_t (*evo_project_transformation_ast_provider_fn)(
+    const evo_project_transformation_request_t *request,
+    void *context,
+    evo_project_transformation_ast_result_t *result);
 
 typedef struct evo_project_transformation_apply_config {
     const evo_project_baseline_t *baseline;

@@ -396,7 +396,8 @@ static bool test_prepare_locations(test_fixture_t *fixture)
         fixture->optimizations[index].identity =
             index == TEST_ASSIGNMENT
                 ? "compiler-assignment"
-                : index == TEST_CONDITION ? "compiler-condition" : "compiler-shift";
+            : index == TEST_CONDITION ? "compiler-condition"
+                                      : "compiler-shift";
         fixture->optimizations[index].pass_name = "fixture-pass";
         fixture->optimizations[index].function_identity = "function-fixture";
         fixture->optimizations[index].location_identity = location->identity;
@@ -1073,8 +1074,8 @@ static void test_application_contract(
                 application->parameters[0].identity,
                 target_index == TEST_ASSIGNMENT
                     ? "operator"
-                    : target_index == TEST_CONDITION ? "context"
-                                                     : "maximum-shift") == 0 &&
+                : target_index == TEST_CONDITION ? "context"
+                                                 : "maximum-shift") == 0 &&
             (target_index == TEST_SHIFT
                  ? application->parameters[0].kind ==
                            EVO_PROJECT_RECIPE_PARAMETER_INTEGER &&
@@ -1132,18 +1133,18 @@ static void test_application_contract(
                        strcmp(
                            application->primary_declaration_identity,
                            application->duplicate_declaration_identity) == 0
-                 : target_index == TEST_CONDITION
-                       ? application->ast_operand.end ==
-                                 application->edit.before_end &&
-                             application->scalar_operand
-                       : application->ast_primary.start ==
-                                 application->edit.before_start &&
-                             application->ast_literal.end ==
-                                 application->edit.before_end &&
-                             application->literal_value == UINT64_C(8) &&
-                             application->result_width_bits == 32U &&
-                             application->result_unsigned_integer &&
-                             application->result_type_matches_primary),
+             : target_index == TEST_CONDITION
+                 ? application->ast_operand.end ==
+                           application->edit.before_end &&
+                       application->scalar_operand
+                 : application->ast_primary.start ==
+                           application->edit.before_start &&
+                       application->ast_literal.end ==
+                           application->edit.before_end &&
+                       application->literal_value == UINT64_C(8) &&
+                       application->result_width_bits == 32U &&
+                       application->result_unsigned_integer &&
+                       application->result_type_matches_primary),
         "application retains complete normalized AST proof evidence");
     test_check(
         application->canonical_json != NULL &&
@@ -1385,7 +1386,7 @@ static void test_per_transform_negative_and_malformed(test_fixture_t *fixture)
                 limits,
                 &application,
                 &provider) ==
-                    EVO_PROJECT_TRANSFORMATION_ERROR_NOT_APPLICABLE,
+                EVO_PROJECT_TRANSFORMATION_ERROR_NOT_APPLICABLE,
             "source literal bytes independently constrain AST numeric evidence");
         test_check(
             test_apply(
