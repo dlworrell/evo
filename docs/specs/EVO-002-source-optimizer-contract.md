@@ -1,9 +1,9 @@
 # EVO-002: Source-to-Source C Optimizer Contract
 
-Status: Implemented through the 0.36.0 transformation-recipe boundary; draft 1.0 target
-Version: 0.36.0
+Status: Implemented through the 0.37.0 AST-transformation boundary; draft 1.0 target
+Version: 0.37.0
 Owner: EVO
-Governing ADRs: ADR-0016, ADR-0026, ADR-0035, ADR-0036, and ADR-0037
+Governing ADRs: ADR-0016, ADR-0026, ADR-0035, ADR-0036, ADR-0037, and ADR-0038
 
 ## Purpose
 
@@ -15,11 +15,11 @@ search as a reviewable patch and reproducibility package.
 
 This specification defines the product layer above the reusable C17
 evolutionary-search core governed by EVO-001. Nothing in this draft claims that
-the complete source optimizer is implemented in version 0.36.0. This release
+the complete source optimizer is implemented in version 0.37.0. This release
 implements the strict project-ingestion, immutable-baseline, and normalized
 analysis/hotspot boundaries plus the canonical transformation-recipe boundary
-defined below; every later section remains a 1.0 target until its roadmap
-issue lands.
+and initial non-writing AST-aware C transformation catalogue defined below;
+every later section remains a 1.0 target until its roadmap issue lands.
 
 ## Claim Boundary
 
@@ -124,6 +124,14 @@ scans are authority. Canonical JSON embeds the complete portable recipe in the
 fixed genome, Markdown enumerates the same logical records, and decode rebuilds
 all derived facts from live authority before exact-byte comparison. ADR-0037
 and EVO-HRA-009 retain this issue-specific assessment.
+
+The implemented 0.37.0 transformation catalogue also introduces no
+accelerator. Three stable static capability records and direct dispatch are
+exact authority. Each application retains one complete half-open source range
+and exact replacement or an explicit no-change result. Complete registry and
+application JSON plus derived Markdown expose every transformation, provider,
+AST fact, semantic assumption, validation obligation, and rejection policy.
+ADR-0038 and EVO-HRA-010 retain this issue-specific assessment.
 
 ## Optimization Manifest
 
@@ -298,6 +306,44 @@ and the immutable manifest evidence budget. Build and decode verify the
 baseline snapshot before and after work, invoke no callback or evolutionary
 operator, write no source, and materialize no candidate. ADR-0037 defines the
 full ownership, ordering, encoding, replay, failure, evidence, and
+Human-Readable Abstraction contract.
+
+### Implemented AST-aware catalogue boundary
+
+The implemented 0.37.0 catalogue identity is
+`catalyst.evo.c.ast-transformations`, version 1. It contains exactly three
+versioned operations:
+
+- plain nonvolatile same-declaration assignment to compound assignment for a
+  selected arithmetic or bitwise operator;
+- removal of double negation from a scalar controlling expression in a
+  selected C statement context; and
+- unsigned multiplication by a verified decimal power-of-two constant to a
+  type-preserving bounded left shift.
+
+Each catalogue capability declares required typed parameters, supported
+normalized AST forms, deterministic formatting, idempotence, semantic
+assumptions, validation obligations, and unsupported categories. Version 1
+rejects macro targets, target comments, preprocessor directives, language
+extensions, unproved alias assumptions, ambiguous targets, volatile access
+where relevant, inconsistent declaration/type evidence, malformed ranges, and
+source/provider token disagreement.
+
+One application accepts the live immutable baseline/analysis/recipe chain and
+a bounded normalized AST provider. EVO resolves the recipe line/column target
+against the exact source bytes, requires an identical provider half-open range,
+checks all component ranges, basic identifier/operator tokens, and independently
+parsed shift-constant bytes, then re-verifies the snapshot after provider
+execution and evidence construction. The provider has explicit
+`network_access:false` and supplies no retained compiler pointer or source
+write.
+
+Success owns either one exact edit or an `already-satisfied` no-change record.
+`catalyst.evo-c-transformation-application.v1` retains all authority,
+provenance, AST, byte-range, before/replacement, formatting, assumption, and
+obligation evidence. Application invokes no compiler or correctness gate,
+writes no source, and materializes no candidate. ADR-0038 defines the complete
+provider, semantics, token, ownership, resource, failure, identity, and
 Human-Readable Abstraction contract.
 
 Mutation and crossover operate on complete transformation records. Any repair
@@ -498,6 +544,7 @@ that proof passes and all non-deferred roadmap requirements are reconciled.
 - `docs/adr/ADR-0035-immutable-project-ingestion-and-baselines.md`
 - `docs/adr/ADR-0036-clang-llvm-analysis-and-hotspot-model.md`
 - `docs/adr/ADR-0037-versioned-source-transformation-recipes.md`
+- `docs/adr/ADR-0038-ast-aware-c-transformation-catalogue.md`
 - `docs/architecture.md`
 - `docs/algorithms.md`
 - `docs/benchmarks.md`
@@ -506,5 +553,6 @@ that proof passes and all non-deferred roadmap requirements are reconciled.
 - `docs/engineering/reports/EVO-HRA-003-population-storage-recycling-audit.md`
 - `docs/engineering/reports/EVO-HRA-008-project-analysis-audit.md`
 - `docs/engineering/reports/EVO-HRA-009-project-recipe-audit.md`
+- `docs/engineering/reports/EVO-HRA-010-c-transformation-catalogue-audit.md`
 - `docs/roadmap.md`
 - GitHub issues #38, #56 through #69, #83, and #93

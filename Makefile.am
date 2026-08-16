@@ -89,6 +89,11 @@ noinst_HEADERS = \
 	src/internal/project_recipe_owner.h \
 	src/internal/project_recipe_model.h \
 	src/internal/project_recipe_encoding.h \
+	src/internal/project_transformation.h \
+	src/internal/project_transformation_owner.h \
+	src/internal/project_transformation_catalogue.h \
+	src/internal/project_transformation_model.h \
+	src/internal/project_transformation_evidence.h \
 	tests/research/seed_schedule_research.h
 
 noinst_LTLIBRARIES = \
@@ -112,7 +117,11 @@ libevo_project_foundation_la_SOURCES = \
 	src/project_analysis.c \
 	src/project_recipe_model.c \
 	src/project_recipe_encoding.c \
-	src/project_recipe.c
+	src/project_recipe.c \
+	src/project_transformation_catalogue.c \
+	src/project_transformation_model.c \
+	src/project_transformation_evidence.c \
+	src/project_transformation.c
 
 check_PROGRAMS = \
 	tests/evo_smoke_test \
@@ -148,6 +157,7 @@ check_PROGRAMS = \
 	tests/evo_project_ingestion_test \
 	tests/evo_project_analysis_test \
 	tests/evo_project_recipe_test \
+	tests/evo_project_transformation_test \
 	benchmarks/evo_core_benchmark \
 	tests/evo_secure_erasure_test \
 	tests/evo_allocation_failure_test
@@ -277,6 +287,13 @@ tests_evo_project_recipe_test_CPPFLAGS = \
 tests_evo_project_recipe_test_LDADD = \
 	libevo_project_foundation.la
 
+tests_evo_project_transformation_test_SOURCES = \
+	tests/project_transformation_test.c
+tests_evo_project_transformation_test_CPPFLAGS = \
+	$(AM_CPPFLAGS) -DEVO_TEST_SOURCE_DIR=\"$(abs_srcdir)\"
+tests_evo_project_transformation_test_LDADD = \
+	libevo_project_foundation.la
+
 benchmarks_evo_core_benchmark_SOURCES = benchmarks/core_benchmark.c
 benchmarks_evo_core_benchmark_LDADD = libcatalyst_evo.la -lm
 benchmarks_evo_core_benchmark_CPPFLAGS = \
@@ -346,6 +363,7 @@ EXTRA_DIST = \
 	.github/workflows/project-ingestion.yml \
 	.github/workflows/project-analysis.yml \
 	.github/workflows/project-recipe.yml \
+	.github/workflows/project-transformation.yml \
 	CMakeLists.txt \
 	CMakePresets.json \
 	benchmarks/CMakeLists.txt \
@@ -358,10 +376,13 @@ EXTRA_DIST = \
 	docs/adr/ADR-0035-immutable-project-ingestion-and-baselines.md \
 	docs/adr/ADR-0036-clang-llvm-analysis-and-hotspot-model.md \
 	docs/adr/ADR-0037-versioned-source-transformation-recipes.md \
+	docs/adr/ADR-0038-ast-aware-c-transformation-catalogue.md \
 	docs/schemas/evo-project-manifest-v1.schema.json \
 	docs/schemas/evo-project-baseline-v1.schema.json \
 	docs/schemas/evo-project-analysis-v1.schema.json \
 	docs/schemas/evo-project-recipe-v1.schema.json \
+	docs/schemas/evo-c-transformation-catalogue-v1.schema.json \
+	docs/schemas/evo-c-transformation-application-v1.schema.json \
 	examples/CMakeLists.txt \
 	examples/Makefile \
 	examples/README.md \
@@ -382,11 +403,17 @@ EXTRA_DIST = \
 	docs/engineering/reports/EVO-HRA-007-project-ingestion-audit.md \
 	docs/engineering/reports/EVO-HRA-008-project-analysis-audit.md \
 	docs/engineering/reports/EVO-HRA-009-project-recipe-audit.md \
+	docs/engineering/reports/EVO-HRA-010-c-transformation-catalogue-audit.md \
 	tests/validate_project_ingestion.py \
 	tests/validate_project_analysis.py \
 	tests/validate_project_recipe.py \
+	tests/validate_project_transformation.py \
 	tests/fixtures/project-analysis/golden-v1.json \
 	tests/fixtures/project-recipe/golden-v1.json \
+	tests/fixtures/project-transformation/catalogue-golden-v1.json \
+	tests/fixtures/project-transformation/application-golden-v1.json \
+	tests/fixtures/project-transformation/before.c \
+	tests/fixtures/project-transformation/after.c \
 	tests/fixtures/project-ingestion/golden-v1.json \
 	tests/fixtures/project-ingestion/cmake/manifest.json \
 	tests/fixtures/project-ingestion/cmake/manifest-reordered.json \

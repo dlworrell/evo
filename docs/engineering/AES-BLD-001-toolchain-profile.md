@@ -29,7 +29,7 @@ records their versions as evidence.
 ## Frontend parity
 
 `CMakeLists.txt` and `Makefile.am` enumerate all twenty-six installed-core
-sources, fourteen private source-foundation sources, and the same thirty-six
+sources, eighteen private source-foundation sources, and the same thirty-seven
 normative targets. Both frontends:
 
 - compile the project as C17 with the same warning policy;
@@ -41,9 +41,9 @@ normative targets. Both frontends:
   macro when available, and otherwise compile the same volatile-byte secure-
   erasure fallback;
 - build the private seed-schedule research support only for tests;
-- build the uninstalled project-ingestion, analysis, and recipe foundation and
-  all three normative fixture tests without changing the staged core library
-  surface;
+- build the uninstalled project-ingestion, analysis, recipe, and AST-aware
+  transformation foundation and all four normative fixture tests without
+  changing the staged core library surface;
 - build the private core-benchmark executable and expose equivalent bounded
   smoke and explicitly requested extended evidence targets;
 - install `libcatalyst_evo.a`, the public header, and `catalyst-evo.pc`;
@@ -83,6 +83,11 @@ The repository-owned `Project Recipe` workflow independently runs the
 issue-#60 target and recipe schema/golden validation through CMake/Clang and
 Autotools/GCC. It likewise supplements rather than replaces the complete AEMS
 matrix.
+The repository-owned `Project Transformation` workflow independently runs the
+issue-#61 target under Clang sanitizers and Autotools/GCC, applies Clang static
+analysis to all four implementation units, compiles the before/after fixtures
+as strict C17, and validates both evidence schemas and independent goldens. It
+likewise supplements rather than replaces the complete AEMS matrix.
 
 The CMake staged library is inspected with `llvm-nm`; the GNU Autotools staged
 library is independently inspected with GNU `nm`. A matching result therefore

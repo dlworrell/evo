@@ -1,0 +1,202 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/dlworrell/evo/blob/main/docs/schemas/evo-c-transformation-catalogue-v1.schema.json",
+  "title": "EVO AST-aware C transformation catalogue v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "schema_version",
+    "catalogue",
+    "ast_evidence_schema_version",
+    "source_edit_schema_version",
+    "entries",
+    "human_readable_abstraction"
+  ],
+  "properties": {
+    "schema": {"const": "catalyst.evo-c-transformation-catalogue.v1"},
+    "schema_version": {"const": 1},
+    "catalogue": {"$ref": "#/$defs/versionedIdentity"},
+    "ast_evidence_schema_version": {"const": 1},
+    "source_edit_schema_version": {"const": 1},
+    "entries": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/entry"}
+    },
+    "human_readable_abstraction": {
+      "const": {
+        "reference_form": "stable-capability-arrays-and-direct-dispatch",
+        "projection": "complete-catalogue-json-and-derived-markdown",
+        "complete": true,
+        "probabilistic_authority": false
+      }
+    }
+  },
+  "$defs": {
+    "text": {"type": "string", "minLength": 1},
+    "versionedIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["identity", "version"],
+      "properties": {
+        "identity": {"$ref": "#/$defs/text"},
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        }
+      }
+    },
+    "parameterSchema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "identity",
+        "kind",
+        "required",
+        "minimum_integer",
+        "maximum_integer",
+        "choices"
+      ],
+      "properties": {
+        "identity": {"$ref": "#/$defs/text"},
+        "kind": {"enum": ["integer", "choice"]},
+        "required": {"const": true},
+        "minimum_integer": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": -9223372036854775808,
+              "maximum": 9223372036854775807
+            },
+            {"type": "null"}
+          ]
+        },
+        "maximum_integer": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": -9223372036854775808,
+              "maximum": 9223372036854775807
+            },
+            {"type": "null"}
+          ]
+        },
+        "choices": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/text"}
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "kind": {"const": "integer"},
+            "minimum_integer": {"type": "integer"},
+            "maximum_integer": {"type": "integer"},
+            "choices": {"maxItems": 0}
+          }
+        },
+        {
+          "properties": {
+            "kind": {"const": "choice"},
+            "minimum_integer": {"type": "null"},
+            "maximum_integer": {"type": "null"},
+            "choices": {"minItems": 1}
+          }
+        }
+      ]
+    },
+    "capability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider_contract_version",
+        "ast_forms",
+        "formatting_policy",
+        "idempotence_policy",
+        "semantic_assumptions",
+        "validation_obligations",
+        "unsupported"
+      ],
+      "properties": {
+        "provider_contract_version": {"const": 1},
+        "ast_forms": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "assignment-binary",
+              "assignment-compound",
+              "double-negated-condition",
+              "scalar-condition",
+              "unsigned-multiply-power-of-two",
+              "unsigned-shift-power-of-two"
+            ]
+          }
+        },
+        "formatting_policy": {"$ref": "#/$defs/text"},
+        "idempotence_policy": {
+          "const": "already-satisfied-no-change-v1"
+        },
+        "semantic_assumptions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/text"}
+        },
+        "validation_obligations": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/text"}
+        },
+        "unsupported": {
+          "const": {
+            "comments": "reject",
+            "macros": "reject",
+            "language_extensions": "reject",
+            "alias_assumptions": "reject"
+          }
+        }
+      }
+    },
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "identity",
+        "version",
+        "allowed_location_kinds",
+        "parameter_schemas",
+        "preconditions",
+        "dependencies",
+        "conflicts",
+        "capability"
+      ],
+      "properties": {
+        "identity": {"$ref": "#/$defs/text"},
+        "version": {"const": 1},
+        "allowed_location_kinds": {"const": ["spelling"]},
+        "parameter_schemas": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/parameterSchema"}
+        },
+        "preconditions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/text"}
+        },
+        "dependencies": {"const": []},
+        "conflicts": {"const": []},
+        "capability": {"$ref": "#/$defs/capability"}
+      }
+    }
+  }
+}

@@ -221,6 +221,15 @@ Markdown projects every logical record, and decode reconstructs derived facts
 from live authority before exact-byte comparison. EVO-HRA-009 retains the
 recipe evidence and projection audit.
 
+ADR-0038 performs the change-specific assessment for EVO 0.37.0. The AST-aware
+C catalogue uses three stable static capability entries and direct dispatch as
+exact authority. Each application exposes one complete half-open source range
+and exact replacement or an explicit no-change result; canonical JSON and
+Markdown retain all provider, AST, semantic-assumption, and validation-
+obligation evidence. No transformation index, AST cache, compressed form, or
+probabilistic authority is introduced. EVO-HRA-010 retains the catalogue and
+application audit.
+
 ## Consequences
 
 - EVO may use efficient internal data structures without exposing their
@@ -282,7 +291,8 @@ reconstructable pages and windows satisfy the audit contract.
   records the implemented 0.25.0 audit and its limitations.
 - EVO-HRA-002, EVO-HRA-003, and EVO-HRA-004 record the checkpoint, recycler,
   and bounded-worker assessments for later accelerated boundaries.
-- EVO-HRA-005 through EVO-HRA-008 record the benchmark, adapter,
-  project-ingestion, and project-analysis evidence assessments.
+- EVO-HRA-005 through EVO-HRA-010 record the benchmark, adapter,
+  project-ingestion, project-analysis, recipe, and AST-aware transformation
+  evidence assessments.
 - Parent roadmap issue #38 and the affected child issues record the gate.
 - Governance issue: `https://github.com/dlworrell/evo/issues/83`
