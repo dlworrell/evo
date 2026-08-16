@@ -1,0 +1,254 @@
+name: Synchronize EVO 0.38.0 Documentation
+
+on:
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+      - name: Update current product boundary documentation
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace(path: str, old: str, new: str, count: int = 1) -> None:
+              file = Path(path)
+              text = file.read_text(encoding='utf-8')
+              actual = text.count(old)
+              if actual != count:
+                  raise SystemExit(f'{path}: expected {count} occurrence(s), found {actual}: {old!r}')
+              file.write_text(text.replace(old, new, count), encoding='utf-8')
+
+          # README: add the candidate boundary to the governing and current-state views.
+          replace(
+              'README.md',
+              '- `docs/adr/ADR-0038-ast-aware-c-transformation-catalogue.md`\n',
+              '- `docs/adr/ADR-0038-ast-aware-c-transformation-catalogue.md`\n'
+              '- `docs/adr/ADR-0039-isolated-candidate-materialization.md`\n',
+          )
+          replace(
+              'README.md',
+              'facts. EVO-HRA-010 retains this transformation-specific audit.\n',
+              'facts. EVO-HRA-010 retains this transformation-specific audit.\n'
+              'ADR-0039 assesses 0.38.0 isolated candidate materialization: immutable\n'
+              'baseline bytes and exact transformation applications remain authority,\n'
+              'overlapping edits fail closed, and a normalized patch plus candidate JSON/\n'
+              'Markdown expose every committed source change. EVO-HRA-011 retains this\n'
+              'candidate-specific audit.\n',
+          )
+          replace(
+              'README.md',
+              '- Isolated candidate materialization\n',
+              '- Implemented isolated candidate materialization\n',
+          )
+          replace(
+              'README.md',
+              'The private source-optimizer foundation now includes 0.34.0 immutable project\n'
+              'ingestion, the 0.35.0 normalized Clang/LLVM analysis and hotspot model, the\n'
+              '0.36.0 canonical versioned transformation-recipe model, and the 0.37.0 initial\n'
+              'AST-aware C transformation catalogue. Source materialization, candidate\n'
+              'evaluation, orchestration, and the installed executable remain dependency-\n'
+              'ordered roadmap work; their absence is an explicit boundary, not an implicit\n'
+              'feature claim.\n',
+              'The private source-optimizer foundation now includes 0.34.0 immutable project\n'
+              'ingestion, the 0.35.0 normalized Clang/LLVM analysis and hotspot model, the\n'
+              '0.36.0 canonical versioned transformation-recipe model, the 0.37.0 initial\n'
+              'AST-aware C transformation catalogue, and 0.38.0 isolated candidate\n'
+              'materialization with deterministic patches and evidence. Candidate build/\n'
+              'correctness evaluation, orchestration, and the installed executable remain\n'
+              'dependency-ordered roadmap work; their absence is an explicit boundary, not\n'
+              'an implicit feature claim.\n',
+          )
+
+          # Roadmap: issue #62 is now implemented and #63 is dependency-ready.
+          replace('docs/roadmap.md', 'EVO 0.37.0 contains', 'EVO 0.38.0 contains')
+          replace(
+              'docs/roadmap.md',
+              'the first four private source-optimizer foundations:',
+              'the first five private source-optimizer foundations:',
+          )
+          replace(
+              'docs/roadmap.md',
+              'The fourth supplies three versioned AST-aware C operations, exact immutable-\n'
+              'source range/token validation, deterministic edit/no-change evidence, and a\n'
+              'complete capability/application audit view without materializing source.\n',
+              'The fourth supplies three versioned AST-aware C operations, exact immutable-\n'
+              'source range/token validation, deterministic edit/no-change evidence, and a\n'
+              'complete capability/application audit view without materializing source. The\n'
+              'fifth composes those exact applications into isolated complete source trees,\n'
+              'rejects overlapping edits, and emits deterministic reviewable patch, changed-\n'
+              'file, candidate-identity, and replay evidence without compiling target code.\n',
+          )
+          replace(
+              'docs/roadmap.md',
+              'Issue #60 implements\n'
+              'the recipe representation without materializing source; issue #61 implements\n'
+              'the initial AST-aware catalogue without writing source. Issue #62 is the next\n'
+              'dependency-ready source-optimizer implementation work.\n',
+              'Issue #60 implements\n'
+              'the recipe representation without materializing source; issue #61 implements\n'
+              'the initial AST-aware catalogue without writing source; and issue #62\n'
+              'implements deterministic isolated candidate materialization. Issue #63 is the\n'
+              'next dependency-ready source-optimizer implementation work.\n',
+          )
+
+          # Architecture: materialization is now part of the implemented source layer.
+          replace(
+              'docs/architecture.md',
+              'catalogue/application projections. It does not materialize source.\n',
+              'catalogue/application projections. Version 0.38.0 adds deterministic isolated\n'
+              'candidate materialization from immutable baseline bytes and exact application\n'
+              'records, overlap rejection, retain/discard workspace policy, normalized patch\n'
+              'output, and canonical candidate evidence.\n',
+          )
+          replace(
+              'docs/architecture.md',
+              'Version 0.37.0 contains the evolutionary-search core, its bounded reference\n'
+              'consumers, private project ingestion, a private normalized analysis and hotspot\n'
+              'model, a private canonical transformation-recipe model, and a private initial\n'
+              'AST-aware C transformation catalogue. Candidate materialization, provider-\n'
+              'owned external-process isolation, target-code measurement, product commands,\n'
+              'the installed standalone executable, and optimized-patch artifacts remain\n'
+              'planned by issues #62 through #69 and #93. Documentation of those planned\n'
+              'boundaries is not an implementation claim.\n',
+              'Version 0.38.0 contains the evolutionary-search core, its bounded reference\n'
+              'consumers, private project ingestion, a private normalized analysis and hotspot\n'
+              'model, a private canonical transformation-recipe model, a private initial AST-\n'
+              'aware C transformation catalogue, and private isolated candidate\n'
+              'materialization. Provider-owned build/correctness process isolation, target-\n'
+              'code measurement, product commands, the installed standalone executable, and\n'
+              'final optimized-patch artifacts remain planned by issues #63 through #69 and\n'
+              '#93. Documentation of those planned boundaries is not an implementation claim.\n',
+          )
+          replace(
+              'docs/architecture.md',
+              'EVO-HRA-010 audits this boundary. The current implementation therefore has no opaque accelerated\n'
+              'authority requiring remediation. This audit does not pre-approve later\n',
+              'EVO-HRA-010 audits this boundary. Candidate materialization likewise uses\n'
+              'direct bounded scans and exact byte ranges; its normalized patch and candidate\n'
+              'JSON/Markdown expose every committed change while overlap and stale authority\n'
+              'fail closed. EVO-HRA-011 audits this 0.38.0 boundary. The current\n'
+              'implementation therefore has no opaque accelerated authority requiring\n'
+              'remediation. This audit does not pre-approve later\n',
+          )
+
+          # Algorithms summary.
+          replace(
+              'docs/algorithms.md',
+              'required by the EVO 1.0 source optimizer. Version 0.37.0 implements\n'
+              'the core plus project ingestion, immutable-baseline preparation, and the\n'
+              'normalized Clang/LLVM analysis and hotspot-ranking model plus canonical\n'
+              'transformation-recipe representation and validation plus three non-writing\n'
+              'AST-aware source-transformation applications; it does not yet materialize a\n'
+              'candidate source tree.\n',
+              'required by the EVO 1.0 source optimizer. Version 0.38.0 implements\n'
+              'the core plus project ingestion, immutable-baseline preparation, normalized\n'
+              'Clang/LLVM analysis and hotspot ranking, canonical transformation recipes,\n'
+              'three AST-aware source-transformation applications, and deterministic isolated\n'
+              'candidate materialization with a normalized reviewable patch. Candidate\n'
+              'compilation, correctness gating, and performance fitness remain later work.\n',
+          )
+
+          # Repository metadata.
+          replace('repo.yaml', 'status: implemented-0.37.0', 'status: implemented-0.38.0')
+          replace(
+              'repo.yaml',
+              'status: transformation-catalogue-implemented-0.37.0',
+              'status: candidate-materialization-implemented-0.38.0',
+          )
+
+          # Core contract tracks the package version but gains no new installed-core semantics.
+          replace('docs/specs/EVO-001-library-contract.md', 'Version: 0.37.0', 'Version: 0.38.0')
+          replace(
+              'docs/specs/EVO-001-library-contract.md',
+              'core packaged through version 0.37.0. It does not define C-project\n',
+              'core packaged through version 0.38.0. Version 0.38.0 changes no installed\n'
+              'core semantics; its new implementation is confined to the private source-\n'
+              'optimizer foundation. This contract does not define C-project\n',
+          )
+
+          # Source optimizer contract now includes the issue #62 implementation boundary.
+          replace(
+              'docs/specs/EVO-002-source-optimizer-contract.md',
+              'Status: Implemented through the 0.37.0 AST-transformation boundary; draft 1.0 target\n'
+              'Version: 0.37.0\n'
+              'Owner: EVO\n'
+              'Governing ADRs: ADR-0016, ADR-0026, ADR-0035, ADR-0036, ADR-0037, and ADR-0038\n',
+              'Status: Implemented through the 0.38.0 candidate-materialization boundary; draft 1.0 target\n'
+              'Version: 0.38.0\n'
+              'Owner: EVO\n'
+              'Governing ADRs: ADR-0016, ADR-0026, ADR-0035, ADR-0036, ADR-0037, ADR-0038, and ADR-0039\n',
+          )
+          replace(
+              'docs/specs/EVO-002-source-optimizer-contract.md',
+              'This specification defines the product layer above the reusable C17\n'
+              'evolutionary-search core governed by EVO-001. Nothing in this draft claims that\n'
+              'the complete source optimizer is implemented in version 0.37.0. This release\n'
+              'implements the strict project-ingestion, immutable-baseline, and normalized\n'
+              'analysis/hotspot boundaries plus the canonical transformation-recipe boundary\n'
+              'and initial non-writing AST-aware C transformation catalogue defined below;\n'
+              'every later section remains a 1.0 target until its roadmap issue lands.\n',
+              'This specification defines the product layer above the reusable C17\n'
+              'evolutionary-search core governed by EVO-001. Nothing in this draft claims that\n'
+              'the complete source optimizer is implemented in version 0.38.0. This release\n'
+              'implements strict project ingestion and immutable baselines, normalized\n'
+              'analysis/hotspot evidence, canonical transformation recipes, the initial AST-\n'
+              'aware C transformation catalogue, and deterministic isolated candidate\n'
+              'materialization. Build/correctness gates and every later roadmap boundary\n'
+              'remain a 1.0 target until their issues land.\n',
+          )
+          replace(
+              'docs/specs/EVO-002-source-optimizer-contract.md',
+              'ADR-0038 and EVO-HRA-010 retain this issue-specific assessment.\n',
+              'ADR-0038 and EVO-HRA-010 retain this issue-specific assessment.\n\n'
+              'The implemented 0.38.0 candidate materializer also introduces no accelerator.\n'
+              'Immutable baseline file order, exact recipe-record identity, and accepted half-\n'
+              'open edit ranges remain authority. Overlap is a hard conflict. A normalized\n'
+              'patch plus complete candidate JSON/Markdown expose every committed change, and\n'
+              'candidate identity is stable across output locations and retain/discard policy.\n'
+              'ADR-0039 and EVO-HRA-011 retain this issue-specific assessment.\n',
+          )
+          replace(
+              'docs/specs/EVO-002-source-optimizer-contract.md',
+              'The same baseline, provider, catalogue, and recipe identities must reproduce\n'
+              'byte-identical candidate source and patch.\n\n'
+              '## Build and Correctness Contract\n',
+              'The same baseline, provider, catalogue, and recipe identities must reproduce\n'
+              'byte-identical candidate source and patch.\n\n'
+              'The implemented 0.38.0 transaction requires one current application per recipe\n'
+              'record, revalidates immutable before/replacement bytes and fingerprints, sorts\n'
+              'edits deterministically within immutable baseline file order, and rejects any\n'
+              'overlap. It builds beneath a private staging directory, uses an incomplete\n'
+              'publication marker, and supports explicit `retain` or `discard` source-tree\n'
+              'policy. Success publishes `candidate.patch`, `candidate.json`, and\n'
+              '`candidate.md`, plus `candidate/` when retained. Baseline freshness is checked\n'
+              'before output reservation and again before commit; failure cleans the reserved\n'
+              'output and publishes no candidate view. This boundary executes no compiler,\n'
+              'correctness gate, benchmark, ranking step, commit, push, or deployment. ADR-0039\n'
+              'defines the complete materialization contract.\n\n'
+              '## Build and Correctness Contract\n',
+          )
+          PY
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/sync-v038-docs.yml
+          git add \
+            README.md \
+            docs/roadmap.md \
+            docs/architecture.md \
+            docs/algorithms.md \
+            repo.yaml \
+            docs/specs/EVO-001-library-contract.md \
+            docs/specs/EVO-002-source-optimizer-contract.md
+          git commit -m "docs: advance source optimizer boundary to 0.38.0"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
