@@ -106,8 +106,9 @@ add_library(catalyst_evo_project_foundation STATIC
     src/project_measurement.c
 )
 target_include_directories(catalyst_evo_project_foundation
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 target_compile_features(catalyst_evo_project_foundation PRIVATE c_std_17)
