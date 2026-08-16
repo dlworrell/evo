@@ -5,8 +5,8 @@
 
 typedef struct evo_project_search_birth_event {
     const void *genome_address;
-    size_t operator_ordinal;
-    evo_project_search_operator_kind_t operator_kind;
+    size_t operator_event_start;
+    size_t operator_event_count;
     evo_project_search_rejection_reason_t rejection_reason;
     evo_project_recipe_status_t recipe_status;
     char parent_a_recipe_fingerprint[EVO_PROJECT_FINGERPRINT_TEXT_SIZE];
@@ -22,6 +22,9 @@ typedef struct evo_project_search_owner {
     char *policy_identity;
     char *evaluation_provider_identity;
     unsigned char *best_genome;
+    evo_project_search_operator_event_t *operator_events;
+    size_t operator_event_capacity;
+    size_t operator_event_count;
     evo_project_search_lineage_record_t *lineage;
     const void **lineage_genome_addresses;
     size_t lineage_capacity;
@@ -30,7 +33,6 @@ typedef struct evo_project_search_owner {
     size_t birth_capacity;
     size_t birth_count;
     size_t validation_ordinal;
-    size_t operator_ordinal;
     char *canonical_json;
     char *audit_markdown;
     uint64_t search_fingerprint_value;
