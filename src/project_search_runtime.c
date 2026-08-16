@@ -797,7 +797,10 @@ evo_project_recipe_status_t evo_search_mutable_build(
         proposal->transformation_identity = record->transformation_identity;
         proposal->transformation_version = record->transformation_version;
         proposal->parameter_count = record->parameter_count;
-        proposal->parameters = evo_search_parameters(mutable_recipe, index);
+        proposal->parameters =
+            record->parameter_count == 0U
+                ? NULL
+                : evo_search_parameters(mutable_recipe, index);
     }
     build_config.context = config->recipe_context;
     build_config.record_count = mutable_recipe->record_count;
