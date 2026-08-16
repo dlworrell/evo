@@ -1,0 +1,1 @@
+structured recipe search structural validation: FAIL: structured mutable recipe missing
