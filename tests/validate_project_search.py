@@ -57,6 +57,10 @@ def main() -> int:
         "evo_project_search_lineage_record" in header,
         "lineage result model missing",
     )
+    require(
+        "evo_project_search_operator_event" in header,
+        "complete operator-event model missing",
+    )
     require("max_repair_passes" in header, "bounded repair policy missing")
     require("evo_project_search_owner" in owner, "private search owner missing")
     require("evo_project_search_mutable_recipe" in internal, "structured mutable recipe missing")
@@ -71,6 +75,11 @@ def main() -> int:
     ):
         require(operation in runtime, f"structured operator missing: {operation}")
     require("evo_search_repair" in runtime, "deterministic repair boundary missing")
+    require(
+        "EVO_PROJECT_RECIPE_ERROR_DEPENDENCY_AMBIGUOUS" in runtime
+        and "match_count > 1U" in runtime,
+        "dependency repair must reject non-unique compatible targets",
+    )
     require(
         "record->parameter_count == 0U" in runtime,
         "zero-parameter recipe proposals must preserve a null parameter view",
@@ -161,6 +170,7 @@ def main() -> int:
         "baseline_fingerprint",
         "analysis_fingerprint",
         "policy",
+        "operator_events",
         "lineage",
         "best",
         "projection_complete",
@@ -181,11 +191,27 @@ def main() -> int:
         schema["properties"]["raw_source_bytes"].get("const") is False,
         "search schema must forbid raw source bytes",
     )
+    operator_required = set(schema["$defs"]["operatorEvent"]["required"])
+    for field in (
+        "ordinal",
+        "generation",
+        "population_index",
+        "operator_kind",
+        "recipe_status",
+        "result_recipe_fingerprint",
+        "bound",
+    ):
+        require(field in operator_required, f"operator event schema field missing: {field}")
+    require(
+        schema["$defs"]["operatorEvent"]["properties"]["bound"].get("const") is True,
+        "published operator events must be bound to lineage coordinates",
+    )
     lineage_required = set(schema["$defs"]["lineage"]["required"])
     for field in (
         "generation",
         "population_index",
         "operator_kind",
+        "operator_event_count",
         "recipe_fingerprint",
         "candidate_fingerprint",
         "assurance_fingerprint",

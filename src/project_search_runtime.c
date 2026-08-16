@@ -619,6 +619,8 @@ static evo_project_recipe_status_t evo_search_add_dependency(
     const evo_project_transformation_catalogue_entry_t *entry =
         evo_search_catalogue_entry(
             config, dependency->identity, dependency->implementation_version);
+    const char *selected_target = NULL;
+    size_t match_count = 0U;
     size_t opportunity_index;
 
     if (entry == NULL) {
@@ -641,17 +643,26 @@ static evo_project_recipe_status_t evo_search_add_dependency(
                 entry->identity,
                 entry->implementation_version,
                 SIZE_MAX)) {
-            const size_t record_index = mutable_recipe->record_count;
-
-            if (!evo_search_set_catalogue_record(
-                    config, mutable_recipe, record_index, target, entry)) {
-                return EVO_PROJECT_RECIPE_ERROR_RESOURCE_LIMIT;
+            selected_target = target;
+            match_count += 1U;
+            if (match_count > 1U) {
+                return EVO_PROJECT_RECIPE_ERROR_DEPENDENCY_AMBIGUOUS;
             }
-            mutable_recipe->record_count += 1U;
-            return EVO_PROJECT_RECIPE_SUCCESS;
         }
     }
-    return EVO_PROJECT_RECIPE_ERROR_DEPENDENCY_MISSING;
+    if (match_count == 0U || selected_target == NULL) {
+        return EVO_PROJECT_RECIPE_ERROR_DEPENDENCY_MISSING;
+    }
+    if (!evo_search_set_catalogue_record(
+            config,
+            mutable_recipe,
+            mutable_recipe->record_count,
+            selected_target,
+            entry)) {
+        return EVO_PROJECT_RECIPE_ERROR_RESOURCE_LIMIT;
+    }
+    mutable_recipe->record_count += 1U;
+    return EVO_PROJECT_RECIPE_SUCCESS;
 }
 
 static evo_project_recipe_status_t evo_search_repair(
@@ -1493,7 +1504,58 @@ static bool evo_search_build_json(
             json, config->policy.max_repair_passes) ||
         !evo_candidate_buffer_append_text(json, ",\"integer_parameter_wrap\":") ||
         !evo_search_append_bool(json, config->policy.integer_parameter_wrap) ||
-        !evo_candidate_buffer_append_text(json, "},\"lineage\":[")) {
+        !evo_candidate_buffer_append_text(json, "},\"operator_events\":[")) {
+        return false;
+    }
+    for (index = 0U; index < owner->operator_event_count; index += 1U) {
+        const evo_project_search_operator_event_t *event =
+            &owner->operator_events[index];
+
+        if (!event->bound) {
+            return false;
+        }
+        if (index > 0U && !evo_candidate_buffer_append_text(json, ",")) {
+            return false;
+        }
+        if (!evo_candidate_buffer_append_text(json, "{") ||
+            !evo_candidate_buffer_append_text(json, "\"ordinal\":") ||
+            !evo_candidate_buffer_append_size(json, event->ordinal) ||
+            !evo_candidate_buffer_append_text(json, ",\"generation\":") ||
+            !evo_candidate_buffer_append_size(json, event->generation) ||
+            !evo_candidate_buffer_append_text(json, ",\"population_index\":") ||
+            !evo_candidate_buffer_append_size(json, event->population_index) ||
+            !evo_candidate_buffer_append_text(json, ",\"operator_kind\":") ||
+            !evo_candidate_buffer_append_json_string(
+                json, evo_project_search_operator_kind_name(event->operator_kind)) ||
+            !evo_candidate_buffer_append_text(json, ",\"rejection_reason\":") ||
+            !evo_candidate_buffer_append_json_string(
+                json,
+                evo_project_search_rejection_reason_name(
+                    event->rejection_reason)) ||
+            !evo_candidate_buffer_append_text(json, ",\"recipe_status\":") ||
+            !evo_candidate_buffer_append_json_string(
+                json, evo_project_recipe_status_name(event->recipe_status)) ||
+            !evo_candidate_buffer_append_text(json, ",") ||
+            !evo_search_append_json_string_field(
+                json,
+                "parent_a_recipe_fingerprint",
+                event->parent_a_recipe_fingerprint,
+                true) ||
+            !evo_search_append_json_string_field(
+                json,
+                "parent_b_recipe_fingerprint",
+                event->parent_b_recipe_fingerprint,
+                true) ||
+            !evo_search_append_json_string_field(
+                json,
+                "result_recipe_fingerprint",
+                event->result_recipe_fingerprint,
+                true) ||
+            !evo_candidate_buffer_append_text(json, "\"bound\":true}")) {
+            return false;
+        }
+    }
+    if (!evo_candidate_buffer_append_text(json, "],\"lineage\":[")) {
         return false;
     }
     for (index = 0U; index < owner->lineage_count; index += 1U) {
@@ -1513,6 +1575,8 @@ static bool evo_search_build_json(
             !evo_candidate_buffer_append_text(json, ",\"operator_kind\":") ||
             !evo_candidate_buffer_append_json_string(
                 json, evo_project_search_operator_kind_name(record->operator_kind)) ||
+            !evo_candidate_buffer_append_text(json, ",\"operator_event_count\":") ||
+            !evo_candidate_buffer_append_size(json, record->operator_event_count) ||
             !evo_candidate_buffer_append_text(json, ",\"rejection_reason\":") ||
             !evo_candidate_buffer_append_json_string(
                 json,
@@ -1607,7 +1671,35 @@ static bool evo_search_build_markdown(
             "`\n\nRaw C source bytes are never mutation or crossover authority. Exact recipe records, live recipe reconstruction, evaluation mappings, and the EVO core result remain authority.\n\n") ||
         !evo_candidate_buffer_append_text(
             markdown,
-            "## Ordered lineage\n\n| Generation | Index | Operator | Recipe | Parent A | Parent B | Valid | Evaluated | Total | Rejection | Winner |\n|---:|---:|---|---|---|---|---|---|---:|---|---|\n")) {
+            "## Operator events\n\n| Ordinal | Generation | Index | Operator | Parent A | Parent B | Result recipe | Status | Rejection |\n|---:|---:|---:|---|---|---|---|---|---|\n")) {
+        return false;
+    }
+    for (index = 0U; index < owner->operator_event_count; index += 1U) {
+        const evo_project_search_operator_event_t *event =
+            &owner->operator_events[index];
+        char row[704];
+        const int written = evo_project_format(
+            row,
+            sizeof(row),
+            "| %zu | %zu | %zu | %s | %s | %s | %s | %s | %s |\n",
+            event->ordinal,
+            event->generation,
+            event->population_index,
+            evo_project_search_operator_kind_name(event->operator_kind),
+            event->parent_a_recipe_fingerprint,
+            event->parent_b_recipe_fingerprint,
+            event->result_recipe_fingerprint,
+            evo_project_recipe_status_name(event->recipe_status),
+            evo_project_search_rejection_reason_name(event->rejection_reason));
+
+        if (!event->bound || written <= 0 || (size_t)written >= sizeof(row) ||
+            !evo_candidate_buffer_append_text(markdown, row)) {
+            return false;
+        }
+    }
+    if (!evo_candidate_buffer_append_text(
+            markdown,
+            "\n## Ordered lineage\n\n| Generation | Index | Operator | Operator events | Recipe | Parent A | Parent B | Valid | Evaluated | Total | Rejection | Winner |\n|---:|---:|---|---:|---|---|---|---|---|---:|---|---|\n")) {
         return false;
     }
     for (index = 0U; index < owner->lineage_count; index += 1U) {
@@ -1617,10 +1709,11 @@ static bool evo_search_build_markdown(
         const int written = evo_project_format(
             row,
             sizeof(row),
-            "| %zu | %zu | %s | %s | %s | %s | %s | %s | %.17g | %s | %s |\n",
+            "| %zu | %zu | %s | %zu | %s | %s | %s | %s | %s | %.17g | %s | %s |\n",
             record->generation,
             record->population_index,
             evo_project_search_operator_kind_name(record->operator_kind),
+            record->operator_event_count,
             record->recipe_fingerprint,
             record->parent_a_recipe_fingerprint,
             record->parent_b_recipe_fingerprint,

@@ -462,7 +462,7 @@ static evo_project_search_config_t test_search_config(
             .initial_record_count = 1U,
             .maximum_record_count = 4U,
             .mutation_operation_mask = EVO_PROJECT_SEARCH_MUTATION_ADD,
-            .max_mutations_per_event = 1U,
+            .max_mutations_per_event = 2U,
             .max_repair_passes = 8U,
             .integer_parameter_wrap = false,
         },
@@ -642,9 +642,14 @@ static void test_search_replay_and_improvement(test_fixture_t *fixture)
         winner != NULL && first.best_fitness.total > initial_best,
         "evolution finds a strict verified fitness improvement");
     test_check(
+        first.operator_event_count >= first.lineage_count &&
+            first.operator_events != NULL,
+        "complete structured operator trace is retained");
+    test_check(
         first.projection_complete && !first.probabilistic_authority &&
             !first.raw_source_bytes && first.canonical_json != NULL &&
             first.audit_markdown != NULL &&
+            strstr(first.canonical_json, "\"operator_events\":[") != NULL &&
             strstr(first.canonical_json, "\"raw_source_bytes\":false") != NULL &&
             strstr(first.canonical_json, "unit_value") == NULL &&
             strstr(first.audit_markdown, "best verified candidate found") != NULL,

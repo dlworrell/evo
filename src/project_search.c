@@ -55,10 +55,43 @@ static evo_project_search_birth_event_t *evo_search_find_birth(
     return NULL;
 }
 
-static evo_project_search_birth_event_t *evo_search_record_birth(
+static evo_project_search_operator_event_t *evo_search_record_operator_event(
     evo_search_run_context_t *context,
     const void *genome_address,
     evo_project_search_operator_kind_t operator_kind,
+    const char *parent_a,
+    const char *parent_b,
+    const char *result_recipe,
+    evo_project_recipe_status_t recipe_status)
+{
+    evo_project_search_owner_t *owner = context->owner;
+    evo_project_search_operator_event_t *event;
+    const size_t index = owner->operator_event_count;
+
+    if (index >= owner->operator_event_capacity) {
+        context->fatal_state = true;
+        return NULL;
+    }
+    event = &owner->operator_events[index];
+    *event = (evo_project_search_operator_event_t){0};
+    event->ordinal = index;
+    event->operator_kind = operator_kind;
+    event->recipe_status = recipe_status;
+    event->rejection_reason = evo_search_rejection_from_recipe(recipe_status);
+    if (!evo_search_copy_fingerprint(event->parent_a_recipe_fingerprint, parent_a) ||
+        !evo_search_copy_fingerprint(event->parent_b_recipe_fingerprint, parent_b) ||
+        !evo_search_copy_fingerprint(event->result_recipe_fingerprint, result_recipe)) {
+        context->fatal_state = true;
+        return NULL;
+    }
+    owner->operator_event_genome_addresses[index] = genome_address;
+    owner->operator_event_count += 1U;
+    return event;
+}
+
+static evo_project_search_birth_event_t *evo_search_record_birth(
+    evo_search_run_context_t *context,
+    const void *genome_address,
     const char *parent_a,
     const char *parent_b,
     evo_project_recipe_status_t recipe_status)
@@ -76,8 +109,6 @@ static evo_project_search_birth_event_t *evo_search_record_birth(
         owner->birth_count += 1U;
         *event = (evo_project_search_birth_event_t){0};
         event->genome_address = genome_address;
-        event->operator_ordinal = owner->operator_ordinal;
-        owner->operator_ordinal += 1U;
         if (!evo_search_copy_fingerprint(
                 event->parent_a_recipe_fingerprint, parent_a) ||
             !evo_search_copy_fingerprint(
@@ -86,10 +117,36 @@ static evo_project_search_birth_event_t *evo_search_record_birth(
             return NULL;
         }
     }
-    event->operator_kind = operator_kind;
     event->recipe_status = recipe_status;
     event->rejection_reason = evo_search_rejection_from_recipe(recipe_status);
     return event;
+}
+
+static size_t evo_search_bind_operator_events(
+    evo_project_search_owner_t *owner,
+    const void *genome_address,
+    evo_project_search_lineage_record_t *record)
+{
+    size_t index;
+    size_t count = 0U;
+
+    for (index = 0U; index < owner->operator_event_count; index += 1U) {
+        evo_project_search_operator_event_t *event = &owner->operator_events[index];
+
+        if (event->bound || owner->operator_event_genome_addresses[index] != genome_address) {
+            continue;
+        }
+        event->bound = true;
+        event->generation = record->generation;
+        event->population_index = record->population_index;
+        if (count == 0U) {
+            record->operator_ordinal = event->ordinal;
+        }
+        record->operator_kind = event->operator_kind;
+        count += 1U;
+    }
+    record->operator_event_count = count;
+    return count;
 }
 
 static evo_project_search_operator_kind_t evo_search_select_mutation_kind(
@@ -129,7 +186,7 @@ static void evo_search_initialize_callback(void *genome, void *opaque)
     evo_search_run_context_t *context = opaque;
     evo_project_recipe_t recipe = {0};
     unsigned char *bytes = genome;
-    const size_t ordinal = context->owner->operator_ordinal;
+    const size_t ordinal = context->owner->operator_event_count;
     const uint64_t selector = evo_search_selector(
         context->config,
         "initialize",
@@ -138,30 +195,43 @@ static void evo_search_initialize_callback(void *genome, void *opaque)
         context->config->genome_size,
         NULL,
         0U);
-    const evo_project_recipe_status_t status = evo_search_initialize_recipe(
+    evo_project_recipe_status_t status = evo_search_initialize_recipe(
         context->config, selector, &recipe);
 
     if (status == EVO_PROJECT_RECIPE_SUCCESS &&
         evo_search_copy_recipe_genome(
             bytes, &recipe, context->config->genome_size)) {
-        (void)evo_search_record_birth(
-            context,
-            genome,
-            EVO_PROJECT_SEARCH_OPERATOR_INITIALIZE,
-            NULL,
-            NULL,
-            EVO_PROJECT_RECIPE_SUCCESS);
+        if (evo_search_record_operator_event(
+                context,
+                genome,
+                EVO_PROJECT_SEARCH_OPERATOR_INITIALIZE,
+                NULL,
+                NULL,
+                recipe.recipe_fingerprint,
+                EVO_PROJECT_RECIPE_SUCCESS) != NULL) {
+            (void)evo_search_record_birth(
+                context,
+                genome,
+                NULL,
+                NULL,
+                EVO_PROJECT_RECIPE_SUCCESS);
+        }
     } else {
+        if (status == EVO_PROJECT_RECIPE_SUCCESS) {
+            status = EVO_PROJECT_RECIPE_ERROR_STATE;
+        }
         evo_search_zero_genome(bytes, context->config->genome_size);
-        (void)evo_search_record_birth(
-            context,
-            genome,
-            EVO_PROJECT_SEARCH_OPERATOR_INITIALIZE,
-            NULL,
-            NULL,
-            status == EVO_PROJECT_RECIPE_SUCCESS
-                ? EVO_PROJECT_RECIPE_ERROR_STATE
-                : status);
+        if (evo_search_record_operator_event(
+                context,
+                genome,
+                EVO_PROJECT_SEARCH_OPERATOR_INITIALIZE,
+                NULL,
+                NULL,
+                NULL,
+                status) != NULL) {
+            (void)evo_search_record_birth(
+                context, genome, NULL, NULL, status);
+        }
     }
     evo_project_recipe_destroy(&recipe);
 }
@@ -176,7 +246,8 @@ static void evo_search_mutate_callback(
     evo_project_recipe_t current = {0};
     evo_project_recipe_t next = {0};
     unsigned char *bytes = genome;
-    char parent_fingerprint[EVO_PROJECT_FINGERPRINT_TEXT_SIZE] = {0};
+    char original_parent[EVO_PROJECT_FINGERPRINT_TEXT_SIZE] = {0};
+    char source_fingerprint[EVO_PROJECT_FINGERPRINT_TEXT_SIZE] = {0};
     char rate_text[64];
     uint64_t selector;
     evo_project_recipe_status_t status;
@@ -195,27 +266,33 @@ static void evo_search_mutate_callback(
     if (status != EVO_PROJECT_RECIPE_SUCCESS || rate_written <= 0 ||
         (size_t)rate_written >= sizeof(rate_text) ||
         !evo_search_copy_fingerprint(
-            parent_fingerprint,
+            original_parent,
             status == EVO_PROJECT_RECIPE_SUCCESS
                 ? parent.recipe_fingerprint
-                : NULL)) {
+                : NULL) ||
+        !evo_search_copy_fingerprint(source_fingerprint, original_parent)) {
+        if (status == EVO_PROJECT_RECIPE_SUCCESS) {
+            status = EVO_PROJECT_RECIPE_ERROR_STATE;
+        }
         evo_search_zero_genome(bytes, context->config->genome_size);
-        (void)evo_search_record_birth(
-            context,
-            genome,
-            last_operation,
-            parent_fingerprint,
-            NULL,
-            status == EVO_PROJECT_RECIPE_SUCCESS
-                ? EVO_PROJECT_RECIPE_ERROR_STATE
-                : status);
+        if (evo_search_record_operator_event(
+                context,
+                genome,
+                last_operation,
+                original_parent,
+                NULL,
+                NULL,
+                status) != NULL) {
+            (void)evo_search_record_birth(
+                context, genome, original_parent, NULL, status);
+        }
         evo_project_recipe_destroy(&parent);
         return;
     }
     selector = evo_search_selector(
         context->config,
         rate_text,
-        context->owner->operator_ordinal,
+        context->owner->operator_event_count,
         bytes,
         context->config->genome_size,
         NULL,
@@ -244,7 +321,25 @@ static void evo_search_mutate_callback(
             operation_selector,
             &next);
         last_operation = operation;
+        if (evo_search_record_operator_event(
+                context,
+                genome,
+                operation,
+                source_fingerprint,
+                NULL,
+                status == EVO_PROJECT_RECIPE_SUCCESS
+                    ? next.recipe_fingerprint
+                    : NULL,
+                status) == NULL) {
+            status = EVO_PROJECT_RECIPE_ERROR_STATE;
+            break;
+        }
         if (status != EVO_PROJECT_RECIPE_SUCCESS) {
+            break;
+        }
+        if (!evo_search_copy_fingerprint(
+                source_fingerprint, next.recipe_fingerprint)) {
+            status = EVO_PROJECT_RECIPE_ERROR_STATE;
             break;
         }
         evo_project_recipe_destroy(&current);
@@ -257,22 +352,18 @@ static void evo_search_mutate_callback(
         (void)evo_search_record_birth(
             context,
             genome,
-            last_operation,
-            parent_fingerprint,
+            original_parent,
             NULL,
             EVO_PROJECT_RECIPE_SUCCESS);
     } else {
+        if (status == EVO_PROJECT_RECIPE_SUCCESS) {
+            status = EVO_PROJECT_RECIPE_ERROR_STATE;
+        }
         evo_search_zero_genome(bytes, context->config->genome_size);
         (void)evo_search_record_birth(
-            context,
-            genome,
-            last_operation,
-            parent_fingerprint,
-            NULL,
-            status == EVO_PROJECT_RECIPE_SUCCESS
-                ? EVO_PROJECT_RECIPE_ERROR_STATE
-                : status);
+            context, genome, original_parent, NULL, status);
     }
+    (void)last_operation;
     evo_project_recipe_destroy(&next);
     evo_project_recipe_destroy(&current);
     evo_project_recipe_destroy(&parent);
@@ -298,7 +389,7 @@ static void evo_search_crossover_callback(
     const uint64_t selector = evo_search_selector(
         context->config,
         "crossover",
-        context->owner->operator_ordinal,
+        context->owner->operator_event_count,
         parent_a,
         context->config->genome_size,
         parent_b,
@@ -339,40 +430,72 @@ static void evo_search_crossover_callback(
             child_a, &crossed_a, context->config->genome_size) &&
         evo_search_copy_recipe_genome(
             child_b, &crossed_b, context->config->genome_size)) {
-        (void)evo_search_record_birth(
-            context,
-            child_a,
-            EVO_PROJECT_SEARCH_OPERATOR_CROSSOVER,
-            parent_a_fingerprint,
-            parent_b_fingerprint,
-            EVO_PROJECT_RECIPE_SUCCESS);
-        (void)evo_search_record_birth(
-            context,
-            child_b,
-            EVO_PROJECT_SEARCH_OPERATOR_CROSSOVER,
-            parent_b_fingerprint,
-            parent_a_fingerprint,
-            EVO_PROJECT_RECIPE_SUCCESS);
+        if (evo_search_record_operator_event(
+                context,
+                child_a,
+                EVO_PROJECT_SEARCH_OPERATOR_CROSSOVER,
+                parent_a_fingerprint,
+                parent_b_fingerprint,
+                crossed_a.recipe_fingerprint,
+                EVO_PROJECT_RECIPE_SUCCESS) != NULL) {
+            (void)evo_search_record_birth(
+                context,
+                child_a,
+                parent_a_fingerprint,
+                parent_b_fingerprint,
+                EVO_PROJECT_RECIPE_SUCCESS);
+        }
+        if (evo_search_record_operator_event(
+                context,
+                child_b,
+                EVO_PROJECT_SEARCH_OPERATOR_CROSSOVER,
+                parent_b_fingerprint,
+                parent_a_fingerprint,
+                crossed_b.recipe_fingerprint,
+                EVO_PROJECT_RECIPE_SUCCESS) != NULL) {
+            (void)evo_search_record_birth(
+                context,
+                child_b,
+                parent_b_fingerprint,
+                parent_a_fingerprint,
+                EVO_PROJECT_RECIPE_SUCCESS);
+        }
     } else {
         if (status == EVO_PROJECT_RECIPE_SUCCESS) {
             status = EVO_PROJECT_RECIPE_ERROR_STATE;
         }
         evo_search_zero_genome(child_a, context->config->genome_size);
         evo_search_zero_genome(child_b, context->config->genome_size);
-        (void)evo_search_record_birth(
-            context,
-            child_a,
-            EVO_PROJECT_SEARCH_OPERATOR_CROSSOVER,
-            parent_a_fingerprint,
-            parent_b_fingerprint,
-            status);
-        (void)evo_search_record_birth(
-            context,
-            child_b,
-            EVO_PROJECT_SEARCH_OPERATOR_CROSSOVER,
-            parent_b_fingerprint,
-            parent_a_fingerprint,
-            status);
+        if (evo_search_record_operator_event(
+                context,
+                child_a,
+                EVO_PROJECT_SEARCH_OPERATOR_CROSSOVER,
+                parent_a_fingerprint,
+                parent_b_fingerprint,
+                NULL,
+                status) != NULL) {
+            (void)evo_search_record_birth(
+                context,
+                child_a,
+                parent_a_fingerprint,
+                parent_b_fingerprint,
+                status);
+        }
+        if (evo_search_record_operator_event(
+                context,
+                child_b,
+                EVO_PROJECT_SEARCH_OPERATOR_CROSSOVER,
+                parent_b_fingerprint,
+                parent_a_fingerprint,
+                NULL,
+                status) != NULL) {
+            (void)evo_search_record_birth(
+                context,
+                child_b,
+                parent_b_fingerprint,
+                parent_a_fingerprint,
+                status);
+        }
     }
     evo_project_recipe_destroy(&crossed_a);
     evo_project_recipe_destroy(&crossed_b);
@@ -450,8 +573,6 @@ static bool evo_search_validate_callback(const void *genome, void *opaque)
 
     if (birth != NULL) {
         birth->consumed = true;
-        record->operator_ordinal = birth->operator_ordinal;
-        record->operator_kind = birth->operator_kind;
         record->rejection_reason = birth->rejection_reason;
         record->recipe_status = birth->recipe_status;
         (void)evo_search_copy_fingerprint(
@@ -460,14 +581,14 @@ static bool evo_search_validate_callback(const void *genome, void *opaque)
         (void)evo_search_copy_fingerprint(
             record->parent_b_recipe_fingerprint,
             birth->parent_b_recipe_fingerprint);
+        if (evo_search_bind_operator_events(owner, genome, record) == 0U) {
+            record->rejection_reason = EVO_PROJECT_SEARCH_REJECTION_STATE;
+            context->fatal_state = true;
+            return false;
+        }
         if (birth->rejection_reason != EVO_PROJECT_SEARCH_REJECTION_NONE) {
             return false;
         }
-    } else {
-        record->operator_ordinal = owner->operator_ordinal;
-        owner->operator_ordinal += 1U;
-        record->operator_kind = EVO_PROJECT_SEARCH_OPERATOR_CLONE;
-        record->recipe_status = EVO_PROJECT_RECIPE_SUCCESS;
     }
 
     recipe_status = evo_project_recipe_decode(
@@ -476,6 +597,26 @@ static bool evo_search_validate_callback(const void *genome, void *opaque)
         context->config->genome_size,
         &recipe);
     record->recipe_status = recipe_status;
+    if (birth == NULL) {
+        if (evo_search_record_operator_event(
+                context,
+                genome,
+                EVO_PROJECT_SEARCH_OPERATOR_CLONE,
+                recipe_status == EVO_PROJECT_RECIPE_SUCCESS
+                    ? recipe.recipe_fingerprint
+                    : NULL,
+                NULL,
+                recipe_status == EVO_PROJECT_RECIPE_SUCCESS
+                    ? recipe.recipe_fingerprint
+                    : NULL,
+                recipe_status) == NULL ||
+            evo_search_bind_operator_events(owner, genome, record) == 0U) {
+            record->rejection_reason = EVO_PROJECT_SEARCH_REJECTION_STATE;
+            context->fatal_state = true;
+            evo_project_recipe_destroy(&recipe);
+            return false;
+        }
+    }
     if (recipe_status != EVO_PROJECT_RECIPE_SUCCESS) {
         record->rejection_reason =
             evo_search_rejection_from_recipe(recipe_status);
@@ -584,17 +725,27 @@ static bool evo_search_allocate_owner(
         lineage_capacity, sizeof(*owner->lineage));
     owner->lineage_genome_addresses = evo_project_allocate_zeroed(
         lineage_capacity, sizeof(*owner->lineage_genome_addresses));
+    owner->operator_events = evo_project_allocate_zeroed(
+        config->limits.max_operator_events, sizeof(*owner->operator_events));
+    owner->operator_event_genome_addresses = evo_project_allocate_zeroed(
+        config->limits.max_operator_events,
+        sizeof(*owner->operator_event_genome_addresses));
     owner->birth_events = evo_project_allocate_zeroed(
         config->limits.max_operator_events, sizeof(*owner->birth_events));
     if (owner->lineage == NULL || owner->lineage_genome_addresses == NULL ||
+        owner->operator_events == NULL ||
+        owner->operator_event_genome_addresses == NULL ||
         owner->birth_events == NULL) {
         evo_project_release(owner->lineage);
         evo_project_release(owner->lineage_genome_addresses);
+        evo_project_release(owner->operator_events);
+        evo_project_release(owner->operator_event_genome_addresses);
         evo_project_release(owner->birth_events);
         evo_project_release(owner);
         return false;
     }
     owner->lineage_capacity = lineage_capacity;
+    owner->operator_event_capacity = config->limits.max_operator_events;
     owner->birth_capacity = config->limits.max_operator_events;
     *owner_out = owner;
     return true;
@@ -611,6 +762,8 @@ static void evo_search_owner_destroy(evo_project_search_owner_t *owner)
     evo_project_release(owner->policy_identity);
     evo_project_release(owner->evaluation_provider_identity);
     evo_project_release(owner->best_genome);
+    evo_project_release(owner->operator_events);
+    evo_project_release(owner->operator_event_genome_addresses);
     evo_project_release(owner->lineage);
     evo_project_release(owner->lineage_genome_addresses);
     evo_project_release(owner->birth_events);
@@ -658,6 +811,7 @@ static void evo_search_publish_identity(
         owner->evaluation_provider_identity;
     owner->view.random_seed = config->random_seed;
     owner->view.population_size = config->population_size;
+    owner->view.operator_events = owner->operator_events;
     owner->view.lineage = owner->lineage;
     owner->view.projection_complete = true;
     owner->view.probabilistic_authority = false;
@@ -728,7 +882,15 @@ static bool evo_search_finalize_result(
     owner->view.best_genome_size = config->genome_size;
     owner->view.generations_completed = core_result->generations_completed;
     owner->view.termination_reason = core_result->termination_reason;
+    owner->view.operator_event_count = owner->operator_event_count;
     owner->view.lineage_count = owner->lineage_count;
+
+    for (index = 0U; index < owner->operator_event_count; index += 1U) {
+        if (!owner->operator_events[index].bound) {
+            evo_project_recipe_destroy(&best_recipe);
+            return false;
+        }
+    }
 
     for (index = 0U; index < owner->lineage_count; index += 1U) {
         evo_project_search_lineage_record_t *record = &owner->lineage[index];
@@ -778,6 +940,27 @@ static bool evo_search_finalize_result(
         &fingerprint, (uint64_t)owner->view.generations_completed);
     evo_project_fingerprint_u64(
         &fingerprint, (uint64_t)owner->view.termination_reason);
+    for (index = 0U; index < owner->operator_event_count; index += 1U) {
+        const evo_project_search_operator_event_t *event =
+            &owner->operator_events[index];
+
+        evo_project_fingerprint_u64(&fingerprint, (uint64_t)event->ordinal);
+        evo_project_fingerprint_u64(&fingerprint, (uint64_t)event->generation);
+        evo_project_fingerprint_u64(
+            &fingerprint, (uint64_t)event->population_index);
+        evo_project_fingerprint_u64(
+            &fingerprint, (uint64_t)event->operator_kind);
+        evo_project_fingerprint_u64(
+            &fingerprint, (uint64_t)event->rejection_reason);
+        evo_project_fingerprint_u64(
+            &fingerprint, (uint64_t)event->recipe_status);
+        evo_project_fingerprint_string(
+            &fingerprint, event->parent_a_recipe_fingerprint);
+        evo_project_fingerprint_string(
+            &fingerprint, event->parent_b_recipe_fingerprint);
+        evo_project_fingerprint_string(
+            &fingerprint, event->result_recipe_fingerprint);
+    }
     for (index = 0U; index < owner->lineage_count; index += 1U) {
         const evo_project_search_lineage_record_t *record =
             &owner->lineage[index];
@@ -790,6 +973,8 @@ static bool evo_search_finalize_result(
             &fingerprint, (uint64_t)record->operator_ordinal);
         evo_project_fingerprint_u64(
             &fingerprint, (uint64_t)record->operator_kind);
+        evo_project_fingerprint_u64(
+            &fingerprint, (uint64_t)record->operator_event_count);
         evo_project_fingerprint_u64(
             &fingerprint, (uint64_t)record->rejection_reason);
         evo_project_fingerprint_u64(
