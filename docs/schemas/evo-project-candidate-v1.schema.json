@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/dlworrell/evo/docs/schemas/evo-project-candidate-v1.schema.json",
+  "title": "EVO Project Candidate v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "baseline_fingerprint",
+    "recipe_fingerprint",
+    "candidate_fingerprint",
+    "workspace_policy",
+    "file_count",
+    "changed_files",
+    "patch_bytes",
+    "projection_complete",
+    "probabilistic_authority",
+    "source_modified",
+    "snapshot_modified"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "baseline_fingerprint": {
+      "$ref": "#/$defs/fingerprint"
+    },
+    "recipe_fingerprint": {
+      "$ref": "#/$defs/fingerprint"
+    },
+    "candidate_fingerprint": {
+      "$ref": "#/$defs/fingerprint"
+    },
+    "workspace_policy": {
+      "enum": [
+        "discard",
+        "retain"
+      ]
+    },
+    "file_count": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "changed_files": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/changed_file"
+      }
+    },
+    "patch_bytes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "projection_complete": {
+      "const": true
+    },
+    "probabilistic_authority": {
+      "const": false
+    },
+    "source_modified": {
+      "const": false
+    },
+    "snapshot_modified": {
+      "const": false
+    }
+  },
+  "$defs": {
+    "fingerprint": {
+      "type": "string",
+      "pattern": "^fnv1a64:[0-9a-f]{16}$"
+    },
+    "relative_path": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*\\\\).+$"
+    },
+    "changed_file": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "before_size",
+        "after_size",
+        "before_fingerprint",
+        "after_fingerprint",
+        "edit_count"
+      ],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/relative_path"
+        },
+        "before_size": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "after_size": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "before_fingerprint": {
+          "$ref": "#/$defs/fingerprint"
+        },
+        "after_fingerprint": {
+          "$ref": "#/$defs/fingerprint"
+        },
+        "edit_count": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    }
+  }
+}

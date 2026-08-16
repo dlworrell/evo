@@ -1,9 +1,9 @@
 # EVO-002: Source-to-Source C Optimizer Contract
 
-Status: Implemented through the 0.37.0 AST-transformation boundary; draft 1.0 target
-Version: 0.37.0
+Status: Implemented through the 0.38.0 candidate-materialization boundary; draft 1.0 target
+Version: 0.38.0
 Owner: EVO
-Governing ADRs: ADR-0016, ADR-0026, ADR-0035, ADR-0036, ADR-0037, and ADR-0038
+Governing ADRs: ADR-0016, ADR-0026, ADR-0035, ADR-0036, ADR-0037, ADR-0038, and ADR-0039
 
 ## Purpose
 
@@ -15,11 +15,12 @@ search as a reviewable patch and reproducibility package.
 
 This specification defines the product layer above the reusable C17
 evolutionary-search core governed by EVO-001. Nothing in this draft claims that
-the complete source optimizer is implemented in version 0.37.0. This release
-implements the strict project-ingestion, immutable-baseline, and normalized
-analysis/hotspot boundaries plus the canonical transformation-recipe boundary
-and initial non-writing AST-aware C transformation catalogue defined below;
-every later section remains a 1.0 target until its roadmap issue lands.
+the complete source optimizer is implemented in version 0.38.0. This release
+implements strict project ingestion and immutable baselines, normalized
+analysis/hotspot evidence, canonical transformation recipes, the initial AST-
+aware C transformation catalogue, and deterministic isolated candidate
+materialization. Build/correctness gates and every later roadmap boundary
+remain a 1.0 target until their issues land.
 
 ## Claim Boundary
 
@@ -132,6 +133,13 @@ and exact replacement or an explicit no-change result. Complete registry and
 application JSON plus derived Markdown expose every transformation, provider,
 AST fact, semantic assumption, validation obligation, and rejection policy.
 ADR-0038 and EVO-HRA-010 retain this issue-specific assessment.
+
+The implemented 0.38.0 candidate materializer also introduces no accelerator.
+Immutable baseline file order, exact recipe-record identity, and accepted half-
+open edit ranges remain authority. Overlap is a hard conflict. A normalized
+patch plus complete candidate JSON/Markdown expose every committed change, and
+candidate identity is stable across output locations and retain/discard policy.
+ADR-0039 and EVO-HRA-011 retain this issue-specific assessment.
 
 ## Optimization Manifest
 
@@ -367,6 +375,18 @@ A failed materialization publishes no completed candidate identity.
 
 The same baseline, provider, catalogue, and recipe identities must reproduce
 byte-identical candidate source and patch.
+
+The implemented 0.38.0 transaction requires one current application per recipe
+record, revalidates immutable before/replacement bytes and fingerprints, sorts
+edits deterministically within immutable baseline file order, and rejects any
+overlap. It builds beneath a private staging directory, uses an incomplete
+publication marker, and supports explicit `retain` or `discard` source-tree
+policy. Success publishes `candidate.patch`, `candidate.json`, and
+`candidate.md`, plus `candidate/` when retained. Baseline freshness is checked
+before output reservation and again before commit; failure cleans the reserved
+output and publishes no candidate view. This boundary executes no compiler,
+correctness gate, benchmark, ranking step, commit, push, or deployment. ADR-0039
+defines the complete materialization contract.
 
 ## Build and Correctness Contract
 

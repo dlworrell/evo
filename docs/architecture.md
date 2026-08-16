@@ -67,7 +67,10 @@ stable topological composition, fixed genome encoding, strict reconstruction,
 and a complete audit projection. Version 0.37.0 adds three private AST-aware
 C transformation bodies, normalized provider contract, exact source-token and
 range validation, deterministic edit/no-change evidence, and complete
-catalogue/application projections. It does not materialize source.
+catalogue/application projections. Version 0.38.0 adds deterministic isolated
+candidate materialization from immutable baseline bytes and exact application
+records, overlap rejection, retain/discard workspace policy, normalized patch
+output, and canonical candidate evidence.
 
 Source genomes never contain arbitrary C text for byte-wise mutation or
 crossover. One genome represents a complete transformation recipe containing
@@ -135,14 +138,14 @@ ADR-0026 defines the complete rule.
 
 ## Current Conformance Boundary
 
-Version 0.37.0 contains the evolutionary-search core, its bounded reference
+Version 0.38.0 contains the evolutionary-search core, its bounded reference
 consumers, private project ingestion, a private normalized analysis and hotspot
-model, a private canonical transformation-recipe model, and a private initial
-AST-aware C transformation catalogue. Candidate materialization, provider-
-owned external-process isolation, target-code measurement, product commands,
-the installed standalone executable, and optimized-patch artifacts remain
-planned by issues #62 through #69 and #93. Documentation of those planned
-boundaries is not an implementation claim.
+model, a private canonical transformation-recipe model, a private initial AST-
+aware C transformation catalogue, and private isolated candidate
+materialization. Provider-owned build/correctness process isolation, target-
+code measurement, product commands, the installed standalone executable, and
+final optimized-patch artifacts remain planned by issues #63 through #69 and
+#93. Documentation of those planned boundaries is not an implementation claim.
 
 The 0.37.0 package's core uses explicit bounded arrays, direct deterministic
 scans, and one direct constant-space adaptive-rate record rather than compressed,
@@ -188,8 +191,12 @@ boundary. The AST-aware catalogue uses three stable static capability records
 and direct dispatch; every accepted application retains one exact half-open
 source edit or explicit no-change result with complete JSON/Markdown evidence.
 No AST cache, transformation index, or probabilistic authority participates;
-EVO-HRA-010 audits this boundary. The current implementation therefore has no opaque accelerated
-authority requiring remediation. This audit does not pre-approve later
+EVO-HRA-010 audits this boundary. Candidate materialization likewise uses
+direct bounded scans and exact byte ranges; its normalized patch and candidate
+JSON/Markdown expose every committed change while overlap and stale authority
+fail closed. EVO-HRA-011 audits this 0.38.0 boundary. The current
+implementation therefore has no opaque accelerated authority requiring
+remediation. This audit does not pre-approve later
 variable pools, compressed checkpoints, persistent or distributed schedulers,
 transformation lookup indexes, candidate caches, orchestration, or artifact
 implementations.

@@ -42,6 +42,7 @@ The governing product records are:
 - `docs/adr/ADR-0036-clang-llvm-analysis-and-hotspot-model.md`
 - `docs/adr/ADR-0037-versioned-source-transformation-recipes.md`
 - `docs/adr/ADR-0038-ast-aware-c-transformation-catalogue.md`
+- `docs/adr/ADR-0039-isolated-candidate-materialization.md`
 - `docs/specs/EVO-001-library-contract.md`
 - `docs/specs/EVO-002-source-optimizer-contract.md`
 - `docs/roadmap.md`
@@ -141,6 +142,11 @@ application retains one exact half-open before range and replacement or an
 explicit no-change result. Complete catalogue/application JSON and derived
 Markdown expose all AST, provider, assumption, obligation, and rejection
 facts. EVO-HRA-010 retains this transformation-specific audit.
+ADR-0039 assesses 0.38.0 isolated candidate materialization: immutable
+baseline bytes and exact transformation applications remain authority,
+overlapping edits fail closed, and a normalized patch plus candidate JSON/
+Markdown expose every committed source change. EVO-HRA-011 retains this
+candidate-specific audit.
 
 ## Roadmap Scope
 
@@ -167,7 +173,7 @@ The source-optimizer track adds:
   model
 - Implemented versioned structured source-transformation recipes
 - Implemented initial AST-aware C source-transformation catalogue
-- Isolated candidate materialization
+- Implemented isolated candidate materialization
 - CMake/Clang/LLVM build and correctness gates with independent
   Autotools/GNU validation
 - Reproducible baseline-versus-candidate performance measurement
@@ -193,11 +199,12 @@ repository.
 
 The private source-optimizer foundation now includes 0.34.0 immutable project
 ingestion, the 0.35.0 normalized Clang/LLVM analysis and hotspot model, the
-0.36.0 canonical versioned transformation-recipe model, and the 0.37.0 initial
-AST-aware C transformation catalogue. Source materialization, candidate
-evaluation, orchestration, and the installed executable remain dependency-
-ordered roadmap work; their absence is an explicit boundary, not an implicit
-feature claim.
+0.36.0 canonical versioned transformation-recipe model, the 0.37.0 initial
+AST-aware C transformation catalogue, and 0.38.0 isolated candidate
+materialization with deterministic patches and evidence. Candidate build/
+correctness evaluation, orchestration, and the installed executable remain
+dependency-ordered roadmap work; their absence is an explicit boundary, not
+an implicit feature claim.
 
 ## Authoritative Native Builds
 

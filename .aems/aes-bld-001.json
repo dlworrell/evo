@@ -128,7 +128,10 @@
       "src/project_transformation_catalogue.c",
       "src/project_transformation_model.c",
       "src/project_transformation_evidence.c",
-      "src/project_transformation.c"
+      "src/project_transformation.c",
+      "src/project_candidate_runtime.c",
+      "src/project_candidate_model.c",
+      "src/project_candidate.c"
     ],
     "normative_tests": [
       {
@@ -352,6 +355,12 @@
         "source": "tests/project_transformation_test.c",
         "cmake": "evo_project_transformation_test",
         "autotools": "tests/evo_project_transformation_test"
+      },
+      {
+        "id": "project-candidate",
+        "source": "tests/project_candidate_test.c",
+        "cmake": "evo_project_candidate_test",
+        "autotools": "tests/evo_project_candidate_test"
       }
     ],
     "consumer_sources": [
