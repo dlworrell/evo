@@ -2,10 +2,11 @@
 
 This document distinguishes algorithms implemented by the reusable
 `catalyst_evo` core from the structured program transformations and evaluation
-algorithm required by the EVO 1.0 source optimizer. Version 0.35.0 implements
+algorithm required by the EVO 1.0 source optimizer. Version 0.36.0 implements
 the core plus project ingestion, immutable-baseline preparation, and the
-normalized Clang/LLVM analysis and hotspot-ranking model; it does not yet
-implement source-transformation algorithms.
+normalized Clang/LLVM analysis and hotspot-ranking model plus canonical
+transformation-recipe representation and validation; it does not yet implement
+AST-aware source-transformation application.
 
 ## EVO Core Initial Release
 
@@ -1056,6 +1057,36 @@ record contains:
 The recipe has a versioned canonical serialization and hash. Unknown, stale,
 cyclic, conflicting, or over-budget recipes reject before a candidate
 workspace is written.
+
+Version 0.36.0 implements the exact recipe representation. A canonical
+catalogue orders transformations by identity/version and declares allowed
+source-location kinds, typed parameter schemas, preconditions, dependencies,
+and conflicts. A proposal names only a stable record, target,
+transformation/version, and parameters. The builder resolves all other facts
+from the live baseline and analysis, including the source range, spelling
+identity, opportunity rank, and complete compiler/runtime provenance.
+
+Dependency resolution requires exactly one selected record for every declared
+transformation reference. Missing and ambiguous closure or a selected conflict
+rejects. Canonical composition repeatedly chooses the lexicographically least
+ready record; inability to emit every record is a cycle. This is a stable
+topological ordering, independent of proposal input order.
+
+The fixed genome is:
+
+1. eight bytes of `EVORCPG1` magic;
+2. an unsigned 64-bit little-endian canonical-JSON byte count;
+3. the exact `catalyst.evo-project-recipe.v1` bytes; and
+4. at least one zero byte followed by zero padding to the configured genome
+   size.
+
+Decode parses under explicit token/depth limits, extracts only proposal facts,
+rebuilds all derived facts from live authority, regenerates the fixed genome,
+and requires exact equality. Thus alternate whitespace, reordered keys,
+forged provenance, stale ranges, unknown fields, and nonzero padding cannot
+become replay authority. The FNV label is diagnostic only. No raw source byte,
+clock, process identity, address, entropy input, callback, or hidden repair is
+part of recipe construction.
 
 ## Source-Recipe Initialization
 

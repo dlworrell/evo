@@ -1,0 +1,13 @@
+{
+"schema":"catalyst.evo-project-recipe.v1",
+"schema_version":1,
+"baseline_fingerprint":"fnv1a64-v1:1020304050607080",
+"analysis_fingerprint":"fnv1a64-v1:8877665544332211",
+"catalogue":{"identity":"fixture-transformations","version":3},
+"records":[
+{"identity":"record-a","baseline_fingerprint":"fnv1a64-v1:1020304050607080","analysis_fingerprint":"fnv1a64-v1:8877665544332211","catalogue":{"identity":"fixture-transformations","version":3},"target":{"location_identity":"location-a","file":"unit.c","line":1,"column":1,"end_line":1,"end_column":18,"kind":"spelling","spelling_identity":null},"transformation":{"identity":"transform-a","version":1},"parameters":[],"preconditions":["baseline-verified"],"dependencies":[],"conflicts":[],"provenance":{"opportunity_rank":2,"compiler_records":["compiler-a"],"runtime_records":[]}},
+{"identity":"record-b","baseline_fingerprint":"fnv1a64-v1:1020304050607080","analysis_fingerprint":"fnv1a64-v1:8877665544332211","catalogue":{"identity":"fixture-transformations","version":3},"target":{"location_identity":"location-b","file":"unit.c","line":1,"column":19,"end_line":1,"end_column":39,"kind":"macro-expansion","spelling_identity":"location-a"},"transformation":{"identity":"transform-b","version":2},"parameters":[{"identity":"enabled","kind":"boolean","integer_value":null,"boolean_value":true,"choice_value":null},{"identity":"limit","kind":"integer","integer_value":7,"boolean_value":null,"choice_value":null},{"identity":"strategy","kind":"choice","integer_value":null,"boolean_value":null,"choice_value":"balanced"}],"preconditions":["baseline-verified","target-current"],"dependencies":[{"record_identity":"record-a","transformation_identity":"transform-a","version":1}],"conflicts":[{"transformation_identity":"transform-c","version":1}],"provenance":{"opportunity_rank":1,"compiler_records":["compiler-b"],"runtime_records":["runtime-b"]}}
+],
+"human_readable_abstraction":{"reference_form":"canonical-json-record-array-and-direct-scans","projection":"embedded-canonical-json-and-derived-markdown","complete":true,"probabilistic_authority":false},
+"raw_source_bytes":false
+}

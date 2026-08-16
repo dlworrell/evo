@@ -1,9 +1,9 @@
 # EVO-002: Source-to-Source C Optimizer Contract
 
-Status: Implemented through the 0.35.0 analysis boundary; draft 1.0 target
-Version: 0.35.0
+Status: Implemented through the 0.36.0 transformation-recipe boundary; draft 1.0 target
+Version: 0.36.0
 Owner: EVO
-Governing ADRs: ADR-0016, ADR-0026, ADR-0035, and ADR-0036
+Governing ADRs: ADR-0016, ADR-0026, ADR-0035, ADR-0036, and ADR-0037
 
 ## Purpose
 
@@ -15,10 +15,11 @@ search as a reviewable patch and reproducibility package.
 
 This specification defines the product layer above the reusable C17
 evolutionary-search core governed by EVO-001. Nothing in this draft claims that
-the complete source optimizer is implemented in version 0.35.0. This release
+the complete source optimizer is implemented in version 0.36.0. This release
 implements the strict project-ingestion, immutable-baseline, and normalized
-analysis/hotspot boundaries defined below; every later section remains a 1.0
-target until its roadmap issue lands.
+analysis/hotspot boundaries plus the canonical transformation-recipe boundary
+defined below; every later section remains a 1.0 target until its roadmap
+issue lands.
 
 ## Claim Boundary
 
@@ -116,6 +117,13 @@ Complete bounded arrays and direct scans remain authority, and canonical JSON
 plus Markdown enumerate the same ordered records. ADR-0036 and EVO-HRA-008
 retain this issue-specific assessment; it does not pre-approve later analysis
 indexes, transformation catalogues, candidate caches, or schedulers.
+
+The implemented 0.36.0 recipe model likewise introduces no accelerator.
+Explicit owned transformation records and dependency edges plus bounded direct
+scans are authority. Canonical JSON embeds the complete portable recipe in the
+fixed genome, Markdown enumerates the same logical records, and decode rebuilds
+all derived facts from live authority before exact-byte comparison. ADR-0037
+and EVO-HRA-009 retain this issue-specific assessment.
 
 ## Optimization Manifest
 
@@ -258,6 +266,39 @@ Recipes have a versioned canonical encoding, checked length and resource
 bounds, deterministic hash, and exact compatibility rules. Unknown, stale,
 cyclic, conflicting, malformed, or over-budget recipes reject before source
 materialization.
+
+The implemented 0.36.0 boundary accepts only an eligible committed baseline,
+its completed normalized analysis, one canonical catalogue, bounded proposal
+records, and one exact fixed genome size. Catalogue entries are ordered by
+transformation identity/version and declare supported source-location kinds,
+typed parameter schemas, preconditions, dependencies, and conflicts. A
+proposal supplies only record identity, target identity, transformation
+identity/version, and parameter values. EVO resolves and deep-copies every
+source range, spelling relationship, dependency record, conflict declaration,
+opportunity rank, and compiler/runtime provenance from live authority.
+
+Every dependency must select exactly one matching transformation record.
+Missing and ambiguous closure, selected conflicts, and cycles have distinct
+statuses. Canonical composition uses a stable topological traversal with
+record identity breaking ties among ready records. Parameters and all
+catalogue/analysis-owned arrays retain their validated stable order.
+
+`catalyst.evo-project-recipe.v1` is embedded in a fixed genome after the
+`EVORCPG1` magic and a little-endian 64-bit payload length; mandatory zero
+padding fills the remaining caller-selected size. Decode extracts only
+proposal-bearing fields, rebuilds the complete model from the current
+baseline, analysis, and catalogue, regenerates the full genome, and accepts
+only an exact byte match. Serialized derived fields, alternate JSON forms,
+padding, and the diagnostic FNV label cannot become authority.
+
+The complete in-memory recipe and Markdown audit view derive from one owner.
+Every model collection and string has an explicit caller limit; combined
+genome and Markdown evidence capacity is bounded by the lower of caller policy
+and the immutable manifest evidence budget. Build and decode verify the
+baseline snapshot before and after work, invoke no callback or evolutionary
+operator, write no source, and materialize no candidate. ADR-0037 defines the
+full ownership, ordering, encoding, replay, failure, evidence, and
+Human-Readable Abstraction contract.
 
 Mutation and crossover operate on complete transformation records. Any repair
 policy is explicit, versioned, deterministic, and recorded. Hidden heuristic
@@ -456,6 +497,7 @@ that proof passes and all non-deferred roadmap requirements are reconciled.
 - `docs/adr/ADR-0031-deterministic-population-storage-recycling.md`
 - `docs/adr/ADR-0035-immutable-project-ingestion-and-baselines.md`
 - `docs/adr/ADR-0036-clang-llvm-analysis-and-hotspot-model.md`
+- `docs/adr/ADR-0037-versioned-source-transformation-recipes.md`
 - `docs/architecture.md`
 - `docs/algorithms.md`
 - `docs/benchmarks.md`
@@ -463,5 +505,6 @@ that proof passes and all non-deferred roadmap requirements are reconciled.
 - `docs/engineering/reports/EVO-HRA-002-checkpoint-audit.md`
 - `docs/engineering/reports/EVO-HRA-003-population-storage-recycling-audit.md`
 - `docs/engineering/reports/EVO-HRA-008-project-analysis-audit.md`
+- `docs/engineering/reports/EVO-HRA-009-project-recipe-audit.md`
 - `docs/roadmap.md`
 - GitHub issues #38, #56 through #69, #83, and #93

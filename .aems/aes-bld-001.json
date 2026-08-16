@@ -121,7 +121,10 @@
       "src/project_ingestion.c",
       "src/project_analysis_model.c",
       "src/project_analysis_evidence.c",
-      "src/project_analysis.c"
+      "src/project_analysis.c",
+      "src/project_recipe_model.c",
+      "src/project_recipe_encoding.c",
+      "src/project_recipe.c"
     ],
     "normative_tests": [
       {
@@ -333,6 +336,12 @@
         "source": "tests/project_analysis_test.c",
         "cmake": "evo_project_analysis_test",
         "autotools": "tests/evo_project_analysis_test"
+      },
+      {
+        "id": "project-recipe",
+        "source": "tests/project_recipe_test.c",
+        "cmake": "evo_project_recipe_test",
+        "autotools": "tests/evo_project_recipe_test"
       }
     ],
     "consumer_sources": [

@@ -880,6 +880,46 @@ bool evo_project_json_parse_u64(
     return true;
 }
 
+bool evo_project_json_parse_i64(
+    const char *text,
+    const evo_project_json_token_t *token,
+    int64_t *value)
+{
+    const uint64_t negative_limit = (uint64_t)INT64_MAX + UINT64_C(1);
+    uint64_t parsed = 0U;
+    uint64_t limit;
+    size_t index;
+    bool negative;
+
+    if (text == NULL || token == NULL || value == NULL ||
+        token->type != EVO_PROJECT_JSON_NUMBER || token->end <= token->start) {
+        return false;
+    }
+    negative = text[token->start] == '-';
+    index = token->start + (negative ? 1U : 0U);
+    if (index >= token->end) {
+        return false;
+    }
+    limit = negative ? negative_limit : (uint64_t)INT64_MAX;
+    for (; index < token->end; index += 1U) {
+        const unsigned int digit = (unsigned int)(text[index] - '0');
+
+        if (!evo_project_json_is_digit(text[index]) ||
+            parsed > (limit - (uint64_t)digit) / UINT64_C(10)) {
+            return false;
+        }
+        parsed = (parsed * UINT64_C(10)) + (uint64_t)digit;
+    }
+    if (negative) {
+        *value = parsed == negative_limit
+                     ? INT64_MIN
+                     : -(int64_t)parsed;
+    } else {
+        *value = (int64_t)parsed;
+    }
+    return true;
+}
+
 bool evo_project_json_parse_bool(
     const evo_project_json_token_t *token,
     bool *value)

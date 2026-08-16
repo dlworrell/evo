@@ -213,6 +213,14 @@ No analysis index, cache, compressed form, or probabilistic authority is
 introduced; JSON and Markdown project the same owner. EVO-HRA-008 retains the
 analysis evidence and projection audit.
 
+ADR-0037 performs the change-specific assessment for EVO 0.36.0. Project
+recipes retain explicit transformation records, resolved dependency edges,
+targets, parameters, conflicts, and provenance with bounded direct scans and a
+stable topological traversal. Canonical JSON is embedded in the fixed genome,
+Markdown projects every logical record, and decode reconstructs derived facts
+from live authority before exact-byte comparison. EVO-HRA-009 retains the
+recipe evidence and projection audit.
+
 ## Consequences
 
 - EVO may use efficient internal data structures without exposing their
