@@ -5,6 +5,7 @@
 
 #include "internal/project_candidate_internal.h"
 #include "internal/project_measurement.h"
+#include "internal/project_runtime.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -97,27 +98,39 @@ static evo_project_measurement_status_t fake_provider(
     return EVO_PROJECT_MEASUREMENT_SUCCESS;
 }
 
-static void make_assurance(evo_project_assurance_t *assurance)
+static bool make_assurance(evo_project_assurance_t *assurance)
 {
-    (void)memset(assurance, 0, sizeof(*assurance));
-    assurance->schema_version = EVO_PROJECT_ASSURANCE_SCHEMA_VERSION;
-    assurance->candidate_fingerprint = "fnv1a64:1111111111111111";
-    (void)snprintf(
+    const int written = evo_project_format(
         assurance->assurance_fingerprint,
         sizeof(assurance->assurance_fingerprint),
         "%s",
         "fnv1a64:2222222222222222");
+
+    *assurance = (evo_project_assurance_t){0};
+    if (written <= 0 || (size_t)written >= sizeof(assurance->assurance_fingerprint)) {
+        return false;
+    }
+    assurance->schema_version = EVO_PROJECT_ASSURANCE_SCHEMA_VERSION;
+    assurance->candidate_fingerprint = "fnv1a64:1111111111111111";
+    written = evo_project_format(
+        assurance->assurance_fingerprint,
+        sizeof(assurance->assurance_fingerprint),
+        "%s",
+        "fnv1a64:2222222222222222");
+    if (written <= 0 || (size_t)written >= sizeof(assurance->assurance_fingerprint)) {
+        return false;
+    }
     assurance->performance_eligible = true;
     assurance->projection_complete = true;
     assurance->probabilistic_authority = false;
     assurance->private_owner = assurance;
+    return true;
 }
 
 static evo_project_measurement_workload_policy_t make_policy(fake_mode_t mode)
 {
-    evo_project_measurement_workload_policy_t policy;
+    evo_project_measurement_workload_policy_t policy = {0};
 
-    (void)memset(&policy, 0, sizeof(policy));
     policy.workload_id = "oracle-workload";
     policy.warmup_count = 1U;
     policy.repetition_count = mode == FAKE_OUTLIER ? 5U : 3U;
@@ -143,9 +156,8 @@ static evo_project_measurement_config_t make_config(
     fake_context_t *context,
     const char *output_path)
 {
-    evo_project_measurement_config_t config;
+    evo_project_measurement_config_t config = {0};
 
-    (void)memset(&config, 0, sizeof(config));
     config.assurance = assurance;
     config.baseline_identity = "baseline:oracle-v1";
     config.policy_id = "measurement-policy:oracle-v1";
@@ -191,11 +203,12 @@ static int run_case(
     evo_project_measurement_t measurement = {0};
     evo_project_measurement_config_t config;
     char output[512];
-    const int written = snprintf(output, sizeof(output), "%s/%s", root, name);
+    const int written =
+        evo_project_format(output, sizeof(output), "%s/%s", root, name);
     size_t index;
 
     CHECK(written > 0 && (size_t)written < sizeof(output));
-    make_assurance(&assurance);
+    CHECK(make_assurance(&assurance));
     config = make_config(&assurance, &policy, &context, output);
     CHECK(evo_project_candidate_measure(&config, &measurement) ==
           EVO_PROJECT_MEASUREMENT_SUCCESS);
@@ -236,11 +249,13 @@ static int run_case(
         CHECK(measurement.workloads[0].candidate.included_count == 4U);
     }
     if (fingerprint != NULL) {
-        (void)snprintf(
+        const int fingerprint_written = evo_project_format(
             fingerprint,
             EVO_PROJECT_FINGERPRINT_TEXT_SIZE,
             "%s",
             measurement.measurement_fingerprint);
+        CHECK(fingerprint_written > 0 &&
+              (size_t)fingerprint_written < EVO_PROJECT_FINGERPRINT_TEXT_SIZE);
     }
     evo_project_measurement_destroy(&measurement);
     return 0;
@@ -259,6 +274,7 @@ int main(void)
     evo_project_measurement_config_t config;
     evo_project_measurement_t measurement = {0};
     char invalid_output[512];
+    int written;
 
     CHECK(temp_fd >= 0);
     CHECK(close(temp_fd) == 0);
@@ -322,10 +338,11 @@ int main(void)
               replay_b) == 0);
     CHECK(strcmp(replay_a, replay_b) == 0);
 
-    make_assurance(&assurance);
+    CHECK(make_assurance(&assurance));
     assurance.performance_eligible = false;
-    (void)snprintf(
+    written = evo_project_format(
         invalid_output, sizeof(invalid_output), "%s/ineligible", root);
+    CHECK(written > 0 && (size_t)written < sizeof(invalid_output));
     config = make_config(&assurance, &policy, &context, invalid_output);
     CHECK(evo_project_candidate_measure(&config, &measurement) ==
           EVO_PROJECT_MEASUREMENT_ERROR_ASSURANCE_INELIGIBLE);
