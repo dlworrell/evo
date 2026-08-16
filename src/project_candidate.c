@@ -260,10 +260,18 @@ static evo_project_candidate_status_t evo_candidate_materialize_files(
         if (edit_count > 0U) {
             status = evo_candidate_record_changed_file(
                 owner, record, candidate_bytes, candidate_size, edit_count);
-            if (status == EVO_PROJECT_CANDIDATE_SUCCESS &&
-                !evo_candidate_append_file_patch(
-                    patch, record->path, source, source_size, candidate_bytes, candidate_size)) {
-                status = EVO_PROJECT_CANDIDATE_ERROR_RESOURCE_LIMIT;
+            if (status == EVO_PROJECT_CANDIDATE_SUCCESS) {
+                const bool patch_appended = evo_candidate_append_file_patch(
+                    patch,
+                    record->path,
+                    source,
+                    source_size,
+                    candidate_bytes,
+                    candidate_size);
+
+                if (!patch_appended) {
+                    status = EVO_PROJECT_CANDIDATE_ERROR_RESOURCE_LIMIT;
+                }
             }
         }
 
@@ -289,16 +297,16 @@ static bool evo_candidate_build_json(
 {
     size_t index;
 
-    if (!evo_candidate_buffer_append_text(json, "{\"schema_version\":1,\"baseline_fingerprint\":" ) ||
+    if (!evo_candidate_buffer_append_text(json, "{\"schema_version\":1,\"baseline_fingerprint\":") ||
         !evo_candidate_buffer_append_json_string(json, config->baseline->baseline_fingerprint) ||
-        !evo_candidate_buffer_append_text(json, ",\"recipe_fingerprint\":" ) ||
+        !evo_candidate_buffer_append_text(json, ",\"recipe_fingerprint\":") ||
         !evo_candidate_buffer_append_json_string(json, config->recipe->recipe_fingerprint) ||
-        !evo_candidate_buffer_append_text(json, ",\"candidate_fingerprint\":" ) ||
+        !evo_candidate_buffer_append_text(json, ",\"candidate_fingerprint\":") ||
         !evo_candidate_buffer_append_json_string(json, candidate_fingerprint) ||
-        !evo_candidate_buffer_append_text(json, ",\"workspace_policy\":" ) ||
+        !evo_candidate_buffer_append_text(json, ",\"workspace_policy\":") ||
         !evo_candidate_buffer_append_json_string(
             json, evo_project_candidate_workspace_policy_name(config->workspace_policy)) ||
-        !evo_candidate_buffer_append_text(json, ",\"file_count\":" ) ||
+        !evo_candidate_buffer_append_text(json, ",\"file_count\":") ||
         !evo_candidate_buffer_append_size(json, config->baseline->file_count) ||
         !evo_candidate_buffer_append_text(json, ",\"changed_files\":[")) {
         return false;
@@ -309,23 +317,23 @@ static bool evo_candidate_build_json(
         if (index > 0U && !evo_candidate_buffer_append_text(json, ",")) {
             return false;
         }
-        if (!evo_candidate_buffer_append_text(json, "{\"path\":" ) ||
+        if (!evo_candidate_buffer_append_text(json, "{\"path\":") ||
             !evo_candidate_buffer_append_json_string(json, changed->path) ||
-            !evo_candidate_buffer_append_text(json, ",\"before_size\":" ) ||
+            !evo_candidate_buffer_append_text(json, ",\"before_size\":") ||
             !evo_candidate_buffer_append_u64(json, changed->before_size) ||
-            !evo_candidate_buffer_append_text(json, ",\"after_size\":" ) ||
+            !evo_candidate_buffer_append_text(json, ",\"after_size\":") ||
             !evo_candidate_buffer_append_u64(json, changed->after_size) ||
-            !evo_candidate_buffer_append_text(json, ",\"before_fingerprint\":" ) ||
+            !evo_candidate_buffer_append_text(json, ",\"before_fingerprint\":") ||
             !evo_candidate_buffer_append_json_string(json, changed->before_fingerprint) ||
-            !evo_candidate_buffer_append_text(json, ",\"after_fingerprint\":" ) ||
+            !evo_candidate_buffer_append_text(json, ",\"after_fingerprint\":") ||
             !evo_candidate_buffer_append_json_string(json, changed->after_fingerprint) ||
-            !evo_candidate_buffer_append_text(json, ",\"edit_count\":" ) ||
+            !evo_candidate_buffer_append_text(json, ",\"edit_count\":") ||
             !evo_candidate_buffer_append_size(json, changed->edit_count) ||
             !evo_candidate_buffer_append_text(json, "}")) {
             return false;
         }
     }
-    return evo_candidate_buffer_append_text(json, "],\"patch_bytes\":" ) &&
+    return evo_candidate_buffer_append_text(json, "],\"patch_bytes\":") &&
            evo_candidate_buffer_append_size(json, owner->patch_size) &&
            evo_candidate_buffer_append_text(
                json,
