@@ -10,6 +10,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #define CHECK(condition)                                                        \
     do {                                                                        \
@@ -202,10 +204,16 @@ static int run_case(
     CHECK(measurement.correctness_preserved);
     CHECK(measurement.projection_complete);
     CHECK(!measurement.probabilistic_authority);
-    CHECK(measurement.sample_count == 2U * (policy.warmup_count + policy.repetition_count));
+    CHECK(measurement.sample_count ==
+          2U * (policy.warmup_count + policy.repetition_count));
     CHECK(measurement.canonical_json != NULL);
-    CHECK(strstr(measurement.canonical_json, "\"correctness_preserved\":true") != NULL);
-    CHECK(strstr(measurement.audit_markdown, "best verified candidate found within the recorded bounded search contract") != NULL);
+    CHECK(strstr(
+              measurement.canonical_json,
+              "\"correctness_preserved\":true") != NULL);
+    CHECK(strstr(
+              measurement.audit_markdown,
+              "best verified candidate found within the recorded bounded search contract") !=
+          NULL);
 
     if (expect_fitness) {
         CHECK(isfinite(measurement.fitness.total));
@@ -241,7 +249,8 @@ static int run_case(
 int main(void)
 {
     char root_template[] = "/tmp/evo-project-measurement-XXXXXX";
-    char *root = mkdtemp(root_template);
+    int temp_fd = mkstemp(root_template);
+    const char *root = root_template;
     char replay_a[EVO_PROJECT_FINGERPRINT_TEXT_SIZE];
     char replay_b[EVO_PROJECT_FINGERPRINT_TEXT_SIZE];
     evo_project_assurance_t assurance;
@@ -251,7 +260,10 @@ int main(void)
     evo_project_measurement_t measurement = {0};
     char invalid_output[512];
 
-    CHECK(root != NULL);
+    CHECK(temp_fd >= 0);
+    CHECK(close(temp_fd) == 0);
+    CHECK(unlink(root_template) == 0);
+    CHECK(mkdir(root_template, 0700) == 0);
     CHECK(run_case(
               root,
               "faster",
