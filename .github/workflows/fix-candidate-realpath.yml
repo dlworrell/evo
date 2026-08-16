@@ -1,0 +1,40 @@
+name: Fix Candidate Realpath Fixture
+
+on:
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+      - name: Bound the canonical fixture path copy
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('tests/project_candidate_test.c')
+          text = path.read_text(encoding='utf-8')
+          old_decl = '''    char *root = mkdtemp(temporary_template);\n    int written;\n'''
+          new_decl = '''    char *root = mkdtemp(temporary_template);\n    char *canonical_root;\n    int written;\n'''
+          old_copy = '''    if (realpath(root, fixture->root) == NULL) {\n        return false;\n    }\n'''
+          new_copy = '''    canonical_root = realpath(root, NULL);\n    if (canonical_root == NULL) {\n        return false;\n    }\n    written = evo_project_format(\n        fixture->root, sizeof(fixture->root), "%s", canonical_root);\n    free(canonical_root);\n    if (written <= 0 || (size_t)written >= sizeof(fixture->root)) {\n        return false;\n    }\n'''
+          if text.count(old_decl) != 1 or text.count(old_copy) != 1:
+              raise SystemExit('expected candidate fixture realpath blocks not found')
+          text = text.replace(old_decl, new_decl, 1).replace(old_copy, new_copy, 1)
+          path.write_text(text, encoding='utf-8')
+          PY
+          clang-format -i tests/project_candidate_test.c
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/fix-candidate-realpath.yml
+          git add tests/project_candidate_test.c
+          git commit -m "test: bound canonical candidate fixture paths"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
