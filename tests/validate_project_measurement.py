@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import pathlib
+import re
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -96,8 +97,16 @@ def main() -> int:
     ):
         require(case in test, f"oracle fixture missing: {case}")
 
-    require("project(catalyst_evo VERSION 0.40.0" in cmake, "CMake version is not 0.40.0")
-    require("[0.40.0]" in configure, "Autotools version is not 0.40.0")
+    version_match = re.search(
+        r"project\(catalyst_evo VERSION (\d+)\.(\d+)\.(\d+) LANGUAGES C\)",
+        cmake,
+    )
+    require(version_match is not None, "CMake package version missing")
+    version_tuple = tuple(int(part) for part in version_match.groups())
+    version = ".".join(version_match.groups())
+    require(version_tuple >= (0, 40, 0), "package predates measurement boundary")
+    require(f"[{version}]" in configure, "CMake/Autotools package versions diverge")
+
     for source in (
         "src/project_measurement_model.c",
         "src/project_measurement_runtime.c",
@@ -156,16 +165,22 @@ def main() -> int:
     require("No accelerator participates in the initial implementation" in hra, "HRA accelerator assessment missing")
     require("Correctness authority remains the assurance result" in hra, "HRA correctness separation missing")
 
-    require("EVO 0.40.0 packages the deterministic" in readme, "README implementation boundary is stale")
+    # The measurement validator is release-forward: later source-optimizer
+    # phases must preserve the 0.40 measurement boundary without forcing its
+    # historical ADR/HRA to pretend that it was introduced by the later
+    # package. Package-level records must remain synchronized to the current
+    # version, while measurement-specific authority remains explicitly linked.
+    require(f"EVO {version} packages the deterministic" in readme, "README package boundary is stale")
     require("ADR-0041-reproducible-candidate-performance-fitness.md" in readme, "README ADR-0041 link missing")
-    require("24 private source-foundation sources, and 39 normative tests" in readme, "README build inventory counts are stale")
-    require("Issue #65 is the next dependency-ready" in roadmap, "roadmap next-boundary marker is stale")
-    require("Version 0.40.0 contains" in architecture, "architecture implementation boundary is stale")
+    require("reproducible baseline-versus-candidate performance measurement" in readme, "README measurement boundary missing")
+    require(f"EVO {version} contains" in roadmap, "roadmap package boundary is stale")
+    require("Issue #64 implements reproducible candidate performance measurement" in roadmap, "roadmap measurement boundary missing")
+    require(f"Version {version} contains" in architecture, "architecture package boundary is stale")
     require("EVO-HRA-013 audits this 0.40.0 boundary" in architecture, "architecture HRA-013 boundary missing")
-    require("Version 0.40.0 implements" in algorithms, "algorithms implementation boundary is stale")
-    require("performance-measurement-implemented-0.40.0" in repo_metadata, "repository metadata is stale")
-    require("Version: 0.40.0" in evo001, "EVO-001 package version is stale")
-    require("0.40.0 candidate-measurement boundary" in evo002, "EVO-002 implementation boundary is stale")
+    require(f"Version {version} implements" in algorithms, "algorithms package boundary is stale")
+    require(version in repo_metadata and "source_optimizer" in repo_metadata, "repository package metadata is stale")
+    require(f"Version: {version}" in evo001, "EVO-001 package version is stale")
+    require(f"Version: {version}" in evo002, "EVO-002 package version is stale")
     require("ADR-0041 and EVO-HRA-013" in evo002, "EVO-002 measurement governance link missing")
 
     workflow = read(".github/workflows/project-measurement.yml")
