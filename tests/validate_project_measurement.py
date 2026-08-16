@@ -178,7 +178,7 @@ def main() -> int:
     require(f"Version {version} contains" in architecture, "architecture package boundary is stale")
     require("EVO-HRA-013 audits this 0.40.0 boundary" in architecture, "architecture HRA-013 boundary missing")
     require(f"Version {version} implements" in algorithms, "algorithms package boundary is stale")
-    require(version in repo_metadata and "source_optimizer" in repo_metadata, "repository package metadata is stale")
+    require(version in repo_metadata and "evo-source-optimizer" in repo_metadata, "repository package metadata is stale")
     require(f"Version: {version}" in evo001, "EVO-001 package version is stale")
     require(f"Version: {version}" in evo002, "EVO-002 package version is stale")
     require("ADR-0041 and EVO-HRA-013" in evo002, "EVO-002 measurement governance link missing")
