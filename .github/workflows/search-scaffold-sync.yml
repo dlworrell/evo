@@ -16,83 +16,27 @@ permissions:
 jobs:
   sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
           ref: agent/evolve-compatible-source-recipes
           fetch-depth: 0
-      - name: Integrate structured search sources
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-
-          cmake = Path('CMakeLists.txt')
-          text = cmake.read_text()
-          marker = '''    src/project_measurement_model.c\n    src/project_measurement_runtime.c\n    src/project_measurement.c\n'''
-          replacement = marker + '''    src/project_search_model.c\n    src/project_search_runtime.c\n    src/project_search.c\n'''
-          if 'src/project_search.c' not in text:
-              if marker not in text:
-                  raise SystemExit('CMake foundation source marker not found')
-              text = text.replace(marker, replacement, 1)
-          link_marker = 'target_compile_features(catalyst_evo_project_foundation PRIVATE c_std_17)\n'
-          if 'target_link_libraries(catalyst_evo_project_foundation' not in text:
-              if link_marker not in text:
-                  raise SystemExit('CMake foundation compile feature marker not found')
-              text = text.replace(
-                  link_marker,
-                  link_marker + 'target_link_libraries(catalyst_evo_project_foundation PUBLIC catalyst_evo)\n',
-                  1,
-              )
-          cmake.write_text(text)
-
-          makefile = Path('Makefile.am')
-          text = makefile.read_text()
-          header_marker = '''\tsrc/internal/project_measurement.h \\\n\tsrc/internal/project_measurement_owner.h \\\n\tsrc/internal/project_measurement_internal.h \\\n'''
-          header_replacement = header_marker + '''\tsrc/internal/project_search.h \\\n\tsrc/internal/project_search_owner.h \\\n\tsrc/internal/project_search_internal.h \\\n'''
-          if 'src/internal/project_search.h' not in text:
-              if header_marker not in text:
-                  raise SystemExit('Automake header marker not found')
-              text = text.replace(header_marker, header_replacement, 1)
-          source_marker = '''\tsrc/project_measurement_model.c \\\n\tsrc/project_measurement_runtime.c \\\n\tsrc/project_measurement.c
-'''
-          source_replacement = '''\tsrc/project_measurement_model.c \\\n\tsrc/project_measurement_runtime.c \\\n\tsrc/project_measurement.c \\\n\tsrc/project_search_model.c \\\n\tsrc/project_search_runtime.c \\\n\tsrc/project_search.c
-'''
-          if 'src/project_search.c' not in text:
-              if source_marker not in text:
-                  raise SystemExit('Automake source marker not found')
-              text = text.replace(source_marker, source_replacement, 1)
-          libadd_marker = 'libevo_project_foundation_la_SOURCES = \\\n'
-          if 'libevo_project_foundation_la_LIBADD' not in text:
-              start = text.index(libadd_marker)
-              end = text.index('\n\ncheck_PROGRAMS', start)
-              text = text[:end] + '\nlibevo_project_foundation_la_LIBADD = libcatalyst_evo.la -lm' + text[end:]
-          makefile.write_text(text)
-          PY
       - name: Canonicalize C formatting
-        run: |
-          clang-format -i \
-            src/internal/project_search.h \
-            src/internal/project_search_owner.h \
-            src/internal/project_search_internal.h \
-            src/project_search_model.c \
-            src/project_search_runtime.c \
-            src/project_search.c
-      - name: Commit build integration
+        run: >-
+          clang-format -i
+          src/internal/project_search.h
+          src/internal/project_search_owner.h
+          src/internal/project_search_internal.h
+          src/project_search_model.c
+          src/project_search_runtime.c
+          src/project_search.c
+      - name: Commit formatting
         run: |
           git config user.name 'Donovan Worrell'
           git config user.email 'donovan.worrell@just-a-geek.com'
-          git add CMakeLists.txt Makefile.am src/internal/project_search*.h src/project_search*.c
+          git add src/internal/project_search.h src/internal/project_search_owner.h src/internal/project_search_internal.h src/project_search_model.c src/project_search_runtime.c src/project_search.c
           if ! git diff --cached --quiet; then
-            git commit -m 'build: integrate structured recipe search foundation'
+            git commit -m 'style: canonicalize structured search sources'
             git push origin HEAD:agent/evolve-compatible-source-recipes
           fi
-      - name: Verify CMake build
-        run: |
-          cmake -S . -B build-search -DCMAKE_C_COMPILER=clang
-          cmake --build build-search --target catalyst_evo_project_foundation --parallel 2
-      - name: Verify Autotools build
-        run: |
-          autoreconf -fi
-          ./configure CC=gcc
-          make -j2 libevo_project_foundation.la
