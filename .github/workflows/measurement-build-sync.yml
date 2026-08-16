@@ -1,0 +1,211 @@
+name: Measurement Build Sync
+
+on:
+  push:
+    branches:
+      - agent/reproducible-candidate-fitness
+    paths:
+      - '.github/workflows/measurement-build-sync.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/reproducible-candidate-fitness
+      - name: Synchronize v0.40 build inventories
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+
+          def replace(path: str, old: str, new: str) -> None:
+              p = Path(path)
+              text = p.read_text()
+              if old not in text:
+                  raise SystemExit(f"missing anchor in {path}: {old!r}")
+              p.write_text(text.replace(old, new, 1))
+
+          replace(
+              'CMakeLists.txt',
+              'project(catalyst_evo VERSION 0.39.0 LANGUAGES C)',
+              'project(catalyst_evo VERSION 0.40.0 LANGUAGES C)',
+          )
+          replace(
+              'CMakeLists.txt',
+              '''    src/project_assurance_model.c
+              src/project_assurance_runtime.c
+              src/project_assurance.c
+          )''',
+              '''    src/project_assurance_model.c
+              src/project_assurance_runtime.c
+              src/project_assurance.c
+              src/project_measurement_model.c
+              src/project_measurement_runtime.c
+              src/project_measurement.c
+          )''',
+          )
+
+          replace(
+              'tests/CMakeLists.txt',
+              '''add_test(
+              NAME evo_project_assurance_test
+              COMMAND evo_project_assurance_test
+          )
+
+          if(CMAKE_SYSTEM_NAME''',
+              '''add_test(
+              NAME evo_project_assurance_test
+              COMMAND evo_project_assurance_test
+          )
+
+          add_executable(evo_project_measurement_test project_measurement_test.c)
+          target_include_directories(
+              evo_project_measurement_test
+              PRIVATE
+                  ${PROJECT_SOURCE_DIR}/src
+          )
+          target_link_libraries(
+              evo_project_measurement_test
+              PRIVATE
+                  catalyst_evo_project_foundation
+          )
+          add_test(
+              NAME evo_project_measurement_test
+              COMMAND evo_project_measurement_test
+          )
+
+          if(CMAKE_SYSTEM_NAME''',
+          )
+
+          replace('configure.ac', '[0.39.0]', '[0.40.0]')
+
+          replace(
+              'Makefile.am',
+              '''\tsrc/internal/project_assurance.h \\
+          \tsrc/internal/project_assurance_owner.h \\
+          \tsrc/internal/project_assurance_internal.h \\
+          \ttests/research/seed_schedule_research.h''',
+              '''\tsrc/internal/project_assurance.h \\
+          \tsrc/internal/project_assurance_owner.h \\
+          \tsrc/internal/project_assurance_internal.h \\
+          \tsrc/internal/project_measurement.h \\
+          \tsrc/internal/project_measurement_owner.h \\
+          \tsrc/internal/project_measurement_internal.h \\
+          \ttests/research/seed_schedule_research.h''',
+          )
+          replace(
+              'Makefile.am',
+              '''\tsrc/project_assurance_model.c \\
+          \tsrc/project_assurance_runtime.c \\
+          \tsrc/project_assurance.c
+
+          check_PROGRAMS''',
+              '''\tsrc/project_assurance_model.c \\
+          \tsrc/project_assurance_runtime.c \\
+          \tsrc/project_assurance.c \\
+          \tsrc/project_measurement_model.c \\
+          \tsrc/project_measurement_runtime.c \\
+          \tsrc/project_measurement.c
+
+          check_PROGRAMS''',
+          )
+          replace(
+              'Makefile.am',
+              '''\ttests/evo_project_candidate_test \\
+          \ttests/evo_project_assurance_test \\
+          \tbenchmarks/evo_core_benchmark''',
+              '''\ttests/evo_project_candidate_test \\
+          \ttests/evo_project_assurance_test \\
+          \ttests/evo_project_measurement_test \\
+          \tbenchmarks/evo_core_benchmark''',
+          )
+          replace(
+              'Makefile.am',
+              '''tests_evo_project_assurance_test_LDADD = \\
+          \tlibevo_project_foundation.la
+
+          benchmarks_evo_core_benchmark_SOURCES''',
+              '''tests_evo_project_assurance_test_LDADD = \\
+          \tlibevo_project_foundation.la
+
+          tests_evo_project_measurement_test_SOURCES = \\
+          \ttests/project_measurement_test.c
+          tests_evo_project_measurement_test_LDADD = \\
+          \tlibevo_project_foundation.la
+
+          benchmarks_evo_core_benchmark_SOURCES''',
+          )
+          replace(
+              'Makefile.am',
+              '''\t.github/workflows/project-assurance.yml \\
+          \tCMakeLists.txt''',
+              '''\t.github/workflows/project-assurance.yml \\
+          \t.github/workflows/project-measurement.yml \\
+          \tCMakeLists.txt''',
+          )
+          replace(
+              'Makefile.am',
+              '''\tdocs/adr/ADR-0040-isolated-candidate-correctness-gates.md \\
+          \tdocs/schemas/evo-project-manifest-v1.schema.json''',
+              '''\tdocs/adr/ADR-0040-isolated-candidate-correctness-gates.md \\
+          \tdocs/adr/ADR-0041-reproducible-candidate-performance-fitness.md \\
+          \tdocs/schemas/evo-project-manifest-v1.schema.json''',
+          )
+          replace(
+              'Makefile.am',
+              '''\tdocs/schemas/evo-project-assurance-v1.schema.json \\
+          \texamples/CMakeLists.txt''',
+              '''\tdocs/schemas/evo-project-assurance-v1.schema.json \\
+          \tdocs/schemas/evo-project-measurement-v1.schema.json \\
+          \texamples/CMakeLists.txt''',
+          )
+          replace(
+              'Makefile.am',
+              '''\tdocs/engineering/reports/EVO-HRA-012-candidate-correctness-gates-audit.md \\
+          \ttests/project_candidate.cmake''',
+              '''\tdocs/engineering/reports/EVO-HRA-012-candidate-correctness-gates-audit.md \\
+          \tdocs/engineering/reports/EVO-HRA-013-candidate-performance-fitness-audit.md \\
+          \ttests/project_candidate.cmake''',
+          )
+          replace(
+              'Makefile.am',
+              '''\ttests/validate_project_assurance.py \\
+          \ttests/fixtures/project-analysis/golden-v1.json''',
+              '''\ttests/validate_project_assurance.py \\
+          \ttests/validate_project_measurement.py \\
+          \ttests/fixtures/project-analysis/golden-v1.json''',
+          )
+
+          manifest_path = Path('.aems/aes-bld-001.json')
+          manifest = json.loads(manifest_path.read_text())
+          sources = manifest['build']['production_sources']
+          for source in (
+              'src/project_measurement_model.c',
+              'src/project_measurement_runtime.c',
+              'src/project_measurement.c',
+          ):
+              if source not in sources:
+                  sources.append(source)
+          tests = manifest['build']['normative_tests']
+          if not any(item.get('id') == 'project-measurement' for item in tests):
+              tests.append({
+                  'id': 'project-measurement',
+                  'source': 'tests/project_measurement_test.c',
+                  'cmake': 'evo_project_measurement_test',
+                  'autotools': 'tests/evo_project_measurement_test',
+              })
+          manifest_path.write_text(json.dumps(manifest, indent=2) + '\n')
+          PY
+      - name: Commit synchronized build metadata
+        run: |
+          git config user.name "Donovan Worrell"
+          git config user.email "donovan.worrell@just-a-geek.com"
+          git rm .github/workflows/measurement-build-sync.yml
+          git add CMakeLists.txt tests/CMakeLists.txt configure.ac Makefile.am .aems/aes-bld-001.json
+          git commit -m "build: integrate EVO 0.40 candidate measurement"
+          git push origin HEAD:agent/reproducible-candidate-fitness
