@@ -1,0 +1,95 @@
+name: Project Orchestration
+
+on:
+  push:
+    branches:
+      - agent/bounded-source-orchestration
+    paths:
+      - 'src/project_orchestration*.c'
+      - 'src/internal/project_orchestration*.h'
+      - 'tests/project_orchestration*.c'
+      - 'tests/validate_project_orchestration.py'
+      - 'docs/adr/ADR-0043-bounded-parallel-source-orchestration.md'
+      - 'docs/engineering/reports/EVO-HRA-015-bounded-source-orchestration-audit.md'
+      - 'docs/schemas/evo-project-orchestration-v1.schema.json'
+      - '.aems/aes-bld-001.json'
+      - 'CMakeLists.txt'
+      - 'tests/CMakeLists.txt'
+      - 'Makefile.am'
+      - 'configure.ac'
+      - '.github/workflows/project-orchestration.yml'
+  pull_request:
+    paths:
+      - 'src/project_orchestration*.c'
+      - 'src/internal/project_orchestration*.h'
+      - 'tests/project_orchestration*.c'
+      - 'tests/validate_project_orchestration.py'
+      - 'docs/adr/ADR-0043-bounded-parallel-source-orchestration.md'
+      - 'docs/engineering/reports/EVO-HRA-015-bounded-source-orchestration-audit.md'
+      - 'docs/schemas/evo-project-orchestration-v1.schema.json'
+      - '.aems/aes-bld-001.json'
+      - 'CMakeLists.txt'
+      - 'tests/CMakeLists.txt'
+      - 'Makefile.am'
+      - 'configure.ac'
+      - '.github/workflows/project-orchestration.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cmake-clang:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - name: Configure with Clang and sanitizers
+        run: cmake -S . -B build-orchestration -DCMAKE_C_COMPILER=clang -DEVO_ENABLE_SANITIZERS=ON
+      - name: Build orchestration targets
+        run: >-
+          cmake --build build-orchestration
+          --target evo_project_orchestration_test evo_project_orchestration_checkpoint_test
+          --parallel 2
+      - name: Run orchestration targets
+        env:
+          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: ctest --test-dir build-orchestration -R '^evo_project_orchestration(_checkpoint)?_test$' --output-on-failure
+      - name: Independent orchestration validation
+        run: python3 tests/validate_project_orchestration.py
+      - name: Build complete project foundation
+        run: cmake --build build-orchestration --target catalyst_evo_project_foundation --parallel 2
+
+  autotools-gcc:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - name: Bootstrap Autotools
+        run: autoreconf -fi
+      - name: Configure with GCC
+        run: ./configure CC=gcc
+      - name: Build orchestration targets
+        run: make -j2 tests/evo_project_orchestration_test tests/evo_project_orchestration_checkpoint_test
+      - name: Run normative orchestration checks
+        run: make check TESTS='tests/evo_project_orchestration_test tests/evo_project_orchestration_checkpoint_test'
+      - name: Independent orchestration validation
+        run: python3 tests/validate_project_orchestration.py
+
+  cmake-macos-clang:
+    runs-on: macos-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - name: Configure with Apple Clang
+        run: cmake -S . -B build-orchestration -DCMAKE_C_COMPILER=clang
+      - name: Build orchestration targets
+        run: >-
+          cmake --build build-orchestration
+          --target evo_project_orchestration_test evo_project_orchestration_checkpoint_test
+          --parallel 2
+      - name: Run orchestration targets
+        run: ctest --test-dir build-orchestration -R '^evo_project_orchestration(_checkpoint)?_test$' --output-on-failure
+      - name: Independent orchestration validation
+        run: python3 tests/validate_project_orchestration.py
