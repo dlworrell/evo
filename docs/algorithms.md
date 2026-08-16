@@ -2,12 +2,12 @@
 
 This document distinguishes algorithms implemented by the reusable
 `catalyst_evo` core from the structured program transformations and evaluation
-algorithm required by the EVO 1.0 source optimizer. Version 0.37.0 implements
-the core plus project ingestion, immutable-baseline preparation, and the
-normalized Clang/LLVM analysis and hotspot-ranking model plus canonical
-transformation-recipe representation and validation plus three non-writing
-AST-aware source-transformation applications; it does not yet materialize a
-candidate source tree.
+algorithm required by the EVO 1.0 source optimizer. Version 0.38.0 implements
+the core plus project ingestion, immutable-baseline preparation, normalized
+Clang/LLVM analysis and hotspot ranking, canonical transformation recipes,
+three AST-aware source-transformation applications, and deterministic isolated
+candidate materialization with a normalized reviewable patch. Candidate
+compilation, correctness gating, and performance fitness remain later work.
 
 ## EVO Core Initial Release
 

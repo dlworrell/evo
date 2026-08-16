@@ -11,8 +11,8 @@ codebases. It emits the highest-ranked fully verified source candidate found
 within a recorded bounded search as a reviewable patch and reproducibility
 package.
 
-EVO 0.37.0 contains the completed deterministic C17 evolutionary-search core
-and the first four private source-optimizer foundations: strict project-manifest
+EVO 0.38.0 contains the completed deterministic C17 evolutionary-search core
+and the first five private source-optimizer foundations: strict project-manifest
 ingestion, immutable baseline snapshots, normalized compilation-unit evidence,
 bounded baseline-gate orchestration, and a versioned Clang/LLVM structural,
 compiler, runtime-hotspot, and opportunity model. It is not the completed
@@ -22,7 +22,10 @@ stable targets, parameters, dependency/conflict closure, provenance, fixed
 genome encoding, strict decode/rebuild validation, and a complete audit view.
 The fourth supplies three versioned AST-aware C operations, exact immutable-
 source range/token validation, deterministic edit/no-change evidence, and a
-complete capability/application audit view without materializing source.
+complete capability/application audit view without materializing source. The
+fifth composes those exact applications into isolated complete source trees,
+rejects overlapping edits, and emits deterministic reviewable patch, changed-
+file, candidate-identity, and replay evidence without compiling target code.
 
 Core issues #39 through #55 are represented in that boundary, including
 versioned constraints, diversity, convergence/stagnation, and caller-bounded
@@ -44,8 +47,9 @@ complete at this boundary. Issue #58 implements project ingestion without
 claiming candidate evolution or a CLI; issue #59 implements bounded normalized
 analysis without source writes or evolutionary operators. Issue #60 implements
 the recipe representation without materializing source; issue #61 implements
-the initial AST-aware catalogue without writing source. Issue #62 is the next
-dependency-ready source-optimizer implementation work.
+the initial AST-aware catalogue without writing source; and issue #62
+implements deterministic isolated candidate materialization. Issue #63 is the
+next dependency-ready source-optimizer implementation work.
 
 ## Cross-Cutting Human-Readable Abstraction Gate
 
