@@ -152,7 +152,6 @@ typedef struct evo_project_search_lineage_record {
     size_t population_index;
     size_t operator_ordinal;
     evo_project_search_operator_kind_t operator_kind;
-    size_t operator_event_start;
     size_t operator_event_count;
     evo_project_search_rejection_reason_t rejection_reason;
     evo_project_recipe_status_t recipe_status;
