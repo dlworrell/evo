@@ -100,6 +100,9 @@ noinst_HEADERS = \
 	src/internal/project_assurance.h \
 	src/internal/project_assurance_owner.h \
 	src/internal/project_assurance_internal.h \
+	src/internal/project_measurement.h \
+	src/internal/project_measurement_owner.h \
+	src/internal/project_measurement_internal.h \
 	tests/research/seed_schedule_research.h
 
 noinst_LTLIBRARIES = \
@@ -133,7 +136,10 @@ libevo_project_foundation_la_SOURCES = \
 	src/project_candidate.c \
 	src/project_assurance_model.c \
 	src/project_assurance_runtime.c \
-	src/project_assurance.c
+	src/project_assurance.c \
+	src/project_measurement_model.c \
+	src/project_measurement_runtime.c \
+	src/project_measurement.c
 
 check_PROGRAMS = \
 	tests/evo_smoke_test \
@@ -172,6 +178,7 @@ check_PROGRAMS = \
 	tests/evo_project_transformation_test \
 	tests/evo_project_candidate_test \
 	tests/evo_project_assurance_test \
+	tests/evo_project_measurement_test \
 	benchmarks/evo_core_benchmark \
 	tests/evo_secure_erasure_test \
 	tests/evo_allocation_failure_test
@@ -318,6 +325,11 @@ tests_evo_project_assurance_test_SOURCES = \
 tests_evo_project_assurance_test_LDADD = \
 	libevo_project_foundation.la
 
+tests_evo_project_measurement_test_SOURCES = \
+	tests/project_measurement_test.c
+tests_evo_project_measurement_test_LDADD = \
+	libevo_project_foundation.la
+
 benchmarks_evo_core_benchmark_SOURCES = benchmarks/core_benchmark.c
 benchmarks_evo_core_benchmark_LDADD = libcatalyst_evo.la -lm
 benchmarks_evo_core_benchmark_CPPFLAGS = \
@@ -390,6 +402,7 @@ EXTRA_DIST = \
 	.github/workflows/project-transformation.yml \
 	.github/workflows/project-candidate.yml \
 	.github/workflows/project-assurance.yml \
+	.github/workflows/project-measurement.yml \
 	CMakeLists.txt \
 	CMakePresets.json \
 	benchmarks/CMakeLists.txt \
@@ -405,6 +418,7 @@ EXTRA_DIST = \
 	docs/adr/ADR-0038-ast-aware-c-transformation-catalogue.md \
 	docs/adr/ADR-0039-isolated-candidate-materialization.md \
 	docs/adr/ADR-0040-isolated-candidate-correctness-gates.md \
+	docs/adr/ADR-0041-reproducible-candidate-performance-fitness.md \
 	docs/schemas/evo-project-manifest-v1.schema.json \
 	docs/schemas/evo-project-baseline-v1.schema.json \
 	docs/schemas/evo-project-analysis-v1.schema.json \
@@ -413,6 +427,7 @@ EXTRA_DIST = \
 	docs/schemas/evo-c-transformation-application-v1.schema.json \
 	docs/schemas/evo-project-candidate-v1.schema.json \
 	docs/schemas/evo-project-assurance-v1.schema.json \
+	docs/schemas/evo-project-measurement-v1.schema.json \
 	examples/CMakeLists.txt \
 	examples/Makefile \
 	examples/README.md \
@@ -436,6 +451,7 @@ EXTRA_DIST = \
 	docs/engineering/reports/EVO-HRA-010-c-transformation-catalogue-audit.md \
 	docs/engineering/reports/EVO-HRA-011-candidate-materialization-audit.md \
 	docs/engineering/reports/EVO-HRA-012-candidate-correctness-gates-audit.md \
+	docs/engineering/reports/EVO-HRA-013-candidate-performance-fitness-audit.md \
 	tests/project_candidate.cmake \
 	tests/validate_project_ingestion.py \
 	tests/validate_project_analysis.py \
@@ -443,6 +459,7 @@ EXTRA_DIST = \
 	tests/validate_project_transformation.py \
 	tests/validate_project_candidate.py \
 	tests/validate_project_assurance.py \
+	tests/validate_project_measurement.py \
 	tests/fixtures/project-analysis/golden-v1.json \
 	tests/fixtures/project-recipe/golden-v1.json \
 	tests/fixtures/project-transformation/catalogue-golden-v1.json \
