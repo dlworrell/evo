@@ -128,25 +128,21 @@ typedef struct evo_project_orchestration_provider_join {
     bool cleanup_complete;
 } evo_project_orchestration_provider_join_t;
 
-typedef evo_project_orchestration_status_t
-(*evo_project_orchestration_provider_start_fn)(
+typedef evo_project_orchestration_status_t (*evo_project_orchestration_provider_start_fn)(
     const evo_project_orchestration_provider_request_t *request,
     void *context,
     void **handle);
 
-typedef evo_project_orchestration_status_t
-(*evo_project_orchestration_provider_poll_fn)(
+typedef evo_project_orchestration_status_t (*evo_project_orchestration_provider_poll_fn)(
     void *handle,
     void *context,
     evo_project_orchestration_provider_poll_t *poll);
 
-typedef evo_project_orchestration_status_t
-(*evo_project_orchestration_provider_cancel_fn)(
+typedef evo_project_orchestration_status_t (*evo_project_orchestration_provider_cancel_fn)(
     void *handle,
     void *context);
 
-typedef evo_project_orchestration_status_t
-(*evo_project_orchestration_provider_join_fn)(
+typedef evo_project_orchestration_status_t (*evo_project_orchestration_provider_join_fn)(
     void *handle,
     void *context,
     evo_project_orchestration_provider_join_t *join);

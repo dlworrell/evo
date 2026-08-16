@@ -2,7 +2,6 @@
 
 #include "internal/project_orchestration_internal.h"
 
-
 evo_project_orchestration_status_t evo_project_orchestration_run_batch(
     const evo_project_orchestration_config_t *config,
     evo_project_orchestration_t *orchestration)

@@ -478,7 +478,7 @@ static void test_invalid_policy_rejected(void)
     config = test_config(test_candidates, 4U, 2U, &provider);
     config.resources.external_worker_count = 0U;
     test_check(evo_project_orchestration_run_batch(&config, &orchestration) ==
-                   EVO_PROJECT_ORCHESTRATION_ERROR_INVALID_ARGUMENT &&
+                       EVO_PROJECT_ORCHESTRATION_ERROR_INVALID_ARGUMENT &&
                    orchestration.private_owner == NULL,
                "zero external worker policy rejects atomically");
 }
