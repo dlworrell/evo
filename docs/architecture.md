@@ -61,6 +61,11 @@ Clang/LLVM provider boundary and retained model for stable source identities,
 structural relationships, compiler optimization records, configured runtime
 hotspots, and exactly ranked evidence-backed opportunities. Later work maps
 those opportunities into versioned structured transformation recipes.
+Version 0.36.0 adds that private recipe representation: canonical catalogue
+policy, exact target/provenance resolution, dependency/conflict validation,
+stable topological composition, fixed genome encoding, strict reconstruction,
+and a complete audit projection. It does not yet implement AST-aware
+transformation bodies or source materialization.
 
 Source genomes never contain arbitrary C text for byte-wise mutation or
 crossover. One genome represents a complete transformation recipe containing
@@ -128,16 +133,17 @@ ADR-0026 defines the complete rule.
 
 ## Current Conformance Boundary
 
-Version 0.35.0 contains the evolutionary-search core, its bounded reference
-consumers, private project ingestion, and a private normalized analysis and
-hotspot model. Transformation, candidate materialization, provider-owned
-external-process isolation, target-code measurement, product commands, the
-installed standalone executable, and optimized-patch artifacts remain planned
-by issues #60 through #69 and #93. Documentation of those planned boundaries
-is not an implementation claim.
+Version 0.36.0 contains the evolutionary-search core, its bounded reference
+consumers, private project ingestion, a private normalized analysis and hotspot
+model, and a private canonical transformation-recipe model. AST-aware
+transformations, candidate materialization, provider-owned external-process
+isolation, target-code measurement, product commands, the installed standalone
+executable, and optimized-patch artifacts remain planned by issues #61 through
+#69 and #93. Documentation of those planned boundaries is not an implementation
+claim.
 
-The 0.35.0 core uses explicit bounded arrays, direct deterministic scans, and
-one direct constant-space adaptive-rate record rather than compressed,
+The 0.36.0 package's core uses explicit bounded arrays, direct deterministic
+scans, and one direct constant-space adaptive-rate record rather than compressed,
 probabilistic, cached, or indexed run authority. Its
 reference byte operators act directly on those exact arrays and introduce no
 accelerated authority or retained compact decision structure. Secure erasure
@@ -171,10 +177,16 @@ complete JSON/Markdown registries derive from the same owner; EVO-HRA-007
 audits this boundary. Project analysis likewise retains complete translation-
 unit, source-location, program-relationship, compiler, runtime, and opportunity
 arrays, with direct scans and JSON/Markdown projections from one owner;
-EVO-HRA-008 audits this boundary. The current implementation therefore has no
-opaque accelerated authority requiring remediation. This audit does not
-pre-approve later variable pools, compressed checkpoints, persistent or
-distributed schedulers, recipe, orchestration, or artifact implementations.
+EVO-HRA-008 audits this boundary. Project recipes retain explicit bounded
+transformation records and dependency edges, use direct scans and a stable
+topological traversal, embed complete canonical JSON in the fixed genome, and
+derive Markdown from the same owner. Decode reconstructs every derived fact
+from live authority before exact-byte comparison; EVO-HRA-009 audits this
+boundary. The current implementation therefore has no opaque accelerated
+authority requiring remediation. This audit does not pre-approve later
+variable pools, compressed checkpoints, persistent or distributed schedulers,
+transformation lookup indexes, candidate caches, orchestration, or artifact
+implementations.
 
 ## Core Modules
 
@@ -891,7 +903,7 @@ promotion, checkpoint capture, resume, and final bounded-run evidence.
 6. Record statistics and evidence.
 7. Stop on convergence, stagnation, generation limit, or an application-defined condition.
 
-Version 0.35.0 publicly implements steps 1 through 5 for at most
+Version 0.36.0 publicly implements steps 1 through 5 for at most
 `generation_limit` bounded transitions, with caller-bounded elite policy
 version 1, explicit consumer/reference byte-operator policy, and bounded
 diversity measurement in step 5. It implements the constant-space statistics
@@ -942,7 +954,8 @@ The 1.0 product flow is:
 12. Replay by verifying every recorded identity, rematerializing the same
     source candidate, and rerunning the declared validation and comparison.
 
-Version 0.35.0 implements steps 1 through 4 only. It validates
+Version 0.36.0 implements steps 1 through 4 and the recipe representation and
+validation portion of step 5. It validates
 `catalyst.evo-project-manifest.v1`, copies exact authorized bytes to an
 immutable snapshot and separate derived workspace, normalizes the retained
 compilation database, invokes declared gates through a bounded provider, and
@@ -951,8 +964,12 @@ reverification. It then validates, deep-copies, and canonically orders declared
 Clang/LLVM provider records, keeps unavailable runtime profiling explicit,
 ranks evidence-backed opportunities, re-verifies the committed snapshot, and
 publishes complete analysis JSON/Markdown without a source write or
-evolutionary operator. It performs no step 5 recipe mapping and exposes no
-installed product executable.
+evolutionary operator. It then validates an explicit versioned catalogue and
+bounded proposals, resolves stable targets and complete provenance, rejects
+invalid dependency/conflict closure, and emits or strictly reconstructs a
+canonical fixed recipe genome plus Markdown audit projection. It does not yet
+derive proposal populations, implement AST-aware transformations, materialize
+source, or expose an installed product executable.
 
 Parallel source optimization schedules isolated external processes and commits
 logical evidence in stable candidate order. It is distinct from the core's

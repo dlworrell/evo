@@ -75,6 +75,11 @@ bool evo_project_json_parse_u64(
     const evo_project_json_token_t *token,
     uint64_t *value);
 
+bool evo_project_json_parse_i64(
+    const char *text,
+    const evo_project_json_token_t *token,
+    int64_t *value);
+
 bool evo_project_json_parse_bool(
     const evo_project_json_token_t *token,
     bool *value);

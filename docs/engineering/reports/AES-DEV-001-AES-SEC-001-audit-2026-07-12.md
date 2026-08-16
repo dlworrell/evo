@@ -207,3 +207,31 @@ isolation, and provider-side snapshot mutation. Concrete provider process
 isolation, source transformation, candidate execution, authentication across
 trust boundaries, and the installed executable remain later reviewable
 milestones.
+
+## EVO 0.36.0 Project-Recipe Amendment (2026-08-09)
+
+The private project-recipe boundary accepts untrusted caller proposals,
+catalogue policy, and serialized fixed genomes over an eligible committed
+baseline and completed analysis. It has no callback, process, network,
+workspace, or source-writing authority.
+
+| Requirement | 0.36.0 status | Retained evidence |
+|---|---|---|
+| Dangerous C primitives | Reviewed | The existing private runtime remains the only allocation/release/bounded-format boundary; recipe ownership uses those wrappers and explicit bounded byte loops, and adds no direct allocation, unchecked copy, shell, process, network, or filesystem-write primitive |
+| Untrusted decoding | Pass | Envelope length, magic, mandatory zero padding, JSON tokens/depth/types/nullability, strings, integers, arrays, and global identities validate under caller and manifest bounds before publication |
+| Derived-field authority | Pass | Decode extracts only proposal-bearing fields, rebuilds ranges, preconditions, edges, conflicts, ranks, and provenance from the live baseline/analysis/catalogue, then requires an exact full-genome byte match |
+| Structural consistency | Pass | Catalogue order/references, typed parameters, supported targets, unique record identities, exact dependency closure, conflicts, and stable acyclic composition validate before encoding |
+| Input bounds | Pass | Catalogue entries, schemas, choices, records, parameters, preconditions, edges, provenance, strings, paths, and JSON tokens/depth have explicit bounds; genome plus Markdown evidence capacity is bounded before allocation |
+| Snapshot isolation | Pass | Every snapshot path, size, hardened mode, and byte fingerprint is verified before and after build/decode; the milestone exposes no source-write or materialization path |
+| Atomicity and cleanup | Pass | One owner deep-copies accepted data; any failure destroys all partial arrays and bytes and leaves the caller result inactive; active and exact result/view aliases reject before work |
+| Identity boundary | Pass | Complete canonical bytes plus live-authority reconstruction remain required; the FNV label is diagnostic, non-authenticating, and never acceptance authority |
+| Explainability | Pass | Embedded canonical JSON and derived Markdown enumerate every transformation, target, parameter, edge, conflict, and provenance record; EVO-HRA-009 retains the ADR-0026 audit |
+
+ADR-0037 defines the catalogue, ownership, resource, composition, encoding,
+decode, failure, identity, and evidence invariants. The normative test covers
+stable replay, no-op and multi-record recipes, corrupt/noncanonical genomes,
+padding, stale views and targets, unknown transformations, invalid parameters,
+missing/ambiguous dependencies, cycles, conflicts, aliases, budget exhaustion,
+and exact source preservation. AST-aware transformation bodies, source
+materialization, candidate execution, cross-trust authentication, and the
+installed executable remain later reviewable milestones.

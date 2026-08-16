@@ -1,0 +1,65 @@
+name: Project Recipe
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cmake-clang:
+    runs-on: ubuntu-24.04
+    env:
+      CC: clang
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Configure project-recipe foundation
+        run: >-
+          cmake -S . -B build/project-recipe-cmake
+          -DCMAKE_BUILD_TYPE=Debug
+          -DBUILD_TESTING=ON
+
+      - name: Build and run the normative recipe target
+        run: |
+          cmake --build build/project-recipe-cmake \
+            --target evo_project_recipe_test --parallel
+          ctest --test-dir build/project-recipe-cmake \
+            --output-on-failure -R '^evo_project_recipe_test$'
+
+      - name: Validate schema and independent golden
+        run: |
+          python3 -m json.tool \
+            docs/schemas/evo-project-recipe-v1.schema.json >/dev/null
+          python3 tests/validate_project_recipe.py
+
+  autotools-gcc:
+    runs-on: ubuntu-24.04
+    env:
+      CC: gcc
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Autotools dependencies
+        run: sudo apt-get update && sudo apt-get install -y autoconf automake libtool
+
+      - name: Configure project-recipe foundation
+        run: |
+          autoreconf -fi
+          mkdir -p build/project-recipe-autotools
+          cd build/project-recipe-autotools
+          ../../configure --enable-warnings-as-errors
+
+      - name: Build and run the normative recipe target
+        run: |
+          make -C build/project-recipe-autotools \
+            tests/evo_project_recipe_test
+          build/project-recipe-autotools/tests/evo_project_recipe_test
+
+      - name: Validate independent golden
+        run: python3 tests/validate_project_recipe.py

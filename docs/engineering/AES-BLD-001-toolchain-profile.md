@@ -29,7 +29,7 @@ records their versions as evidence.
 ## Frontend parity
 
 `CMakeLists.txt` and `Makefile.am` enumerate all twenty-six installed-core
-sources, eleven private source-foundation sources, and the same thirty-five
+sources, fourteen private source-foundation sources, and the same thirty-six
 normative targets. Both frontends:
 
 - compile the project as C17 with the same warning policy;
@@ -41,8 +41,9 @@ normative targets. Both frontends:
   macro when available, and otherwise compile the same volatile-byte secure-
   erasure fallback;
 - build the private seed-schedule research support only for tests;
-- build the uninstalled project-ingestion and analysis foundation and both
-  normative fixture tests without changing the staged core library surface;
+- build the uninstalled project-ingestion, analysis, and recipe foundation and
+  all three normative fixture tests without changing the staged core library
+  surface;
 - build the private core-benchmark executable and expose equivalent bounded
   smoke and explicitly requested extended evidence targets;
 - install `libcatalyst_evo.a`, the public header, and `catalyst-evo.pc`;
@@ -76,6 +77,10 @@ Autotools/GCC. It likewise supplements rather than replaces the complete AEMS
 matrix.
 The repository-owned `Project Analysis` workflow independently runs the
 issue-#59 target and analysis-schema validation through CMake/Clang and
+Autotools/GCC. It likewise supplements rather than replaces the complete AEMS
+matrix.
+The repository-owned `Project Recipe` workflow independently runs the
+issue-#60 target and recipe schema/golden validation through CMake/Clang and
 Autotools/GCC. It likewise supplements rather than replaces the complete AEMS
 matrix.
 

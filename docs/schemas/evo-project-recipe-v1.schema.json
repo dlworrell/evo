@@ -1,0 +1,258 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/dlworrell/evo/blob/main/docs/schemas/evo-project-recipe-v1.schema.json",
+  "title": "EVO source-transformation recipe v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "schema_version",
+    "baseline_fingerprint",
+    "analysis_fingerprint",
+    "catalogue",
+    "records",
+    "human_readable_abstraction",
+    "raw_source_bytes"
+  ],
+  "properties": {
+    "schema": {"const": "catalyst.evo-project-recipe.v1"},
+    "schema_version": {"const": 1},
+    "baseline_fingerprint": {"$ref": "#/$defs/fingerprint"},
+    "analysis_fingerprint": {"$ref": "#/$defs/fingerprint"},
+    "catalogue": {"$ref": "#/$defs/catalogue"},
+    "records": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/record"}
+    },
+    "human_readable_abstraction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reference_form",
+        "projection",
+        "complete",
+        "probabilistic_authority"
+      ],
+      "properties": {
+        "reference_form": {
+          "const": "canonical-json-record-array-and-direct-scans"
+        },
+        "projection": {
+          "const": "embedded-canonical-json-and-derived-markdown"
+        },
+        "complete": {"const": true},
+        "probabilistic_authority": {"const": false}
+      }
+    },
+    "raw_source_bytes": {"const": false}
+  },
+  "$defs": {
+    "text": {"type": "string", "minLength": 1},
+    "identity": {"$ref": "#/$defs/text"},
+    "fingerprint": {
+      "type": "string",
+      "pattern": "^fnv1a64-v1:[0-9a-f]{16}$"
+    },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.?(?:/|$))[^\\\\:]+$"
+    },
+    "catalogue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["identity", "version"],
+      "properties": {
+        "identity": {"$ref": "#/$defs/identity"},
+        "version": {"type": "integer", "minimum": 1, "maximum": 4294967295}
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "location_identity",
+        "file",
+        "line",
+        "column",
+        "end_line",
+        "end_column",
+        "kind",
+        "spelling_identity"
+      ],
+      "properties": {
+        "location_identity": {"$ref": "#/$defs/identity"},
+        "file": {"$ref": "#/$defs/relativePath"},
+        "line": {"type": "integer", "minimum": 1, "maximum": 4294967295},
+        "column": {"type": "integer", "minimum": 1, "maximum": 4294967295},
+        "end_line": {"type": "integer", "minimum": 1, "maximum": 4294967295},
+        "end_column": {"type": "integer", "minimum": 1, "maximum": 4294967295},
+        "kind": {"enum": ["spelling", "macro-expansion"]},
+        "spelling_identity": {
+          "oneOf": [
+            {"type": "null"},
+            {"$ref": "#/$defs/identity"}
+          ]
+        }
+      }
+    },
+    "transformation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["identity", "version"],
+      "properties": {
+        "identity": {"$ref": "#/$defs/identity"},
+        "version": {"type": "integer", "minimum": 1, "maximum": 4294967295}
+      }
+    },
+    "parameter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "identity",
+        "kind",
+        "integer_value",
+        "boolean_value",
+        "choice_value"
+      ],
+      "properties": {
+        "identity": {"$ref": "#/$defs/identity"},
+        "kind": {"enum": ["integer", "boolean", "choice"]},
+        "integer_value": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": -9223372036854775808,
+              "maximum": 9223372036854775807
+            },
+            {"type": "null"}
+          ]
+        },
+        "boolean_value": {
+          "oneOf": [{"type": "boolean"}, {"type": "null"}]
+        },
+        "choice_value": {
+          "oneOf": [{"$ref": "#/$defs/text"}, {"type": "null"}]
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "kind": {"const": "integer"},
+            "integer_value": {
+              "type": "integer",
+              "minimum": -9223372036854775808,
+              "maximum": 9223372036854775807
+            },
+            "boolean_value": {"type": "null"},
+            "choice_value": {"type": "null"}
+          }
+        },
+        {
+          "properties": {
+            "kind": {"const": "boolean"},
+            "integer_value": {"type": "null"},
+            "boolean_value": {"type": "boolean"},
+            "choice_value": {"type": "null"}
+          }
+        },
+        {
+          "properties": {
+            "kind": {"const": "choice"},
+            "integer_value": {"type": "null"},
+            "boolean_value": {"type": "null"},
+            "choice_value": {"$ref": "#/$defs/text"}
+          }
+        }
+      ]
+    },
+    "dependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "record_identity",
+        "transformation_identity",
+        "version"
+      ],
+      "properties": {
+        "record_identity": {"$ref": "#/$defs/identity"},
+        "transformation_identity": {"$ref": "#/$defs/identity"},
+        "version": {"type": "integer", "minimum": 1, "maximum": 4294967295}
+      }
+    },
+    "conflict": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["transformation_identity", "version"],
+      "properties": {
+        "transformation_identity": {"$ref": "#/$defs/identity"},
+        "version": {"type": "integer", "minimum": 1, "maximum": 4294967295}
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "opportunity_rank",
+        "compiler_records",
+        "runtime_records"
+      ],
+      "properties": {
+        "opportunity_rank": {"type": "integer", "minimum": 1},
+        "compiler_records": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/identity"}
+        },
+        "runtime_records": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/identity"}
+        }
+      }
+    },
+    "record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "identity",
+        "baseline_fingerprint",
+        "analysis_fingerprint",
+        "catalogue",
+        "target",
+        "transformation",
+        "parameters",
+        "preconditions",
+        "dependencies",
+        "conflicts",
+        "provenance"
+      ],
+      "properties": {
+        "identity": {"$ref": "#/$defs/identity"},
+        "baseline_fingerprint": {"$ref": "#/$defs/fingerprint"},
+        "analysis_fingerprint": {"$ref": "#/$defs/fingerprint"},
+        "catalogue": {"$ref": "#/$defs/catalogue"},
+        "target": {"$ref": "#/$defs/target"},
+        "transformation": {"$ref": "#/$defs/transformation"},
+        "parameters": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/parameter"}
+        },
+        "preconditions": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/text"}
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/dependency"}
+        },
+        "conflicts": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/conflict"}
+        },
+        "provenance": {"$ref": "#/$defs/provenance"}
+      }
+    }
+  }
+}

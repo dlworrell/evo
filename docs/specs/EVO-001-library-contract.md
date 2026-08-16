@@ -1,13 +1,13 @@
 # EVO-001: Evolutionary Optimization Library Contract
 
 Status: Baseline
-Version: 0.35.0
+Version: 0.36.0
 Owner: EVO
 
 ## Scope Boundary
 
 This specification governs the reusable deterministic C17 evolutionary-search
-core packaged through version 0.35.0. It does not define C-project
+core packaged through version 0.36.0. It does not define C-project
 ingestion, Clang/LLVM analysis, structured source transformations, isolated
 candidate builds, baseline-versus-candidate measurement, optimized patches, or
 product-level replay artifacts.
@@ -144,6 +144,14 @@ complete bounded translation-unit, source-location, structural, compiler,
 runtime, and opportunity arrays with direct scans. Canonical JSON and Markdown
 derive from the same retained owner; no cache, index, compressed form, or
 probabilistic authority is introduced. ADR-0036, EVO-002, and EVO-HRA-008
+govern that separate boundary.
+
+Version 0.36.0 also changes no accelerated core structure. Its private recipe
+foundation remains outside the installed EVO-001 API and uses explicit bounded
+transformation records, resolved edges, direct scans, and stable topological
+ordering. Canonical JSON is embedded in the fixed genome, Markdown projects
+the complete logical model, and decode reconstructs derived facts from live
+authority before exact-byte acceptance. ADR-0037, EVO-002, and EVO-HRA-009
 govern that separate boundary.
 
 ## Public Interface
@@ -2007,7 +2015,14 @@ and public version macros and adds an uninstalled private project-analysis
 model, schema, evidence, documentation, and independent verification outside
 the stable library ABI.
 
-## Current 0.35.0 Conformance Boundary
+Version 0.36.0 likewise changes no public type, member offset, enum value,
+function signature, installed symbol, core policy version, checkpoint format,
+callback order, allocation behavior, or RNG schedule. It advances the package
+and public version macros and adds an uninstalled private transformation-recipe
+model, canonical fixed-genome encoding, schema, golden, audit projection,
+documentation, and independent verification outside the stable library ABI.
+
+## Current 0.36.0 Conformance Boundary
 
 The current implementation exposes generation-zero compatibility plus bounded
 multi-generation execution:
@@ -2417,8 +2432,9 @@ The deterministic checkpoint-fuzz test rejects every truncation, a one-bit
 mutation at every serialized byte, and 2,048 seeded arbitrary byte ranges.
 The separate `tests/fuzz/checkpoint_fuzz.c` entry point exposes the same
 allocation-free untrusted parser to libFuzzer. Build-manifest parity requires
-exactly 26 installed-core sources plus eleven private source-foundation sources
-and 35 normative targets in CMake, GNU Autotools, and AES-BLD-001 inventories.
+exactly 26 installed-core sources plus fourteen private source-foundation
+sources and 36 normative targets in CMake, GNU Autotools, and AES-BLD-001
+inventories.
 
 ## Related Records
 
@@ -2457,6 +2473,7 @@ and 35 normative targets in CMake, GNU Autotools, and AES-BLD-001 inventories.
 - `docs/adr/ADR-0034-reference-consumer-adapters.md`
 - `docs/adr/ADR-0035-immutable-project-ingestion-and-baselines.md`
 - `docs/adr/ADR-0036-clang-llvm-analysis-and-hotspot-model.md`
+- `docs/adr/ADR-0037-versioned-source-transformation-recipes.md`
 - `docs/architecture.md`
 - `docs/algorithms.md`
 - `docs/benchmarks.md`
@@ -2469,6 +2486,7 @@ and 35 normative targets in CMake, GNU Autotools, and AES-BLD-001 inventories.
 - `docs/engineering/reports/EVO-HRA-006-reference-adapter-audit.md`
 - `docs/engineering/reports/EVO-HRA-007-project-ingestion-audit.md`
 - `docs/engineering/reports/EVO-HRA-008-project-analysis-audit.md`
+- `docs/engineering/reports/EVO-HRA-009-project-recipe-audit.md`
 - `docs/engineering/SECURE-C-CXX.md`
 - `docs/engineering/AES-SEC-001-review-dispositions.json`
 - `https://github.com/dlworrell/evo/issues/4`
@@ -2503,4 +2521,5 @@ and 35 normative targets in CMake, GNU Autotools, and AES-BLD-001 inventories.
 - `https://github.com/dlworrell/evo/issues/53`
 - `https://github.com/dlworrell/evo/issues/54`
 - `https://github.com/dlworrell/evo/issues/55`
+- `https://github.com/dlworrell/evo/issues/60`
 - `https://github.com/dlworrell/AEMS/issues/18`
