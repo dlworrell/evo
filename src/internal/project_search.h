@@ -134,11 +134,26 @@ typedef struct evo_project_search_config {
     evo_project_search_limits_t limits;
 } evo_project_search_config_t;
 
+typedef struct evo_project_search_operator_event {
+    size_t ordinal;
+    size_t generation;
+    size_t population_index;
+    evo_project_search_operator_kind_t operator_kind;
+    evo_project_search_rejection_reason_t rejection_reason;
+    evo_project_recipe_status_t recipe_status;
+    char parent_a_recipe_fingerprint[EVO_PROJECT_FINGERPRINT_TEXT_SIZE];
+    char parent_b_recipe_fingerprint[EVO_PROJECT_FINGERPRINT_TEXT_SIZE];
+    char result_recipe_fingerprint[EVO_PROJECT_FINGERPRINT_TEXT_SIZE];
+    bool bound;
+} evo_project_search_operator_event_t;
+
 typedef struct evo_project_search_lineage_record {
     size_t generation;
     size_t population_index;
     size_t operator_ordinal;
     evo_project_search_operator_kind_t operator_kind;
+    size_t operator_event_start;
+    size_t operator_event_count;
     evo_project_search_rejection_reason_t rejection_reason;
     evo_project_recipe_status_t recipe_status;
     char recipe_fingerprint[EVO_PROJECT_FINGERPRINT_TEXT_SIZE];
@@ -172,6 +187,8 @@ typedef struct evo_project_search {
     evo_fitness_t best_fitness;
     size_t best_genome_size;
     const unsigned char *best_genome;
+    size_t operator_event_count;
+    const evo_project_search_operator_event_t *operator_events;
     size_t lineage_count;
     const evo_project_search_lineage_record_t *lineage;
     char search_fingerprint[EVO_PROJECT_FINGERPRINT_TEXT_SIZE];
