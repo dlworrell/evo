@@ -390,12 +390,20 @@ static bool test_fixture_prepare(test_fixture_t *fixture)
 {
     char temporary_template[] = "/tmp/evo-project-candidate-XXXXXX";
     char *root = mkdtemp(temporary_template);
+    char *canonical_root;
     int written;
 
     if (root == NULL) {
         return false;
     }
-    if (realpath(root, fixture->root) == NULL) {
+    canonical_root = realpath(root, NULL);
+    if (canonical_root == NULL) {
+        return false;
+    }
+    written = evo_project_format(
+        fixture->root, sizeof(fixture->root), "%s", canonical_root);
+    free(canonical_root);
+    if (written <= 0 || (size_t)written >= sizeof(fixture->root)) {
         return false;
     }
     written = evo_project_format(
