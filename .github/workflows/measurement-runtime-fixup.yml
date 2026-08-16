@@ -1,0 +1,120 @@
+name: Measurement Runtime Fixup
+
+on:
+  push:
+    branches:
+      - agent/reproducible-candidate-fitness
+    paths:
+      - '.github/workflows/measurement-runtime-fixup.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fixup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/reproducible-candidate-fitness
+      - name: Apply bounded evidence and deterministic identity fixes
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace(path: str, old: str, new: str) -> None:
+              p = Path(path)
+              text = p.read_text()
+              if old not in text:
+                  raise SystemExit(f"missing fixup anchor in {path}: {old!r}")
+              p.write_text(text.replace(old, new, 1))
+
+          replace(
+              'src/project_measurement_runtime.c',
+              '''    if (!evo_candidate_buffer_open(&json, 4096U) ||
+                  !evo_candidate_buffer_open(&markdown, 4096U)) {''',
+              '''    if (!evo_candidate_buffer_open(
+                      &json, config->limits.max_evidence_bytes) ||
+                  !evo_candidate_buffer_open(
+                      &markdown, config->limits.max_evidence_bytes)) {''',
+          )
+          replace(
+              'src/project_measurement_runtime.c',
+              '''        if (sample->phase == EVO_PROJECT_MEASUREMENT_RECORDED &&
+                      strcmp(sample->workload_id, workload_id) == 0 &&
+                      (!sample->completed || sample->timed_out || sample->failed)) {''',
+              '''        if (strcmp(sample->workload_id, workload_id) == 0 &&
+                      (!sample->completed || sample->timed_out || sample->failed)) {''',
+          )
+
+          p = Path('src/project_measurement.c')
+          text = p.read_text()
+          anchor = '''uint64_t evo_measurement_result_fingerprint(
+              const evo_project_measurement_owner_t *owner)
+          {'''
+          helper = '''static void evo_measurement_result_fingerprint_double(
+              evo_project_fingerprint_t *fingerprint,
+              double value)
+          {
+              char text[48];
+              const int written =
+                  evo_project_format(text, sizeof(text), "%.17g", value);
+
+              if (written > 0 && (size_t)written < sizeof(text)) {
+                  evo_project_fingerprint_string(fingerprint, text);
+              } else {
+                  evo_project_fingerprint_string(fingerprint, "invalid-double");
+              }
+          }
+
+          uint64_t evo_measurement_result_fingerprint(
+              const evo_project_measurement_owner_t *owner)
+          {'''
+          if anchor not in text:
+              raise SystemExit('missing measurement result fingerprint anchor')
+          text = text.replace(anchor, helper, 1)
+          old = '''    evo_project_fingerprint_u64(
+                  &fingerprint, (uint64_t)owner->view.overall_comparison);
+              evo_project_fingerprint_bytes(
+                  &fingerprint, &owner->view.fitness, sizeof(owner->view.fitness));
+              evo_project_fingerprint_u64(
+                  &fingerprint, owner->view.fitness_available ? 1U : 0U);'''
+          new = '''    evo_project_fingerprint_u64(
+                  &fingerprint, (uint64_t)owner->view.overall_comparison);
+              evo_measurement_result_fingerprint_double(
+                  &fingerprint, owner->view.fitness.correctness);
+              evo_measurement_result_fingerprint_double(
+                  &fingerprint, owner->view.fitness.performance);
+              evo_measurement_result_fingerprint_double(
+                  &fingerprint, owner->view.fitness.memory_use);
+              evo_measurement_result_fingerprint_double(
+                  &fingerprint, owner->view.fitness.reliability);
+              evo_measurement_result_fingerprint_double(
+                  &fingerprint, owner->view.fitness.maintainability);
+              evo_measurement_result_fingerprint_double(
+                  &fingerprint, owner->view.fitness.constraint_penalty);
+              evo_measurement_result_fingerprint_double(
+                  &fingerprint, owner->view.fitness.total);
+              evo_project_fingerprint_u64(
+                  &fingerprint, owner->view.fitness_available ? 1U : 0U);'''
+          if old not in text:
+              raise SystemExit('missing raw fitness fingerprint anchor')
+          text = text.replace(old, new, 1)
+          old = '''    owner = measurement->private_owner;
+              (void)memset(measurement, 0, sizeof(*measurement));
+              evo_measurement_release_owner(owner);'''
+          new = '''    owner = measurement->private_owner;
+              *measurement = (evo_project_measurement_t){0};
+              evo_measurement_release_owner(owner);'''
+          if old not in text:
+              raise SystemExit('missing measurement destroy reset anchor')
+          p.write_text(text.replace(old, new, 1))
+          PY
+      - name: Commit fixes
+        run: |
+          git config user.name "Donovan Worrell"
+          git config user.email "donovan.worrell@just-a-geek.com"
+          git rm .github/workflows/measurement-runtime-fixup.yml
+          git add src/project_measurement.c src/project_measurement_runtime.c
+          git commit -m "fix: bound measurement evidence and canonicalize identity"
+          git push origin HEAD:agent/reproducible-candidate-fitness
