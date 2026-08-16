@@ -1,1 +1,0 @@
-EVO 0.40 comparable-condition validation trigger.
