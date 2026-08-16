@@ -94,6 +94,9 @@ noinst_HEADERS = \
 	src/internal/project_transformation_catalogue.h \
 	src/internal/project_transformation_model.h \
 	src/internal/project_transformation_evidence.h \
+	src/internal/project_candidate.h \
+	src/internal/project_candidate_owner.h \
+	src/internal/project_candidate_internal.h \
 	tests/research/seed_schedule_research.h
 
 noinst_LTLIBRARIES = \
@@ -121,7 +124,10 @@ libevo_project_foundation_la_SOURCES = \
 	src/project_transformation_catalogue.c \
 	src/project_transformation_model.c \
 	src/project_transformation_evidence.c \
-	src/project_transformation.c
+	src/project_transformation.c \
+	src/project_candidate_runtime.c \
+	src/project_candidate_model.c \
+	src/project_candidate.c
 
 check_PROGRAMS = \
 	tests/evo_smoke_test \
@@ -158,6 +164,7 @@ check_PROGRAMS = \
 	tests/evo_project_analysis_test \
 	tests/evo_project_recipe_test \
 	tests/evo_project_transformation_test \
+	tests/evo_project_candidate_test \
 	benchmarks/evo_core_benchmark \
 	tests/evo_secure_erasure_test \
 	tests/evo_allocation_failure_test
@@ -294,6 +301,11 @@ tests_evo_project_transformation_test_CPPFLAGS = \
 tests_evo_project_transformation_test_LDADD = \
 	libevo_project_foundation.la
 
+tests_evo_project_candidate_test_SOURCES = \
+	tests/project_candidate_test.c
+tests_evo_project_candidate_test_LDADD = \
+	libevo_project_foundation.la
+
 benchmarks_evo_core_benchmark_SOURCES = benchmarks/core_benchmark.c
 benchmarks_evo_core_benchmark_LDADD = libcatalyst_evo.la -lm
 benchmarks_evo_core_benchmark_CPPFLAGS = \
@@ -364,6 +376,7 @@ EXTRA_DIST = \
 	.github/workflows/project-analysis.yml \
 	.github/workflows/project-recipe.yml \
 	.github/workflows/project-transformation.yml \
+	.github/workflows/project-candidate.yml \
 	CMakeLists.txt \
 	CMakePresets.json \
 	benchmarks/CMakeLists.txt \
@@ -377,12 +390,14 @@ EXTRA_DIST = \
 	docs/adr/ADR-0036-clang-llvm-analysis-and-hotspot-model.md \
 	docs/adr/ADR-0037-versioned-source-transformation-recipes.md \
 	docs/adr/ADR-0038-ast-aware-c-transformation-catalogue.md \
+	docs/adr/ADR-0039-isolated-candidate-materialization.md \
 	docs/schemas/evo-project-manifest-v1.schema.json \
 	docs/schemas/evo-project-baseline-v1.schema.json \
 	docs/schemas/evo-project-analysis-v1.schema.json \
 	docs/schemas/evo-project-recipe-v1.schema.json \
 	docs/schemas/evo-c-transformation-catalogue-v1.schema.json \
 	docs/schemas/evo-c-transformation-application-v1.schema.json \
+	docs/schemas/evo-project-candidate-v1.schema.json \
 	examples/CMakeLists.txt \
 	examples/Makefile \
 	examples/README.md \
@@ -404,10 +419,13 @@ EXTRA_DIST = \
 	docs/engineering/reports/EVO-HRA-008-project-analysis-audit.md \
 	docs/engineering/reports/EVO-HRA-009-project-recipe-audit.md \
 	docs/engineering/reports/EVO-HRA-010-c-transformation-catalogue-audit.md \
+	docs/engineering/reports/EVO-HRA-011-candidate-materialization-audit.md \
+	tests/project_candidate.cmake \
 	tests/validate_project_ingestion.py \
 	tests/validate_project_analysis.py \
 	tests/validate_project_recipe.py \
 	tests/validate_project_transformation.py \
+	tests/validate_project_candidate.py \
 	tests/fixtures/project-analysis/golden-v1.json \
 	tests/fixtures/project-recipe/golden-v1.json \
 	tests/fixtures/project-transformation/catalogue-golden-v1.json \
