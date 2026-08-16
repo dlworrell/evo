@@ -178,6 +178,9 @@ typedef struct evo_project_orchestration_job_record {
     size_t commit_ordinal;
     evo_project_orchestration_job_state_t state;
     evo_project_orchestration_terminal_reason_t terminal_reason;
+    char candidate_fingerprint[EVO_PROJECT_FINGERPRINT_TEXT_SIZE];
+    char assurance_fingerprint[EVO_PROJECT_FINGERPRINT_TEXT_SIZE];
+    char measurement_fingerprint[EVO_PROJECT_FINGERPRINT_TEXT_SIZE];
     evo_project_search_evaluation_outcome_t evaluation;
     bool admitted;
     bool started;
