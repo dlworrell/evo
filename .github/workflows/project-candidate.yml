@@ -51,6 +51,34 @@ jobs:
             >/dev/null
           python3 tests/validate_project_candidate.py
 
+  cmake-macos-clang:
+    runs-on: macos-latest
+    env:
+      CC: clang
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Configure candidate foundation
+        run: >-
+          cmake -S . -B build/project-candidate-macos
+          -DCMAKE_BUILD_TYPE=Debug
+          -DBUILD_TESTING=ON
+
+      - name: Build and run the normative candidate target
+        run: |
+          cmake --build build/project-candidate-macos \
+            --target evo_project_candidate_test --parallel
+          ctest --test-dir build/project-candidate-macos \
+            --output-on-failure -R '^evo_project_candidate_test$'
+
+      - name: Validate candidate schema and independent boundary checks
+        run: |
+          python3 -m json.tool \
+            docs/schemas/evo-project-candidate-v1.schema.json \
+            >/dev/null
+          python3 tests/validate_project_candidate.py
+
   autotools-gcc:
     runs-on: ubuntu-24.04
     env:
