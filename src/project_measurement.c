@@ -134,7 +134,6 @@ void evo_measurement_release_owner(evo_project_measurement_owner_t *owner)
 }
 
 static bool evo_measurement_outcome_valid(
-    const evo_project_measurement_owner_t *owner,
     const evo_project_measurement_outcome_t *outcome)
 {
     if (outcome->schema_version != EVO_PROJECT_MEASUREMENT_SCHEMA_VERSION ||
@@ -175,7 +174,7 @@ static evo_project_measurement_status_t evo_measurement_run_one(
     outcome.schema_version = EVO_PROJECT_MEASUREMENT_SCHEMA_VERSION;
     status = config->provider(&request, config->provider_context, &outcome);
     if (status != EVO_PROJECT_MEASUREMENT_SUCCESS ||
-        !evo_measurement_outcome_valid(owner, &outcome)) {
+        !evo_measurement_outcome_valid(&outcome)) {
         return status == EVO_PROJECT_MEASUREMENT_ERROR_OUT_OF_MEMORY
                    ? status
                    : EVO_PROJECT_MEASUREMENT_ERROR_PROVIDER;
