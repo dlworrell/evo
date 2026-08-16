@@ -1,0 +1,1 @@
+/usr/bin/clang -fsanitize=address,undefined -Xlinker --dependency-file=CMakeFiles/evo_population_initialization_test.dir/link.d CMakeFiles/evo_population_initialization_test.dir/population_initialization_test.c.o -o evo_population_initialization_test  ../libcatalyst_evo.a -lm

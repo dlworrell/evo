@@ -1,0 +1,1 @@
+/usr/bin/clang -fsanitize=address,undefined -Wl,--wrap=calloc -Wl,--wrap=free -Wl,--wrap=evo_secure_erase -Xlinker --dependency-file=CMakeFiles/evo_secure_erasure_test.dir/link.d CMakeFiles/evo_secure_erasure_test.dir/secure_erasure_test.c.o -o evo_secure_erasure_test  ../libcatalyst_evo.a -lm

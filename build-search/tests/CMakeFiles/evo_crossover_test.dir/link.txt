@@ -1,0 +1,1 @@
+/usr/bin/clang -fsanitize=address,undefined -Xlinker --dependency-file=CMakeFiles/evo_crossover_test.dir/link.d CMakeFiles/evo_crossover_test.dir/crossover_test.c.o -o evo_crossover_test  ../libcatalyst_evo.a -lm

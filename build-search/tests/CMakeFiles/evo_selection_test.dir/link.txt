@@ -1,0 +1,1 @@
+/usr/bin/clang -fsanitize=address,undefined -Xlinker --dependency-file=CMakeFiles/evo_selection_test.dir/link.d CMakeFiles/evo_selection_test.dir/selection_test.c.o -o evo_selection_test  ../libcatalyst_evo.a -lm

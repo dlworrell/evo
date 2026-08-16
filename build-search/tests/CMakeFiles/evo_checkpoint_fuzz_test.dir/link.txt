@@ -1,0 +1,1 @@
+/usr/bin/clang -fsanitize=address,undefined -Xlinker --dependency-file=CMakeFiles/evo_checkpoint_fuzz_test.dir/link.d CMakeFiles/evo_checkpoint_fuzz_test.dir/checkpoint_fuzz_test.c.o -o evo_checkpoint_fuzz_test  ../libcatalyst_evo.a -lm

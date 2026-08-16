@@ -1,0 +1,11 @@
+prefix=/usr/local
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: catalyst-evo
+Description: Deterministic C17 evolutionary optimization library
+Version: 0.41.0
+Libs: -L${libdir} -lcatalyst_evo -lm
+Libs.private: 
+Cflags: -I${includedir}

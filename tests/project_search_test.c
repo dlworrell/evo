@@ -24,9 +24,10 @@
 
 typedef struct test_fixture {
     char directory[256];
-    char source_path[320];
-    char *permitted_roots[1];
-    evo_project_file_record_t file;
+    char source_path_a[320];
+    char source_path_b[320];
+    char *permitted_roots[2];
+    evo_project_file_record_t files[2];
     evo_project_baseline_owner_t baseline_owner;
     evo_project_baseline_t baseline;
     evo_project_analysis_owner_t analysis_owner;
@@ -45,6 +46,8 @@ static int test_failures = 0;
 
 static const unsigned char test_source_bytes[] =
     "static int unit_value(void) { return 1; }\n";
+static const unsigned char test_helper_source_bytes[] =
+    "static int helper_value(void) { return 2; }\n";
 
 static const evo_project_source_location_record_t test_locations[] = {
     {"location-a",
@@ -56,7 +59,7 @@ static const evo_project_source_location_record_t test_locations[] = {
      EVO_PROJECT_LOCATION_SPELLING,
      NULL},
     {"location-b",
-     "unit.c",
+     "helper.c",
      1U,
      19U,
      1U,
@@ -265,15 +268,23 @@ static bool test_fixture_prepare(test_fixture_t *fixture)
         return false;
     }
     written = evo_project_format(
-        fixture->source_path,
-        sizeof(fixture->source_path),
+        fixture->source_path_a,
+        sizeof(fixture->source_path_a),
         "%s/unit.c",
         fixture->directory);
-    if (written <= 0 || (size_t)written >= sizeof(fixture->source_path)) {
+    if (written <= 0 || (size_t)written >= sizeof(fixture->source_path_a)) {
+        return false;
+    }
+    written = evo_project_format(
+        fixture->source_path_b,
+        sizeof(fixture->source_path_b),
+        "%s/helper.c",
+        fixture->directory);
+    if (written <= 0 || (size_t)written >= sizeof(fixture->source_path_b)) {
         return false;
     }
     file_descriptor = open(
-        fixture->source_path,
+        fixture->source_path_a,
         O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC,
         0600);
     if (file_descriptor < 0 ||
@@ -281,34 +292,63 @@ static bool test_fixture_prepare(test_fixture_t *fixture)
             file_descriptor,
             test_source_bytes,
             sizeof(test_source_bytes) - 1U) ||
-        fsync(file_descriptor) != 0 || close(file_descriptor) != 0 ||
-        chmod(fixture->source_path, 0400) != 0 ||
-        chmod(fixture->directory, 0500) != 0) {
+        fsync(file_descriptor) != 0 || close(file_descriptor) != 0) {
         if (file_descriptor >= 0) {
             (void)close(file_descriptor);
         }
         return false;
     }
+    file_descriptor = open(
+        fixture->source_path_b,
+        O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC,
+        0600);
+    if (file_descriptor < 0 ||
+        !test_write_all(
+            file_descriptor,
+            test_helper_source_bytes,
+            sizeof(test_helper_source_bytes) - 1U) ||
+        fsync(file_descriptor) != 0 || close(file_descriptor) != 0) {
+        if (file_descriptor >= 0) {
+            (void)close(file_descriptor);
+        }
+        return false;
+    }
+    if (chmod(fixture->source_path_a, 0400) != 0 ||
+        chmod(fixture->source_path_b, 0400) != 0 ||
+        chmod(fixture->directory, 0500) != 0) {
+        return false;
+    }
 
     evo_project_fingerprint_begin(&fingerprint);
     evo_project_fingerprint_bytes(
+        &fingerprint,
+        test_helper_source_bytes,
+        sizeof(test_helper_source_bytes) - 1U);
+    fixture->permitted_roots[0] = "helper.c";
+    fixture->files[0].path = "helper.c";
+    fixture->files[0].size = sizeof(test_helper_source_bytes) - 1U;
+    fixture->files[0].source_mode = 0400U;
+    fixture->files[0].content_fingerprint = fingerprint.value;
+    evo_project_fingerprint_begin(&fingerprint);
+    evo_project_fingerprint_bytes(
         &fingerprint, test_source_bytes, sizeof(test_source_bytes) - 1U);
-    fixture->permitted_roots[0] = "unit.c";
-    fixture->file.path = "unit.c";
-    fixture->file.size = sizeof(test_source_bytes) - 1U;
-    fixture->file.source_mode = 0400U;
-    fixture->file.content_fingerprint = fingerprint.value;
+    fixture->permitted_roots[1] = "unit.c";
+    fixture->files[1].path = "unit.c";
+    fixture->files[1].size = sizeof(test_source_bytes) - 1U;
+    fixture->files[1].source_mode = 0400U;
+    fixture->files[1].content_fingerprint = fingerprint.value;
     fixture->baseline_owner.manifest.permitted_roots = fixture->permitted_roots;
-    fixture->baseline_owner.manifest.permitted_root_count = 1U;
+    fixture->baseline_owner.manifest.permitted_root_count = 2U;
     fixture->baseline_owner.manifest.budget.max_files = 4U;
     fixture->baseline_owner.manifest.budget.max_file_bytes = 4096U;
     fixture->baseline_owner.manifest.budget.max_total_bytes = 4096U;
     fixture->baseline_owner.manifest.budget.max_path_bytes = 256U;
     fixture->baseline_owner.manifest.budget.max_evidence_bytes = 65536U;
     fixture->baseline_owner.snapshot_path = fixture->directory;
-    fixture->baseline_owner.files = &fixture->file;
-    fixture->baseline_owner.file_count = 1U;
-    fixture->baseline_owner.total_file_bytes = fixture->file.size;
+    fixture->baseline_owner.files = fixture->files;
+    fixture->baseline_owner.file_count = 2U;
+    fixture->baseline_owner.total_file_bytes =
+        fixture->files[0].size + fixture->files[1].size;
     fixture->baseline_owner.baseline_fingerprint = UINT64_C(0x1020304050607080);
     fixture->baseline_owner.state = EVO_PROJECT_BASELINE_ELIGIBLE;
     fixture->baseline_owner.committed = true;
@@ -365,7 +405,8 @@ static bool test_fixture_prepare(test_fixture_t *fixture)
 static void test_fixture_destroy(test_fixture_t *fixture)
 {
     (void)chmod(fixture->directory, 0700);
-    (void)unlink(fixture->source_path);
+    (void)unlink(fixture->source_path_a);
+    (void)unlink(fixture->source_path_b);
     (void)rmdir(fixture->directory);
     *fixture = (test_fixture_t){0};
 }
@@ -531,6 +572,14 @@ static void test_structured_operators(test_fixture_t *fixture)
             sizeof(test_parameter_records) / sizeof(test_parameter_records[0]),
             &parameter_parent) == EVO_PROJECT_RECIPE_SUCCESS,
         "parameter parent builds");
+    test_check(
+        parent.record_count == 2U &&
+            strcmp(parent.records[0].target.file, "unit.c") == 0 &&
+            strcmp(parent.records[1].target.file, "helper.c") == 0 &&
+            parent.records[0].compiler_record_count == 1U &&
+            parent.records[1].compiler_record_count == 1U &&
+            parent.records[1].runtime_record_count == 1U,
+        "structured recipe spans multiple files with provenance");
     if (parent.private_owner == NULL || parameter_parent.private_owner == NULL) {
         goto finish;
     }

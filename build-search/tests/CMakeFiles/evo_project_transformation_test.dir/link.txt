@@ -1,0 +1,1 @@
+/usr/bin/clang -fsanitize=address,undefined -Xlinker --dependency-file=CMakeFiles/evo_project_transformation_test.dir/link.d CMakeFiles/evo_project_transformation_test.dir/project_transformation_test.c.o -o evo_project_transformation_test  ../libcatalyst_evo_project_foundation.a ../libcatalyst_evo.a -lm
