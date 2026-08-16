@@ -67,6 +67,7 @@ typedef struct evo_project_search_limits {
     size_t max_records;
     size_t max_parameters_per_record;
     size_t max_mutations_per_event;
+    size_t max_repair_passes;
     size_t max_lineage_records;
     size_t max_operator_events;
     size_t max_evidence_bytes;
@@ -83,6 +84,7 @@ typedef struct evo_project_search_policy {
     size_t maximum_record_count;
     uint32_t mutation_operation_mask;
     size_t max_mutations_per_event;
+    size_t max_repair_passes;
     bool integer_parameter_wrap;
 } evo_project_search_policy_t;
 
