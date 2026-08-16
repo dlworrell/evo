@@ -110,6 +110,7 @@ add_library(catalyst_evo_project_foundation STATIC
     src/project_orchestration_model.c
     src/project_orchestration_runtime.c
     src/project_orchestration.c
+    src/project_orchestration_checkpoint.c
 )
 target_include_directories(catalyst_evo_project_foundation
     PUBLIC

@@ -205,7 +205,7 @@ static void test_stale_identity_rejected(void)
             checkpoint.serialized_size,
             &limits,
             &validated) ==
-            EVO_PROJECT_ORCHESTRATION_CHECKPOINT_ERROR_IDENTITY_MISMATCH &&
+                EVO_PROJECT_ORCHESTRATION_CHECKPOINT_ERROR_IDENTITY_MISMATCH &&
             validated.private_owner == NULL,
         "stale toolchain rejects before resume state is published");
 
