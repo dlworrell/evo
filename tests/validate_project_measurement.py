@@ -62,6 +62,11 @@ def main() -> int:
 
     for forbidden in ("system(", "popen(", "/bin/sh -c"):
         require(forbidden not in model + runtime + transaction, f"forbidden execution path present: {forbidden}")
+    for primitive in ("memcpy(", "memset(", "snprintf("):
+        require(
+            primitive not in model + runtime + transaction + test,
+            f"new measurement dangerous primitive present: {primitive}",
+        )
 
     for case in (
         "FAKE_FASTER",
