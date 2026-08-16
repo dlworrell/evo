@@ -275,7 +275,7 @@ static evo_project_candidate_status_t evo_candidate_materialize_files(
             }
         }
 
-finish_file:
+    finish_file:
         evo_project_release(candidate_bytes);
         evo_project_release(source);
         if (status != EVO_PROJECT_CANDIDATE_SUCCESS) {
