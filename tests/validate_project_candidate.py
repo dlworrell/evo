@@ -63,6 +63,7 @@ def main() -> None:
     runtime = RUNTIME.read_text(encoding="utf-8")
     adr = ADR.read_text(encoding="utf-8")
     hra = HRA.read_text(encoding="utf-8")
+    adr_normalized = " ".join(adr.split())
 
     for token in (
         "EVO_PROJECT_CANDIDATE_ERROR_CONFLICT",
@@ -95,7 +96,7 @@ def main() -> None:
         "snapshot_modified:false",
         "Issue #63 owns candidate correctness gates",
     ):
-        require(phrase in adr, f"ADR-0039 missing boundary statement: {phrase}")
+        require(phrase in adr_normalized, f"ADR-0039 missing boundary statement: {phrase}")
 
     require("normalized patch" in hra.lower(), "HRA must audit the human-readable patch projection")
     require("probabilistic" in hra.lower(), "HRA must audit probabilistic authority")
