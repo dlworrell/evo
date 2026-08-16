@@ -1,0 +1,19 @@
+name: Candidate Format Diff
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  diff:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y clang-format
+      - name: Show clang-format delta
+        shell: bash
+        run: |
+          clang-format src/project_candidate.c > /tmp/project_candidate.c
+          diff -u src/project_candidate.c /tmp/project_candidate.c || true
