@@ -1,0 +1,87 @@
+name: Project Measurement
+
+on:
+  push:
+    branches:
+      - agent/reproducible-candidate-fitness
+    paths:
+      - 'src/project_measurement*.c'
+      - 'src/internal/project_measurement*.h'
+      - 'tests/project_measurement_test.c'
+      - 'tests/validate_project_measurement.py'
+      - 'docs/adr/ADR-0041-reproducible-candidate-performance-fitness.md'
+      - 'docs/engineering/reports/EVO-HRA-013-candidate-performance-fitness-audit.md'
+      - 'docs/schemas/evo-project-measurement-v1.schema.json'
+      - '.aems/aes-bld-001.json'
+      - 'CMakeLists.txt'
+      - 'tests/CMakeLists.txt'
+      - 'Makefile.am'
+      - 'configure.ac'
+      - '.github/workflows/project-measurement.yml'
+  pull_request:
+    paths:
+      - 'src/project_measurement*.c'
+      - 'src/internal/project_measurement*.h'
+      - 'tests/project_measurement_test.c'
+      - 'tests/validate_project_measurement.py'
+      - 'docs/adr/ADR-0041-reproducible-candidate-performance-fitness.md'
+      - 'docs/engineering/reports/EVO-HRA-013-candidate-performance-fitness-audit.md'
+      - 'docs/schemas/evo-project-measurement-v1.schema.json'
+      - '.aems/aes-bld-001.json'
+      - 'CMakeLists.txt'
+      - 'tests/CMakeLists.txt'
+      - 'Makefile.am'
+      - 'configure.ac'
+      - '.github/workflows/project-measurement.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cmake-clang:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure with Clang and sanitizers
+        run: cmake -S . -B build-measurement -DCMAKE_C_COMPILER=clang -DEVO_ENABLE_SANITIZERS=ON
+      - name: Build measurement target
+        run: cmake --build build-measurement --target evo_project_measurement_test --parallel 2
+      - name: Run measurement target
+        env:
+          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: ctest --test-dir build-measurement -R '^evo_project_measurement_test$' --output-on-failure
+      - name: Independent measurement validation
+        run: python3 tests/validate_project_measurement.py
+      - name: Build complete project foundation
+        run: cmake --build build-measurement --target catalyst_evo_project_foundation --parallel 2
+
+  autotools-gcc:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bootstrap Autotools
+        run: autoreconf -fi
+      - name: Configure with GCC
+        run: ./configure CC=gcc
+      - name: Build measurement test
+        run: make -j2 tests/evo_project_measurement_test
+      - name: Run normative measurement check
+        run: make check TESTS=tests/evo_project_measurement_test
+      - name: Independent measurement validation
+        run: python3 tests/validate_project_measurement.py
+
+  cmake-macos-clang:
+    runs-on: macos-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure with Apple Clang
+        run: cmake -S . -B build-measurement -DCMAKE_C_COMPILER=clang
+      - name: Build measurement target
+        run: cmake --build build-measurement --target evo_project_measurement_test --parallel 2
+      - name: Run measurement target
+        run: ctest --test-dir build-measurement -R '^evo_project_measurement_test$' --output-on-failure
