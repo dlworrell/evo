@@ -310,7 +310,8 @@ replace_once(
 )
 append_after_once(
     "docs/specs/EVO-002-source-optimizer-contract.md",
-    "ADR-0042 and EVO-HRA-014 retain this issue-specific assessment.\n",
+    "fitness, and winner lineage. ADR-0042 and EVO-HRA-014 retain this issue-specific\n"
+    "assessment.\n",
     "\nThe implemented 0.42.0 bounded source-orchestration boundary likewise\n"
     "introduces no accelerator. Complete bounded candidate-job arrays, committed\n"
     "lineage prefixes, exact provider outcomes, persistent batch/job traces, and\n"
