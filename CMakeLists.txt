@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(catalyst_evo VERSION 0.42.0 LANGUAGES C)
+project(catalyst_evo VERSION 0.43.0 LANGUAGES C)
 
 set(EVO_PRODUCT_VERSION "${PROJECT_VERSION}")
 set(EVO_PUBLIC_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/include/catalyst/evo/evo.h")
@@ -137,6 +137,7 @@ add_library(catalyst_evo_project_foundation STATIC
     src/project_orchestration_runtime.c
     src/project_orchestration.c
     src/project_orchestration_checkpoint.c
+    src/project_command.c
 )
 target_include_directories(catalyst_evo_project_foundation
     PUBLIC
