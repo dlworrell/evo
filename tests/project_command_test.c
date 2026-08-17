@@ -224,7 +224,7 @@ static int test_fail_closed_provider_selection(void)
     }
 
     request = valid_request(EVO_PROJECT_COMMAND_EVOLVE, &manifest);
-    request.providers[EVO_PROJECT_COMMAND_PROVIDER_EVALUATION].capabilities & =
+    request.providers[EVO_PROJECT_COMMAND_PROVIDER_EVALUATION].capabilities &=
         ~((uint64_t)EVO_PROJECT_COMMAND_CAPABILITY_DESCENDANT_CLEANUP);
     if (check(evo_project_command_plan_build(&request, &plan) ==
               EVO_PROJECT_COMMAND_ERROR_PROVIDER_CAPABILITY) != 0 ||
