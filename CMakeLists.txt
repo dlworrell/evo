@@ -212,6 +212,29 @@ if(BUILD_TESTING)
         evo_project_provider_sandbox_test
         PROPERTIES SKIP_RETURN_CODE 77
     )
+
+    add_executable(
+        evo_project_provider_clang_test
+        tests/project_provider_clang_test.c
+    )
+    target_include_directories(
+        evo_project_provider_clang_test
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/src
+    )
+    target_link_libraries(
+        evo_project_provider_clang_test
+        PRIVATE
+            catalyst_evo_project_foundation
+    )
+    add_test(
+        NAME evo_project_provider_clang_test
+        COMMAND evo_project_provider_clang_test
+    )
+    set_tests_properties(
+        evo_project_provider_clang_test
+        PROPERTIES SKIP_RETURN_CODE 77
+    )
 endif()
 
 set(prefix "${CMAKE_INSTALL_PREFIX}")
