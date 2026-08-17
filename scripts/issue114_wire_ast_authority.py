@@ -1,0 +1,653 @@
+from pathlib import Path
+import re
+
+
+def replace_exact(path, old, new, expected=1):
+    p = Path(path)
+    text = p.read_text()
+    count = text.count(old)
+    if count != expected:
+        raise SystemExit(
+            f"{path}: expected {expected} occurrences, found {count}: {old[:120]!r}"
+        )
+    p.write_text(text.replace(old, new))
+
+
+# Build-front-end parity.
+replace_exact(
+    "CMakeLists.txt",
+    "    src/project_provider_clang_ast.c\n    src/project_json.c\n",
+    "    src/project_provider_clang_ast.c\n"
+    "    src/project_provider_clang_ast_authority.c\n"
+    "    src/project_json.c\n",
+)
+replace_exact(
+    "Makefile.am",
+    "\tsrc/internal/project_provider_clang_ast.h \\\n"
+    "\tsrc/internal/project_json.h \\\n",
+    "\tsrc/internal/project_provider_clang_ast.h \\\n"
+    "\tsrc/internal/project_provider_clang_ast_authority.h \\\n"
+    "\tsrc/internal/project_json.h \\\n",
+)
+replace_exact(
+    "Makefile.am",
+    "\tsrc/project_provider_clang_ast.c \\\n"
+    "\tsrc/project_json.c \\\n",
+    "\tsrc/project_provider_clang_ast.c \\\n"
+    "\tsrc/project_provider_clang_ast_authority.c \\\n"
+    "\tsrc/project_json.c \\\n",
+)
+
+provider = Path("src/project_provider_clang_ast.c")
+text = provider.read_text()
+old = '#include "internal/project_provider_clang_ast.h"\n\n#include "internal/project_provider.h"\n'
+new = (
+    '#include "internal/project_provider_clang_ast.h"\n\n'
+    '#include "internal/project_fingerprint.h"\n'
+    '#include "internal/project_provider.h"\n'
+    '#include "internal/project_provider_clang_ast_authority.h"\n'
+)
+if text.count(old) != 1:
+    raise SystemExit("provider include block mismatch")
+text = text.replace(old, new, 1)
+
+helpers = re.compile(
+    r"static bool evo_clang_ast_has_operator\(.*?\n\}\n\n"
+    r"static evo_project_transformation_condition_context_t evo_clang_ast_condition_context\(.*?\n\}\n\n"
+    r"static uint32_t evo_clang_ast_minimum_unsigned_width\(.*?\n\}\n\n",
+    re.S,
+)
+text, count = helpers.subn("", text)
+if count != 1:
+    raise SystemExit(f"old global AST helper block count {count}")
+
+assignment = r'''static evo_project_transformation_status_t evo_clang_ast_assignment(
+    const evo_project_transformation_request_t *request,
+    const unsigned char *source,
+    evo_project_transformation_byte_range_t target,
+    const char *ast,
+    size_t ast_size,
+    evo_project_clang_ast_context_t *context,
+    evo_project_transformation_ast_result_t *result)
+{
+    evo_project_transformation_byte_range_t primary = {0};
+    evo_project_transformation_byte_range_t duplicate = {0};
+    evo_project_transformation_byte_range_t operand = {0};
+    evo_project_clang_ast_authority_t authority = {0};
+    evo_project_transformation_status_t status;
+    evo_project_transformation_operator_t operator_kind;
+    size_t position;
+    char operator_char;
+    bool compound = false;
+
+    if (!evo_clang_ast_identifier_range(source, target.start, target.end, &primary)) {
+        return EVO_PROJECT_TRANSFORMATION_ERROR_NOT_APPLICABLE;
+    }
+    position = evo_clang_ast_skip_space(source, primary.end, target.end);
+    if (position >= target.end) {
+        return EVO_PROJECT_TRANSFORMATION_ERROR_NOT_APPLICABLE;
+    }
+    operator_char = (char)source[position];
+    if (operator_char == '=') {
+        position = evo_clang_ast_skip_space(source, position + 1U, target.end);
+        if (!evo_clang_ast_identifier_range(source, position, target.end, &duplicate) ||
+            !evo_clang_ast_bytes_equal(source, primary, duplicate)) {
+            return EVO_PROJECT_TRANSFORMATION_ERROR_NOT_APPLICABLE;
+        }
+        position = evo_clang_ast_skip_space(source, duplicate.end, target.end);
+        if (position >= target.end) {
+            return EVO_PROJECT_TRANSFORMATION_ERROR_NOT_APPLICABLE;
+        }
+        operator_char = (char)source[position++];
+        operand.start = evo_clang_ast_skip_space(source, position, target.end);
+        operand.end = evo_clang_ast_trim_end(source, operand.start, target.end);
+    } else {
+        if (position + 1U >= target.end || source[position + 1U] != '=') {
+            return EVO_PROJECT_TRANSFORMATION_ERROR_NOT_APPLICABLE;
+        }
+        compound = true;
+        operand.start = evo_clang_ast_skip_space(source, position + 2U, target.end);
+        operand.end = evo_clang_ast_trim_end(source, operand.start, target.end);
+    }
+    operator_kind = evo_clang_ast_operator(operator_char);
+    if (operand.start >= operand.end ||
+        operator_kind == EVO_PROJECT_TRANSFORMATION_OPERATOR_NONE) {
+        return EVO_PROJECT_TRANSFORMATION_ERROR_NOT_APPLICABLE;
+    }
+    status = evo_project_clang_ast_authorize_assignment(
+        ast,
+        ast_size,
+        target,
+        primary,
+        duplicate,
+        operand,
+        compound,
+        operator_kind,
+        &request->limits,
+        &authority);
+    if (status != EVO_PROJECT_TRANSFORMATION_SUCCESS) {
+        return status;
+    }
+    if (!authority.primary_reference_resolved ||
+        (!compound && !authority.duplicate_reference_matches)) {
+        return EVO_PROJECT_TRANSFORMATION_ERROR_NOT_APPLICABLE;
+    }
+    context->primary_declaration_identity =
+        evo_clang_ast_declaration_identity(request, source, primary);
+    if (context->primary_declaration_identity == NULL) {
+        return EVO_PROJECT_TRANSFORMATION_ERROR_OUT_OF_MEMORY;
+    }
+    if (!compound) {
+        context->duplicate_declaration_identity =
+            evo_clang_ast_duplicate(context->primary_declaration_identity);
+        if (context->duplicate_declaration_identity == NULL) {
+            return EVO_PROJECT_TRANSFORMATION_ERROR_OUT_OF_MEMORY;
+        }
+    }
+    result->form = compound ? EVO_PROJECT_AST_ASSIGNMENT_COMPOUND
+                            : EVO_PROJECT_AST_ASSIGNMENT_BINARY;
+    result->operator_kind = operator_kind;
+    result->primary = primary;
+    result->duplicate_primary = duplicate;
+    result->operand = operand;
+    result->primary_declaration_identity = context->primary_declaration_identity;
+    result->duplicate_declaration_identity = context->duplicate_declaration_identity;
+    result->primary_plain_identifier = true;
+    result->volatile_access = authority.volatile_access;
+    result->contains_macro = authority.contains_macro;
+    result->language_extension = authority.language_extension;
+    result->ambiguous_target = authority.ambiguous_target;
+    result->result_type_matches_primary = authority.result_type_matches_primary;
+    return EVO_PROJECT_TRANSFORMATION_SUCCESS;
+}
+
+'''
+pattern = re.compile(
+    r"static evo_project_transformation_status_t evo_clang_ast_assignment\(.*?\n\}\n\n"
+    r"(?=static evo_project_transformation_status_t evo_clang_ast_condition)",
+    re.S,
+)
+text, count = pattern.subn(lambda _: assignment, text)
+if count != 1:
+    raise SystemExit(f"assignment function count {count}")
+
+condition = r'''static evo_project_transformation_status_t evo_clang_ast_condition(
+    const evo_project_transformation_request_t *request,
+    const unsigned char *source,
+    evo_project_transformation_byte_range_t target,
+    const char *ast,
+    size_t ast_size,
+    evo_project_transformation_ast_result_t *result)
+{
+    evo_project_clang_ast_authority_t authority = {0};
+    evo_project_transformation_status_t status;
+    size_t position = evo_clang_ast_skip_space(source, target.start, target.end);
+    size_t end = evo_clang_ast_trim_end(source, position, target.end);
+    bool double_negated = false;
+
+    if (position + 2U <= end && source[position] == '!' &&
+        source[position + 1U] == '!') {
+        double_negated = true;
+        result->form = EVO_PROJECT_AST_DOUBLE_NEGATED_CONDITION;
+        result->operand.start = evo_clang_ast_skip_space(source, position + 2U, end);
+        result->operand.end = end;
+    } else {
+        result->form = EVO_PROJECT_AST_SCALAR_CONDITION;
+        result->operand.start = position;
+        result->operand.end = end;
+    }
+    if (result->operand.start >= result->operand.end) {
+        return EVO_PROJECT_TRANSFORMATION_ERROR_NOT_APPLICABLE;
+    }
+    status = evo_project_clang_ast_authorize_condition(
+        ast,
+        ast_size,
+        target,
+        double_negated,
+        &request->limits,
+        &authority);
+    if (status != EVO_PROJECT_TRANSFORMATION_SUCCESS) {
+        return status;
+    }
+    if (!authority.scalar_operand ||
+        authority.condition_context == EVO_PROJECT_TRANSFORMATION_CONDITION_NONE) {
+        return EVO_PROJECT_TRANSFORMATION_ERROR_NOT_APPLICABLE;
+    }
+    result->condition_context = authority.condition_context;
+    result->scalar_operand = authority.scalar_operand;
+    result->volatile_access = authority.volatile_access;
+    result->contains_macro = authority.contains_macro;
+    result->language_extension = authority.language_extension;
+    result->ambiguous_target = authority.ambiguous_target;
+    return EVO_PROJECT_TRANSFORMATION_SUCCESS;
+}
+
+'''
+pattern = re.compile(
+    r"static evo_project_transformation_status_t evo_clang_ast_condition\(.*?\n\}\n\n"
+    r"(?=static evo_project_transformation_status_t evo_clang_ast_shift)",
+    re.S,
+)
+text, count = pattern.subn(lambda _: condition, text)
+if count != 1:
+    raise SystemExit(f"condition function count {count}")
+
+shift = r'''static evo_project_transformation_status_t evo_clang_ast_shift(
+    const evo_project_transformation_request_t *request,
+    const unsigned char *source,
+    evo_project_transformation_byte_range_t target,
+    const char *ast,
+    size_t ast_size,
+    evo_project_clang_ast_context_t *context,
+    evo_project_transformation_ast_result_t *result)
+{
+    evo_project_clang_ast_authority_t authority = {0};
+    evo_project_transformation_status_t status;
+    evo_project_transformation_byte_range_t expression;
+    size_t content_start = target.start;
+    size_t content_end = target.end;
+    size_t position;
+    bool shift_form = false;
+
+    if (content_end - content_start >= 2U && source[content_start] == '(' &&
+        source[content_end - 1U] == ')') {
+        content_start += 1U;
+        content_end -= 1U;
+        shift_form = true;
+    }
+    expression.start = content_start;
+    expression.end = content_end;
+    if (!evo_clang_ast_identifier_range(
+            source, content_start, content_end, &result->primary)) {
+        return EVO_PROJECT_TRANSFORMATION_ERROR_NOT_APPLICABLE;
+    }
+    position = evo_clang_ast_skip_space(source, result->primary.end, content_end);
+    if (shift_form) {
+        if (position + 1U >= content_end || source[position] != '<' ||
+            source[position + 1U] != '<') {
+            return EVO_PROJECT_TRANSFORMATION_ERROR_NOT_APPLICABLE;
+        }
+        position += 2U;
+    } else {
+        if (position >= content_end || source[position] != '*') {
+            return EVO_PROJECT_TRANSFORMATION_ERROR_NOT_APPLICABLE;
+        }
+        position += 1U;
+    }
+    result->literal.start = evo_clang_ast_skip_space(source, position, content_end);
+    result->literal.end =
+        evo_clang_ast_trim_end(source, result->literal.start, content_end);
+    if (result->literal.start >= result->literal.end ||
+        !evo_clang_ast_parse_u64(
+            source, result->literal, &result->literal_value)) {
+        return EVO_PROJECT_TRANSFORMATION_ERROR_NOT_APPLICABLE;
+    }
+    status = evo_project_clang_ast_authorize_shift(
+        ast,
+        ast_size,
+        expression,
+        result->primary,
+        result->literal,
+        shift_form,
+        &request->limits,
+        &authority);
+    if (status != EVO_PROJECT_TRANSFORMATION_SUCCESS) {
+        return status;
+    }
+    if (!authority.primary_reference_resolved ||
+        !authority.result_unsigned_integer) {
+        return EVO_PROJECT_TRANSFORMATION_ERROR_NOT_APPLICABLE;
+    }
+    context->primary_declaration_identity =
+        evo_clang_ast_declaration_identity(request, source, result->primary);
+    if (context->primary_declaration_identity == NULL) {
+        return EVO_PROJECT_TRANSFORMATION_ERROR_OUT_OF_MEMORY;
+    }
+    result->primary_declaration_identity = context->primary_declaration_identity;
+    result->form = shift_form ? EVO_PROJECT_AST_UNSIGNED_SHIFT_POWER_OF_TWO
+                              : EVO_PROJECT_AST_UNSIGNED_MULTIPLY_POWER_OF_TWO;
+    result->operator_kind = shift_form
+                                ? EVO_PROJECT_TRANSFORMATION_OPERATOR_SHIFT_LEFT
+                                : EVO_PROJECT_TRANSFORMATION_OPERATOR_MULTIPLY;
+    result->volatile_access = authority.volatile_access;
+    result->contains_macro = authority.contains_macro;
+    result->language_extension = authority.language_extension;
+    result->ambiguous_target = authority.ambiguous_target;
+    result->result_width_bits = authority.result_width_bits;
+    result->result_unsigned_integer = authority.result_unsigned_integer;
+    result->result_type_matches_primary = authority.result_type_matches_primary;
+    return EVO_PROJECT_TRANSFORMATION_SUCCESS;
+}
+
+'''
+pattern = re.compile(
+    r"static evo_project_transformation_status_t evo_clang_ast_shift\(.*?\n\}\n\n"
+    r"(?=evo_project_transformation_status_t evo_project_clang_ast_provider)",
+    re.S,
+)
+text, count = pattern.subn(lambda _: shift, text)
+if count != 1:
+    raise SystemExit(f"shift function count {count}")
+
+helper = r'''static bool evo_clang_ast_source_matches_request(
+    const evo_project_transformation_request_t *request,
+    const unsigned char *source,
+    size_t source_size)
+{
+    evo_project_fingerprint_t fingerprint;
+    char formatted[EVO_PROJECT_FINGERPRINT_TEXT_SIZE];
+
+    if (request == NULL || source == NULL || request->source_fingerprint == NULL ||
+        source_size != request->source_size) {
+        return false;
+    }
+    evo_project_fingerprint_begin(&fingerprint);
+    evo_project_fingerprint_bytes(&fingerprint, source, source_size);
+    evo_project_fingerprint_format(fingerprint.value, formatted);
+    return strcmp(formatted, request->source_fingerprint) == 0;
+}
+
+'''
+marker = "evo_project_transformation_status_t evo_project_clang_ast_provider(\n"
+if text.count(marker) != 1:
+    raise SystemExit("provider marker mismatch")
+text = text.replace(marker, helper + marker, 1)
+
+old = '''    if (!evo_clang_ast_read_source(request, &source, &source_size) ||
+        !evo_clang_ast_offset(source, source_size, request->target->line, request->target->column, &target_start) ||
+        !evo_clang_ast_offset(source, source_size, request->target->end_line, request->target->end_column, &target_end) ||
+        target_start >= target_end || target_end > source_size) {
+        evo_project_release(source);
+        return EVO_PROJECT_TRANSFORMATION_ERROR_SOURCE_IO;
+    }
+'''
+new = '''    if (!evo_clang_ast_read_source(request, &source, &source_size)) {
+        evo_project_release(source);
+        return EVO_PROJECT_TRANSFORMATION_ERROR_SOURCE_IO;
+    }
+    if (!evo_clang_ast_source_matches_request(request, source, source_size)) {
+        evo_project_release(source);
+        return EVO_PROJECT_TRANSFORMATION_ERROR_BASELINE_CHANGED;
+    }
+    if (!evo_clang_ast_offset(
+            source,
+            source_size,
+            request->target->line,
+            request->target->column,
+            &target_start) ||
+        !evo_clang_ast_offset(
+            source,
+            source_size,
+            request->target->end_line,
+            request->target->end_column,
+            &target_end) ||
+        target_start >= target_end || target_end > source_size) {
+        evo_project_release(source);
+        return EVO_PROJECT_TRANSFORMATION_ERROR_SOURCE_IO;
+    }
+'''
+if text.count(old) != 1:
+    raise SystemExit("source-read block mismatch")
+text = text.replace(old, new, 1)
+
+old = '''    result->target = target;
+    result->volatile_access = strstr(sandbox.stdout_text, "volatile") != NULL;
+    result->contains_macro = strstr(sandbox.stdout_text, "expansionLoc") != NULL;
+    result->language_extension = false;
+    result->ambiguous_target = false;
+    result->alias_assumption_required = false;
+'''
+new = '''    result->target = target;
+    result->volatile_access = false;
+    result->contains_macro = false;
+    result->language_extension = false;
+    result->ambiguous_target = false;
+    result->alias_assumption_required = false;
+'''
+if text.count(old) != 1:
+    raise SystemExit("global AST heuristic block mismatch")
+text = text.replace(old, new, 1)
+
+old = '''        status = evo_clang_ast_assignment(request, source, target, sandbox.stdout_text, context, result);
+    } else if (strcmp(request->transformation_identity, "catalyst.evo.c.double-negation-condition") == 0) {
+        status = evo_clang_ast_condition(source, target, sandbox.stdout_text, result);
+    } else if (strcmp(request->transformation_identity, "catalyst.evo.c.unsigned-multiply-to-shift") == 0) {
+        status = evo_clang_ast_shift(request, source, target, sandbox.stdout_text, context, result);
+'''
+new = '''        status = evo_clang_ast_assignment(
+            request,
+            source,
+            target,
+            sandbox.stdout_text,
+            sandbox.stdout_bytes,
+            context,
+            result);
+    } else if (strcmp(request->transformation_identity, "catalyst.evo.c.double-negation-condition") == 0) {
+        status = evo_clang_ast_condition(
+            request,
+            source,
+            target,
+            sandbox.stdout_text,
+            sandbox.stdout_bytes,
+            result);
+    } else if (strcmp(request->transformation_identity, "catalyst.evo.c.unsigned-multiply-to-shift") == 0) {
+        status = evo_clang_ast_shift(
+            request,
+            source,
+            target,
+            sandbox.stdout_text,
+            sandbox.stdout_bytes,
+            context,
+            result);
+'''
+if text.count(old) != 1:
+    raise SystemExit("semantic-call block mismatch")
+text = text.replace(old, new, 1)
+provider.write_text(text)
+
+# Fixture: real fingerprint, stale-input rejection, and unrelated AST noise.
+test = Path("tests/project_provider_clang_ast_test.c")
+text = test.read_text()
+old = '#include "internal/project_provider_clang_ast.h"\n#include "internal/project_provider_sandbox.h"\n'
+new = '#include "internal/project_fingerprint.h"\n#include "internal/project_provider_clang_ast.h"\n#include "internal/project_provider_sandbox.h"\n'
+if text.count(old) != 1:
+    raise SystemExit("AST test include block mismatch")
+text = text.replace(old, new, 1)
+
+run_provider = r'''static evo_project_transformation_status_t run_provider_with_fingerprint(
+    const char *source,
+    const char *workspace,
+    const evo_project_recipe_target_t *target,
+    const char *transformation,
+    const evo_project_compilation_record_t *unit,
+    evo_project_clang_ast_context_t *context,
+    evo_project_transformation_ast_result_t *result,
+    bool stale_fingerprint)
+{
+    evo_project_fingerprint_t fingerprint;
+    char source_fingerprint[EVO_PROJECT_FINGERPRINT_TEXT_SIZE];
+    evo_project_transformation_request_t request = {0};
+
+    evo_project_fingerprint_begin(&fingerprint);
+    evo_project_fingerprint_bytes(
+        &fingerprint, (const unsigned char *)source, strlen(source));
+    evo_project_fingerprint_format(fingerprint.value, source_fingerprint);
+    if (stale_fingerprint) {
+        source_fingerprint[EVO_PROJECT_FINGERPRINT_TEXT_SIZE - 2U] =
+            source_fingerprint[EVO_PROJECT_FINGERPRINT_TEXT_SIZE - 2U] == '0'
+                ? '1'
+                : '0';
+    }
+    request = (evo_project_transformation_request_t){
+        .schema_version = EVO_PROJECT_TRANSFORMATION_AST_SCHEMA_VERSION,
+        .baseline_fingerprint = "fnv1a64-v1:0000000000000000",
+        .analysis_fingerprint = "fnv1a64-v1:0000000000000001",
+        .recipe_fingerprint = "fnv1a64-v1:0000000000000002",
+        .snapshot_path = workspace,
+        .record_identity = "provider-fixture-record",
+        .target = target,
+        .transformation_identity = transformation,
+        .transformation_version = 1U,
+        .parameter_count = 0U,
+        .parameters = NULL,
+        .source_size = strlen(source),
+        .source_fingerprint = source_fingerprint,
+        .limits = transformation_limits(),
+        .network_access = false,
+    };
+
+    context->compilation_unit_count = 1U;
+    context->compilation_units = unit;
+    context->timeout_ms = 10000U;
+    context->max_memory_bytes = 536870912U;
+    context->max_processes = 8U;
+    context->max_storage_bytes = 1048576U;
+    context->max_output_bytes = 4194304U;
+    return evo_project_clang_ast_provider(&request, context, result);
+}
+
+static evo_project_transformation_status_t run_provider(
+    const char *source,
+    const char *workspace,
+    const evo_project_recipe_target_t *target,
+    const char *transformation,
+    const evo_project_compilation_record_t *unit,
+    evo_project_clang_ast_context_t *context,
+    evo_project_transformation_ast_result_t *result)
+{
+    return run_provider_with_fingerprint(
+        source,
+        workspace,
+        target,
+        transformation,
+        unit,
+        context,
+        result,
+        false);
+}
+
+'''
+pattern = re.compile(
+    r"static evo_project_transformation_status_t run_provider\(.*?\n\}\n\n"
+    r"(?=static void exercise_source)",
+    re.S,
+)
+text, count = pattern.subn(lambda _: run_provider, text)
+if count != 1:
+    raise SystemExit(f"AST test run_provider count {count}")
+
+old = '''    check(result.result_unsigned_integer, "shift unsigned type");
+    check(result.result_type_matches_primary, "shift type preservation");
+    check(result.result_width_bits >= 16U, "shift conservative width");
+    check(!result.contains_comment, "target comment-free");
+    check(!result.contains_preprocessor, "target preprocessor-free");
+'''
+new = '''    check(result.result_unsigned_integer, "shift unsigned type");
+    check(result.result_type_matches_primary, "shift type preservation");
+    check(result.result_width_bits == 16U, "target-local unsigned-int width");
+    check(!result.contains_macro, "target macro-free despite unrelated macro");
+    check(!result.volatile_access, "target nonvolatile despite unrelated volatile");
+    check(!result.contains_comment, "target comment-free");
+    check(!result.contains_preprocessor, "target preprocessor-free");
+'''
+if text.count(old) != 1:
+    raise SystemExit("shift assertion block mismatch")
+text = text.replace(old, new, 1)
+
+old = '''    static const char before_source[] =
+        "static unsigned int transform_fixture(unsigned int value, int ready)\\n"
+        "{\\n"
+        "    unsigned int scaled = value * 8U;\\n"
+        "    int total = 0;\\n"
+        "    total = total + ready;\\n"
+        "    if (!!ready) { total += 1; }\\n"
+        "    return scaled + (unsigned int)total;\\n"
+        "}\\n";
+    static const char after_source[] =
+        "static unsigned int transform_fixture(unsigned int value, int ready)\\n"
+        "{\\n"
+        "    unsigned int scaled = (value << 3);\\n"
+        "    int total = 0;\\n"
+        "    total += ready;\\n"
+        "    if (ready) { total += 1; }\\n"
+        "    return scaled + (unsigned int)total;\\n"
+        "}\\n";
+'''
+new = '''    static const char before_source[] =
+        "#define EVO_AST_NOISE(x) ((x) + 1U)\\n"
+        "static unsigned int transform_fixture(unsigned int value, int ready)\\n"
+        "{\\n"
+        "    volatile unsigned long long unrelated = 1ULL;\\n"
+        "    unsigned int macro_noise = EVO_AST_NOISE(value);\\n"
+        "    unsigned int scaled = value * 8U;\\n"
+        "    int total = 0;\\n"
+        "    total = total + ready;\\n"
+        "    if (!!ready) { total += 1; }\\n"
+        "    return scaled + (unsigned int)total + macro_noise + (unsigned int)unrelated;\\n"
+        "}\\n";
+    static const char after_source[] =
+        "#define EVO_AST_NOISE(x) ((x) + 1U)\\n"
+        "static unsigned int transform_fixture(unsigned int value, int ready)\\n"
+        "{\\n"
+        "    volatile unsigned long long unrelated = 1ULL;\\n"
+        "    unsigned int macro_noise = EVO_AST_NOISE(value);\\n"
+        "    unsigned int scaled = (value << 3);\\n"
+        "    int total = 0;\\n"
+        "    total += ready;\\n"
+        "    if (ready) { total += 1; }\\n"
+        "    return scaled + (unsigned int)total + macro_noise + (unsigned int)unrelated;\\n"
+        "}\\n";
+'''
+if text.count(old) != 1:
+    raise SystemExit("fixture source block mismatch")
+text = text.replace(old, new, 1)
+
+old = '''    exercise_source(workspace, before_source, false, &unit, &context);
+    evo_project_clang_ast_context_destroy(&context);
+'''
+new = '''    {
+        evo_project_recipe_target_t stale_target = {0};
+        evo_project_transformation_ast_result_t stale_result = {0};
+
+        check(
+            prepare_target(
+                before_source,
+                "total = total + ready",
+                0U,
+                "location-stale",
+                &stale_target),
+            "stale fingerprint target prepared");
+        check(
+            run_provider_with_fingerprint(
+                before_source,
+                workspace,
+                &stale_target,
+                "catalyst.evo.c.assignment-to-compound",
+                &unit,
+                &context,
+                &stale_result,
+                true) == EVO_PROJECT_TRANSFORMATION_ERROR_BASELINE_CHANGED,
+            "stale source fingerprint rejected before AST authorization");
+        evo_project_clang_ast_context_destroy(&context);
+    }
+    exercise_source(workspace, before_source, false, &unit, &context);
+    evo_project_clang_ast_context_destroy(&context);
+'''
+if text.count(old) != 1:
+    raise SystemExit("stale fingerprint insertion marker mismatch")
+text = text.replace(old, new, 1)
+test.write_text(text)
+
+# Assertions: the old whole-TU authorization path must be gone.
+provider_text = provider.read_text()
+for forbidden in (
+    "evo_clang_ast_has_operator",
+    "evo_clang_ast_condition_context",
+    "evo_clang_ast_minimum_unsigned_width",
+    'strstr(sandbox.stdout_text, "volatile")',
+    'strstr(sandbox.stdout_text, "expansionLoc")',
+):
+    if forbidden in provider_text:
+        raise SystemExit(f"whole-TU authority remains: {forbidden}")
+
+print("Issue 114 target-local AST authority wiring prepared successfully")
