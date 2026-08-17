@@ -1,0 +1,43 @@
+name: Validate Persistent Orchestration Trace
+
+on:
+  push:
+    branches:
+      - agent/bounded-source-orchestration
+    paths:
+      - '.github/workflows/orchestration-trace-validation-trigger.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: agent/bounded-source-orchestration
+          fetch-depth: 0
+      - name: CMake Clang focused validation
+        run: |
+          cmake -S . -B build-trace-validation -DCMAKE_C_COMPILER=clang -DEVO_ENABLE_SANITIZERS=ON
+          cmake --build build-trace-validation --target evo_project_search_test evo_project_orchestration_test evo_project_orchestration_checkpoint_test --parallel 2
+          ctest --test-dir build-trace-validation -R '^evo_project_(search|orchestration|orchestration_checkpoint)_test$' --output-on-failure
+      - name: Independent orchestration validation
+        run: python3 tests/validate_project_orchestration.py
+      - name: Autotools GCC focused validation
+        run: |
+          autoreconf -fi
+          ./configure CC=gcc
+          make -j2 tests/evo_project_search_test tests/evo_project_orchestration_test tests/evo_project_orchestration_checkpoint_test
+          make check TESTS='tests/evo_project_search_test tests/evo_project_orchestration_test tests/evo_project_orchestration_checkpoint_test'
+      - name: Remove validation trigger after success
+        run: |
+          rm -f .github/workflows/orchestration-trace-validation-trigger.yml
+          git config user.name 'Donovan Worrell'
+          git config user.email 'donovan.worrell@just-a-geek.com'
+          git add .github/workflows/orchestration-trace-validation-trigger.yml
+          git commit -m 'chore: remove orchestration trace validation trigger'
+          git push origin HEAD:agent/bounded-source-orchestration
