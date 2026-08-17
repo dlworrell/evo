@@ -200,6 +200,7 @@ check_PROGRAMS = \
 	tests/evo_project_search_test \
 	tests/evo_project_orchestration_test \
 	tests/evo_project_orchestration_checkpoint_test \
+	tests/evo_project_orchestration_resume_test \
 	benchmarks/evo_core_benchmark \
 	tests/evo_secure_erasure_test \
 	tests/evo_allocation_failure_test
@@ -364,6 +365,12 @@ tests_evo_project_orchestration_test_LDADD = \
 tests_evo_project_orchestration_checkpoint_test_SOURCES = \
 	tests/project_orchestration_checkpoint_test.c
 tests_evo_project_orchestration_checkpoint_test_LDADD = \
+	libevo_project_foundation.la
+
+
+tests_evo_project_orchestration_resume_test_SOURCES = \
+	tests/project_orchestration_resume_test.c
+tests_evo_project_orchestration_resume_test_LDADD = \
 	libevo_project_foundation.la
 
 benchmarks_evo_core_benchmark_SOURCES = benchmarks/core_benchmark.c

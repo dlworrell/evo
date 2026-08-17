@@ -36,6 +36,7 @@ def main() -> int:
     test = read("tests/project_orchestration_test.c")
     search_test = read("tests/project_search_test.c")
     checkpoint_test = read("tests/project_orchestration_checkpoint_test.c")
+    resume_test = read("tests/project_orchestration_resume_test.c")
     cmake = read("CMakeLists.txt")
     tests_cmake = read("tests/CMakeLists.txt")
     automake = read("Makefile.am")
@@ -237,6 +238,12 @@ def main() -> int:
         "truncated product checkpoint rejects",
     ):
         require(fixture in checkpoint_test, f"checkpoint oracle missing: {fixture}")
+    for fixture in (
+        "stale product identity rejects before external candidate execution",
+        "resumed bounded external evaluation matches uninterrupted execution",
+        "resume schedules only post-checkpoint generations",
+    ):
+        require(fixture in resume_test, f"resume oracle missing: {fixture}")
 
     for source in (
         "src/project_orchestration_model.c",
@@ -250,6 +257,7 @@ def main() -> int:
     for target in (
         "evo_project_orchestration_test",
         "evo_project_orchestration_checkpoint_test",
+        "evo_project_orchestration_resume_test",
     ):
         require(target in tests_cmake, f"canonical CTest target missing: {target}")
         require(f"tests/{target}" in automake, f"Automake target missing: {target}")

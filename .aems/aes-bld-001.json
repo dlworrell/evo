@@ -405,6 +405,12 @@
         "source": "tests/project_orchestration_checkpoint_test.c",
         "cmake": "evo_project_orchestration_checkpoint_test",
         "autotools": "tests/evo_project_orchestration_checkpoint_test"
+      },
+      {
+        "id": "project-orchestration-resume",
+        "source": "tests/project_orchestration_resume_test.c",
+        "cmake": "evo_project_orchestration_resume_test",
+        "autotools": "tests/evo_project_orchestration_resume_test"
       }
     ],
     "consumer_sources": [
