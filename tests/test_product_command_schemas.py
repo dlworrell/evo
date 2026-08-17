@@ -18,7 +18,10 @@ EXPECTED = {
             "providerPolicy",
             "providers",
         },
-        "provider_count": 2,
+        "provider_ids": [
+            "catalyst.evo.provider.clang-analysis.v1",
+            "catalyst.evo.provider.linux-bwrap.v1",
+        ],
     },
     "evolve": {
         "file": "evo-command-evolve-v1.schema.json",
@@ -33,7 +36,12 @@ EXPECTED = {
             "providerPolicy",
             "providers",
         },
-        "provider_count": 4,
+        "provider_ids": [
+            "catalyst.evo.provider.clang-analysis.v1",
+            "catalyst.evo.provider.clang-ast.v1",
+            "catalyst.evo.provider.linux-bwrap.v1",
+            "catalyst.evo.provider.local-evaluation.v1",
+        ],
     },
     "replay": {
         "file": "evo-command-replay-v1.schema.json",
@@ -50,13 +58,18 @@ EXPECTED = {
             "replayIdentityComplete",
             "externalInputsDeclared",
         },
-        "provider_count": 4,
+        "provider_ids": [
+            "catalyst.evo.provider.clang-analysis.v1",
+            "catalyst.evo.provider.clang-ast.v1",
+            "catalyst.evo.provider.linux-bwrap.v1",
+            "catalyst.evo.provider.local-evaluation.v1",
+        ],
     },
     "report": {
         "file": "evo-command-report-v1.schema.json",
         "schema": "catalyst.evo.command.report.v1",
         "required": {"schema", "operation", "evidence", "output"},
-        "provider_count": 0,
+        "provider_ids": [],
     },
 }
 
@@ -85,13 +98,21 @@ class ProductCommandSchemaTests(unittest.TestCase):
                 self.assertEqual(document["properties"]["operation"]["const"], operation)
                 self.assertEqual(set(document["required"]), expected["required"])
 
-                if expected["provider_count"] == 0:
+                provider_ids = expected["provider_ids"]
+                if not provider_ids:
                     self.assertNotIn("providers", document["properties"])
                     self.assertNotIn("providerPolicy", document["properties"])
                 else:
                     providers = document["properties"]["providers"]
-                    self.assertEqual(providers["minItems"], expected["provider_count"])
-                    self.assertEqual(providers["maxItems"], expected["provider_count"])
+                    self.assertEqual(providers["minItems"], len(provider_ids))
+                    self.assertEqual(providers["maxItems"], len(provider_ids))
+                    self.assertIs(providers["items"], False)
+                    self.assertEqual(len(providers["prefixItems"]), len(provider_ids))
+                    actual_ids = [
+                        item["allOf"][1]["properties"]["identity"]["const"]
+                        for item in providers["prefixItems"]
+                    ]
+                    self.assertEqual(actual_ids, provider_ids)
                     self.assertEqual(
                         document["properties"]["providerPolicy"]["const"],
                         "catalyst.evo.provider-policy.v1",
