@@ -3,6 +3,7 @@
 #include "internal/project_provider_adapters.h"
 
 #include "internal/project_fingerprint.h"
+#include "internal/project_provider.h"
 #include "internal/project_runtime.h"
 
 #include <string.h>
@@ -338,4 +339,260 @@ evo_project_measurement_status_t evo_project_sandbox_measurement_provider(
     }
     evo_project_sandbox_result_destroy(&sandbox);
     return EVO_PROJECT_MEASUREMENT_SUCCESS;
+}
+
+static bool evo_provider_copy_identity(
+    char destination[EVO_PROJECT_FINGERPRINT_TEXT_SIZE],
+    const char *source)
+{
+    size_t index;
+
+    if (source == NULL || source[0] == '\0') {
+        return false;
+    }
+    for (index = 0U; index + 1U < EVO_PROJECT_FINGERPRINT_TEXT_SIZE;
+         index += 1U) {
+        destination[index] = source[index];
+        if (source[index] == '\0') {
+            return true;
+        }
+    }
+    if (source[index] != '\0') {
+        destination[0] = '\0';
+        return false;
+    }
+    destination[index] = '\0';
+    return true;
+}
+
+static bool evo_provider_capabilities_satisfy(
+    const evo_project_orchestration_resource_policy_t *resources,
+    const evo_project_orchestration_provider_capabilities_t *capabilities)
+{
+    return resources != NULL && capabilities != NULL &&
+           resources->schema_version == EVO_PROJECT_ORCHESTRATION_SCHEMA_VERSION &&
+           capabilities->schema_version == EVO_PROJECT_ORCHESTRATION_SCHEMA_VERSION &&
+           (resources->cpu_time_ms == 0U || capabilities->cpu_limit_enforced) &&
+           (resources->address_space_bytes == 0U ||
+            capabilities->address_space_limit_enforced) &&
+           (resources->descendant_process_count == 0U ||
+            capabilities->process_limit_enforced) &&
+           (resources->storage_bytes == 0U ||
+            capabilities->storage_limit_enforced) &&
+           (resources->output_bytes == 0U ||
+            capabilities->output_limit_enforced) &&
+           (resources->wall_timeout_ms == 0U || capabilities->timeout_enforced) &&
+           (!resources->require_filesystem_isolation ||
+            capabilities->filesystem_isolation_enforced) &&
+           (!resources->require_network_isolation ||
+            capabilities->network_isolation_enforced) &&
+           (!resources->require_descendant_cleanup ||
+            capabilities->descendant_cleanup_enforced);
+}
+
+static evo_project_local_evaluation_slot_t *evo_provider_acquire_slot(
+    evo_project_local_evaluation_context_t *context)
+{
+    size_t index;
+
+    for (index = 0U; index < context->slot_count; index += 1U) {
+        if (!context->slots[index].active) {
+            context->slots[index] = (evo_project_local_evaluation_slot_t){0};
+            context->slots[index].active = true;
+            return &context->slots[index];
+        }
+    }
+    return NULL;
+}
+
+static bool evo_provider_local_request_valid(
+    const evo_project_orchestration_provider_request_t *request,
+    const evo_project_local_evaluation_context_t *context)
+{
+    return request != NULL && context != NULL &&
+           request->schema_version == EVO_PROJECT_ORCHESTRATION_SCHEMA_VERSION &&
+           request->provider_identity != NULL &&
+           strcmp(request->provider_identity, EVO_PROJECT_PROVIDER_LOCAL_EVALUATION_ID) ==
+               0 &&
+           request->policy_identity != NULL && request->policy_identity[0] != '\0' &&
+           request->candidate.schema_version ==
+               EVO_PROJECT_ORCHESTRATION_SCHEMA_VERSION &&
+           request->candidate.recipe != NULL &&
+           request->candidate.recipe->private_owner != NULL &&
+           request->candidate.recipe_fingerprint != NULL &&
+           request->candidate.recipe->recipe_fingerprint != NULL &&
+           strcmp(request->candidate.recipe_fingerprint,
+                  request->candidate.recipe->recipe_fingerprint) == 0 &&
+           request->candidate.workspace_identity != NULL &&
+           request->candidate.workspace_identity[0] != '\0' &&
+           context->evaluator != NULL && context->slots != NULL &&
+           context->slot_count > 0U &&
+           context->capabilities.schema_version ==
+               EVO_PROJECT_ORCHESTRATION_SCHEMA_VERSION;
+}
+
+static evo_project_orchestration_status_t evo_provider_local_start(
+    const evo_project_orchestration_provider_request_t *request,
+    void *opaque,
+    void **handle)
+{
+    evo_project_local_evaluation_context_t *context = opaque;
+    evo_project_local_evaluation_slot_t *slot;
+    evo_project_search_evaluation_request_t evaluation_request = {0};
+    evo_project_search_evaluation_outcome_t evaluation = {0};
+    evo_project_search_status_t evaluation_status;
+
+    if (handle == NULL) {
+        return EVO_PROJECT_ORCHESTRATION_ERROR_INVALID_ARGUMENT;
+    }
+    *handle = NULL;
+    if (!evo_provider_local_request_valid(request, context)) {
+        return EVO_PROJECT_ORCHESTRATION_ERROR_PROVIDER;
+    }
+    slot = evo_provider_acquire_slot(context);
+    if (slot == NULL) {
+        return EVO_PROJECT_ORCHESTRATION_ERROR_RESOURCE_LIMIT;
+    }
+    slot->capabilities = context->capabilities;
+    if (!evo_provider_capabilities_satisfy(
+            &request->resources, &slot->capabilities)) {
+        slot->terminal_reason =
+            EVO_PROJECT_ORCHESTRATION_TERMINAL_CAPABILITY_UNAVAILABLE;
+        *handle = slot;
+        return EVO_PROJECT_ORCHESTRATION_SUCCESS;
+    }
+
+    evaluation_request.schema_version = EVO_PROJECT_SEARCH_SCHEMA_VERSION;
+    evaluation_request.random_seed = request->candidate.random_seed;
+    evaluation_request.generation = request->candidate.generation;
+    evaluation_request.population_index = request->candidate.population_index;
+    evaluation_request.provider_identity = EVO_PROJECT_PROVIDER_LOCAL_EVALUATION_ID;
+    evaluation_request.recipe = request->candidate.recipe;
+    evaluation_status = context->evaluator(
+        &evaluation_request, context->evaluator_context, &evaluation);
+    if (evaluation_status == EVO_PROJECT_SEARCH_ERROR_OUT_OF_MEMORY) {
+        *slot = (evo_project_local_evaluation_slot_t){0};
+        return EVO_PROJECT_ORCHESTRATION_ERROR_OUT_OF_MEMORY;
+    }
+    if (evaluation_status != EVO_PROJECT_SEARCH_SUCCESS ||
+        evaluation.schema_version != EVO_PROJECT_SEARCH_SCHEMA_VERSION) {
+        slot->terminal_reason = EVO_PROJECT_ORCHESTRATION_TERMINAL_PROVIDER_PROTOCOL;
+        *handle = slot;
+        return EVO_PROJECT_ORCHESTRATION_SUCCESS;
+    }
+    if (!evaluation.accepted || !evaluation.correctness_preserved ||
+        !evaluation.performance_eligible || !evaluation.fitness_available) {
+        slot->terminal_reason =
+            EVO_PROJECT_ORCHESTRATION_TERMINAL_CANDIDATE_REJECTED;
+        *handle = slot;
+        return EVO_PROJECT_ORCHESTRATION_SUCCESS;
+    }
+    if (!evo_provider_copy_identity(
+            slot->candidate_fingerprint, evaluation.candidate_fingerprint) ||
+        !evo_provider_copy_identity(
+            slot->assurance_fingerprint, evaluation.assurance_fingerprint) ||
+        !evo_provider_copy_identity(
+            slot->measurement_fingerprint, evaluation.measurement_fingerprint)) {
+        slot->terminal_reason = EVO_PROJECT_ORCHESTRATION_TERMINAL_PROVIDER_PROTOCOL;
+        *handle = slot;
+        return EVO_PROJECT_ORCHESTRATION_SUCCESS;
+    }
+    slot->evaluation = evaluation;
+    slot->evaluation.candidate_fingerprint = slot->candidate_fingerprint;
+    slot->evaluation.assurance_fingerprint = slot->assurance_fingerprint;
+    slot->evaluation.measurement_fingerprint = slot->measurement_fingerprint;
+    slot->terminal_reason = EVO_PROJECT_ORCHESTRATION_TERMINAL_SUCCESS;
+    *handle = slot;
+    return EVO_PROJECT_ORCHESTRATION_SUCCESS;
+}
+
+static evo_project_orchestration_status_t evo_provider_local_poll(
+    void *handle,
+    void *opaque,
+    evo_project_orchestration_provider_poll_t *poll)
+{
+    evo_project_local_evaluation_slot_t *slot = handle;
+    const evo_project_local_evaluation_context_t *context = opaque;
+
+    if (slot == NULL || context == NULL || poll == NULL || !slot->active ||
+        slot->joined) {
+        return EVO_PROJECT_ORCHESTRATION_ERROR_PROVIDER;
+    }
+    *poll = (evo_project_orchestration_provider_poll_t){0};
+    poll->schema_version = EVO_PROJECT_ORCHESTRATION_SCHEMA_VERSION;
+    poll->terminal = true;
+    poll->terminal_reason = slot->canceled
+                                ? EVO_PROJECT_ORCHESTRATION_TERMINAL_CANCELED
+                                : slot->terminal_reason;
+    return EVO_PROJECT_ORCHESTRATION_SUCCESS;
+}
+
+static evo_project_orchestration_status_t evo_provider_local_cancel(
+    void *handle,
+    void *opaque)
+{
+    evo_project_local_evaluation_slot_t *slot = handle;
+    const evo_project_local_evaluation_context_t *context = opaque;
+
+    if (slot == NULL || context == NULL || !slot->active || slot->joined) {
+        return EVO_PROJECT_ORCHESTRATION_ERROR_PROVIDER;
+    }
+    slot->canceled = true;
+    slot->terminal_reason = EVO_PROJECT_ORCHESTRATION_TERMINAL_CANCELED;
+    return EVO_PROJECT_ORCHESTRATION_SUCCESS;
+}
+
+static evo_project_orchestration_status_t evo_provider_local_join(
+    void *handle,
+    void *opaque,
+    evo_project_orchestration_provider_join_t *join)
+{
+    evo_project_local_evaluation_slot_t *slot = handle;
+    const evo_project_local_evaluation_context_t *context = opaque;
+
+    if (slot == NULL || context == NULL || join == NULL || !slot->active ||
+        slot->joined) {
+        return EVO_PROJECT_ORCHESTRATION_ERROR_PROVIDER;
+    }
+    *join = (evo_project_orchestration_provider_join_t){0};
+    join->schema_version = EVO_PROJECT_ORCHESTRATION_SCHEMA_VERSION;
+    join->terminal_reason = slot->canceled
+                                ? EVO_PROJECT_ORCHESTRATION_TERMINAL_CANCELED
+                                : slot->terminal_reason;
+    join->capabilities = slot->capabilities;
+    join->cleanup_complete = true;
+    if (join->terminal_reason == EVO_PROJECT_ORCHESTRATION_TERMINAL_SUCCESS) {
+        join->evaluation = slot->evaluation;
+    }
+    slot->joined = true;
+    slot->active = false;
+    return EVO_PROJECT_ORCHESTRATION_SUCCESS;
+}
+
+bool evo_project_local_evaluation_provider_init(
+    evo_project_local_evaluation_context_t *context,
+    evo_project_orchestration_provider_t *provider)
+{
+    size_t index;
+
+    if (context == NULL || provider == NULL || context->evaluator == NULL ||
+        context->slots == NULL || context->slot_count == 0U ||
+        context->capabilities.schema_version !=
+            EVO_PROJECT_ORCHESTRATION_SCHEMA_VERSION) {
+        return false;
+    }
+    for (index = 0U; index < context->slot_count; index += 1U) {
+        if (context->slots[index].active) {
+            return false;
+        }
+    }
+    *provider = (evo_project_orchestration_provider_t){
+        .identity = EVO_PROJECT_PROVIDER_LOCAL_EVALUATION_ID,
+        .start = evo_provider_local_start,
+        .poll = evo_provider_local_poll,
+        .cancel = evo_provider_local_cancel,
+        .join = evo_provider_local_join,
+        .context = context,
+    };
+    return true;
 }
