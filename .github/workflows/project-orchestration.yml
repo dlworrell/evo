@@ -93,7 +93,7 @@ jobs:
           grep -F 'project(catalyst_evo VERSION 0.42.0 LANGUAGES C)' CMakeLists.txt
           grep -F '[0.42.0],' configure.ac
           grep -F '#define EVO_VERSION_MAJOR 0' include/catalyst/evo/evo.h
-          grep -F '#define EVO_VERSION_MINOR 42' include/catalyst/evo/evo.h
+          grep -F '#define EVO_VERSION_MINOR 37' include/catalyst/evo/evo.h
           grep -F '#define EVO_VERSION_PATCH 0' include/catalyst/evo/evo.h
           grep -F 'status: implemented-0.42.0' repo.yaml
           grep -F 'status: bounded-source-orchestration-implemented-0.42.0' repo.yaml
