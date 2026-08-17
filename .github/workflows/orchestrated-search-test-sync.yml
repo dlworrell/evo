@@ -1,0 +1,41 @@
+name: Orchestrated Structured Search Test Sync
+
+on:
+  push:
+    branches:
+      - agent/bounded-source-orchestration
+    paths:
+      - '.github/workflows/orchestrated-search-test-sync.yml'
+      - '.github/scripts/project_search_orchestration_test_patch.py'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: agent/bounded-source-orchestration
+          fetch-depth: 0
+      - name: Add orchestrated structured search oracle
+        run: python3 .github/scripts/project_search_orchestration_test_patch.py
+      - name: Canonicalize search oracle
+        run: clang-format -i tests/project_search_test.c
+      - name: Commit oracle
+        run: |
+          git config user.name 'Donovan Worrell'
+          git config user.email 'donovan.worrell@just-a-geek.com'
+          git add tests/project_search_test.c
+          if ! git diff --cached --quiet; then
+            git commit -m 'test: add orchestrated structured search oracle'
+            git push origin HEAD:agent/bounded-source-orchestration
+          fi
+      - name: Verify orchestrated search oracle
+        run: |
+          cmake -S . -B build-orchestrated-search -DCMAKE_C_COMPILER=clang
+          cmake --build build-orchestrated-search --target evo_project_search_test --parallel 2
+          ctest --test-dir build-orchestrated-search -R '^evo_project_search_test$' --output-on-failure
