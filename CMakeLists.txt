@@ -104,6 +104,7 @@ add_library(catalyst_evo::catalyst_evo ALIAS catalyst_evo)
 add_library(catalyst_evo_project_foundation STATIC
     src/project_runtime.c
     src/project_provider.c
+    src/project_provider_sandbox.c
     src/project_json.c
     src/project_fingerprint.c
     src/project_manifest.c
@@ -186,6 +187,29 @@ if(BUILD_TESTING)
             catalyst_evo_project_foundation
     )
     add_test(NAME evo_project_provider_test COMMAND evo_project_provider_test)
+
+    add_executable(
+        evo_project_provider_sandbox_test
+        tests/project_provider_sandbox_test.c
+    )
+    target_include_directories(
+        evo_project_provider_sandbox_test
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/src
+    )
+    target_link_libraries(
+        evo_project_provider_sandbox_test
+        PRIVATE
+            catalyst_evo_project_foundation
+    )
+    add_test(
+        NAME evo_project_provider_sandbox_test
+        COMMAND evo_project_provider_sandbox_test
+    )
+    set_tests_properties(
+        evo_project_provider_sandbox_test
+        PROPERTIES SKIP_RETURN_CODE 77
+    )
 endif()
 
 set(prefix "${CMAKE_INSTALL_PREFIX}")
