@@ -12,6 +12,21 @@ AC_PROG_CC
 AM_PROG_AR
 LT_INIT([disable-shared])
 
+EVO_PRODUCT_VERSION=$PACKAGE_VERSION
+AC_SUBST([EVO_PRODUCT_VERSION])
+
+AC_MSG_CHECKING([installed catalyst-evo core version])
+evo_core_major=`sed -n 's/^#define[[:space:]][[:space:]]*EVO_VERSION_MAJOR[[:space:]][[:space:]]*\([0-9][0-9]*\)[[:space:]]*$/\1/p' "$srcdir/include/catalyst/evo/evo.h"`
+evo_core_minor=`sed -n 's/^#define[[:space:]][[:space:]]*EVO_VERSION_MINOR[[:space:]][[:space:]]*\([0-9][0-9]*\)[[:space:]]*$/\1/p' "$srcdir/include/catalyst/evo/evo.h"`
+evo_core_patch=`sed -n 's/^#define[[:space:]][[:space:]]*EVO_VERSION_PATCH[[:space:]][[:space:]]*\([0-9][0-9]*\)[[:space:]]*$/\1/p' "$srcdir/include/catalyst/evo/evo.h"`
+AS_IF(
+  [test -z "$evo_core_major" || test -z "$evo_core_minor" || test -z "$evo_core_patch"],
+  [AC_MSG_ERROR([unable to derive EVO core version from include/catalyst/evo/evo.h])]
+)
+EVO_CORE_VERSION="${evo_core_major}.${evo_core_minor}.${evo_core_patch}"
+AC_SUBST([EVO_CORE_VERSION])
+AC_MSG_RESULT([$EVO_CORE_VERSION])
+
 AC_CHECK_HEADERS(
   [pthread.h sched.h],
   [],
