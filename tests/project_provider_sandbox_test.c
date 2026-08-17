@@ -12,6 +12,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#if defined(__linux__)
 static int failures = 0;
 
 static void check(bool condition, const char *message)
@@ -56,6 +57,7 @@ static evo_project_sandbox_status_t run_command(
 
     return evo_project_sandbox_run(&command, result);
 }
+#endif
 
 int main(void)
 {
