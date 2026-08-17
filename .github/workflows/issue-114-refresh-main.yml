@@ -1,0 +1,32 @@
+name: Issue 114 Refresh Main
+
+on:
+  push:
+    branches:
+      - agent/issue-114-production-providers
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: agent/issue-114-production-providers
+          fetch-depth: 0
+      - name: Merge current main
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin main
+          git merge --no-ff origin/main -m 'Merge v0.43 command contract into production providers'
+      - name: Remove one-shot workflow
+        run: |
+          rm .github/workflows/issue-114-refresh-main.yml
+          git add -A
+          git commit -m 'Remove issue 114 refresh helper'
+      - name: Push refreshed branch
+        run: git push origin HEAD:agent/issue-114-production-providers
