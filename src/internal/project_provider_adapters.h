@@ -4,6 +4,7 @@
 #include "internal/project_assurance.h"
 #include "internal/project_ingestion.h"
 #include "internal/project_measurement.h"
+#include "internal/project_orchestration.h"
 #include "internal/project_provider_sandbox.h"
 
 #include <stdbool.h>
@@ -48,6 +49,24 @@ typedef struct evo_project_sandbox_measurement_context {
     const evo_project_measurement_command_t *workloads;
 } evo_project_sandbox_measurement_context_t;
 
+/*
+ * Adapter from the synchronous source-evaluation contract to the product
+ * orchestration start/poll/cancel/join contract. The evaluator is private
+ * product plumbing, not a public provider ABI. Its returned result must be
+ * fully owned/settled before the callback returns; this adapter deep-copies
+ * all committed fingerprint identities before publishing a handle.
+ *
+ * capabilities are evidence supplied by the concrete evaluation composition.
+ * The adapter will not invent missing capabilities and will return a terminal
+ * CAPABILITY_UNAVAILABLE result without invoking the evaluator when the
+ * requested orchestration policy requires an unattested capability.
+ */
+typedef struct evo_project_local_evaluation_context {
+    evo_project_search_evaluation_provider_fn evaluator;
+    void *evaluator_context;
+    evo_project_orchestration_provider_capabilities_t capabilities;
+} evo_project_local_evaluation_context_t;
+
 evo_project_status_t evo_project_sandbox_command_runner(
     const evo_project_command_view_t *command,
     const char *workspace_path,
@@ -67,5 +86,9 @@ evo_project_measurement_status_t evo_project_sandbox_measurement_provider(
     const evo_project_measurement_request_t *request,
     void *context,
     evo_project_measurement_outcome_t *outcome);
+
+bool evo_project_local_evaluation_provider_init(
+    evo_project_local_evaluation_context_t *context,
+    evo_project_orchestration_provider_t *provider);
 
 #endif
