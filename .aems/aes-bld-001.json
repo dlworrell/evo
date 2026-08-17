@@ -140,7 +140,11 @@
       "src/project_measurement.c",
       "src/project_search_model.c",
       "src/project_search_runtime.c",
-      "src/project_search.c"
+      "src/project_search.c",
+      "src/project_orchestration_model.c",
+      "src/project_orchestration_runtime.c",
+      "src/project_orchestration.c",
+      "src/project_orchestration_checkpoint.c"
     ],
     "normative_tests": [
       {
@@ -388,6 +392,18 @@
         "source": "tests/project_search_test.c",
         "cmake": "evo_project_search_test",
         "autotools": "tests/evo_project_search_test"
+      },
+      {
+        "id": "project-orchestration",
+        "source": "tests/project_orchestration_test.c",
+        "cmake": "evo_project_orchestration_test",
+        "autotools": "tests/evo_project_orchestration_test"
+      },
+      {
+        "id": "project-orchestration-checkpoint",
+        "source": "tests/project_orchestration_checkpoint_test.c",
+        "cmake": "evo_project_orchestration_checkpoint_test",
+        "autotools": "tests/evo_project_orchestration_checkpoint_test"
       }
     ],
     "consumer_sources": [
