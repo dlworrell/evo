@@ -9,6 +9,7 @@
 
 #define EVO_PROJECT_COMMAND_SCHEMA_VERSION 1U
 #define EVO_PROJECT_COMMAND_INTERFACE_VERSION 1U
+#define EVO_PROJECT_PRODUCT_COMMAND_COUNT 4U
 #define EVO_PROJECT_COMMAND_PROVIDER_POLICY_ID \
     "catalyst.evo.provider-policy.v1"
 
@@ -27,8 +28,7 @@ typedef enum evo_project_command_operation {
     EVO_PROJECT_COMMAND_ANALYZE = 0,
     EVO_PROJECT_COMMAND_EVOLVE = 1,
     EVO_PROJECT_COMMAND_REPLAY = 2,
-    EVO_PROJECT_COMMAND_REPORT = 3,
-    EVO_PROJECT_COMMAND_COUNT = 4
+    EVO_PROJECT_COMMAND_REPORT = 3
 } evo_project_command_operation_t;
 
 typedef enum evo_project_command_status {
