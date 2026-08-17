@@ -24,6 +24,10 @@ assurance, reproducible baseline-versus-candidate measurement, deterministic
 structured recipe evolution, and bounded external-process orchestration with
 stable commit/cleanup traces and product checkpoint/resume authority.
 
+Issue #63 implements candidate build/correctness assurance; its 0.39.0 hard-gate
+semantics remain part of the 0.43.0 package boundary unchanged by the command-
+contract layer.
+
 Issue #64 implements reproducible candidate performance measurement; its
 0.40.0 evidence and fitness semantics remain part of the 0.43.0 package
 boundary unchanged by the command-contract layer.
