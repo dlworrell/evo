@@ -75,6 +75,7 @@ jobs:
               evo_project_provider_test \
               evo_project_provider_sandbox_test \
               evo_project_provider_clang_test \
+              evo_project_provider_clang_ast_test \
             --parallel
 
       - name: Execute CMake real provider fixtures without skips
@@ -82,7 +83,7 @@ jobs:
           set -o pipefail
           ctest --test-dir build/production-providers \
             --output-on-failure \
-            -R '^evo_project_provider(_sandbox|_clang)?_test$' \
+            -R '^evo_project_provider(_sandbox|_clang|_clang_ast)?_test$' \
             | tee build/production-providers/provider-ctest.log
           if grep -E '\*\*\*Skipped|Not Run' \
               build/production-providers/provider-ctest.log; then
@@ -115,3 +116,4 @@ jobs:
           build/production-providers/evo_project_provider_test
           build/production-providers/evo_project_provider_sandbox_test
           build/production-providers/evo_project_provider_clang_test
+          build/production-providers/evo_project_provider_clang_ast_test
