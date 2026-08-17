@@ -91,6 +91,11 @@ asynchronous completion while committing stable candidate order, joins/cancels
 all started work before failure authority, retains persistent exact batch/job
 traces, and wraps core checkpoint bytes with complete product dependency identity
 before resume.
+Version 0.43.0 adds a private executable-facing command registry and
+execution-plan boundary for `analyze`, `evolve`, `replay`, and `report`. It
+validates explicit path roles, checkpoint/replay policy, stable exit classes,
+and exact production-provider identity/version/capability requirements before
+external execution may be authorized; it launches no target process itself.
 
 Source genomes never contain arbitrary C text for byte-wise mutation or
 crossover. One genome represents a complete transformation recipe containing
@@ -117,11 +122,14 @@ caller-declared weights derive the scalar EVO fitness.
 
 ### Product orchestration and artifacts
 
-The product layer coordinates analyze, evolve, replay, and report operations;
-maps candidate evidence into finite EVO fitness; binds product checkpoints to
-baseline, analysis, catalogue, toolchain, workload, and schema identities; and
-emits the selected patch, recipe, lineage, validation, measurements, and
-replay evidence.
+The product layer coordinates `analyze`, `evolve`, `replay`, and `report`
+operations. Version 0.43.0 fixes their request schemas, help/path roles,
+provider-policy requirements, replay/checkpoint preflight, output/stream
+invariants, and terminal/exit mapping as a declarative execution plan. Later
+installed execution maps candidate evidence into finite EVO fitness, binds
+product checkpoints to baseline, analysis, provider, catalogue, toolchain,
+workload, and schema identities, and emits the selected patch, recipe, lineage,
+validation, measurements, and replay evidence.
 
 EVO never applies, commits, pushes, merges, deploys, or publishes a target-
 project patch automatically.
@@ -164,20 +172,19 @@ ADR-0026 defines the complete rule.
 
 ## Current Conformance Boundary
 
-Version 0.42.0 contains the evolutionary-search core, its bounded reference
-consumers, private project ingestion, a private normalized analysis and hotspot
-model, a private canonical transformation-recipe model, a private initial AST-
-aware C transformation catalogue, private isolated candidate materialization,
-private candidate assurance, private reproducible candidate measurement with
-finite fitness mapping, private deterministic structured recipe search, and
-private bounded external-process source orchestration. Candidate process
-execution and target workload sampling remain owned by caller-supplied providers;
-EVO validates declared policy, condition identity, ordered outcomes, cleanup, and
-exact evidence rather than pretending to provide a portable OS sandbox or
-universal timing environment. Product commands, the installed standalone
-executable, and final optimized-patch artifacts remain planned by issues #67
-through #69 and #93. Documentation of those planned boundaries is not an
-implementation claim.
+Version 0.43.0 contains the evolutionary-search core, its bounded reference
+consumers, private project ingestion, normalized analysis/hotspot evidence,
+canonical transformation recipes, the initial AST-aware C transformation
+catalogue, isolated candidate materialization, candidate assurance, reproducible
+candidate measurement with finite fitness mapping, deterministic structured
+recipe search, bounded external-process source orchestration, and the private
+executable-facing product command/execution-plan contract. Historical 0.34.0-
+0.42.0 callback seams remain private foundation mechanisms; EVO-002A and
+EVO-003 define the 0.43.0 standalone provider-selection authority. Concrete
+production providers remain owned by #114 and installed execution by #93.
+Optimized-patch publication and end-to-end proof remain #68/#69 work; the
+0.43.0 command contract itself launches no target process and makes no installed
+application claim.
 
 The 0.37.0 package's core uses explicit bounded arrays, direct deterministic
 scans, and one direct constant-space adaptive-rate record rather than compressed,
@@ -243,8 +250,11 @@ termination. EVO-HRA-014 audits this 0.41.0 boundary. Bounded source orchestrati
 also uses complete bounded candidate-job arrays, complete committed lineage
 prefixes, explicit product identity records, and direct deterministic scans;
 runtime queues, process handles, completion timing, and OS scheduling are not
-authority. EVO-HRA-015 audits this 0.42.0 boundary. The current implementation
-therefore has no opaque accelerated authority requiring remediation. This audit
+authority. EVO-HRA-015 audits this 0.42.0 boundary. The 0.43.0 product command
+registry and provider-requirement table are likewise fixed ordered arrays with
+direct scans and no accelerated dispatcher, cache, or probabilistic authority;
+EVO-HRA-016 audits this command boundary. The current implementation therefore
+has no opaque accelerated authority requiring remediation. This audit
 does not pre-approve later variable pools, compressed checkpoints, distributed
 schedulers, transformation lookup indexes, candidate caches, or artifact
 implementations.

@@ -47,8 +47,12 @@ The governing product records are:
 - `docs/adr/ADR-0041-reproducible-candidate-performance-fitness.md`
 - `docs/adr/ADR-0042-structured-recipe-evolution.md`
 - `docs/adr/ADR-0043-bounded-parallel-source-orchestration.md`
+- `docs/adr/ADR-0044-built-in-production-providers.md`
+- `docs/adr/ADR-0045-product-command-contract.md`
 - `docs/specs/EVO-001-library-contract.md`
 - `docs/specs/EVO-002-source-optimizer-contract.md`
+- `docs/specs/EVO-002A-product-command-provider-addendum.md`
+- `docs/specs/EVO-003-product-command-contract.md`
 - `docs/roadmap.md`
 
 ## Product Boundary
@@ -175,7 +179,10 @@ order, every started worker is canceled/joined before failure authority, and
 product checkpoints bind the complete source-optimizer dependency identity.
 Persistent search traces retain exact batch/job evidence without making a
 runtime queue, process handle, or completion timestamp authoritative.
-EVO-HRA-015 retains this orchestration-specific audit.
+EVO-HRA-015 retains this orchestration-specific audit. ADR-0045 assesses
+0.43.0 product command planning: fixed ordered command/provider registries and
+direct scans are exact authority, and no accelerated dispatcher or cache is
+introduced. EVO-HRA-016 retains this command-specific audit.
 
 ## Roadmap Scope
 
@@ -212,6 +219,8 @@ The source-optimizer track adds:
 - Implemented bounded external-process orchestration with stable result-commit
   order, persistent worker traces, resource/capability policy, product
   checkpoint identity, and deterministic resume
+- Implemented 0.43.0 executable-facing `analyze`, `evolve`, `replay`, and
+  `report` request schemas plus fail-closed execution-plan semantics
 - Reviewable optimized patches and machine-readable evidence bundles
 
 ## Safety Boundary
@@ -248,7 +257,10 @@ Version 0.42.0 adds bounded external-process source orchestration, deterministic
 candidate/workspace/logical-worker assignment, stable result commit independent
 of completion order, persistent exact worker traces, fail-closed cleanup, and
 product checkpoint identity with uninterrupted-versus-resumed differential
-evidence. The installed executable remains dependency-ordered roadmap work.
+evidence. Version 0.43.0 adds the fixed executable-facing command registry,
+request schemas, exact production-provider selection policy, replay/checkpoint
+preflight, stable exit-status mapping, and fail-closed execution-plan authority.
+Concrete providers and the installed executable remain dependency-ordered work.
 
 ## Authoritative Native Builds
 
@@ -275,7 +287,7 @@ make check
 ```
 
 `CMakePresets.json`, `configure.ac`, and `Makefile.am` enumerate the same 26
-installed-core sources, 35 private source-foundation sources, and 44
+installed-core sources, 36 private source-foundation sources, and 45
 normative tests. CI also compares staged install
 manifests, public symbols, package metadata, and a downstream consumer built
 against each installed result. See
@@ -288,7 +300,7 @@ declared Clang/LLVM and GNU profiles.
 
 ## Status
 
-**Current implementation boundary:** EVO 0.42.0 packages the deterministic
+**Current implementation boundary:** EVO 0.43.0 packages the deterministic
 evolutionary-search core plus the private source-optimizer foundations for
 strict C-project ingestion, immutable baselines, normalized Clang/LLVM
 analysis, canonical transformation recipes, three AST-aware C
@@ -303,9 +315,11 @@ with exact ordered operator events. Fixed seeds replay the same search and exact
 stable winner. External candidate batches may complete asynchronously, but EVO
 commits only stable candidate order, retains complete worker assignment/cleanup
 traces, and resumes only after exact product dependency identity validation. The
-boundary remains private and uninstalled. Product commands and installed
-executable (#67/#93), artifact publication (#68), end-to-end proof (#69), and
-final stabilization (#56) remain later dependency-ordered work.
+source-optimizer implementation remains private and uninstalled. EVO 0.43.0
+now fixes the executable-facing `analyze`, `evolve`, `replay`, and `report`
+command contract in EVO-003. Concrete production providers (#114), the installed
+executable (#93), artifact publication (#68), end-to-end proof (#69), and final
+stabilization (#56) remain later dependency-ordered work.
 
 EVO 0.16.0 composes the complete deterministic generation pipeline into a
 bounded public `evo_run`. Generation zero is constructed, initialized,
