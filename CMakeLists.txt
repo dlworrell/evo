@@ -152,12 +152,6 @@ target_include_directories(catalyst_evo_project_foundation
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 target_compile_features(catalyst_evo_project_foundation PRIVATE c_std_17)
-if(APPLE)
-    target_compile_definitions(
-        catalyst_evo_project_foundation
-        PRIVATE _DARWIN_C_SOURCE=1
-    )
-endif()
 target_link_libraries(catalyst_evo_project_foundation PUBLIC catalyst_evo)
 
 target_include_directories(catalyst_evo
