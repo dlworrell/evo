@@ -1,0 +1,21 @@
+# EVO 0.43.0 product command contract inventory.
+# Included by the top-level Makefile.am so CMake and Autotools compile and test
+# the same private command implementation before #93 installs the final CLI.
+
+noinst_HEADERS += src/internal/project_command.h
+
+libevo_project_foundation_la_SOURCES += src/project_command.c
+
+check_PROGRAMS += tests/evo_project_command_test
+tests_evo_project_command_test_SOURCES = tests/project_command_test.c
+tests_evo_project_command_test_LDADD = libevo_project_foundation.la
+
+EXTRA_DIST += \
+	build-aux/product-command.am \
+	docs/adr/ADR-0045-product-command-contract.md \
+	docs/specs/EVO-003-product-command-contract.md \
+	docs/engineering/reports/EVO-HRA-016-product-command-audit.md \
+	docs/schemas/evo-command-analyze-v1.schema.json \
+	docs/schemas/evo-command-evolve-v1.schema.json \
+	docs/schemas/evo-command-replay-v1.schema.json \
+	docs/schemas/evo-command-report-v1.schema.json
