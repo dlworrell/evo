@@ -1,9 +1,9 @@
 # EVO-002: Source-to-Source C Optimizer Contract
 
-Status: Implemented through the 0.40.0 candidate-measurement boundary; draft 1.0 target
-Version: 0.40.0
+Status: Implemented through the 0.41.0 structured recipe-search boundary; draft 1.0 target
+Version: 0.41.0
 Owner: EVO
-Governing ADRs: ADR-0016, ADR-0026, ADR-0035, ADR-0036, ADR-0037, ADR-0038, ADR-0039, ADR-0040, and ADR-0041
+Governing ADRs: ADR-0016, ADR-0026, ADR-0035, ADR-0036, ADR-0037, ADR-0038, ADR-0039, ADR-0040, ADR-0041, and ADR-0042
 
 ## Purpose
 
@@ -15,16 +15,17 @@ search as a reviewable patch and reproducibility package.
 
 This specification defines the product layer above the reusable C17
 evolutionary-search core governed by EVO-001. Nothing in this draft claims that
-the complete source optimizer is implemented in version 0.40.0. This release
+the complete source optimizer is implemented in version 0.41.0. This release
 implements strict project ingestion and immutable baselines, normalized
 analysis/hotspot evidence, canonical transformation recipes, the initial AST-
 aware C transformation catalogue, deterministic isolated candidate
-materialization, candidate build/correctness assurance, and reproducible
-baseline-versus-candidate performance measurement with finite fitness mapping.
-Assurance and measurement consume exact results from caller-supplied providers;
-portable OS sandboxing and target workload execution remain provider
-responsibilities. Whole-run recipe evolution/orchestration and every later
-roadmap boundary remain a 1.0 target until their issues land.
+materialization, candidate build/correctness assurance, reproducible
+baseline-versus-candidate performance measurement with finite fitness mapping,
+and deterministic structured recipe evolution through the reusable EVO core.
+Assurance, measurement, and search evaluation consume exact results from
+caller-supplied providers; portable OS sandboxing and target workload execution
+remain provider responsibilities. Bounded external-process orchestration and
+every later roadmap boundary remain a 1.0 target until their issues land.
 
 ## Claim Boundary
 
@@ -161,6 +162,15 @@ canonical order; deterministic aggregates, stability classification,
 comparison, and finite fitness derive from that record only. Correctness
 authority remains the candidate-assurance result, and no timing outcome can
 rewrite it. ADR-0041 and EVO-HRA-013 retain this issue-specific assessment.
+
+The implemented 0.41.0 structured recipe-search boundary also introduces no
+accelerator. Canonical recipe genomes, direct bounded population/record arrays,
+exact ordered operator events, complete lineage records, and exact downstream
+evaluation outcomes remain authority. Mutation/crossover do not splice source
+bytes; deterministic repair is versioned and bounded; rejected recipes cannot
+reach materialization; and fixed seeds replay the same search, rejection,
+fitness, and winner lineage. ADR-0042 and EVO-HRA-014 retain this issue-specific
+assessment.
 
 ## Optimization Manifest
 

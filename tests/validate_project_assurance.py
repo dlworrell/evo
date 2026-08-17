@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import pathlib
+import re
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -87,8 +88,16 @@ def main() -> int:
     ):
         require(case in test, f"normative case missing: {case}")
 
-    require("project(catalyst_evo VERSION 0.40.0" in cmake, "CMake package version is not 0.40.0")
-    require("[0.40.0]" in configure, "Autotools package version is not 0.40.0")
+    version_match = re.search(
+        r"project\(catalyst_evo VERSION (\d+)\.(\d+)\.(\d+) LANGUAGES C\)",
+        cmake,
+    )
+    require(version_match is not None, "CMake package version missing")
+    version_tuple = tuple(int(part) for part in version_match.groups())
+    version = ".".join(version_match.groups())
+    require(version_tuple >= (0, 39, 0), "package predates assurance boundary")
+    require(f"[{version}]" in configure, "CMake/Autotools package versions diverge")
+
     for source in ("src/project_assurance_model.c", "src/project_assurance_runtime.c", "src/project_assurance.c"):
         require(source in cmake, f"CMake source missing: {source}")
         require(source in automake, f"Automake source missing: {source}")
@@ -126,16 +135,21 @@ def main() -> int:
     require("Probabilistic structures remain prechecks only" in hra, "HRA probabilistic boundary missing")
     require("caller-supplied execution provider" in hra, "HRA execution-provider boundary missing")
 
-    require("EVO 0.40.0 packages the deterministic" in readme, "README package boundary is stale")
+    # Candidate assurance was introduced in 0.39.0 and must remain valid in all
+    # later source-optimizer packages. The historical ADR/HRA keep their 0.39
+    # identity; package-level product records advance with the current release.
+    require(f"EVO {version} packages the deterministic" in readme, "README package boundary is stale")
     require("ADR-0040-isolated-candidate-correctness-gates.md" in readme, "README ADR-0040 link missing")
-    require("Issue #65 is the next dependency-ready" in roadmap, "roadmap package boundary is stale")
-    require("Version 0.40.0 contains" in architecture, "architecture package boundary is stale")
+    require("candidate build/correctness assurance" in readme, "README assurance boundary missing")
+    require(f"EVO {version} contains" in roadmap, "roadmap package boundary is stale")
+    require("Issue #63 implements candidate build/correctness assurance" in roadmap, "roadmap assurance boundary missing")
+    require(f"Version {version} contains" in architecture, "architecture package boundary is stale")
     require("EVO-HRA-012 audits this 0.39.0 boundary" in architecture, "architecture assurance boundary missing")
-    require("Version 0.40.0 implements" in algorithms, "algorithms package boundary is stale")
+    require(f"Version {version} implements" in algorithms, "algorithms package boundary is stale")
     require("candidate build/correctness assurance" in algorithms, "algorithms assurance boundary missing")
-    require("performance-measurement-implemented-0.40.0" in repo_metadata, "repository package metadata is stale")
-    require("Version: 0.40.0" in evo001, "EVO-001 package version is stale")
-    require("0.40.0 candidate-measurement boundary" in evo002, "EVO-002 package boundary is stale")
+    require(version in repo_metadata and "evo-source-optimizer" in repo_metadata, "repository package metadata is stale")
+    require(f"Version: {version}" in evo001, "EVO-001 package version is stale")
+    require(f"Version: {version}" in evo002, "EVO-002 package boundary is stale")
     require("ADR-0040 and EVO-HRA-012" in evo002, "EVO-002 assurance governance link missing")
 
     workflow = read(".github/workflows/project-assurance.yml")

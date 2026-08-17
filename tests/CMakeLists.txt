@@ -285,6 +285,22 @@ add_test(
     COMMAND evo_project_measurement_test
 )
 
+add_executable(evo_project_search_test project_search_test.c)
+target_include_directories(
+    evo_project_search_test
+    PRIVATE
+        ${PROJECT_SOURCE_DIR}/src
+)
+target_link_libraries(
+    evo_project_search_test
+    PRIVATE
+        catalyst_evo_project_foundation
+)
+add_test(
+    NAME evo_project_search_test
+    COMMAND evo_project_search_test
+)
+
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux"
    AND CMAKE_C_COMPILER_ID MATCHES "GNU|Clang"
    AND NOT BUILD_SHARED_LIBS)

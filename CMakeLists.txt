@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(catalyst_evo VERSION 0.40.0 LANGUAGES C)
+project(catalyst_evo VERSION 0.41.0 LANGUAGES C)
 
 include(CTest)
 include(CheckSymbolExists)
@@ -104,6 +104,9 @@ add_library(catalyst_evo_project_foundation STATIC
     src/project_measurement_model.c
     src/project_measurement_runtime.c
     src/project_measurement.c
+    src/project_search_model.c
+    src/project_search_runtime.c
+    src/project_search.c
 )
 target_include_directories(catalyst_evo_project_foundation
     PUBLIC
@@ -112,6 +115,7 @@ target_include_directories(catalyst_evo_project_foundation
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 target_compile_features(catalyst_evo_project_foundation PRIVATE c_std_17)
+target_link_libraries(catalyst_evo_project_foundation PUBLIC catalyst_evo)
 
 target_include_directories(catalyst_evo
     PUBLIC
