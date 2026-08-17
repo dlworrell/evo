@@ -532,3 +532,5 @@ EXTRA_DIST = \
 	tests/fuzz/checkpoint_fuzz.c \
 	build-aux/.gitkeep \
 	m4/.gitkeep
+
+include build-aux/product-command.am
