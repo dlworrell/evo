@@ -6,6 +6,7 @@
 #include "internal/project_measurement.h"
 #include "internal/project_provider_sandbox.h"
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -16,6 +17,7 @@ typedef struct evo_project_sandbox_command_context {
 
 typedef struct evo_project_sandbox_assurance_context {
     const char *toolchain_identity;
+    size_t max_diagnostic_bytes;
 } evo_project_sandbox_assurance_context_t;
 
 typedef struct evo_project_measurement_command {
