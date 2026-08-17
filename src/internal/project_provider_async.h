@@ -20,6 +20,9 @@ typedef struct evo_project_async_evaluation_slot {
     int result_descriptor;
     int wait_status;
     evo_project_orchestration_terminal_reason_t terminal_reason;
+    char candidate_fingerprint[EVO_PROJECT_FINGERPRINT_TEXT_SIZE];
+    char assurance_fingerprint[EVO_PROJECT_FINGERPRINT_TEXT_SIZE];
+    char measurement_fingerprint[EVO_PROJECT_FINGERPRINT_TEXT_SIZE];
     evo_project_orchestration_provider_join_t join;
 } evo_project_async_evaluation_slot_t;
 
