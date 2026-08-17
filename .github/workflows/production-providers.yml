@@ -1,0 +1,67 @@
+name: Production Providers
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux-builtins:
+    runs-on: ubuntu-24.04
+    env:
+      CC: clang-18
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install production-provider dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes bubblewrap clang-18 cmake ninja-build
+
+      - name: Verify Bubblewrap is executable
+        run: |
+          command -v bwrap
+          bwrap --version
+          command -v clang-18
+          clang-18 --version
+
+      - name: Configure provider-enabled build
+        run: >-
+          cmake -S . -B build/production-providers
+          -G Ninja
+          -DCMAKE_BUILD_TYPE=Debug
+          -DBUILD_TESTING=ON
+          -DEVO_WARNINGS_AS_ERRORS=ON
+
+      - name: Build production provider fixtures
+        run: |
+          cmake --build build/production-providers \
+            --target \
+              evo_project_provider_test \
+              evo_project_provider_sandbox_test \
+              evo_project_provider_clang_test \
+            --parallel
+
+      - name: Execute real provider fixtures without skips
+        run: |
+          set -o pipefail
+          ctest --test-dir build/production-providers \
+            --output-on-failure \
+            -R '^evo_project_provider_(test|sandbox_test|clang_test)$' \
+            | tee build/production-providers/provider-ctest.log
+          if grep -E '\*\*\*Skipped|Not Run' \
+              build/production-providers/provider-ctest.log; then
+            echo 'Production provider fixture skipped unexpectedly.' >&2
+            exit 1
+          fi
+
+      - name: Require registry runtime availability
+        run: |
+          build/production-providers/evo_project_provider_test
+          build/production-providers/evo_project_provider_sandbox_test
+          build/production-providers/evo_project_provider_clang_test
