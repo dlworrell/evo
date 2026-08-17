@@ -24,6 +24,19 @@ jobs:
       - uses: actions/checkout@v5
         with:
           ref: agent/issues-110-116-audit-maintenance
+      - name: Repair reconciler self-check invocation
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('.github/scripts/issues-110-116-maintenance.py')
+          text = path.read_text(encoding='utf-8')
+          old = '''    namespace = {"__name__": "__main__"}\n    exec((ROOT / "scripts/verify_aes_bld_profile.py").read_text(encoding="utf-8"), namespace)\n    exec((ROOT / "scripts/verify_github_actions_runtime.py").read_text(encoding="utf-8"), {"__name__": "__main__"})\n'''
+          new = '''    runpy.run_path(str(ROOT / "scripts/verify_aes_bld_profile.py"), run_name="__main__")\n    runpy.run_path(str(ROOT / "scripts/verify_github_actions_runtime.py"), run_name="__main__")\n'''
+          if old not in text:
+              raise SystemExit('expected self-check block not found')
+          path.write_text(text.replace(old, new), encoding='utf-8')
+          PY
       - name: Reconcile audit findings
         run: python3 .github/scripts/issues-110-116-maintenance.py
       - name: Verify no deprecated action references remain
