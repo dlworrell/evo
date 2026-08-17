@@ -1,6 +1,10 @@
 #ifndef CATALYST_EVO_INTERNAL_PROJECT_PROVIDER_SANDBOX_H
 #define CATALYST_EVO_INTERNAL_PROJECT_PROVIDER_SANDBOX_H
 
+#if !defined(_XOPEN_SOURCE)
+#define _XOPEN_SOURCE 700
+#endif
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
