@@ -1,0 +1,40 @@
+name: Issue 67 Distcheck Fix
+
+on:
+  push:
+    branches:
+      - agent/issue-67-product-commands
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: agent/issue-67-product-commands
+          fetch-depth: 0
+      - name: Remove premature provider ADR from distribution inventory
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('Makefile.am')
+          text = path.read_text(encoding='utf-8')
+          needle = '\tdocs/adr/ADR-0044-built-in-production-providers.md \\\n'
+          count = text.count(needle)
+          if count != 1:
+              raise SystemExit(f'expected exactly one premature ADR-0044 entry, found {count}')
+          path.write_text(text.replace(needle, '', 1), encoding='utf-8')
+          PY
+          rm .github/workflows/issue-67-distcheck-fix.yml
+      - name: Commit packaging correction
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add Makefile.am .github/workflows/issue-67-distcheck-fix.yml
+          git diff --cached --check
+          git commit -m 'Fix product command distribution inventory'
+          git push origin HEAD:agent/issue-67-product-commands
