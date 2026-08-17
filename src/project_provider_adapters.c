@@ -420,7 +420,8 @@ static bool evo_provider_local_request_valid(
            request->candidate.recipe != NULL &&
            request->candidate.recipe->private_owner != NULL &&
            request->candidate.recipe_fingerprint != NULL &&
-           request->candidate.recipe->recipe_fingerprint != NULL &&
+           request->candidate.recipe_fingerprint[0] != '\0' &&
+           request->candidate.recipe->recipe_fingerprint[0] != '\0' &&
            strcmp(request->candidate.recipe_fingerprint,
                   request->candidate.recipe->recipe_fingerprint) == 0 &&
            request->candidate.workspace_identity != NULL &&
