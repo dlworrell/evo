@@ -97,15 +97,20 @@ def main() -> int:
         "evidence must forbid probabilistic ranking authority",
     )
 
-    require("evo_run(&problem" in transaction, "deterministic EVO core is not used")
+    require(
+        "core_status = evo_run(" in transaction
+        and "core_status = evo_run_with_batch_evaluator(" in transaction,
+        "deterministic EVO core serial/orchestrated paths are not both used",
+    )
     require(
         "EVO_CROSSOVER_CONSUMER" in transaction
         and "EVO_MUTATION_CONSUMER" in transaction,
         "consumer structured operators are not wired to EVO core",
     )
     require(
-        "EVO_EVALUATION_CALLBACK_SERIAL" in transaction,
-        "0.41 evaluation boundary must remain serial",
+        "EVO_EVALUATION_CALLBACK_SERIAL" in transaction
+        and "core_config.evaluation_worker_count = 0U" in transaction,
+        "core callback evaluation must remain serial under external orchestration",
     )
     require(
         "correctness_preserved" in transaction
