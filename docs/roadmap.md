@@ -73,8 +73,13 @@ implements candidate build/correctness assurance. Issue #64 implements
 reproducible candidate performance measurement and fitness. Issue #65
 implements deterministic structured recipe evolution and bounded search. Issue
 #66 implements bounded external-process orchestration, stable commit/cleanup
-traces, and product checkpoint/resume authority. Issue #67 is the next
-dependency-ready source-optimizer implementation work.
+traces, and product checkpoint/resume authority. Issue #67 defines the
+product-facing analyze/evolve/replay/report command and configuration contracts.
+Issue #114 then supplies the concrete versioned Clang/LLVM analysis,
+AST-inspection, sandboxed execution/measurement, and local-evaluation providers
+needed to make those contracts operational without private test callbacks.
+Issue #93 packages that supported provider path into the installed standalone
+executable and proves staged invocation from an unrelated working directory.
 
 ## Cross-Cutting Human-Readable Abstraction Gate
 
@@ -113,7 +118,7 @@ spine below.
 | Structured source evolution | #60–#62 | Recipes, AST-aware catalogue, and isolated source materialization |
 | Candidate assurance | #63–#64 | Build/correctness gates and reproducible performance fitness |
 | Whole-codebase search | #65–#66 | Recipe evolution and bounded external-process orchestration |
-| Product interface/artifacts | #67, #93, #68 | Product commands, installed standalone executable, and optimized patch evidence |
+| Product interface/artifacts | #67, #114, #93, #68 | Product commands, concrete production providers, installed standalone executable, and optimized patch evidence |
 | Product proof/release | #69, #56 | End-to-end source proof and 1.0 stabilization |
 
 ## Dependency Spine
@@ -142,7 +147,7 @@ Source optimizer:
 
 `#49 + #60 + #61 + #63 + #64 → #65`
 
-`#51 + #53 + #65 → #66 → #67 → #93 → #68 → #69 → #56`
+`#51 + #53 + #65 → #66 → #67 → #114 → #93 → #68 → #69 → #56`
 
 ## 1.0 Gate
 
