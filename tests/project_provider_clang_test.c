@@ -16,6 +16,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#if defined(__linux__)
 static int failures = 0;
 
 static void check(bool condition, const char *message)
@@ -85,6 +86,7 @@ static const evo_project_declaration_record_t *find_declaration(
     }
     return NULL;
 }
+#endif
 
 int main(void)
 {
