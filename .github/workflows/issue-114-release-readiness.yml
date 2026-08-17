@@ -1,0 +1,21 @@
+name: Issue 114 Release Readiness Reconciliation
+
+on:
+  push:
+    branches:
+      - agent/issue-114-production-providers
+
+permissions:
+  contents: write
+
+jobs:
+  reconcile:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: agent/issue-114-production-providers
+          fetch-depth: 0
+      - name: Require production provider release gates
+        run: python3 .github/scripts/issue-114-release-readiness.py
