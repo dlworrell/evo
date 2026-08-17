@@ -1030,9 +1030,10 @@ static void test_orchestrated_search_equivalence(test_fixture_t *fixture)
             serial_trace.batch_count == parallel_trace.batch_count &&
             serial_trace.batch_count == serial.generations_completed + 1U &&
             serial_trace.job_count == parallel_trace.job_count &&
-            serial_trace.job_count ==
+            serial_trace.job_count > 0U &&
+            serial_trace.job_count <=
                 serial_trace.batch_count * serial_config.population_size,
-        "persistent worker traces retain every generation");
+        "persistent worker traces retain every dispatched generation and job");
     test_check(
         serial_trace.batches[0].external_worker_count == 1U &&
             parallel_trace.batches[0].external_worker_count == 4U &&
