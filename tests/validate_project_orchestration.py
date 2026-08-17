@@ -267,7 +267,7 @@ def main() -> int:
         "ADR product checkpoint rule missing",
     )
     require(
-        "No accelerated authority is introduced" in hra,
+        "No accelerated representation participates" in hra,
         "HRA-015 accelerator assessment missing",
     )
     require(
