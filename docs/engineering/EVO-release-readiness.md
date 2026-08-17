@@ -57,6 +57,8 @@ the exact commit.
 | Project measurement | `.github/workflows/project-measurement.yml` | required | required | not applicable |
 | Project search | `.github/workflows/project-search.yml` | required | required | not applicable |
 | Project orchestration | `.github/workflows/project-orchestration.yml` | required | required | not applicable |
+| Production providers | `.github/workflows/production-providers.yml` | required | required | not applicable |
+| Production provider async lifecycle | `.github/workflows/production-provider-async.yml` | required | required | not applicable |
 | Project Zero | `.github/workflows/project-zero.yml` | not applicable | not applicable | not applicable |
 
 Project Zero is explicitly not a routine release gate. EVO-P0-002 is retained
@@ -121,8 +123,9 @@ but the corresponding `push` authority for a required release gate must not be
 restricted to a historical development branch or to a subset of paths.
 
 This rule applies to repository compliance, documentation, project assurance,
-project measurement, project search, and project orchestration as well as the
-already-unconditional main-branch gates.
+project measurement, project search, project orchestration, production providers,
+and the production-provider async lifecycle as well as the already-unconditional
+main-branch gates.
 
 A release dispatch performed before the required main-branch workflows have
 completed will fail readiness. The correct operation is to wait for the same

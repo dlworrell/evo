@@ -72,6 +72,10 @@ GATES: tuple[Gate, ...] = (
          ".github/workflows/project-search.yml", PRODUCT_RELEASES, "source-optimizer"),
     Gate("project-orchestration", "Project Orchestration",
          ".github/workflows/project-orchestration.yml", PRODUCT_RELEASES, "source-optimizer"),
+    Gate("production-providers", "Production Providers",
+         ".github/workflows/production-providers.yml", PRODUCT_RELEASES, "source-optimizer"),
+    Gate("production-provider-async", "Production Provider Async Lifecycle",
+         ".github/workflows/production-provider-async.yml", PRODUCT_RELEASES, "source-optimizer"),
     Gate(
         "project-zero",
         "Project Zero",
