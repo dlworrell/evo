@@ -59,20 +59,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Validate command schemas
-        run: |
-          python3 - <<'PY'
-          import json
-          from pathlib import Path
-
-          paths = sorted(Path("docs/schemas").glob("evo-command-*-v1.schema.json"))
-          if len(paths) != 4:
-              raise SystemExit(f"expected four command schemas, found {len(paths)}")
-          for path in paths:
-              with path.open("r", encoding="utf-8") as handle:
-                  document = json.load(handle)
-              if document.get("$schema") != "https://json-schema.org/draft/2020-12/schema":
-                  raise SystemExit(f"unexpected JSON Schema dialect: {path}")
-          PY
+        run: python3 tests/test_product_command_schemas.py
 
       - name: CMake command contract
         run: |
