@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if !defined(_WIN32)
+#if defined(__linux__)
 #include <unistd.h>
 #endif
 
@@ -64,12 +64,9 @@ static const evo_project_provider_record_t evo_project_providers[] = {
          EVO_PROJECT_PROVIDER_CAPABILITY_COMPILATION_DATABASE |
          EVO_PROJECT_PROVIDER_CAPABILITY_ASYNC_START_POLL_CANCEL_JOIN}};
 
+#if defined(__linux__)
 static bool evo_project_provider_program_available(const char *program)
 {
-#if defined(_WIN32)
-    (void)program;
-    return false;
-#else
     const char *path;
     const char *cursor;
 
@@ -120,8 +117,8 @@ static bool evo_project_provider_program_available(const char *program)
         cursor = end + 1;
     }
     return false;
-#endif
 }
+#endif
 
 size_t evo_project_provider_registry_count(void)
 {
