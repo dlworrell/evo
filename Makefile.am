@@ -65,6 +65,8 @@ noinst_HEADERS = \
 	src/internal/child_evaluation.h \
 	src/internal/generation_advancement.h \
 	src/internal/bounded_run.h \
+	src/internal/batch_evaluation.h \
+	src/internal/run_batch.h \
 	src/internal/diversity.h \
 	src/internal/statistics.h \
 	src/internal/observer.h \
