@@ -88,6 +88,7 @@ static bool evo_project_provider_program_available(const char *program)
         const size_t program_length = strlen(program);
         char candidate[4096];
         size_t position = 0U;
+        size_t index;
 
         if (directory_length == 0U) {
             if (program_length + 2U <= sizeof(candidate)) {
@@ -97,12 +98,16 @@ static bool evo_project_provider_program_available(const char *program)
                 return false;
             }
         } else if (directory_length + 1U < sizeof(candidate)) {
-            (void)memcpy(candidate, cursor, directory_length);
-            position = directory_length;
+            for (index = 0U; index < directory_length; index += 1U) {
+                candidate[position + index] = cursor[index];
+            }
+            position += directory_length;
             candidate[position++] = '/';
         }
         if (position > 0U && program_length < sizeof(candidate) - position) {
-            (void)memcpy(candidate + position, program, program_length);
+            for (index = 0U; index < program_length; index += 1U) {
+                candidate[position + index] = program[index];
+            }
             position += program_length;
             candidate[position] = '\0';
             if (access(candidate, X_OK) == 0) {
