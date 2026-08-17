@@ -1,7 +1,7 @@
 #ifndef CATALYST_EVO_INTERNAL_BATCH_EVALUATION_H
 #define CATALYST_EVO_INTERNAL_BATCH_EVALUATION_H
 
-#include "catalyst/evo/evo.h"
+#include "internal/population_storage.h"
 
 #include <stddef.h>
 #include <stdint.h>
