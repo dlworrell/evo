@@ -1,6 +1,31 @@
 cmake_minimum_required(VERSION 3.20)
 project(catalyst_evo VERSION 0.42.0 LANGUAGES C)
 
+set(EVO_PRODUCT_VERSION "${PROJECT_VERSION}")
+set(EVO_PUBLIC_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/include/catalyst/evo/evo.h")
+foreach(component MAJOR MINOR PATCH)
+    file(
+        STRINGS "${EVO_PUBLIC_HEADER}" _evo_version_line
+        LIMIT_COUNT 1
+        REGEX "^#define[ \t]+EVO_VERSION_${component}[ \t]+[0-9]+[ \t]*$"
+    )
+    if(NOT _evo_version_line)
+        message(FATAL_ERROR
+            "Unable to read EVO_VERSION_${component} from ${EVO_PUBLIC_HEADER}"
+        )
+    endif()
+    string(
+        REGEX REPLACE "^.*[ \t]+([0-9]+)[ \t]*$" "\\1"
+        _evo_version_value "${_evo_version_line}"
+    )
+    set(EVO_CORE_VERSION_${component} "${_evo_version_value}")
+endforeach()
+set(EVO_CORE_VERSION
+    "${EVO_CORE_VERSION_MAJOR}.${EVO_CORE_VERSION_MINOR}.${EVO_CORE_VERSION_PATCH}"
+)
+unset(_evo_version_line)
+unset(_evo_version_value)
+
 include(CTest)
 include(CheckSymbolExists)
 include(GNUInstallDirs)
@@ -153,7 +178,7 @@ set(prefix "${CMAKE_INSTALL_PREFIX}")
 set(exec_prefix "\${prefix}")
 set(libdir "\${exec_prefix}/${CMAKE_INSTALL_LIBDIR}")
 set(includedir "\${prefix}/${CMAKE_INSTALL_INCLUDEDIR}")
-set(PACKAGE_VERSION "${PROJECT_VERSION}")
+set(PACKAGE_VERSION "${EVO_CORE_VERSION}")
 set(EVO_THREAD_LIBS "${CMAKE_THREAD_LIBS_INIT}")
 configure_file(
     catalyst-evo.pc.in
