@@ -7,12 +7,18 @@ on:
     paths:
       - '.github/scripts/issues-110-116-maintenance.py'
       - '.github/workflows/issues-110-116-maintenance.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/scripts/issues-110-116-maintenance.py'
+      - '.github/workflows/issues-110-116-maintenance.yml'
 
 permissions:
   contents: write
 
 jobs:
   reconcile:
+    if: github.head_ref == 'agent/issues-110-116-audit-maintenance' || github.ref_name == 'agent/issues-110-116-audit-maintenance'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
