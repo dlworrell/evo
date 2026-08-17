@@ -1,0 +1,36 @@
+name: Issue 114 AST Authority Wiring
+
+on:
+  push:
+    branches:
+      - agent/issue-114-production-providers
+
+permissions:
+  contents: write
+
+jobs:
+  wire:
+    if: ${{ !contains(github.event.head_commit.message, '[ast-authority-wire]') }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out provider branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/issue-114-production-providers
+
+      - name: Apply asserted wiring
+        run: python3 scripts/issue114_wire_ast_authority.py
+
+      - name: Verify patch scope
+        run: |
+          git diff --check
+          grep -n 'evo_project_clang_ast_authorize_' src/project_provider_clang_ast.c
+          grep -n 'source_fingerprint' tests/project_provider_clang_ast_test.c
+
+      - name: Commit wiring
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add CMakeLists.txt Makefile.am src/project_provider_clang_ast.c tests/project_provider_clang_ast_test.c
+          git commit -m 'providers: enforce target-local AST authority [ast-authority-wire]'
+          git push origin HEAD:agent/issue-114-production-providers
