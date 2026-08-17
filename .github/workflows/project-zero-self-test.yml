@@ -57,7 +57,10 @@ jobs:
           done
           grep -q 'workflow_call:' .github/workflows/project-zero.yml
           grep -q 'Production mutation: \*\*not permitted\*\*' .github/workflows/optimization.yml
-          grep -q 'does not create tags or publish releases' .github/workflows/release.yml
+          grep -Eq '^[[:space:]]*contents:[[:space:]]*read[[:space:]]*$' .github/workflows/release.yml
+          ! grep -Eq '^[[:space:]]*contents:[[:space:]]*write[[:space:]]*$' .github/workflows/release.yml
+          grep -q 'scripts/release_readiness.py' .github/workflows/release.yml
+          ! grep -Eq '(^|[[:space:]])(gh[[:space:]]+release|git[[:space:]]+tag)([[:space:]]|$)' .github/workflows/release.yml
           test -s docs/standards/repository-lifecycle-contract.md
 
       - name: Run inspection contract
