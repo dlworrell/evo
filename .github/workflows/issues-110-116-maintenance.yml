@@ -64,8 +64,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          ! grep -R --line-number --fixed-strings 'actions/checkout@v4' .github/workflows
-          ! grep -R --line-number --fixed-strings 'actions/upload-artifact@v4' .github/workflows
+          ! grep -R --line-number --fixed-strings --exclude='issues-110-116-maintenance.yml' 'actions/checkout@v4' .github/workflows
+          ! grep -R --line-number --fixed-strings --exclude='issues-110-116-maintenance.yml' 'actions/upload-artifact@v4' .github/workflows
       - name: Commit reconciled tree and remove helper
         shell: bash
         run: |
