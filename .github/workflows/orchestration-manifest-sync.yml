@@ -1,0 +1,71 @@
+name: Synchronize Orchestration AES-BLD Inventory
+
+on:
+  push:
+    branches:
+      - agent/bounded-source-orchestration
+    paths:
+      - '.github/workflows/orchestration-manifest-sync.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: agent/bounded-source-orchestration
+          fetch-depth: 0
+      - name: Synchronize manifest inventory
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+
+          path = Path('.aems/aes-bld-001.json')
+          manifest = json.loads(path.read_text())
+          sources = manifest['build']['production_sources']
+          marker = sources.index('src/project_search.c') + 1
+          additions = [
+              'src/project_orchestration_model.c',
+              'src/project_orchestration_runtime.c',
+              'src/project_orchestration.c',
+              'src/project_orchestration_checkpoint.c',
+          ]
+          for source in additions:
+              if source not in sources:
+                  sources.insert(marker, source)
+                  marker += 1
+
+          tests = manifest['build']['normative_tests']
+          if not any(item.get('id') == 'project-orchestration' for item in tests):
+              marker = next(
+                  index for index, item in enumerate(tests)
+                  if item.get('id') == 'project-search'
+              ) + 1
+              tests.insert(marker, {
+                  'id': 'project-orchestration',
+                  'source': 'tests/project_orchestration_test.c',
+                  'cmake': 'evo_project_orchestration_test',
+                  'autotools': 'tests/evo_project_orchestration_test',
+              })
+              tests.insert(marker + 1, {
+                  'id': 'project-orchestration-checkpoint',
+                  'source': 'tests/project_orchestration_checkpoint_test.c',
+                  'cmake': 'evo_project_orchestration_checkpoint_test',
+                  'autotools': 'tests/evo_project_orchestration_checkpoint_test',
+              })
+          path.write_text(json.dumps(manifest, indent=2) + '\n')
+          PY
+      - name: Commit manifest and remove helper
+        run: |
+          rm -f .github/workflows/orchestration-manifest-sync.yml
+          git config user.name 'Donovan Worrell'
+          git config user.email 'donovan.worrell@just-a-geek.com'
+          git add .aems/aes-bld-001.json .github/workflows/orchestration-manifest-sync.yml
+          git commit -m 'build: register bounded orchestration inventory'
+          git push origin HEAD:agent/bounded-source-orchestration
