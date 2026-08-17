@@ -320,7 +320,7 @@ def main() -> int:
     )
     require(version_match is not None, "CMake package version missing")
     version_tuple = tuple(int(part) for part in version_match.groups())
-    require(version_tuple >= (0, 41, 0), "package predates structured search dependency")
+    require(version_tuple == (0, 42, 0), "package version is not EVO 0.42.0")
 
     print("bounded source orchestration structural validation: PASS")
     return 0
