@@ -75,6 +75,11 @@ noinst_HEADERS = \
 	src/internal/checkpoint.h \
 	src/internal/result_storage.h \
 	src/internal/project_runtime.h \
+	src/internal/project_provider.h \
+	src/internal/project_provider_probe.h \
+	src/internal/project_provider_sandbox.h \
+	src/internal/project_provider_adapters.h \
+	src/internal/project_provider_clang.h \
 	src/internal/project_json.h \
 	src/internal/project_fingerprint.h \
 	src/internal/project_manifest.h \
@@ -125,6 +130,11 @@ libevo_seed_schedule_research_la_LIBADD = libcatalyst_evo.la
 
 libevo_project_foundation_la_SOURCES = \
 	src/project_runtime.c \
+	src/project_provider.c \
+	src/project_provider_probe.c \
+	src/project_provider_sandbox.c \
+	src/project_provider_adapters.c \
+	src/project_provider_clang.c \
 	src/project_json.c \
 	src/project_fingerprint.c \
 	src/project_manifest.c \
@@ -203,6 +213,9 @@ check_PROGRAMS = \
 	tests/evo_project_orchestration_test \
 	tests/evo_project_orchestration_checkpoint_test \
 	tests/evo_project_orchestration_resume_test \
+	tests/evo_project_provider_test \
+	tests/evo_project_provider_sandbox_test \
+	tests/evo_project_provider_clang_test \
 	benchmarks/evo_core_benchmark \
 	tests/evo_secure_erasure_test \
 	tests/evo_allocation_failure_test
@@ -375,6 +388,21 @@ tests_evo_project_orchestration_resume_test_SOURCES = \
 tests_evo_project_orchestration_resume_test_LDADD = \
 	libevo_project_foundation.la
 
+tests_evo_project_provider_test_SOURCES = \
+	tests/project_provider_test.c
+tests_evo_project_provider_test_LDADD = \
+	libevo_project_foundation.la
+
+tests_evo_project_provider_sandbox_test_SOURCES = \
+	tests/project_provider_sandbox_test.c
+tests_evo_project_provider_sandbox_test_LDADD = \
+	libevo_project_foundation.la
+
+tests_evo_project_provider_clang_test_SOURCES = \
+	tests/project_provider_clang_test.c
+tests_evo_project_provider_clang_test_LDADD = \
+	libevo_project_foundation.la
+
 benchmarks_evo_core_benchmark_SOURCES = benchmarks/core_benchmark.c
 benchmarks_evo_core_benchmark_LDADD = libcatalyst_evo.la -lm
 benchmarks_evo_core_benchmark_CPPFLAGS = \
@@ -448,6 +476,7 @@ EXTRA_DIST = \
 	.github/workflows/project-candidate.yml \
 	.github/workflows/project-assurance.yml \
 	.github/workflows/project-measurement.yml \
+	.github/workflows/production-providers.yml \
 	CMakeLists.txt \
 	CMakePresets.json \
 	benchmarks/CMakeLists.txt \
@@ -464,6 +493,7 @@ EXTRA_DIST = \
 	docs/adr/ADR-0039-isolated-candidate-materialization.md \
 	docs/adr/ADR-0040-isolated-candidate-correctness-gates.md \
 	docs/adr/ADR-0041-reproducible-candidate-performance-fitness.md \
+	docs/adr/ADR-0044-built-in-production-providers.md \
 	docs/schemas/evo-project-manifest-v1.schema.json \
 	docs/schemas/evo-project-baseline-v1.schema.json \
 	docs/schemas/evo-project-analysis-v1.schema.json \
