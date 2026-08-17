@@ -70,11 +70,13 @@ static evo_project_transformation_status_t evo_ast_json_open(
     if (status != EVO_PROJECT_JSON_SUCCESS) {
         evo_project_release(json->tokens);
         *json = (evo_clang_ast_json_t){0};
-        return status == EVO_PROJECT_JSON_OUT_OF_MEMORY
-                   ? EVO_PROJECT_TRANSFORMATION_ERROR_OUT_OF_MEMORY
-                   : status == EVO_PROJECT_JSON_RESOURCE_LIMIT
-                         ? EVO_PROJECT_TRANSFORMATION_ERROR_RESOURCE_LIMIT
-                         : EVO_PROJECT_TRANSFORMATION_ERROR_AST_MALFORMED;
+        if (status == EVO_PROJECT_JSON_OUT_OF_MEMORY) {
+            return EVO_PROJECT_TRANSFORMATION_ERROR_OUT_OF_MEMORY;
+        }
+        if (status == EVO_PROJECT_JSON_RESOURCE_LIMIT) {
+            return EVO_PROJECT_TRANSFORMATION_ERROR_RESOURCE_LIMIT;
+        }
+        return EVO_PROJECT_TRANSFORMATION_ERROR_AST_MALFORMED;
     }
     return EVO_PROJECT_TRANSFORMATION_SUCCESS;
 }
