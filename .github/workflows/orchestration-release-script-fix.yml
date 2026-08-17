@@ -1,0 +1,42 @@
+name: Fix Orchestration Release Sync Marker
+
+on:
+  push:
+    branches:
+      - agent/bounded-source-orchestration
+    paths:
+      - '.github/workflows/orchestration-release-script-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: agent/bounded-source-orchestration
+          fetch-depth: 0
+      - name: Correct wrapped HRA marker
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('.github/scripts/orchestration_release_sync.py')
+          text = path.read_text()
+          old = '    "ADR-0042 and EVO-HRA-014 retain this issue-specific assessment.\\n",\n'
+          new = (
+              '    "fitness, and winner lineage. ADR-0042 and EVO-HRA-014 retain this issue-specific\\n"\n'
+              '    "assessment.\\n",\n'
+          )
+          if old not in text:
+              raise SystemExit('old wrapped HRA marker not found')
+          path.write_text(text.replace(old, new, 1))
+          PY
+      - name: Commit script correction
+        run: |
+          git config user.name 'Donovan Worrell'
+          git config user.email 'donovan.worrell@just-a-geek.com'
+          git add .github/scripts/orchestration_release_sync.py
+          git commit -m 'ci: fix wrapped EVO-002 release marker'
+          git push origin HEAD:agent/bounded-source-orchestration
