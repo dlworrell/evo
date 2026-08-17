@@ -89,6 +89,8 @@ typedef struct evo_project_orchestration_candidate_request {
     size_t population_index;
     const char *recipe_fingerprint;
     const char *workspace_identity;
+    uint64_t random_seed;
+    const evo_project_recipe_t *recipe;
 } evo_project_orchestration_candidate_request_t;
 
 typedef struct evo_project_orchestration_provider_request {

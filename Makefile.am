@@ -106,6 +106,7 @@ noinst_HEADERS = \
 	src/internal/project_search.h \
 	src/internal/project_search_owner.h \
 	src/internal/project_search_internal.h \
+	src/internal/project_search_orchestration.h \
 	src/internal/project_orchestration.h \
 	src/internal/project_orchestration_owner.h \
 	src/internal/project_orchestration_internal.h \
