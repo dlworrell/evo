@@ -5,7 +5,7 @@ includedir=@includedir@
 
 Name: catalyst-evo
 Description: Deterministic C17 evolutionary optimization library
-Version: @PACKAGE_VERSION@
+Version: @EVO_CORE_VERSION@
 Libs: -L${libdir} -lcatalyst_evo -lm
 Libs.private: @EVO_THREAD_LIBS@
 Cflags: -I${includedir}
