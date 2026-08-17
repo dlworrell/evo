@@ -30,6 +30,12 @@ Describe the change and why it is needed.
 - [ ] Sanitizer and fuzz evidence is provided where applicable.
 - [ ] No custom cryptography is introduced.
 - [ ] Any exception is recorded in `docs/engineering/AES-SEC-001-waivers.md`.
+- [ ] Any material change to externally reachable commands, provider trust or
+      capabilities, sandbox/isolation, filesystem or output authority, network
+      access, target-controlled execution, process/resource limits, cleanup,
+      checkpoint/resume authority, or downstream mutation/publication updates
+      `SECURITY.md` or a linked reviewed threat model; otherwise this PR states
+      explicitly that no such security boundary changes.
 
 ## Evidence
 
