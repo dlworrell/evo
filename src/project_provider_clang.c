@@ -7,7 +7,6 @@
 #include "internal/project_provider_sandbox.h"
 #include "internal/project_runtime.h"
 
-#include <limits.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -146,11 +145,7 @@ static bool evo_clang_relative_path_safe(const char *path)
     for (index = 0U;; index += 1U) {
         const unsigned char byte = (unsigned char)path[index];
 
-        if (byte == (unsigned char)'\\' || byte == (unsigned char)':' ||
-            byte < 0x20U || byte == 0x7fU) {
-            return false;
-        }
-        if (byte == (unsigned char)'/' || byte == 0U) {
+        if (byte == 0U || byte == (unsigned char)'/') {
             const size_t component_size = index - component_start;
 
             if (component_size == 0U ||
@@ -163,6 +158,11 @@ static bool evo_clang_relative_path_safe(const char *path)
                 return true;
             }
             component_start = index + 1U;
+            continue;
+        }
+        if (byte == (unsigned char)'\\' || byte == (unsigned char)':' ||
+            byte < 0x20U || byte == 0x7fU) {
+            return false;
         }
     }
 }
@@ -485,7 +485,6 @@ static evo_project_analysis_status_t evo_clang_append_function(
     size_t object_index,
     evo_project_clang_analysis_context_t *context)
 {
-    size_t location_index;
     char *name = NULL;
     char *storage = NULL;
     char *observed_file = NULL;
@@ -619,8 +618,7 @@ static evo_project_analysis_status_t evo_clang_append_function(
         evo_project_release(observed_file);
         return EVO_PROJECT_ANALYSIS_ERROR_OUT_OF_MEMORY;
     }
-    location_index = context->source_location_count;
-    context->source_locations[location_index] = location;
+    context->source_locations[context->source_location_count] = location;
     context->source_location_count += 1U;
     context->declarations[context->declaration_count] = declaration;
     context->declaration_count += 1U;
