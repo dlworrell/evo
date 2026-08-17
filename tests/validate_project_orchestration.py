@@ -239,7 +239,9 @@ def main() -> int:
     ):
         require(fixture in checkpoint_test, f"checkpoint oracle missing: {fixture}")
     for fixture in (
-        "stale product identity rejects before external candidate execution",
+        "provider identity/version mismatch rejects before external execution",
+        "provider capability-policy mismatch rejects before external execution",
+        "stale toolchain identity rejects before external candidate execution",
         "resumed bounded external evaluation matches uninterrupted execution",
         "resume schedules only post-checkpoint generations",
     ):
