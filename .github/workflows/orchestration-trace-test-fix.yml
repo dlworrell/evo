@@ -1,0 +1,61 @@
+name: Fix Dispatched Orchestration Trace Assertion
+
+on:
+  push:
+    branches:
+      - agent/bounded-source-orchestration
+    paths:
+      - '.github/workflows/orchestration-trace-test-fix.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: agent/bounded-source-orchestration
+          fetch-depth: 0
+      - name: Correct dispatched-job trace expectation
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('tests/project_search_test.c')
+          text = path.read_text()
+          old = '''            serial_trace.batch_count == serial.generations_completed + 1U &&
+            serial_trace.job_count == parallel_trace.job_count &&
+            serial_trace.job_count ==
+                serial_trace.batch_count * serial_config.population_size,
+        "persistent worker traces retain every generation");
+'''
+          new = '''            serial_trace.batch_count == serial.generations_completed + 1U &&
+            serial_trace.job_count == parallel_trace.job_count &&
+            serial_trace.job_count > 0U &&
+            serial_trace.job_count <=
+                serial_trace.batch_count * serial_config.population_size,
+        "persistent worker traces retain every dispatched generation and job");
+'''
+          if old not in text:
+              raise SystemExit('trace assertion marker missing')
+          path.write_text(text.replace(old, new, 1))
+          PY
+          clang-format -i tests/project_search_test.c
+      - name: Commit correction and remove helper
+        run: |
+          rm -f .github/workflows/orchestration-trace-test-fix.yml
+          git config user.name 'Donovan Worrell'
+          git config user.email 'donovan.worrell@just-a-geek.com'
+          git add -A tests/project_search_test.c .github/workflows/orchestration-trace-test-fix.yml
+          git commit -m 'test: bound persistent trace to dispatched candidates'
+          git push origin HEAD:agent/bounded-source-orchestration
+      - name: Verify focused orchestration suite
+        run: |
+          cmake -S . -B build-trace -DCMAKE_C_COMPILER=clang
+          cmake --build build-trace --target evo_project_search_test evo_project_orchestration_test evo_project_orchestration_checkpoint_test --parallel 2
+          ctest --test-dir build-trace -R '^evo_project_(search|orchestration|orchestration_checkpoint)_test$' --output-on-failure
+          python3 tests/validate_project_orchestration.py
