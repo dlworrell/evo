@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #define EVO_PROJECT_SANDBOX_SCHEMA_VERSION 1U
 
