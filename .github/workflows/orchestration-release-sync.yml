@@ -1,5 +1,5 @@
 name: Orchestration Release Sync
-# Retry after correcting the wrapped EVO-002 HRA marker.
+# Retry after correcting wrapped release-document validation markers.
 
 on:
   push:
@@ -29,7 +29,7 @@ jobs:
           grep -F '[0.42.0],' configure.ac
           grep -F '#define EVO_VERSION_MINOR 42' include/catalyst/evo/evo.h
           grep -F 'EVO 0.42.0' README.md
-          grep -F 'Issue #66 implements bounded external-process orchestration' docs/roadmap.md
+          grep -F '#66 implements bounded external-process orchestration' docs/roadmap.md
           grep -F 'Status: Implemented through the 0.42.0 bounded source-orchestration boundary' docs/specs/EVO-002-source-optimizer-contract.md
           grep -F 'bounded-source-orchestration-implemented-0.42.0' repo.yaml
           python3 tests/validate_project_orchestration.py
