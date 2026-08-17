@@ -31,6 +31,8 @@ def main() -> int:
     runtime = read("src/project_orchestration_runtime.c")
     transaction = read("src/project_orchestration.c")
     checkpoint = read("src/project_orchestration_checkpoint.c")
+    trace_header = read("src/internal/project_search_orchestration.h")
+    trace_runtime = read("src/project_search_orchestration_trace.c")
     test = read("tests/project_orchestration_test.c")
     checkpoint_test = read("tests/project_orchestration_checkpoint_test.c")
     cmake = read("CMakeLists.txt")
@@ -189,6 +191,27 @@ def main() -> int:
         "nested generic core checkpoint boundary missing",
     )
 
+    require(
+        "evo_project_search_orchestration_trace_t" in trace_header,
+        "persistent orchestration trace view missing",
+    )
+    require(
+        "evo_project_search_orchestration_trace_append" in trace_runtime,
+        "persistent orchestration trace append path missing",
+    )
+    require(
+        "trace_rebind_job" in trace_runtime,
+        "copied evaluation fingerprint rebinding missing",
+    )
+    require(
+        "orchestration trace retains every committed evaluation batch" in test,
+        "successful persistent worker-trace oracle missing",
+    )
+    require(
+        "failed search retains complete trustworthy worker schedule evidence" in test,
+        "failed persistent worker-trace oracle missing",
+    )
+
     for fixture in (
         "parallel batch succeeds",
         "runtime completion order is retained diagnostically",
@@ -217,6 +240,7 @@ def main() -> int:
         "src/project_orchestration_runtime.c",
         "src/project_orchestration.c",
         "src/project_orchestration_checkpoint.c",
+        "src/project_search_orchestration_trace.c",
     ):
         require(source in cmake, f"CMake source missing: {source}")
         require(source in automake, f"Automake source missing: {source}")
