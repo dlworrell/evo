@@ -18,6 +18,7 @@ typedef struct evo_project_sandbox_command_context {
 typedef struct evo_project_sandbox_assurance_context {
     const char *toolchain_identity;
     size_t max_diagnostic_bytes;
+    evo_project_sandbox_result_t last_result;
 } evo_project_sandbox_assurance_context_t;
 
 typedef struct evo_project_measurement_command {
@@ -58,6 +59,9 @@ evo_project_assurance_status_t evo_project_sandbox_assurance_runner(
     const char *candidate_workspace_path,
     void *context,
     evo_project_assurance_gate_outcome_t *outcome);
+
+void evo_project_sandbox_assurance_context_destroy(
+    evo_project_sandbox_assurance_context_t *context);
 
 evo_project_measurement_status_t evo_project_sandbox_measurement_provider(
     const evo_project_measurement_request_t *request,
