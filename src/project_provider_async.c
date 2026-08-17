@@ -28,7 +28,7 @@ typedef struct evo_project_async_wire_result {
 
 static bool evo_async_fingerprint_valid(const char *fingerprint)
 {
-    static const char prefix[] = "evo-fnv1a64:";
+    static const char prefix[] = "fnv1a64-v1:";
     size_t index;
 
     if (fingerprint == NULL) {
