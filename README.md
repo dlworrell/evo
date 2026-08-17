@@ -45,6 +45,7 @@ The governing product records are:
 - `docs/adr/ADR-0039-isolated-candidate-materialization.md`
 - `docs/adr/ADR-0040-isolated-candidate-correctness-gates.md`
 - `docs/adr/ADR-0041-reproducible-candidate-performance-fitness.md`
+- `docs/adr/ADR-0042-structured-recipe-evolution.md`
 - `docs/specs/EVO-001-library-contract.md`
 - `docs/specs/EVO-002-source-optimizer-contract.md`
 - `docs/roadmap.md`
@@ -159,6 +160,13 @@ authority, condition identity binds hardware/toolchain/environment/dataset
 and binary provenance, incomplete or unstable evidence yields no ranking
 fitness, and JSON/Markdown preserve every sample, exclusion, aggregate, and
 fitness derivation. EVO-HRA-013 retains this measurement-specific audit.
+ADR-0042 assesses 0.41.0 structured recipe evolution: canonical recipe genomes,
+complete ordered operator events, lineage records, and exact evaluation-provider
+outcomes remain authority. Mutation and crossover operate only on whole recipe
+records and typed parameters, fixed seeds replay the same search, exact ties
+retain stable earlier winners, and no cache, compressed population, index, or
+probabilistic shortcut can accept, reject, rank, or select a candidate.
+EVO-HRA-014 retains this structured-search audit.
 
 ## Roadmap Scope
 
@@ -190,6 +198,8 @@ The source-optimizer track adds:
   and independent Autotools/GNU release authority
 - Implemented reproducible baseline-versus-candidate performance measurement
   and finite fitness mapping
+- Implemented deterministic structured recipe evolution and bounded search
+  with complete operator/lineage evidence and stable exact-tie semantics
 - Bounded parallel compilation, checkpoint/resume, and deterministic replay
 - Reviewable optimized patches and machine-readable evidence bundles
 
@@ -219,9 +229,13 @@ candidate assurance with exact ordered fast/finalist gate authority through
 a caller-supplied isolated execution provider, and 0.40.0 reproducible
 baseline-versus-candidate measurement with ordered raw samples, explicit
 condition identity, deterministic aggregation, stability/tolerance policy,
-and finite EVO fitness only for complete stable evidence. Whole-run
-orchestration and the installed executable remain dependency-ordered roadmap
-work; their absence is an explicit boundary, not an implicit feature claim.
+and finite EVO fitness only for complete stable evidence. Version 0.41.0 adds
+deterministic structured recipe populations, whole-record/typed-parameter
+mutation and crossover, exact repair/rejection policy, complete operator and
+lineage evidence, and fixed-seed replay through the measurement/fitness boundary.
+Bounded external-process orchestration and the installed executable remain
+dependency-ordered roadmap work; their absence is an explicit boundary, not an
+implicit feature claim.
 
 ## Authoritative Native Builds
 
@@ -248,7 +262,7 @@ make check
 ```
 
 `CMakePresets.json`, `configure.ac`, and `Makefile.am` enumerate the same 26
-installed-core sources, 24 private source-foundation sources, and 39
+installed-core sources, 27 private source-foundation sources, and 40
 normative tests. CI also compares staged install
 manifests, public symbols, package metadata, and a downstream consumer built
 against each installed result. See
@@ -261,22 +275,21 @@ declared Clang/LLVM and GNU profiles.
 
 ## Status
 
-**Current implementation boundary:** EVO 0.40.0 packages the deterministic
+**Current implementation boundary:** EVO 0.41.0 packages the deterministic
 evolutionary-search core plus the private source-optimizer foundations for
 strict C-project ingestion, immutable baselines, normalized Clang/LLVM
 analysis, canonical transformation recipes, three AST-aware C
 transformations, isolated candidate materialization, candidate assurance,
-and reproducible candidate performance measurement. Measurement consumes only
-performance-eligible assurance evidence, executes deterministic paired
-baseline/candidate warmup and recorded requests through a caller-supplied
-provider, binds every sample to one exact condition identity, retains explicit
-exclusions and raw evidence, rejects incomplete or unstable measurements from
-ranking, and derives finite EVO fitness from recorded component values and
-caller-declared weights without changing correctness authority. The boundary
-remains private and uninstalled. Recipe evolution/orchestration (#65-#66),
-product commands and installed executable (#67/#93), artifact publication
-(#68), end-to-end proof (#69), and final stabilization (#56) remain later
-dependency-ordered work.
+reproducible candidate performance measurement, and structured recipe search.
+The search initializes canonical recipe populations from live opportunities and
+the versioned catalogue, mutates and crosses only whole records and typed
+parameters, applies bounded deterministic repair or fail-closed rejection, and
+retains complete recipe → candidate → assurance → measurement → fitness lineage
+with exact ordered operator events. Fixed seeds replay the same search and exact
+fitness ties preserve the earlier stable winner. The boundary remains private
+and uninstalled. Bounded external-process orchestration (#66), product commands
+and installed executable (#67/#93), artifact publication (#68), end-to-end
+proof (#69), and final stabilization (#56) remain later dependency-ordered work.
 
 EVO 0.16.0 composes the complete deterministic generation pipeline into a
 bounded public `evo_run`. Generation zero is constructed, initialized,
