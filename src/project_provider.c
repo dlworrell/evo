@@ -151,8 +151,6 @@ const evo_project_provider_record_t *evo_project_provider_find(
 bool evo_project_provider_available(
     const evo_project_provider_record_t *provider)
 {
-    bool sandbox_available;
-
     if (provider == NULL ||
         provider->schema_version != EVO_PROJECT_PROVIDER_REGISTRY_SCHEMA_VERSION) {
         return false;
@@ -160,8 +158,10 @@ bool evo_project_provider_available(
 #if !defined(__linux__)
     return false;
 #else
-    sandbox_available = evo_project_provider_program_available("bwrap") &&
-                        evo_project_provider_probe_bwrap();
+    const bool sandbox_available =
+        evo_project_provider_program_available("bwrap") &&
+        evo_project_provider_probe_bwrap();
+
     switch (provider->kind) {
     case EVO_PROJECT_PROVIDER_ANALYSIS:
     case EVO_PROJECT_PROVIDER_TRANSFORMATION_AST:
