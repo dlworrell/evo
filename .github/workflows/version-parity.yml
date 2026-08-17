@@ -1,0 +1,68 @@
+name: Installed Core Version Parity
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cmake-installed-core:
+    name: CMake staged core version
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pkg-config
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config
+
+      - name: Configure, build, and stage CMake install
+        run: |
+          prefix="$PWD/build/version-stage-cmake"
+          cmake -S . -B build/version-cmake \
+            -DBUILD_TESTING=OFF \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX="$prefix"
+          cmake --build build/version-cmake --parallel 2
+          cmake --install build/version-cmake
+
+      - name: Verify installed core version and consumer link
+        env:
+          CC: gcc
+        run: sh scripts/verify-installed-core-version.sh "$PWD/build/version-stage-cmake"
+
+  autotools-installed-core:
+    name: Autotools staged core version
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Autotools and pkg-config
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y autoconf automake libtool pkg-config
+
+      - name: Configure, build, and stage Autotools install
+        run: |
+          prefix="$PWD/build/version-stage-autotools"
+          autoreconf -fvi
+          mkdir -p build/version-autotools
+          cd build/version-autotools
+          CC=gcc ../../configure \
+            --prefix="$prefix" \
+            --disable-warnings-as-errors
+          make -j2
+          make install
+
+      - name: Verify installed core version and consumer link
+        env:
+          CC: gcc
+        run: sh scripts/verify-installed-core-version.sh "$PWD/build/version-stage-autotools"
