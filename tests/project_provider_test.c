@@ -1,5 +1,6 @@
 #include "internal/project_provider.h"
 #include "internal/project_provider_adapters.h"
+#include "internal/project_runtime.h"
 
 #include <stdbool.h>
 #include <stdint.h>
