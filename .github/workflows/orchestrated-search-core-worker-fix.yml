@@ -1,0 +1,43 @@
+name: Fix Orchestrated Search Core Worker Boundary
+
+on:
+  push:
+    branches:
+      - agent/bounded-source-orchestration
+    paths:
+      - '.github/workflows/orchestrated-search-core-worker-fix.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: agent/bounded-source-orchestration
+          fetch-depth: 0
+      - name: Disable nested in-process workers on external orchestration path
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('src/project_search.c')
+          text = path.read_text()
+          old = '    core_config.evaluation_worker_count = config->evaluation_worker_count;\n'
+          new = '    core_config.evaluation_worker_count =\n        orchestration_policy == NULL ? config->evaluation_worker_count : 0U;\n'
+          if old not in text:
+              raise SystemExit('core worker assignment marker missing')
+          path.write_text(text.replace(old, new, 1))
+          PY
+          clang-format -i src/project_search.c
+      - name: Commit correction and remove helper
+        run: |
+          rm -f .github/workflows/orchestrated-search-core-worker-fix.yml
+          git config user.name 'Donovan Worrell'
+          git config user.email 'donovan.worrell@just-a-geek.com'
+          git add src/project_search.c .github/workflows/orchestrated-search-core-worker-fix.yml
+          git commit -m 'fix: keep external orchestration separate from core workers'
+          git push origin HEAD:agent/bounded-source-orchestration
