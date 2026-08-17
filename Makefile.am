@@ -107,6 +107,7 @@ noinst_HEADERS = \
 	src/internal/project_search_owner.h \
 	src/internal/project_search_internal.h \
 	src/internal/project_search_orchestration.h \
+	src/internal/project_search_orchestration_trace.h \
 	src/internal/project_orchestration.h \
 	src/internal/project_orchestration_owner.h \
 	src/internal/project_orchestration_internal.h \
@@ -151,6 +152,7 @@ libevo_project_foundation_la_SOURCES = \
 	src/project_search_model.c \
 	src/project_search_runtime.c \
 	src/project_search.c \
+	src/project_search_orchestration_trace.c \
 	src/project_orchestration_model.c \
 	src/project_orchestration_runtime.c \
 	src/project_orchestration.c \

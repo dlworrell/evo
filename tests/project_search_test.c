@@ -985,18 +985,22 @@ static void test_orchestrated_search_equivalence(test_fixture_t *fixture)
         test_orchestration_policy(4U, &parallel_provider);
     evo_project_search_t serial = {0};
     evo_project_search_t parallel = {0};
+    evo_project_search_orchestration_trace_t serial_trace = {0};
+    evo_project_search_orchestration_trace_t parallel_trace = {0};
 
     test_check(
-        evo_project_search_run_orchestrated(
-            &serial_config, &serial_policy, &serial) ==
+        evo_project_search_run_orchestrated_with_trace(
+            &serial_config, &serial_policy, &serial, &serial_trace) ==
             EVO_PROJECT_SEARCH_SUCCESS,
         "serial orchestrated structured search succeeds");
     test_check(
-        evo_project_search_run_orchestrated(
-            &parallel_config, &parallel_policy, &parallel) ==
+        evo_project_search_run_orchestrated_with_trace(
+            &parallel_config, &parallel_policy, &parallel, &parallel_trace) ==
             EVO_PROJECT_SEARCH_SUCCESS,
         "parallel orchestrated structured search succeeds");
     if (serial.private_owner == NULL || parallel.private_owner == NULL) {
+        evo_project_search_orchestration_trace_destroy(&parallel_trace);
+        evo_project_search_orchestration_trace_destroy(&serial_trace);
         evo_project_search_destroy(&parallel);
         evo_project_search_destroy(&serial);
         return;
@@ -1018,6 +1022,29 @@ static void test_orchestrated_search_equivalence(test_fixture_t *fixture)
             serial.operator_event_count == parallel.operator_event_count &&
             strcmp(serial.canonical_json, parallel.canonical_json) == 0,
         "external worker count preserves complete logical search authority");
+    test_check(
+        serial_trace.run_complete && parallel_trace.run_complete &&
+            serial_trace.projection_complete && parallel_trace.projection_complete &&
+            !serial_trace.probabilistic_authority &&
+            !parallel_trace.probabilistic_authority &&
+            serial_trace.batch_count == parallel_trace.batch_count &&
+            serial_trace.batch_count == serial.generations_completed + 1U &&
+            serial_trace.job_count == parallel_trace.job_count &&
+            serial_trace.job_count ==
+                serial_trace.batch_count * serial_config.population_size,
+        "persistent worker traces retain every generation");
+    test_check(
+        serial_trace.batches[0].external_worker_count == 1U &&
+            parallel_trace.batches[0].external_worker_count == 4U &&
+            serial_trace.batches[0].generation ==
+                parallel_trace.batches[0].generation &&
+            serial_trace.batches[0].generation_committed &&
+            parallel_trace.batches[0].generation_committed &&
+            serial_trace.batches[0].cleanup_complete &&
+            parallel_trace.batches[0].cleanup_complete,
+        "worker schedule remains diagnostic while generation authority matches");
+    evo_project_search_orchestration_trace_destroy(&parallel_trace);
+    evo_project_search_orchestration_trace_destroy(&serial_trace);
     evo_project_search_destroy(&parallel);
     evo_project_search_destroy(&serial);
 }
@@ -1035,9 +1062,11 @@ static void test_orchestrated_failure_is_atomic(test_fixture_t *fixture)
     evo_project_search_orchestration_policy_t policy =
         test_orchestration_policy(2U, &provider);
     evo_project_search_t search = {0};
+    evo_project_search_orchestration_trace_t trace = {0};
 
     test_check(
-        evo_project_search_run_orchestrated(&config, &policy, &search) !=
+        evo_project_search_run_orchestrated_with_trace(
+            &config, &policy, &search, &trace) !=
                 EVO_PROJECT_SEARCH_SUCCESS &&
             search.private_owner == NULL,
         "hard external worker failure publishes no partial search result");
@@ -1046,6 +1075,14 @@ static void test_orchestrated_failure_is_atomic(test_fixture_t *fixture)
             provider.start_count == provider.join_count &&
             provider.cancel_count > 0U,
         "hard external worker failure cancels and joins started siblings");
+    test_check(
+        !trace.run_complete && trace.projection_complete &&
+            !trace.probabilistic_authority && trace.batch_count == 1U &&
+            trace.job_count > 0U && trace.batches[0].has_hard_failure &&
+            !trace.batches[0].generation_committed &&
+            trace.batches[0].cleanup_complete,
+        "failed search retains complete trustworthy worker schedule evidence");
+    evo_project_search_orchestration_trace_destroy(&trace);
 }
 
 int main(void)

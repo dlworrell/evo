@@ -5,6 +5,7 @@
 #include "internal/project_search_internal.h"
 #include "internal/project_search_owner.h"
 #include "internal/project_search_orchestration.h"
+#include "internal/project_search_orchestration_trace.h"
 #include "internal/run_batch.h"
 
 #include <string.h>
@@ -12,6 +13,7 @@
 typedef struct evo_search_run_context {
     const evo_project_search_config_t *config;
     const evo_project_search_orchestration_policy_t *orchestration_policy;
+    evo_project_search_orchestration_trace_owner_t *orchestration_trace_owner;
     evo_project_search_owner_t *owner;
     bool fatal_state;
 } evo_search_run_context_t;
@@ -886,6 +888,13 @@ static evo_status_t evo_search_batch_evaluation_callback(
         status = EVO_ERROR_EVALUATION;
         goto finish;
     }
+    if (context->orchestration_trace_owner != NULL &&
+        !evo_project_search_orchestration_trace_append(
+            context->orchestration_trace_owner, &orchestration)) {
+        context->fatal_state = true;
+        status = EVO_ERROR_EVALUATION;
+        goto finish;
+    }
     if (orchestration.has_hard_failure ||
         !orchestration.cleanup_complete ||
         !orchestration.generation_committed ||
@@ -1261,6 +1270,7 @@ static evo_project_search_status_t evo_search_map_core_status(
 static evo_project_search_status_t evo_project_search_run_common(
     const evo_project_search_config_t *config,
     const evo_project_search_orchestration_policy_t *orchestration_policy,
+    evo_project_search_orchestration_trace_owner_t *orchestration_trace_owner,
     evo_project_search_t *search)
 {
     evo_project_search_owner_t *owner = NULL;
@@ -1289,6 +1299,7 @@ static evo_project_search_status_t evo_project_search_run_common(
     evo_search_publish_identity(config, owner);
     run_context.config = config;
     run_context.orchestration_policy = orchestration_policy;
+    run_context.orchestration_trace_owner = orchestration_trace_owner;
     run_context.owner = owner;
 
     problem.genome_size = config->genome_size;
@@ -1353,7 +1364,7 @@ evo_project_search_status_t evo_project_search_run(
     const evo_project_search_config_t *config,
     evo_project_search_t *search)
 {
-    return evo_project_search_run_common(config, NULL, search);
+    return evo_project_search_run_common(config, NULL, NULL, search);
 }
 
 evo_project_search_status_t evo_project_search_run_orchestrated(
@@ -1365,7 +1376,37 @@ evo_project_search_status_t evo_project_search_run_orchestrated(
         return EVO_PROJECT_SEARCH_ERROR_INVALID_ARGUMENT;
     }
     return evo_project_search_run_common(
-        config, orchestration_policy, search);
+        config, orchestration_policy, NULL, search);
+}
+
+evo_project_search_status_t evo_project_search_run_orchestrated_with_trace(
+    const evo_project_search_config_t *config,
+    const evo_project_search_orchestration_policy_t *orchestration_policy,
+    evo_project_search_t *search,
+    evo_project_search_orchestration_trace_t *trace)
+{
+    evo_project_search_orchestration_trace_owner_t *trace_owner = NULL;
+    evo_project_search_status_t status;
+
+    if (config == NULL || orchestration_policy == NULL || search == NULL ||
+        trace == NULL || trace->private_owner != NULL ||
+        !evo_search_config_valid(config) ||
+        !evo_search_orchestration_policy_valid(config, orchestration_policy)) {
+        return EVO_PROJECT_SEARCH_ERROR_INVALID_ARGUMENT;
+    }
+    if (search->private_owner != NULL || search->schema_version != 0U) {
+        return EVO_PROJECT_SEARCH_ERROR_RESULT_ACTIVE;
+    }
+    *trace = (evo_project_search_orchestration_trace_t){0};
+    if (!evo_project_search_orchestration_trace_owner_create(
+            config, orchestration_policy, &trace_owner)) {
+        return EVO_PROJECT_SEARCH_ERROR_RESOURCE_LIMIT;
+    }
+    status = evo_project_search_run_common(
+        config, orchestration_policy, trace_owner, search);
+    evo_project_search_orchestration_trace_publish(
+        trace_owner, status == EVO_PROJECT_SEARCH_SUCCESS, trace);
+    return status;
 }
 
 void evo_project_search_destroy(evo_project_search_t *search)
