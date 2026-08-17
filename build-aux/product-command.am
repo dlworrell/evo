@@ -13,6 +13,7 @@ tests_evo_project_command_test_LDADD = libevo_project_foundation.la
 EXTRA_DIST += \
 	build-aux/product-command.am \
 	docs/adr/ADR-0045-product-command-contract.md \
+	docs/specs/EVO-002A-product-command-provider-addendum.md \
 	docs/specs/EVO-003-product-command-contract.md \
 	docs/engineering/reports/EVO-HRA-016-product-command-audit.md \
 	docs/schemas/evo-command-analyze-v1.schema.json \
