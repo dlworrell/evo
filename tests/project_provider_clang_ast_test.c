@@ -17,6 +17,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#if defined(__linux__)
 static int failures = 0;
 
 static void check(bool condition, const char *message)
@@ -293,6 +294,7 @@ static void exercise_source(
     check(!result.contains_comment, "target comment-free");
     check(!result.contains_preprocessor, "target preprocessor-free");
 }
+#endif
 
 int main(void)
 {
