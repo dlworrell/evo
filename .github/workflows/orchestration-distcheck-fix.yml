@@ -1,0 +1,53 @@
+name: Repair Orchestration Distcheck Inventory
+
+on:
+  push:
+    branches:
+      - agent/bounded-source-orchestration
+    paths:
+      - '.github/workflows/orchestration-distcheck-fix.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: agent/bounded-source-orchestration
+          fetch-depth: 0
+      - name: Add private batch headers to Automake distribution
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('Makefile.am')
+          text = path.read_text()
+          marker = '''\tsrc/internal/population_evaluation.h \\\n\tsrc/internal/evaluation_workers.h \\\n'''
+          replacement = '''\tsrc/internal/population_evaluation.h \\\n\tsrc/internal/evaluation_workers.h \\\n\tsrc/internal/batch_evaluation.h \\\n\tsrc/internal/run_batch.h \\\n'''
+          if 'src/internal/batch_evaluation.h' not in text:
+              if marker not in text:
+                  raise SystemExit('noinst_HEADERS insertion marker missing')
+              text = text.replace(marker, replacement, 1)
+          if 'src/internal/run_batch.h' not in text:
+              raise SystemExit('run_batch.h was not added')
+          path.write_text(text)
+          PY
+      - name: Prove source distribution builds out of tree
+        run: |
+          autoreconf -fvi
+          mkdir -p build/distcheck-fix
+          cd build/distcheck-fix
+          ../../configure CC=gcc
+          make distcheck
+      - name: Commit non-workflow fix
+        run: |
+          git config user.name 'Donovan Worrell'
+          git config user.email 'donovan.worrell@just-a-geek.com'
+          git add Makefile.am
+          git commit -m 'build: include batch evaluator headers in source distribution'
+          git push origin HEAD:agent/bounded-source-orchestration
