@@ -114,12 +114,16 @@ static void test_checkpoint_observer(
 {
     test_checkpoint_log_t *log = context;
     const unsigned char *bytes = checkpoint;
-    const size_t generation = (size_t)view->current_generation;
+    size_t generation;
     size_t index;
 
     if (log == NULL || checkpoint == NULL || view == NULL ||
-        generation >= TEST_SNAPSHOT_COUNT ||
         checkpoint_size > TEST_CHECKPOINT_CAPACITY) {
+        test_failures += 1;
+        return;
+    }
+    generation = (size_t)view->current_generation;
+    if (generation >= TEST_SNAPSHOT_COUNT) {
         test_failures += 1;
         return;
     }
