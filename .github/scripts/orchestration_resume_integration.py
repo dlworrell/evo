@@ -144,26 +144,3 @@ if '"evo_project_orchestration_resume_test",' not in text:
 '''
     text = replace_once(text, marker, replacement, "validator target list")
 path.write_text(text)
-
-
-# Hosted project-orchestration workflow executes the resume differential under
-# Clang+sanitizers, GCC/Autotools, and Apple Clang.
-path = Path(".github/workflows/project-orchestration.yml")
-text = path.read_text()
-text = text.replace(
-    "evo_project_orchestration_test evo_project_orchestration_checkpoint_test evo_project_search_test",
-    "evo_project_orchestration_test evo_project_orchestration_checkpoint_test evo_project_orchestration_resume_test evo_project_search_test",
-)
-text = text.replace(
-    "tests/evo_project_orchestration_test tests/evo_project_orchestration_checkpoint_test tests/evo_project_search_test",
-    "tests/evo_project_orchestration_test tests/evo_project_orchestration_checkpoint_test tests/evo_project_orchestration_resume_test tests/evo_project_search_test",
-)
-text = text.replace(
-    "TESTS='tests/evo_project_orchestration_test tests/evo_project_orchestration_checkpoint_test tests/evo_project_search_test'",
-    "TESTS='tests/evo_project_orchestration_test tests/evo_project_orchestration_checkpoint_test tests/evo_project_orchestration_resume_test tests/evo_project_search_test'",
-)
-text = text.replace(
-    "^evo_project_(orchestration|orchestration_checkpoint|search)_test$",
-    "^evo_project_(orchestration|orchestration_checkpoint|orchestration_resume|search)_test$",
-)
-path.write_text(text)
