@@ -5,6 +5,8 @@
 #include "internal/observer.h"
 #include "internal/population_recycling.h"
 #include "internal/population_storage.h"
+#include "internal/population_evaluation.h"
+#include "internal/run_batch.h"
 #include "internal/result_storage.h"
 #include "internal/secure_erasure.h"
 #include "internal/statistics.h"
@@ -116,7 +118,12 @@ evo_status_t evo_result_storage_allocate(const evo_problem_t *problem,
     return EVO_SUCCESS;
 }
 
-evo_status_t evo_run(const evo_problem_t *problem, const evo_config_t *config, void *context, evo_result_t *result)
+evo_status_t evo_run_with_batch_evaluator(
+    const evo_problem_t *problem,
+    const evo_config_t *config,
+    void *context,
+    const evo_population_batch_evaluator_t *batch_evaluator,
+    evo_result_t *result)
 {
     evo_generation_statistics_t generation_statistics = {0};
     evo_adaptive_mutation_state_t adaptive_mutation_state = {0};
@@ -159,7 +166,14 @@ evo_status_t evo_run(const evo_problem_t *problem, const evo_config_t *config, v
         return destroy_population_with_status(&population, status);
     }
 
-    status = evo_population_evaluate(problem, config, context, &population);
+    status = batch_evaluator == NULL
+                 ? evo_population_evaluate(problem, config, context, &population)
+                 : evo_population_evaluate_with_batch_evaluator(problem,
+                                                                config,
+                                                                context,
+                                                                UINT64_C(0),
+                                                                &population,
+                                                                batch_evaluator);
     if (status != EVO_SUCCESS) {
         return destroy_population_with_status(&population, status);
     }
@@ -233,13 +247,15 @@ evo_status_t evo_run(const evo_problem_t *problem, const evo_config_t *config, v
 
     if (config->generation_limit != 0 &&
         termination_reason == EVO_TERMINATION_NONE) {
-        status = evo_bounded_run_continue(problem,
-                                          config,
-                                          context,
-                                          &population,
-                                          result,
-                                          &run_state,
-                                          &run_evidence);
+        status = evo_bounded_run_continue_with_batch_evaluator(
+            problem,
+            config,
+            context,
+            &population,
+            result,
+            &run_state,
+            batch_evaluator,
+            &run_evidence);
     }
 
     evo_population_destroy(&population);
@@ -254,12 +270,23 @@ evo_status_t evo_run(const evo_problem_t *problem, const evo_config_t *config, v
     return EVO_SUCCESS;
 }
 
-evo_status_t evo_resume(const evo_problem_t *problem,
-                        const evo_config_t *config,
-                        void *context,
-                        const void *checkpoint,
-                        size_t checkpoint_size,
-                        evo_result_t *result)
+evo_status_t evo_run(const evo_problem_t *problem,
+                     const evo_config_t *config,
+                     void *context,
+                     evo_result_t *result)
+{
+    return evo_run_with_batch_evaluator(
+        problem, config, context, NULL, result);
+}
+
+evo_status_t evo_resume_with_batch_evaluator(
+    const evo_problem_t *problem,
+    const evo_config_t *config,
+    void *context,
+    const void *checkpoint,
+    size_t checkpoint_size,
+    const evo_population_batch_evaluator_t *batch_evaluator,
+    evo_result_t *result)
 {
     evo_bounded_run_evidence_t run_evidence = {0};
     evo_population_t population = {0};
@@ -293,13 +320,15 @@ evo_status_t evo_resume(const evo_problem_t *problem,
         return status;
     }
     if (run_state.termination_reason == EVO_TERMINATION_NONE) {
-        status = evo_bounded_run_continue(problem,
-                                          config,
-                                          context,
-                                          &population,
-                                          result,
-                                          &run_state,
-                                          &run_evidence);
+        status = evo_bounded_run_continue_with_batch_evaluator(
+            problem,
+            config,
+            context,
+            &population,
+            result,
+            &run_state,
+            batch_evaluator,
+            &run_evidence);
     }
     evo_population_destroy(&population);
     if (status != EVO_SUCCESS) {
@@ -308,6 +337,22 @@ evo_status_t evo_resume(const evo_problem_t *problem,
     }
     result->termination_reason = run_state.termination_reason;
     return EVO_SUCCESS;
+}
+
+evo_status_t evo_resume(const evo_problem_t *problem,
+                        const evo_config_t *config,
+                        void *context,
+                        const void *checkpoint,
+                        size_t checkpoint_size,
+                        evo_result_t *result)
+{
+    return evo_resume_with_batch_evaluator(problem,
+                                           config,
+                                           context,
+                                           checkpoint,
+                                           checkpoint_size,
+                                           NULL,
+                                           result);
 }
 
 void evo_result_destroy(evo_result_t *result)

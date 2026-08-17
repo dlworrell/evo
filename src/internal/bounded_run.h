@@ -1,6 +1,7 @@
 #ifndef CATALYST_EVO_INTERNAL_BOUNDED_RUN_H
 #define CATALYST_EVO_INTERNAL_BOUNDED_RUN_H
 
+#include "internal/batch_evaluation.h"
 #include "internal/generation_advancement.h"
 #include "internal/run_state.h"
 
@@ -101,6 +102,17 @@ evo_status_t evo_bounded_run_continue(
     evo_population_t *parents,
     evo_result_t *best_result,
     evo_run_state_t *state,
+    evo_bounded_run_evidence_t *evidence);
+
+/* Private product continuation using one complete-population evaluator. */
+evo_status_t evo_bounded_run_continue_with_batch_evaluator(
+    const evo_problem_t *problem,
+    const evo_config_t *config,
+    void *context,
+    evo_population_t *parents,
+    evo_result_t *best_result,
+    evo_run_state_t *state,
+    const evo_population_batch_evaluator_t *batch_evaluator,
     evo_bounded_run_evidence_t *evidence);
 
 #endif

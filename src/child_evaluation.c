@@ -104,43 +104,11 @@ static bool produced_child_ready_for_evaluation(
                config->elite_count_enabled;
 }
 
-evo_status_t evo_child_population_evaluate(
-    const evo_problem_t *problem,
-    const evo_config_t *config,
-    void *context,
-    uint64_t source_generation,
-    evo_population_t *children,
+static void publish_child_evaluation_evidence(
+    const evo_population_t *children,
     evo_child_evaluation_evidence_t *evidence)
 {
     evo_child_evaluation_evidence_t candidate = {0};
-    evo_status_t status = EVO_SUCCESS;
-
-    if (problem == NULL || config == NULL || children == NULL ||
-        evidence == NULL || problem->evaluate == NULL) {
-        return EVO_ERROR_INVALID_ARGUMENT;
-    }
-
-    if (problem->genome_size == 0 || config->population_size == 0 ||
-        config->max_genome_bytes == 0 ||
-        problem->genome_size > config->max_genome_bytes ||
-        config->max_child_population_bytes == 0) {
-        return EVO_ERROR_RESOURCE_LIMIT;
-    }
-
-    if (!produced_child_ready_for_evaluation(problem,
-                                             config,
-                                             source_generation,
-                                             children)) {
-        return EVO_ERROR_STATE;
-    }
-
-    status = evo_population_evaluate_ready(problem,
-                                           config,
-                                           context,
-                                           children);
-    if (status != EVO_SUCCESS) {
-        return status;
-    }
 
     candidate.population_size = children->population_size;
     candidate.evaluation_bytes = children->evaluation_bytes;
@@ -186,5 +154,91 @@ evo_status_t evo_child_population_evaluate(
         children->population_recycling_enabled;
     candidate.complete = true;
     *evidence = candidate;
+}
+
+static evo_status_t child_population_evaluate_common(
+    const evo_problem_t *problem,
+    const evo_config_t *config,
+    void *context,
+    uint64_t source_generation,
+    evo_population_t *children,
+    evo_child_evaluation_evidence_t *evidence,
+    const evo_population_batch_evaluator_t *batch_evaluator)
+{
+    evo_status_t status = EVO_SUCCESS;
+
+    if (problem == NULL || config == NULL || children == NULL ||
+        evidence == NULL || problem->evaluate == NULL ||
+        (batch_evaluator != NULL && batch_evaluator->evaluate == NULL)) {
+        return EVO_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (problem->genome_size == 0 || config->population_size == 0 ||
+        config->max_genome_bytes == 0 ||
+        problem->genome_size > config->max_genome_bytes ||
+        config->max_child_population_bytes == 0) {
+        return EVO_ERROR_RESOURCE_LIMIT;
+    }
+
+    if (!produced_child_ready_for_evaluation(problem,
+                                             config,
+                                             source_generation,
+                                             children)) {
+        return EVO_ERROR_STATE;
+    }
+
+    status = batch_evaluator == NULL
+                 ? evo_population_evaluate_ready(
+                       problem, config, context, children)
+                 : evo_population_evaluate_ready_with_batch_evaluator(
+                       problem,
+                       config,
+                       context,
+                       source_generation + UINT64_C(1),
+                       children,
+                       batch_evaluator);
+    if (status != EVO_SUCCESS) {
+        return status;
+    }
+
+    publish_child_evaluation_evidence(children, evidence);
     return EVO_SUCCESS;
+}
+
+evo_status_t evo_child_population_evaluate(
+    const evo_problem_t *problem,
+    const evo_config_t *config,
+    void *context,
+    uint64_t source_generation,
+    evo_population_t *children,
+    evo_child_evaluation_evidence_t *evidence)
+{
+    return child_population_evaluate_common(problem,
+                                            config,
+                                            context,
+                                            source_generation,
+                                            children,
+                                            evidence,
+                                            NULL);
+}
+
+evo_status_t evo_child_population_evaluate_with_batch_evaluator(
+    const evo_problem_t *problem,
+    const evo_config_t *config,
+    void *context,
+    uint64_t source_generation,
+    evo_population_t *children,
+    evo_child_evaluation_evidence_t *evidence,
+    const evo_population_batch_evaluator_t *batch_evaluator)
+{
+    if (batch_evaluator == NULL) {
+        return EVO_ERROR_INVALID_ARGUMENT;
+    }
+    return child_population_evaluate_common(problem,
+                                            config,
+                                            context,
+                                            source_generation,
+                                            children,
+                                            evidence,
+                                            batch_evaluator);
 }

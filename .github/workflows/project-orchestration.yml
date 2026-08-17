@@ -1,0 +1,165 @@
+name: Project Orchestration
+
+on:
+  push:
+    branches:
+      - agent/bounded-source-orchestration
+    paths:
+      - 'src/project_orchestration*.c'
+      - 'src/internal/project_orchestration*.h'
+      - 'src/project_search.c'
+      - 'src/project_search_orchestration_trace.c'
+      - 'src/internal/project_search_orchestration.h'
+      - 'src/internal/project_search_orchestration_trace.h'
+      - 'src/internal/batch_evaluation.h'
+      - 'src/internal/run_batch.h'
+      - 'src/population_evaluation.c'
+      - 'src/internal/population_evaluation.h'
+      - 'src/child_evaluation.c'
+      - 'src/internal/child_evaluation.h'
+      - 'src/bounded_run.c'
+      - 'src/internal/bounded_run.h'
+      - 'src/population.c'
+      - 'include/catalyst/evo/evo.h'
+      - 'tests/project_orchestration*.c'
+      - 'tests/project_search_test.c'
+      - 'tests/validate_project_orchestration.py'
+      - 'docs/adr/ADR-0043-bounded-parallel-source-orchestration.md'
+      - 'docs/engineering/reports/EVO-HRA-015-bounded-source-orchestration-audit.md'
+      - 'docs/schemas/evo-project-orchestration-v1.schema.json'
+      - 'docs/roadmap.md'
+      - 'docs/algorithms.md'
+      - 'docs/architecture.md'
+      - 'docs/specs/EVO-001-library-contract.md'
+      - 'docs/specs/EVO-002-source-optimizer-contract.md'
+      - 'README.md'
+      - 'repo.yaml'
+      - '.aems/aes-bld-001.json'
+      - 'CMakeLists.txt'
+      - 'tests/CMakeLists.txt'
+      - 'Makefile.am'
+      - 'configure.ac'
+      - '.github/workflows/project-orchestration.yml'
+  pull_request:
+    paths:
+      - 'src/project_orchestration*.c'
+      - 'src/internal/project_orchestration*.h'
+      - 'src/project_search.c'
+      - 'src/project_search_orchestration_trace.c'
+      - 'src/internal/project_search_orchestration.h'
+      - 'src/internal/project_search_orchestration_trace.h'
+      - 'src/internal/batch_evaluation.h'
+      - 'src/internal/run_batch.h'
+      - 'src/population_evaluation.c'
+      - 'src/internal/population_evaluation.h'
+      - 'src/child_evaluation.c'
+      - 'src/internal/child_evaluation.h'
+      - 'src/bounded_run.c'
+      - 'src/internal/bounded_run.h'
+      - 'src/population.c'
+      - 'include/catalyst/evo/evo.h'
+      - 'tests/project_orchestration*.c'
+      - 'tests/project_search_test.c'
+      - 'tests/validate_project_orchestration.py'
+      - 'docs/adr/ADR-0043-bounded-parallel-source-orchestration.md'
+      - 'docs/engineering/reports/EVO-HRA-015-bounded-source-orchestration-audit.md'
+      - 'docs/schemas/evo-project-orchestration-v1.schema.json'
+      - 'docs/roadmap.md'
+      - 'docs/algorithms.md'
+      - 'docs/architecture.md'
+      - 'docs/specs/EVO-001-library-contract.md'
+      - 'docs/specs/EVO-002-source-optimizer-contract.md'
+      - 'README.md'
+      - 'repo.yaml'
+      - '.aems/aes-bld-001.json'
+      - 'CMakeLists.txt'
+      - 'tests/CMakeLists.txt'
+      - 'Makefile.am'
+      - 'configure.ac'
+      - '.github/workflows/project-orchestration.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cmake-clang:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - name: Verify EVO 0.42.0 package parity
+        run: |
+          grep -F 'project(catalyst_evo VERSION 0.42.0 LANGUAGES C)' CMakeLists.txt
+          grep -F '[0.42.0],' configure.ac
+          grep -F '#define EVO_VERSION_MAJOR 0' include/catalyst/evo/evo.h
+          grep -F '#define EVO_VERSION_MINOR 37' include/catalyst/evo/evo.h
+          grep -F '#define EVO_VERSION_PATCH 0' include/catalyst/evo/evo.h
+          grep -F 'status: implemented-0.42.0' repo.yaml
+          grep -F 'status: bounded-source-orchestration-implemented-0.42.0' repo.yaml
+      - name: Verify focused branch contents
+        run: |
+          test ! -e .github/scripts/core_batch_patch.py
+          test ! -e .github/scripts/core_batch_run_patch.py
+          test ! -e .github/scripts/project_search_orchestration_patch.py
+          test ! -e .github/scripts/project_search_orchestration_test_patch.py
+          test ! -e .github/workflows/core-batch-evaluation-sync.yml
+          test ! -e .github/workflows/orchestrated-search-core-worker-fix.yml
+          test ! -e .github/workflows/orchestrated-search-test-sync.yml
+          test ! -e .github/workflows/orchestration-scaffold-sync.yml
+          test ! -e .github/workflows/orchestration-trace-validation-trigger.yml
+          test ! -e .github/workflows/orchestration-validation-trigger.yml
+          test ! -e .github/workflows/search-orchestration-diagnostic.yml
+          test ! -e .github/workflows/search-orchestration-integration-sync.yml
+          test ! -e .github/workflows/orchestration-release-audit.yml
+          test ! -e .github/workflows/orchestration-release-sync.yml
+          test ! -e .github/workflows/orchestration-release-script-fix.yml
+      - name: Configure with Clang and sanitizers
+        run: cmake -S . -B build-orchestration -DCMAKE_C_COMPILER=clang -DEVO_ENABLE_SANITIZERS=ON
+      - name: Build orchestration and structured-search targets
+        run: >-
+          cmake --build build-orchestration
+          --target evo_project_orchestration_test evo_project_orchestration_checkpoint_test evo_project_orchestration_resume_test evo_project_search_test
+          --parallel 2
+      - name: Run orchestration and structured-search targets
+        env:
+          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: ctest --test-dir build-orchestration -R '^evo_project_(orchestration|orchestration_checkpoint|orchestration_resume|search)_test$' --output-on-failure
+      - name: Independent orchestration validation
+        run: python3 tests/validate_project_orchestration.py
+      - name: Build complete project foundation
+        run: cmake --build build-orchestration --target catalyst_evo_project_foundation --parallel 2
+
+  autotools-gcc:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - name: Bootstrap Autotools
+        run: autoreconf -fi
+      - name: Configure with GCC
+        run: ./configure CC=gcc
+      - name: Build orchestration and structured-search targets
+        run: make -j2 tests/evo_project_orchestration_test tests/evo_project_orchestration_checkpoint_test tests/evo_project_orchestration_resume_test tests/evo_project_search_test
+      - name: Run normative orchestration and structured-search checks
+        run: make check TESTS='tests/evo_project_orchestration_test tests/evo_project_orchestration_checkpoint_test tests/evo_project_orchestration_resume_test tests/evo_project_search_test'
+      - name: Independent orchestration validation
+        run: python3 tests/validate_project_orchestration.py
+
+  cmake-macos-clang:
+    runs-on: macos-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - name: Configure with Apple Clang
+        run: cmake -S . -B build-orchestration -DCMAKE_C_COMPILER=clang
+      - name: Build orchestration and structured-search targets
+        run: >-
+          cmake --build build-orchestration
+          --target evo_project_orchestration_test evo_project_orchestration_checkpoint_test evo_project_orchestration_resume_test evo_project_search_test
+          --parallel 2
+      - name: Run orchestration and structured-search targets
+        run: ctest --test-dir build-orchestration -R '^evo_project_(orchestration|orchestration_checkpoint|orchestration_resume|search)_test$' --output-on-failure
+      - name: Independent orchestration validation
+        run: python3 tests/validate_project_orchestration.py

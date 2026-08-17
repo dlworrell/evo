@@ -1,9 +1,9 @@
 # EVO-002: Source-to-Source C Optimizer Contract
 
-Status: Implemented through the 0.40.0 candidate-measurement boundary; draft 1.0 target
-Version: 0.40.0
+Status: Implemented through the 0.42.0 bounded source-orchestration boundary; draft 1.0 target
+Version: 0.42.0
 Owner: EVO
-Governing ADRs: ADR-0016, ADR-0026, ADR-0035, ADR-0036, ADR-0037, ADR-0038, ADR-0039, ADR-0040, and ADR-0041
+Governing ADRs: ADR-0016, ADR-0026, ADR-0035, ADR-0036, ADR-0037, ADR-0038, ADR-0039, ADR-0040, ADR-0041, ADR-0042, and ADR-0043
 
 ## Purpose
 
@@ -15,16 +15,19 @@ search as a reviewable patch and reproducibility package.
 
 This specification defines the product layer above the reusable C17
 evolutionary-search core governed by EVO-001. Nothing in this draft claims that
-the complete source optimizer is implemented in version 0.40.0. This release
+the complete source optimizer is implemented in version 0.42.0. This release
 implements strict project ingestion and immutable baselines, normalized
 analysis/hotspot evidence, canonical transformation recipes, the initial AST-
 aware C transformation catalogue, deterministic isolated candidate
-materialization, candidate build/correctness assurance, and reproducible
-baseline-versus-candidate performance measurement with finite fitness mapping.
-Assurance and measurement consume exact results from caller-supplied providers;
-portable OS sandboxing and target workload execution remain provider
-responsibilities. Whole-run recipe evolution/orchestration and every later
-roadmap boundary remain a 1.0 target until their issues land.
+materialization, candidate build/correctness assurance, reproducible
+baseline-versus-candidate performance measurement with finite fitness mapping,
+deterministic structured recipe evolution through the reusable EVO core, and
+bounded external-process source orchestration with stable result commit, cleanup
+evidence, persistent worker traces, and product checkpoint/resume authority.
+Assurance, measurement, and candidate execution consume exact results from
+caller-supplied providers; portable OS sandboxing and target workload execution
+remain provider responsibilities. Product commands, installed application
+delivery, artifact publication, and later roadmap boundaries remain 1.0 targets.
 
 ## Claim Boundary
 
@@ -161,6 +164,24 @@ canonical order; deterministic aggregates, stability classification,
 comparison, and finite fitness derive from that record only. Correctness
 authority remains the candidate-assurance result, and no timing outcome can
 rewrite it. ADR-0041 and EVO-HRA-013 retain this issue-specific assessment.
+
+The implemented 0.41.0 structured recipe-search boundary also introduces no
+accelerator. Canonical recipe genomes, direct bounded population/record arrays,
+exact ordered operator events, complete lineage records, and exact downstream
+evaluation outcomes remain authority. Mutation/crossover do not splice source
+bytes; deterministic repair is versioned and bounded; rejected recipes cannot
+reach materialization; and fixed seeds replay the same search, rejection,
+fitness, and winner lineage. ADR-0042 and EVO-HRA-014 retain this issue-specific
+assessment.
+
+The implemented 0.42.0 bounded source-orchestration boundary likewise
+introduces no accelerator. Complete bounded candidate-job arrays, committed
+lineage prefixes, exact provider outcomes, persistent batch/job traces, and
+explicit checkpoint identity records remain authority. Runtime queues, process
+handles, completion timing, and OS scheduling are diagnostic only; stable
+candidate order commits results and every started worker is joined or canceled
+before failure/checkpoint authority. ADR-0043 and EVO-HRA-015 retain this
+issue-specific assessment.
 
 ## Optimization Manifest
 
@@ -476,6 +497,20 @@ Any incompatible identity rejects resume before executing a candidate. Every
 worker is joined, terminated, and cleaned before failure or checkpoint state is
 published.
 
+The implemented 0.42.0 private orchestration transaction applies that contract
+directly. Candidate requests receive deterministic generation/population,
+workspace, logical-worker, and dispatch-wave identities under caller-bounded CPU,
+address-space, process-count, storage, output, wall-time, filesystem, network,
+and descendant-cleanup policy. Provider completion may be asynchronous, but only
+stable candidate order becomes committed evaluation authority. The persistent
+trace retains all dispatched batch/job outcomes and cleanup state. Product
+checkpoint format 1 wraps exact Core checkpoint bytes with baseline, analysis,
+catalogue, recipe/search policy, provider, orchestration policy, toolchain,
+workload, artifact-schema, seed, generation, and lineage identities. Normative
+differential evidence proves supported serial/parallel logical equivalence and
+uninterrupted/resumed equivalence; stale identity rejects before external
+candidate execution.
+
 ## Standalone Application Contract
 
 EVO 1.0 requires a real installed executable, not only private C functions,
@@ -586,6 +621,11 @@ that proof passes and all non-deferred roadmap requirements are reconciled.
 - `docs/adr/ADR-0036-clang-llvm-analysis-and-hotspot-model.md`
 - `docs/adr/ADR-0037-versioned-source-transformation-recipes.md`
 - `docs/adr/ADR-0038-ast-aware-c-transformation-catalogue.md`
+- `docs/adr/ADR-0039-isolated-candidate-materialization.md`
+- `docs/adr/ADR-0040-isolated-candidate-correctness-gates.md`
+- `docs/adr/ADR-0041-reproducible-candidate-performance-fitness.md`
+- `docs/adr/ADR-0042-structured-recipe-evolution.md`
+- `docs/adr/ADR-0043-bounded-parallel-source-orchestration.md`
 - `docs/architecture.md`
 - `docs/algorithms.md`
 - `docs/benchmarks.md`
@@ -595,5 +635,10 @@ that proof passes and all non-deferred roadmap requirements are reconciled.
 - `docs/engineering/reports/EVO-HRA-008-project-analysis-audit.md`
 - `docs/engineering/reports/EVO-HRA-009-project-recipe-audit.md`
 - `docs/engineering/reports/EVO-HRA-010-c-transformation-catalogue-audit.md`
+- `docs/engineering/reports/EVO-HRA-011-candidate-materialization-audit.md`
+- `docs/engineering/reports/EVO-HRA-012-candidate-correctness-gates-audit.md`
+- `docs/engineering/reports/EVO-HRA-013-candidate-performance-fitness-audit.md`
+- `docs/engineering/reports/EVO-HRA-014-structured-recipe-evolution-audit.md`
+- `docs/engineering/reports/EVO-HRA-015-bounded-source-orchestration-audit.md`
 - `docs/roadmap.md`
 - GitHub issues #38, #56 through #69, #83, and #93

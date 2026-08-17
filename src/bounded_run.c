@@ -646,13 +646,14 @@ static bool continuation_state_is_valid(
                &state->population_storage_registry);
 }
 
-evo_status_t evo_bounded_run_continue(
+evo_status_t evo_bounded_run_continue_with_batch_evaluator(
     const evo_problem_t *problem,
     const evo_config_t *config,
     void *context,
     evo_population_t *parents,
     evo_result_t *best_result,
     evo_run_state_t *state,
+    const evo_population_batch_evaluator_t *batch_evaluator,
     evo_bounded_run_evidence_t *evidence)
 {
     evo_bounded_run_evidence_t candidate = {0};
@@ -785,12 +786,21 @@ evo_status_t evo_bounded_run_continue(
             break;
         }
 
-        status = evo_child_population_evaluate(problem,
-                                               &transition_config,
-                                               context,
-                                               source_generation,
-                                               &children,
-                                               &evaluation_evidence);
+        status = batch_evaluator == NULL
+                     ? evo_child_population_evaluate(problem,
+                                                     &transition_config,
+                                                     context,
+                                                     source_generation,
+                                                     &children,
+                                                     &evaluation_evidence)
+                     : evo_child_population_evaluate_with_batch_evaluator(
+                           problem,
+                           &transition_config,
+                           context,
+                           source_generation,
+                           &children,
+                           &evaluation_evidence,
+                           batch_evaluator);
         if (status != EVO_SUCCESS) {
             break;
         }
@@ -972,6 +982,25 @@ evo_status_t evo_bounded_run_continue(
     candidate.complete = true;
     *evidence = candidate;
     return EVO_SUCCESS;
+}
+
+evo_status_t evo_bounded_run_continue(
+    const evo_problem_t *problem,
+    const evo_config_t *config,
+    void *context,
+    evo_population_t *parents,
+    evo_result_t *best_result,
+    evo_run_state_t *state,
+    evo_bounded_run_evidence_t *evidence)
+{
+    return evo_bounded_run_continue_with_batch_evaluator(problem,
+                                                         config,
+                                                         context,
+                                                         parents,
+                                                         best_result,
+                                                         state,
+                                                         NULL,
+                                                         evidence);
 }
 
 evo_status_t evo_bounded_run_advance(

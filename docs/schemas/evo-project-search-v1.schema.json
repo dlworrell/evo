@@ -1,0 +1,402 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://catalyst.example/schemas/evo-project-search-v1.schema.json",
+  "title": "Catalyst EVO structured recipe search evidence v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "baseline_fingerprint",
+    "analysis_fingerprint",
+    "catalogue_identity",
+    "catalogue_version",
+    "policy_identity",
+    "evaluation_provider_identity",
+    "random_seed",
+    "population_size",
+    "generation_limit",
+    "generations_completed",
+    "termination_reason",
+    "policy",
+    "operator_events",
+    "lineage",
+    "best",
+    "projection_complete",
+    "probabilistic_authority",
+    "raw_source_bytes",
+    "search_fingerprint"
+  ],
+  "properties": {
+    "schema": {
+      "const": "catalyst.evo-project-search.v1"
+    },
+    "baseline_fingerprint": {
+      "$ref": "#/$defs/identity"
+    },
+    "analysis_fingerprint": {
+      "$ref": "#/$defs/identity"
+    },
+    "catalogue_identity": {
+      "$ref": "#/$defs/identity"
+    },
+    "catalogue_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "policy_identity": {
+      "$ref": "#/$defs/identity"
+    },
+    "evaluation_provider_identity": {
+      "$ref": "#/$defs/identity"
+    },
+    "random_seed": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "population_size": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "generation_limit": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "generations_completed": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "termination_reason": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "policy": {
+      "$ref": "#/$defs/policy"
+    },
+    "lineage": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/lineage"
+      }
+    },
+    "best": {
+      "$ref": "#/$defs/best"
+    },
+    "projection_complete": {
+      "const": true
+    },
+    "probabilistic_authority": {
+      "const": false
+    },
+    "raw_source_bytes": {
+      "const": false
+    },
+    "search_fingerprint": {
+      "$ref": "#/$defs/identity"
+    },
+    "operator_events": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/operatorEvent"
+      }
+    }
+  },
+  "$defs": {
+    "identity": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "optionalIdentity": {
+      "type": "string",
+      "maxLength": 256
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mutation_policy_version",
+        "crossover_policy_version",
+        "repair_policy_version",
+        "initial_record_count",
+        "maximum_record_count",
+        "mutation_operation_mask",
+        "max_mutations_per_event",
+        "max_repair_passes",
+        "integer_parameter_wrap"
+      ],
+      "properties": {
+        "mutation_policy_version": {
+          "const": 1
+        },
+        "crossover_policy_version": {
+          "const": 1
+        },
+        "repair_policy_version": {
+          "const": 1
+        },
+        "initial_record_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "maximum_record_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "mutation_operation_mask": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 31
+        },
+        "max_mutations_per_event": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_repair_passes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "integer_parameter_wrap": {
+          "type": "boolean"
+        }
+      }
+    },
+    "fitness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "correctness",
+        "performance",
+        "memory_use",
+        "reliability",
+        "maintainability",
+        "constraint_penalty",
+        "total"
+      ],
+      "properties": {
+        "correctness": {
+          "type": "number"
+        },
+        "performance": {
+          "type": "number"
+        },
+        "memory_use": {
+          "type": "number"
+        },
+        "reliability": {
+          "type": "number"
+        },
+        "maintainability": {
+          "type": "number"
+        },
+        "constraint_penalty": {
+          "type": "number",
+          "minimum": 0
+        },
+        "total": {
+          "type": "number"
+        }
+      }
+    },
+    "lineage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "generation",
+        "population_index",
+        "operator_ordinal",
+        "operator_kind",
+        "operator_event_count",
+        "rejection_reason",
+        "recipe_status",
+        "recipe_fingerprint",
+        "parent_a_recipe_fingerprint",
+        "parent_b_recipe_fingerprint",
+        "candidate_fingerprint",
+        "assurance_fingerprint",
+        "measurement_fingerprint",
+        "fitness",
+        "valid",
+        "evaluated",
+        "winner"
+      ],
+      "properties": {
+        "generation": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "population_index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "operator_ordinal": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "operator_kind": {
+          "enum": [
+            "initialize",
+            "mutation-add",
+            "mutation-remove",
+            "mutation-parameterize",
+            "mutation-replace",
+            "mutation-reorder",
+            "crossover",
+            "clone"
+          ]
+        },
+        "rejection_reason": {
+          "enum": [
+            "none",
+            "recipe-invalid",
+            "no-compatible-operation",
+            "resource-limit",
+            "provider",
+            "correctness",
+            "assurance",
+            "measurement",
+            "state"
+          ]
+        },
+        "recipe_status": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "recipe_fingerprint": {
+          "$ref": "#/$defs/optionalIdentity"
+        },
+        "parent_a_recipe_fingerprint": {
+          "$ref": "#/$defs/optionalIdentity"
+        },
+        "parent_b_recipe_fingerprint": {
+          "$ref": "#/$defs/optionalIdentity"
+        },
+        "candidate_fingerprint": {
+          "$ref": "#/$defs/optionalIdentity"
+        },
+        "assurance_fingerprint": {
+          "$ref": "#/$defs/optionalIdentity"
+        },
+        "measurement_fingerprint": {
+          "$ref": "#/$defs/optionalIdentity"
+        },
+        "fitness": {
+          "$ref": "#/$defs/fitness"
+        },
+        "valid": {
+          "type": "boolean"
+        },
+        "evaluated": {
+          "type": "boolean"
+        },
+        "winner": {
+          "type": "boolean"
+        },
+        "operator_event_count": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "best": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "recipe_fingerprint",
+        "candidate_fingerprint",
+        "assurance_fingerprint",
+        "measurement_fingerprint",
+        "fitness"
+      ],
+      "properties": {
+        "recipe_fingerprint": {
+          "$ref": "#/$defs/identity"
+        },
+        "candidate_fingerprint": {
+          "$ref": "#/$defs/identity"
+        },
+        "assurance_fingerprint": {
+          "$ref": "#/$defs/identity"
+        },
+        "measurement_fingerprint": {
+          "$ref": "#/$defs/identity"
+        },
+        "fitness": {
+          "$ref": "#/$defs/fitness"
+        }
+      }
+    },
+    "operatorEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ordinal",
+        "generation",
+        "population_index",
+        "operator_kind",
+        "rejection_reason",
+        "recipe_status",
+        "parent_a_recipe_fingerprint",
+        "parent_b_recipe_fingerprint",
+        "result_recipe_fingerprint",
+        "bound"
+      ],
+      "properties": {
+        "ordinal": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "generation": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "population_index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "operator_kind": {
+          "enum": [
+            "initialize",
+            "mutation-add",
+            "mutation-remove",
+            "mutation-parameterize",
+            "mutation-replace",
+            "mutation-reorder",
+            "crossover",
+            "clone"
+          ]
+        },
+        "rejection_reason": {
+          "enum": [
+            "none",
+            "recipe-invalid",
+            "no-compatible-operation",
+            "resource-limit",
+            "provider",
+            "correctness",
+            "assurance",
+            "measurement",
+            "state"
+          ]
+        },
+        "recipe_status": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "parent_a_recipe_fingerprint": {
+          "$ref": "#/$defs/optionalIdentity"
+        },
+        "parent_b_recipe_fingerprint": {
+          "$ref": "#/$defs/optionalIdentity"
+        },
+        "result_recipe_fingerprint": {
+          "$ref": "#/$defs/optionalIdentity"
+        },
+        "bound": {
+          "const": true
+        }
+      }
+    }
+  }
+}

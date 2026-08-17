@@ -65,6 +65,8 @@ noinst_HEADERS = \
 	src/internal/child_evaluation.h \
 	src/internal/generation_advancement.h \
 	src/internal/bounded_run.h \
+	src/internal/batch_evaluation.h \
+	src/internal/run_batch.h \
 	src/internal/diversity.h \
 	src/internal/statistics.h \
 	src/internal/observer.h \
@@ -103,6 +105,15 @@ noinst_HEADERS = \
 	src/internal/project_measurement.h \
 	src/internal/project_measurement_owner.h \
 	src/internal/project_measurement_internal.h \
+	src/internal/project_search.h \
+	src/internal/project_search_owner.h \
+	src/internal/project_search_internal.h \
+	src/internal/project_search_orchestration.h \
+	src/internal/project_search_orchestration_trace.h \
+	src/internal/project_orchestration.h \
+	src/internal/project_orchestration_owner.h \
+	src/internal/project_orchestration_internal.h \
+	src/internal/project_orchestration_checkpoint.h \
 	tests/research/seed_schedule_research.h
 
 noinst_LTLIBRARIES = \
@@ -139,7 +150,16 @@ libevo_project_foundation_la_SOURCES = \
 	src/project_assurance.c \
 	src/project_measurement_model.c \
 	src/project_measurement_runtime.c \
-	src/project_measurement.c
+	src/project_measurement.c \
+	src/project_search_model.c \
+	src/project_search_runtime.c \
+	src/project_search.c \
+	src/project_search_orchestration_trace.c \
+	src/project_orchestration_model.c \
+	src/project_orchestration_runtime.c \
+	src/project_orchestration.c \
+	src/project_orchestration_checkpoint.c
+libevo_project_foundation_la_LIBADD = libcatalyst_evo.la -lm
 
 check_PROGRAMS = \
 	tests/evo_smoke_test \
@@ -179,6 +199,10 @@ check_PROGRAMS = \
 	tests/evo_project_candidate_test \
 	tests/evo_project_assurance_test \
 	tests/evo_project_measurement_test \
+	tests/evo_project_search_test \
+	tests/evo_project_orchestration_test \
+	tests/evo_project_orchestration_checkpoint_test \
+	tests/evo_project_orchestration_resume_test \
 	benchmarks/evo_core_benchmark \
 	tests/evo_secure_erasure_test \
 	tests/evo_allocation_failure_test
@@ -328,6 +352,27 @@ tests_evo_project_assurance_test_LDADD = \
 tests_evo_project_measurement_test_SOURCES = \
 	tests/project_measurement_test.c
 tests_evo_project_measurement_test_LDADD = \
+	libevo_project_foundation.la
+
+tests_evo_project_search_test_SOURCES = \
+	tests/project_search_test.c
+tests_evo_project_search_test_LDADD = \
+	libevo_project_foundation.la
+
+tests_evo_project_orchestration_test_SOURCES = \
+	tests/project_orchestration_test.c
+tests_evo_project_orchestration_test_LDADD = \
+	libevo_project_foundation.la
+
+tests_evo_project_orchestration_checkpoint_test_SOURCES = \
+	tests/project_orchestration_checkpoint_test.c
+tests_evo_project_orchestration_checkpoint_test_LDADD = \
+	libevo_project_foundation.la
+
+
+tests_evo_project_orchestration_resume_test_SOURCES = \
+	tests/project_orchestration_resume_test.c
+tests_evo_project_orchestration_resume_test_LDADD = \
 	libevo_project_foundation.la
 
 benchmarks_evo_core_benchmark_SOURCES = benchmarks/core_benchmark.c
