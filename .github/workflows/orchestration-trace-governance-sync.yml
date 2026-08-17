@@ -1,0 +1,72 @@
+name: Synchronize Orchestration Trace Governance
+
+on:
+  push:
+    branches:
+      - agent/bounded-source-orchestration
+    paths:
+      - '.github/workflows/orchestration-trace-governance-sync.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: agent/bounded-source-orchestration
+          fetch-depth: 0
+      - name: Synchronize AES-BLD and independent validation
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+
+          manifest_path = Path('.aems/aes-bld-001.json')
+          manifest = json.loads(manifest_path.read_text())
+          sources = manifest['build']['production_sources']
+          source = 'src/project_search_orchestration_trace.c'
+          if source not in sources:
+              marker = sources.index('src/project_search.c') + 1
+              while marker < len(sources) and sources[marker].startswith('src/project_search'):
+                  marker += 1
+              sources.insert(marker, source)
+          manifest_path.write_text(json.dumps(manifest, indent=2) + '\n')
+
+          validator_path = Path('tests/validate_project_orchestration.py')
+          text = validator_path.read_text()
+          if 'project_search_orchestration_trace.c' not in text:
+              text = text.replace(
+                  '    checkpoint = read("src/project_orchestration_checkpoint.c")\n',
+                  '    checkpoint = read("src/project_orchestration_checkpoint.c")\n'
+                  '    trace_header = read("src/internal/project_search_orchestration.h")\n'
+                  '    trace_runtime = read("src/project_search_orchestration_trace.c")\n',
+                  1,
+              )
+              marker = '    for fixture in (\n        "parallel batch succeeds",\n'
+              addition = '''    require(\n        "evo_project_search_orchestration_trace_t" in trace_header,\n        "persistent orchestration trace view missing",\n    )\n    require(\n        "evo_project_search_orchestration_trace_append" in trace_runtime,\n        "persistent orchestration trace append path missing",\n    )\n    require(\n        "trace_rebind_job" in trace_runtime,\n        "copied evaluation fingerprint rebinding missing",\n    )\n    require(\n        "orchestration trace retains every committed evaluation batch" in test,\n        "successful persistent worker-trace oracle missing",\n    )\n    require(\n        "failed search retains complete trustworthy worker schedule evidence" in test,\n        "failed persistent worker-trace oracle missing",\n    )\n\n'''
+              if marker not in text:
+                  raise SystemExit('validator fixture marker missing')
+              text = text.replace(marker, addition + marker, 1)
+              source_marker = '        "src/project_orchestration_checkpoint.c",\n'
+              if source_marker not in text:
+                  raise SystemExit('validator source marker missing')
+              text = text.replace(
+                  source_marker,
+                  source_marker + '        "src/project_search_orchestration_trace.c",\n',
+                  1,
+              )
+          validator_path.write_text(text)
+          PY
+      - name: Commit governance synchronization and remove helper
+        run: |
+          rm -f .github/workflows/orchestration-trace-governance-sync.yml
+          git config user.name 'Donovan Worrell'
+          git config user.email 'donovan.worrell@just-a-geek.com'
+          git add .aems/aes-bld-001.json tests/validate_project_orchestration.py .github/workflows/orchestration-trace-governance-sync.yml
+          git commit -m 'governance: register persistent orchestration trace'
+          git push origin HEAD:agent/bounded-source-orchestration
