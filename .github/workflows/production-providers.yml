@@ -60,7 +60,7 @@ jobs:
             --dev /dev \
             -- /bin/true
 
-      - name: Configure provider-enabled build
+      - name: Configure CMake provider build
         run: >-
           cmake -S . -B build/production-providers
           -G Ninja
@@ -68,7 +68,7 @@ jobs:
           -DBUILD_TESTING=ON
           -DEVO_WARNINGS_AS_ERRORS=ON
 
-      - name: Build production provider fixtures
+      - name: Build CMake production provider fixtures
         run: |
           cmake --build build/production-providers \
             --target \
@@ -77,7 +77,7 @@ jobs:
               evo_project_provider_clang_test \
             --parallel
 
-      - name: Execute real provider fixtures without skips
+      - name: Execute CMake real provider fixtures without skips
         run: |
           set -o pipefail
           ctest --test-dir build/production-providers \
@@ -90,7 +90,27 @@ jobs:
             exit 1
           fi
 
-      - name: Require registry runtime availability
+      - name: Configure Autotools provider build
+        run: |
+          autoreconf -fvi
+          mkdir -p build/production-providers-autotools
+          cd build/production-providers-autotools
+          ../../configure --enable-warnings-as-errors CC=clang-18
+
+      - name: Build Autotools production provider fixtures
+        run: |
+          make -C build/production-providers-autotools -j2 \
+            tests/evo_project_provider_test \
+            tests/evo_project_provider_sandbox_test \
+            tests/evo_project_provider_clang_test
+
+      - name: Execute Autotools real provider fixtures without skips
+        run: |
+          build/production-providers-autotools/tests/evo_project_provider_test
+          build/production-providers-autotools/tests/evo_project_provider_sandbox_test
+          build/production-providers-autotools/tests/evo_project_provider_clang_test
+
+      - name: Require CMake registry runtime availability
         run: |
           build/production-providers/evo_project_provider_test
           build/production-providers/evo_project_provider_sandbox_test
