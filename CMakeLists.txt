@@ -173,6 +173,18 @@ endif()
 if(BUILD_TESTING)
     add_subdirectory(benchmarks)
     add_subdirectory(tests)
+    add_executable(evo_project_command_test tests/project_command_test.c)
+    target_include_directories(
+        evo_project_command_test
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/src
+    )
+    target_link_libraries(
+        evo_project_command_test
+        PRIVATE
+            catalyst_evo_project_foundation
+    )
+    add_test(NAME evo_project_command_test COMMAND evo_project_command_test)
 endif()
 
 set(prefix "${CMAKE_INSTALL_PREFIX}")
