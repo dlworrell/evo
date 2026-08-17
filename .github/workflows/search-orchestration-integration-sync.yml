@@ -1,0 +1,65 @@
+name: Orchestrated Search Integration Sync
+
+on:
+  push:
+    branches:
+      - agent/bounded-source-orchestration
+    paths:
+      - 'src/internal/project_search_orchestration.h'
+      - '.github/scripts/project_search_orchestration_patch.py'
+      - '.github/workflows/search-orchestration-integration-sync.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: agent/bounded-source-orchestration
+          fetch-depth: 0
+      - name: Integrate external orchestration with structured search
+        run: python3 .github/scripts/project_search_orchestration_patch.py
+      - name: Register private orchestration header in Autotools distribution
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('Makefile.am')
+          lines = path.read_text().splitlines()
+          slash = chr(92)
+          if not any('src/internal/project_search_orchestration.h' in line for line in lines):
+              index = next(i for i, line in enumerate(lines)
+                           if 'src/internal/project_search_internal.h' in line)
+              if not lines[index].rstrip().endswith(slash):
+                  lines[index] = lines[index] + ' ' + slash
+              lines.insert(index + 1, '\tsrc/internal/project_search_orchestration.h ' + slash)
+          path.write_text('\n'.join(lines) + '\n')
+          PY
+      - name: Canonicalize integration
+        run: >-
+          clang-format -i
+          src/internal/project_orchestration.h
+          src/internal/project_search_orchestration.h
+          src/project_search.c
+      - name: Commit integration
+        run: |
+          git config user.name 'Donovan Worrell'
+          git config user.email 'donovan.worrell@just-a-geek.com'
+          git add src/internal/project_orchestration.h src/internal/project_search_orchestration.h src/project_search.c Makefile.am
+          if ! git diff --cached --quiet; then
+            git commit -m 'feat: connect structured search to bounded external orchestration'
+            git push origin HEAD:agent/bounded-source-orchestration
+          fi
+      - name: Verify focused CMake targets
+        run: |
+          cmake -S . -B build-search-orchestration -DCMAKE_C_COMPILER=clang
+          cmake --build build-search-orchestration --target evo_project_search_test evo_project_orchestration_test evo_project_orchestration_checkpoint_test --parallel 2
+          ctest --test-dir build-search-orchestration -R '^evo_project_(search|orchestration|orchestration_checkpoint)_test$' --output-on-failure
+      - name: Verify complete CMake suite
+        run: |
+          cmake --build build-search-orchestration --parallel 2
+          ctest --test-dir build-search-orchestration --output-on-failure
