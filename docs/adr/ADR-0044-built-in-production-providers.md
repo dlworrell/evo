@@ -6,26 +6,30 @@ Date: 2026-08-16
 
 ## Context
 
-EVO 0.42.0 has deterministic source-optimizer contracts for project analysis,
-AST-aware transformation, baseline and candidate execution, performance
-measurement, structured search, and bounded external-process orchestration.
-Those contracts intentionally accept caller-supplied callbacks. That was the
-correct boundary while the source optimizer remained an uninstalled foundation,
-but it is not a sufficient product architecture for the standalone executable
-owned by issue #93. An installed EVO binary cannot require a consumer to write a
-custom embedding application merely to provide Clang analysis, execute declared
-build/test commands, benchmark a candidate, or satisfy the asynchronous
-start/poll/cancel/join contract.
+EVO 0.43.0 now layers the landed EVO-003/ADR-0045 product command contract
+on top of the deterministic 0.42 source-optimizer foundation for project
+analysis, AST-aware transformation, baseline and candidate execution,
+performance measurement, structured search, and bounded external-process
+orchestration. The historical foundation contracts intentionally accept
+caller-supplied callbacks. That remains appropriate for private embedding and
+test seams, but it is not a sufficient product architecture for the standalone
+executable owned by issue #93. An installed EVO binary cannot require a
+consumer to write a custom embedding application merely to provide Clang
+analysis, execute declared build/test commands, benchmark a candidate, or
+satisfy the asynchronous start/poll/cancel/join contract.
 
-The existing callbacks are still useful internal seams and test oracles. They
-must not, however, become the only implementation of product-critical work.
-EVO also must not freeze a public third-party provider ABI before the product
-command and configuration contracts in issue #67 stabilize.
+The existing callbacks remain useful internal seams and test oracles. They do
+not become standalone product authority. Issue #67 is complete: EVO-003 fixes
+the executable-facing provider identities, versions, capability policy, and
+fail-closed selection semantics that this ADR's implementations must satisfy.
+That command contract still does not define or freeze a public third-party
+provider plug-in ABI.
 
-Issue #114 therefore needs a concrete provider delivery model that preserves the
-0.42 contracts, supplies a supported production path, binds provider identity
-into replay/checkpoint authority, and fails closed on platforms where required
-isolation cannot be provided.
+Issue #114 therefore supplies the concrete provider delivery model that
+preserves the 0.42 foundation contracts while satisfying the landed 0.43
+product command contract, binds provider identity into replay/checkpoint
+authority, and fails closed on platforms where required isolation cannot be
+provided.
 
 ## Decision
 
@@ -89,12 +93,13 @@ seams; they are not promoted to a public plug-in ABI by this decision.
    implementation version, sandbox policy identity, analysis/toolchain identity,
    workload identity, and existing product identities are replay authority and
    are bound into product checkpoint validation before execution resumes.
-10. Issue #67 owns the versioned analyze/evolve/replay/report command contracts
-    and selects only provider identities from this production registry. Issue
-    #114 owns the provider implementations and registry. Issue #93 owns
-    installation and proves that the installed executable can resolve and use
-    the supported providers from an unrelated working directory. The dependency
-    order is therefore `#67 -> #114 -> #93`; #114 does not install the final CLI.
+10. Issue #67 is complete and EVO-003 now owns the landed versioned
+    analyze/evolve/replay/report command contract. It selects only provider
+    identities from this production registry. Issue #114 owns the provider
+    implementations and registry. Issue #93 owns installation and proves that
+    the installed executable can resolve and use the supported providers from an
+    unrelated working directory. The dependency order remains
+    `#67 -> #114 -> #93`; #114 does not install the final CLI.
 11. A public third-party provider ABI or remote-provider protocol is deferred.
     If introduced later it must have its own compatibility, trust, capability,
     cancellation, evidence, and replay contract. The private callbacks in the
@@ -185,9 +190,10 @@ that the registry projection is complete and ordered.
 - **Keep callbacks as the product boundary** was rejected because the installed
   executable would still require an embedding application and #93 could not be
   operational on its own.
-- **Freeze a public C plug-in ABI now** was rejected because #67 has not yet
-  fixed the complete product command/configuration surface or long-term provider
-  compatibility policy.
+- **Freeze a public C plug-in ABI now** remains rejected because EVO-003 fixes
+  the built-in standalone provider selection contract, not a third-party plug-in
+  compatibility, trust, lifecycle, or security ABI. Any public provider ABI is a
+  separate future compatibility decision.
 - **Run commands directly on the host and document the risk** was rejected
   because candidate code and build systems are an untrusted execution boundary.
 - **Treat Docker/OCI as the only v1 provider** was rejected because image
@@ -211,9 +217,12 @@ Clang AST addresses and process output ordering. It must reject shell-form
 compile database records, response-file/plugin injection, out-of-snapshot source
 paths, and over-limit analysis output.
 
-Hosted validation must retain the existing fake-provider unit tests and add a
+Hosted validation retains the existing fake-provider unit tests and adds a
 separate Linux real-provider job using supported Clang/Bubblewrap packages. Both
-CMake/Clang and Autotools/GNU builds must compile the production provider code.
+CMake/Clang and Autotools/GNU builds compile the production provider code. The
+Production Providers and Production Provider Async Lifecycle workflows are also
+required candidate/production Release Readiness authorities for the exact
+release commit.
 
 ## Related Records
 
