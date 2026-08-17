@@ -1,0 +1,34 @@
+name: Production Provider Async Lifecycle
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  async-local-evaluation:
+    name: Local evaluation start poll cancel join
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Configure
+        run: >-
+          cmake -S . -B build/provider-async
+          -G Ninja
+          -DCMAKE_BUILD_TYPE=Debug
+          -DBUILD_TESTING=ON
+          -DEVO_WARNINGS_AS_ERRORS=ON
+
+      - name: Build async provider fixture
+        run: cmake --build build/provider-async --target evo_project_provider_async_test --parallel
+
+      - name: Prove live cancellation and cleanup
+        run: ctest --test-dir build/provider-async --output-on-failure -R '^evo_project_provider_async_test$'
