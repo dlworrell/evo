@@ -1,4 +1,5 @@
 #include "internal/project_orchestration_checkpoint.h"
+#include "internal/project_provider.h"
 #include "internal/run_batch.h"
 
 #include <stdbool.h>
@@ -205,8 +206,10 @@ static evo_project_orchestration_checkpoint_identity_t test_identity(void)
     identity.crossover_policy_version = 1U;
     identity.repair_policy_version = 1U;
     identity.search_policy_identity = "resume-search-policy-v1";
-    identity.evaluation_provider_identity = "resume-provider-v1";
-    identity.orchestration_policy_identity = "bounded-orchestration-policy-v1";
+    identity.evaluation_provider_identity =
+        EVO_PROJECT_PROVIDER_LOCAL_EVALUATION_ID;
+    identity.orchestration_policy_identity =
+        "bounded-orchestration-capabilities-v1";
     identity.toolchain_identity = "clang-gcc-compatible-profile-v1";
     identity.workload_identity = "resume-workload-v1";
     identity.artifact_schema_identity = "evo-artifacts-v1";
@@ -283,6 +286,24 @@ static bool test_results_equal(
                right->generation_statistics.mutation_rate_effective;
 }
 
+static bool test_identity_rejected(
+    const evo_project_orchestration_checkpoint_identity_t *stale,
+    const evo_project_orchestration_checkpoint_t *product_checkpoint,
+    const evo_project_orchestration_checkpoint_limits_t *product_limits,
+    evo_project_orchestration_checkpoint_t *validated)
+{
+    const evo_project_orchestration_checkpoint_status_t status =
+        evo_project_orchestration_checkpoint_validate(
+            stale,
+            product_checkpoint->serialized,
+            product_checkpoint->serialized_size,
+            product_limits,
+            validated);
+
+    return status == EVO_PROJECT_ORCHESTRATION_CHECKPOINT_ERROR_IDENTITY_MISMATCH &&
+           validated->private_owner == NULL;
+}
+
 static void test_product_checkpoint_resume(void)
 {
     evo_problem_t problem = test_problem();
@@ -340,17 +361,30 @@ static void test_product_checkpoint_resume(void)
     }
 
     stale = identity;
+    stale.evaluation_provider_identity =
+        "catalyst.evo.provider.local-evaluation.v2";
+    test_check(
+        test_identity_rejected(
+            &stale, &product_checkpoint, &product_limits, &validated) &&
+            preflight_provider.batch_calls == 0U,
+        "provider identity/version mismatch rejects before external execution");
+
+    stale = identity;
+    stale.orchestration_policy_identity =
+        "bounded-orchestration-capabilities-v2";
+    test_check(
+        test_identity_rejected(
+            &stale, &product_checkpoint, &product_limits, &validated) &&
+            preflight_provider.batch_calls == 0U,
+        "provider capability-policy mismatch rejects before external execution");
+
+    stale = identity;
     stale.toolchain_identity = "stale-toolchain-v2";
     test_check(
-        evo_project_orchestration_checkpoint_validate(
-            &stale,
-            product_checkpoint.serialized,
-            product_checkpoint.serialized_size,
-            &product_limits,
-            &validated) ==
-                EVO_PROJECT_ORCHESTRATION_CHECKPOINT_ERROR_IDENTITY_MISMATCH &&
-            validated.private_owner == NULL && preflight_provider.batch_calls == 0U,
-        "stale product identity rejects before external candidate execution");
+        test_identity_rejected(
+            &stale, &product_checkpoint, &product_limits, &validated) &&
+            preflight_provider.batch_calls == 0U,
+        "stale toolchain identity rejects before external candidate execution");
 
     checkpoint_status = evo_project_orchestration_checkpoint_validate(
         &identity,
@@ -360,8 +394,12 @@ static void test_product_checkpoint_resume(void)
         &validated);
     test_check(
         checkpoint_status == EVO_PROJECT_ORCHESTRATION_CHECKPOINT_SUCCESS &&
-            validated.identity.committed_generation == TEST_RESTORE_GENERATION,
-        "exact product identity admits nested core checkpoint");
+            validated.identity.committed_generation == TEST_RESTORE_GENERATION &&
+            strcmp(validated.identity.evaluation_provider_identity,
+                   EVO_PROJECT_PROVIDER_LOCAL_EVALUATION_ID) == 0 &&
+            strcmp(validated.identity.orchestration_policy_identity,
+                   "bounded-orchestration-capabilities-v1") == 0,
+        "exact provider identity and capability policy admit nested checkpoint");
     if (checkpoint_status != EVO_PROJECT_ORCHESTRATION_CHECKPOINT_SUCCESS) {
         goto finish;
     }
