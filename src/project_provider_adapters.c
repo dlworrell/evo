@@ -3,8 +3,8 @@
 #include "internal/project_provider_adapters.h"
 
 #include "internal/project_fingerprint.h"
+#include "internal/project_runtime.h"
 
-#include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
 
@@ -235,9 +235,10 @@ static bool evo_provider_binary_size(
         return false;
     }
     if (binary_path[0] == '/') {
-        written = snprintf(path, sizeof(path), "%s", binary_path);
+        written = evo_project_format(path, sizeof(path), "%s", binary_path);
     } else {
-        written = snprintf(path, sizeof(path), "%s/%s", workspace, binary_path);
+        written = evo_project_format(
+            path, sizeof(path), "%s/%s", workspace, binary_path);
     }
     if (written <= 0 || (size_t)written >= sizeof(path) ||
         stat(path, &metadata) != 0 || !S_ISREG(metadata.st_mode) ||
