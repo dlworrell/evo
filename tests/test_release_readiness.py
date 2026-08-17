@@ -42,7 +42,10 @@ class ReleaseReadinessTest(unittest.TestCase):
         }
 
         self.assertEqual(candidate, production)
-        self.assertEqual(len(candidate), 20)
+        self.assertEqual(len(candidate), 22)
+        self.assertTrue(
+            {"production-providers", "production-provider-async"}.issubset(candidate)
+        )
         self.assertEqual(
             documentation,
             {"aes-sec-001", "repository-compliance", "documentation"},

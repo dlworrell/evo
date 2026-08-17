@@ -99,10 +99,18 @@ add_library(catalyst_evo STATIC
 )
 add_library(catalyst_evo::catalyst_evo ALIAS catalyst_evo)
 
-# The source-optimizer foundation is deliberately separate from the installed
-# stable core until its product-facing API is fixed by the later CLI milestone.
+# The source-optimizer foundation and production providers remain separate from
+# the installed stable core; issue #93 owns standalone executable installation.
 add_library(catalyst_evo_project_foundation STATIC
     src/project_runtime.c
+    src/project_provider.c
+    src/project_provider_probe.c
+    src/project_provider_sandbox.c
+    src/project_provider_adapters.c
+    src/project_provider_async.c
+    src/project_provider_clang.c
+    src/project_provider_clang_ast.c
+    src/project_provider_clang_ast_authority.c
     src/project_json.c
     src/project_fingerprint.c
     src/project_manifest.c
@@ -185,6 +193,107 @@ if(BUILD_TESTING)
             catalyst_evo_project_foundation
     )
     add_test(NAME evo_project_command_test COMMAND evo_project_command_test)
+
+    add_executable(evo_project_provider_test tests/project_provider_test.c)
+    target_include_directories(
+        evo_project_provider_test
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/src
+    )
+    target_link_libraries(
+        evo_project_provider_test
+        PRIVATE
+            catalyst_evo_project_foundation
+    )
+    add_test(NAME evo_project_provider_test COMMAND evo_project_provider_test)
+
+    add_executable(
+        evo_project_provider_async_test
+        tests/project_provider_async_test.c
+    )
+    target_include_directories(
+        evo_project_provider_async_test
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/src
+    )
+    target_link_libraries(
+        evo_project_provider_async_test
+        PRIVATE
+            catalyst_evo_project_foundation
+    )
+    add_test(
+        NAME evo_project_provider_async_test
+        COMMAND evo_project_provider_async_test
+    )
+
+    add_executable(
+        evo_project_provider_sandbox_test
+        tests/project_provider_sandbox_test.c
+    )
+    target_include_directories(
+        evo_project_provider_sandbox_test
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/src
+    )
+    target_link_libraries(
+        evo_project_provider_sandbox_test
+        PRIVATE
+            catalyst_evo_project_foundation
+    )
+    add_test(
+        NAME evo_project_provider_sandbox_test
+        COMMAND evo_project_provider_sandbox_test
+    )
+    set_tests_properties(
+        evo_project_provider_sandbox_test
+        PROPERTIES SKIP_RETURN_CODE 77
+    )
+
+    add_executable(
+        evo_project_provider_clang_test
+        tests/project_provider_clang_test.c
+    )
+    target_include_directories(
+        evo_project_provider_clang_test
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/src
+    )
+    target_link_libraries(
+        evo_project_provider_clang_test
+        PRIVATE
+            catalyst_evo_project_foundation
+    )
+    add_test(
+        NAME evo_project_provider_clang_test
+        COMMAND evo_project_provider_clang_test
+    )
+    set_tests_properties(
+        evo_project_provider_clang_test
+        PROPERTIES SKIP_RETURN_CODE 77
+    )
+
+    add_executable(
+        evo_project_provider_clang_ast_test
+        tests/project_provider_clang_ast_test.c
+    )
+    target_include_directories(
+        evo_project_provider_clang_ast_test
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/src
+    )
+    target_link_libraries(
+        evo_project_provider_clang_ast_test
+        PRIVATE
+            catalyst_evo_project_foundation
+    )
+    add_test(
+        NAME evo_project_provider_clang_ast_test
+        COMMAND evo_project_provider_clang_ast_test
+    )
+    set_tests_properties(
+        evo_project_provider_clang_ast_test
+        PROPERTIES SKIP_RETURN_CODE 77
+    )
 endif()
 
 set(prefix "${CMAKE_INSTALL_PREFIX}")

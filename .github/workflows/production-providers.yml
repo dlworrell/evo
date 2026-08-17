@@ -1,0 +1,121 @@
+name: Production Providers
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux-builtins:
+    name: Linux Clang and Bubblewrap providers
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CC: clang-18
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install production-provider dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes \
+            autoconf \
+            automake \
+            bubblewrap \
+            clang-18 \
+            cmake \
+            libtool \
+            ninja-build \
+            pkg-config
+
+      - name: Enable hosted-runner user namespaces
+        run: |
+          if sysctl kernel.apparmor_restrict_unprivileged_userns >/dev/null 2>&1; then
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          fi
+          if sysctl kernel.unprivileged_userns_clone >/dev/null 2>&1; then
+            sudo sysctl -w kernel.unprivileged_userns_clone=1
+          fi
+
+      - name: Probe required runtimes and isolation
+        run: |
+          command -v bwrap
+          bwrap --version
+          command -v clang-18
+          clang-18 --version
+          bwrap \
+            --die-with-parent \
+            --new-session \
+            --unshare-user \
+            --unshare-pid \
+            --unshare-net \
+            --ro-bind / / \
+            --proc /proc \
+            --dev /dev \
+            -- /bin/true
+
+      - name: Configure CMake provider build
+        run: >-
+          cmake -S . -B build/production-providers
+          -G Ninja
+          -DCMAKE_BUILD_TYPE=Debug
+          -DBUILD_TESTING=ON
+          -DEVO_WARNINGS_AS_ERRORS=ON
+
+      - name: Build CMake production provider fixtures
+        run: |
+          cmake --build build/production-providers \
+            --target \
+              evo_project_provider_test \
+              evo_project_provider_sandbox_test \
+              evo_project_provider_clang_test \
+              evo_project_provider_clang_ast_test \
+            --parallel
+
+      - name: Execute CMake real provider fixtures without skips
+        run: |
+          set -o pipefail
+          ctest --test-dir build/production-providers \
+            --output-on-failure \
+            -R '^evo_project_provider(_sandbox|_clang|_clang_ast)?_test$' \
+            | tee build/production-providers/provider-ctest.log
+          if grep -E '\*\*\*Skipped|Not Run' \
+              build/production-providers/provider-ctest.log; then
+            echo 'Production provider fixture skipped unexpectedly.' >&2
+            exit 1
+          fi
+
+      - name: Configure Autotools provider build
+        run: |
+          autoreconf -fvi
+          mkdir -p build/production-providers-autotools
+          cd build/production-providers-autotools
+          ../../configure --enable-warnings-as-errors CC=clang-18
+
+      - name: Build Autotools production provider fixtures
+        run: |
+          make -C build/production-providers-autotools -j2 \
+            tests/evo_project_provider_test \
+            tests/evo_project_provider_sandbox_test \
+            tests/evo_project_provider_clang_test \
+            tests/evo_project_provider_clang_ast_test
+
+      - name: Execute Autotools real provider fixtures without skips
+        run: |
+          build/production-providers-autotools/tests/evo_project_provider_test
+          build/production-providers-autotools/tests/evo_project_provider_sandbox_test
+          build/production-providers-autotools/tests/evo_project_provider_clang_test
+          build/production-providers-autotools/tests/evo_project_provider_clang_ast_test
+
+      - name: Require CMake registry runtime availability
+        run: |
+          build/production-providers/evo_project_provider_test
+          build/production-providers/evo_project_provider_sandbox_test
+          build/production-providers/evo_project_provider_clang_test
+          build/production-providers/evo_project_provider_clang_ast_test

@@ -63,10 +63,10 @@ foundation without claiming an installed CLI. Issue #67 fixes the command and
 configuration contract consumed by the next production-provider and installed
 application milestones.
 
-**After #67 lands, #114 is the next dependency-ready implementation boundary.**
-Its concrete provider implementation may already be prepared on a separate
-branch, but final #114 closure must reconcile against the landed EVO-003
-command/provider contract before #93 installs the executable.
+**#67 is complete; #114 is the current dependency-ready implementation boundary.**
+The concrete provider implementation now reconciles against the landed EVO-003
+command/provider contract. Final #114 closure precedes #93 installation of the
+standalone executable.
 
 ## Cross-Cutting Human-Readable Abstraction Gate
 
@@ -96,6 +96,11 @@ For issue #67, the command registry and provider-requirement registry are fixed
 ordered arrays with direct scans. They are their own exact reference
 representations; no accelerated authority is introduced. EVO-HRA-016 records
 that issue-specific assessment.
+
+For issue #114, the production-provider registry is likewise a fixed ordered
+registry with direct selection and exact capability checks. No compressed,
+probabilistic, cached, or indexed provider authority is introduced; provider
+availability and capability evidence remain explicit and fail closed.
 
 ## Phase Topology
 

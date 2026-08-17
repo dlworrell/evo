@@ -17,8 +17,9 @@ for the same commit.
 and derives readiness from GitHub Actions workflow runs whose `head_sha` equals
 the requested release commit. Required candidate/production gates cover the
 repository/AES authorities, reusable-core release evidence, and the implemented
-0.34-0.42 source-optimizer stage workflows. Documentation-only readiness uses
-the narrower AES-SEC-001, repository-compliance, and documentation set.
+0.34-0.43 source-optimizer stage workflows, including the production-provider and
+production-provider async-lifecycle authorities. Documentation-only readiness
+uses the narrower AES-SEC-001, repository-compliance, and documentation set.
 
 The retained v2 manifest records workflow definition blob identity, workflow
 and run IDs, run attempt, event, raw status/conclusion, exact head SHA,
@@ -34,9 +35,10 @@ successful required run can contribute `passed`.
 Required release gates must produce evidence for every `main` commit. The
 remediation therefore removes historical branch/path restrictions from the
 `push` triggers of Project Assurance, Project Measurement, Project Search, and
-Project Orchestration, and adds unconditional main-push coverage to Repository
-Compliance and Documentation Report. PR path filters remain available where
-already defined.
+Project Orchestration, adds unconditional main-push coverage to Repository
+Compliance and Documentation Report, and requires the production-provider and
+async-lifecycle workflows to retain unconditional `main` coverage. PR path
+filters remain available where already defined.
 
 ## Read-Only Boundary
 
