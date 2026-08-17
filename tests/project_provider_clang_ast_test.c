@@ -3,6 +3,7 @@
 #include "internal/project_provider.h"
 #include "internal/project_provider_clang_ast.h"
 #include "internal/project_provider_sandbox.h"
+#include "internal/project_runtime.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -307,7 +308,7 @@ int main(void)
         (void)fprintf(stderr, "mkdtemp failed: %s\n", strerror(errno));
         return 1;
     }
-    written = snprintf(source_path, sizeof(source_path), "%s/fixture.c", workspace);
+    written = evo_project_format(source_path, sizeof(source_path), "%s/fixture.c", workspace);
     if (written <= 0 || (size_t)written >= sizeof(source_path) ||
         !write_text(source_path, before_source)) {
         (void)fprintf(stderr, "unable to create AST fixture\n");

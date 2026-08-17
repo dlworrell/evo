@@ -1,6 +1,7 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include "internal/project_provider_sandbox.h"
+#include "internal/project_runtime.h"
 
 #include <errno.h>
 #include <stdbool.h>
@@ -105,7 +106,7 @@ int main(void)
     check(result.descendant_cleanup_enforced, "cleanup evidence");
     evo_project_sandbox_result_destroy(&result);
 
-    written = snprintf(
+    written = evo_project_format(
         host_tmp_path,
         sizeof(host_tmp_path),
         "/tmp/evo-provider-private-tmp-marker");
@@ -177,7 +178,7 @@ int main(void)
     (void)unlink("/tmp/evo-provider-private-tmp-marker");
     {
         char large_path[512];
-        const int large_written = snprintf(
+        const int large_written = evo_project_format(
             large_path, sizeof(large_path), "%s/large.bin", workspace);
 
         if (large_written > 0 && (size_t)large_written < sizeof(large_path)) {

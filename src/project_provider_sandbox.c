@@ -112,14 +112,22 @@ static bool evo_sandbox_program_available(const char *program)
         if (directory_length == 0U) {
             candidate[position++] = '.';
         } else if (directory_length < sizeof(candidate)) {
-            (void)memcpy(candidate, cursor, directory_length);
+            size_t index;
+
+            for (index = 0U; index < directory_length; index += 1U) {
+                candidate[index] = cursor[index];
+            }
             position = directory_length;
         }
         if (position > 0U && position + 1U < sizeof(candidate)) {
             candidate[position++] = '/';
         }
         if (position > 0U && program_length < sizeof(candidate) - position) {
-            (void)memcpy(candidate + position, program, program_length);
+            size_t index;
+
+            for (index = 0U; index < program_length; index += 1U) {
+                candidate[position + index] = program[index];
+            }
             position += program_length;
             candidate[position] = '\0';
             if (access(candidate, X_OK) == 0) {
@@ -325,6 +333,7 @@ static char *evo_sandbox_environment_name(const char *entry)
     const char *equal = strchr(entry, '=');
     const size_t length = equal == NULL ? 0U : (size_t)(equal - entry);
     char *name;
+    size_t index;
 
     if (length == 0U || length == SIZE_MAX) {
         return NULL;
@@ -333,7 +342,9 @@ static char *evo_sandbox_environment_name(const char *entry)
     if (name == NULL) {
         return NULL;
     }
-    (void)memcpy(name, entry, length);
+    for (index = 0U; index < length; index += 1U) {
+        name[index] = entry[index];
+    }
     name[length] = '\0';
     return name;
 }

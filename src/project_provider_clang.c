@@ -29,7 +29,13 @@ static char *evo_clang_duplicate(const char *value)
     if (copy == NULL) {
         return NULL;
     }
-    (void)memcpy(copy, value, size);
+    {
+        size_t index;
+
+        for (index = 0U; index < size; index += 1U) {
+            copy[index] = value[index];
+        }
+    }
     copy[size] = '\0';
     return copy;
 }
