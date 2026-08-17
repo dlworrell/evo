@@ -70,10 +70,10 @@ static int test_registry(void)
         "report"};
     size_t index;
 
-    if (check(evo_project_command_registry_count() == EVO_PROJECT_COMMAND_COUNT) != 0) {
+    if (check(evo_project_command_registry_count() == EVO_PROJECT_PRODUCT_COMMAND_COUNT) != 0) {
         return 1;
     }
-    for (index = 0U; index < EVO_PROJECT_COMMAND_COUNT; index += 1U) {
+    for (index = 0U; index < EVO_PROJECT_PRODUCT_COMMAND_COUNT; index += 1U) {
         const evo_project_command_descriptor_t *descriptor =
             evo_project_command_registry_at(index);
 
@@ -88,7 +88,7 @@ static int test_registry(void)
             return 1;
         }
     }
-    if (check(evo_project_command_registry_at(EVO_PROJECT_COMMAND_COUNT) == NULL) != 0 ||
+    if (check(evo_project_command_registry_at(EVO_PROJECT_PRODUCT_COMMAND_COUNT) == NULL) != 0 ||
         check(evo_project_command_find("unknown") == NULL) != 0) {
         return 1;
     }
@@ -126,7 +126,7 @@ static int test_operation_contracts(void)
     evo_project_manifest_t manifest = valid_manifest();
     size_t operation_index;
 
-    for (operation_index = 0U; operation_index < EVO_PROJECT_COMMAND_COUNT; operation_index += 1U) {
+    for (operation_index = 0U; operation_index < EVO_PROJECT_PRODUCT_COMMAND_COUNT; operation_index += 1U) {
         const evo_project_command_operation_t operation =
             (evo_project_command_operation_t)operation_index;
         evo_project_command_request_t request = valid_request(operation, &manifest);
