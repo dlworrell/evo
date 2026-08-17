@@ -24,15 +24,20 @@ jobs:
         run: |
           python3 .github/scripts/orchestration_resume_integration.py
           clang-format -i tests/project_orchestration_resume_test.c
-      - name: Commit integration and remove helpers
+      - name: Commit non-workflow integration
         run: |
-          rm -f .github/scripts/orchestration_resume_integration.py
-          rm -f .github/workflows/orchestration-resume-sync.yml
           git config user.name 'Donovan Worrell'
           git config user.email 'donovan.worrell@just-a-geek.com'
-          git add -A
-          git commit -m 'test: prove bounded orchestration resume equivalence'
-          git push origin HEAD:agent/bounded-source-orchestration
+          git add \
+            tests/CMakeLists.txt \
+            Makefile.am \
+            .aems/aes-bld-001.json \
+            tests/validate_project_orchestration.py \
+            tests/project_orchestration_resume_test.c
+          if ! git diff --cached --quiet; then
+            git commit -m 'test: prove bounded orchestration resume equivalence'
+            git push origin HEAD:agent/bounded-source-orchestration
+          fi
       - name: Verify CMake Clang resume target
         run: |
           cmake -S . -B build-resume -DCMAKE_C_COMPILER=clang -DEVO_ENABLE_SANITIZERS=ON
