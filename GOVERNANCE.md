@@ -61,8 +61,14 @@ Changes shall:
 10. preserve explicit reference semantics and deterministic human-readable
     audit projections for compressed, cached, indexed, probabilistic, or
     accelerated structures, with probabilistic structures limited to
-    non-authoritative prechecks; and
-11. address all unresolved review findings before merge.
+    non-authoritative prechecks;
+11. update `SECURITY.md`, EVO-002, or a linked reviewed threat-model document
+    whenever externally reachable commands, provider trust/capabilities,
+    sandboxing, filesystem/output authority, network access, target-controlled
+    execution, process/resource limits, cleanup semantics, checkpoint/resume
+    authority, or downstream mutation/publication authority materially changes;
+    and
+12. address all unresolved review findings before merge.
 
 ## Project Zero Certification
 
