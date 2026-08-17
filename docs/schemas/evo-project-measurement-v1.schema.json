@@ -1,0 +1,508 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://catalyst.example/schemas/evo-project-measurement-v1.schema.json",
+  "title": "Catalyst EVO Project Measurement v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "candidate_fingerprint",
+    "assurance_fingerprint",
+    "baseline_identity",
+    "policy_id",
+    "policy_fingerprint",
+    "measurement_provider_identity",
+    "condition_fingerprint",
+    "condition",
+    "workloads",
+    "samples",
+    "overall_comparison",
+    "fitness_available",
+    "correctness_preserved",
+    "fitness",
+    "fitness_weights",
+    "projection_complete",
+    "probabilistic_authority",
+    "measurement_fingerprint"
+  ],
+  "properties": {
+    "schema": {
+      "const": "catalyst.evo-project-measurement.v1"
+    },
+    "candidate_fingerprint": {
+      "type": "string",
+      "minLength": 1
+    },
+    "assurance_fingerprint": {
+      "type": "string",
+      "minLength": 1
+    },
+    "baseline_identity": {
+      "type": "string",
+      "minLength": 1
+    },
+    "policy_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "policy_fingerprint": {
+      "type": "string",
+      "minLength": 1
+    },
+    "measurement_provider_identity": {
+      "type": "string",
+      "minLength": 1
+    },
+    "condition_fingerprint": {
+      "type": "string",
+      "minLength": 1
+    },
+    "condition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "hardware_identity",
+        "operating_system_identity",
+        "compiler_identity",
+        "linker_identity",
+        "optimization_flags_identity",
+        "environment_identity",
+        "dataset_identity",
+        "baseline_binary_identity",
+        "candidate_binary_identity"
+      ],
+      "properties": {
+        "hardware_identity": {
+          "type": "string",
+          "minLength": 1
+        },
+        "operating_system_identity": {
+          "type": "string",
+          "minLength": 1
+        },
+        "compiler_identity": {
+          "type": "string",
+          "minLength": 1
+        },
+        "linker_identity": {
+          "type": "string",
+          "minLength": 1
+        },
+        "environment_identity": {
+          "type": "string",
+          "minLength": 1
+        },
+        "dataset_identity": {
+          "type": "string",
+          "minLength": 1
+        },
+        "baseline_binary_identity": {
+          "type": "string",
+          "minLength": 1
+        },
+        "candidate_binary_identity": {
+          "type": "string",
+          "minLength": 1
+        },
+        "optimization_flags_identity": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "workloads": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/workload"
+      }
+    },
+    "samples": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "$ref": "#/$defs/sample"
+      }
+    },
+    "overall_comparison": {
+      "enum": [
+        "incomplete",
+        "unstable",
+        "slower",
+        "equal",
+        "faster"
+      ]
+    },
+    "fitness_available": {
+      "type": "boolean"
+    },
+    "correctness_preserved": {
+      "const": true
+    },
+    "fitness": {
+      "$ref": "#/$defs/fitness"
+    },
+    "fitness_weights": {
+      "$ref": "#/$defs/weights"
+    },
+    "projection_complete": {
+      "const": true
+    },
+    "probabilistic_authority": {
+      "const": false
+    },
+    "measurement_fingerprint": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "$defs": {
+    "aggregate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "runtime_ns",
+        "peak_memory_bytes",
+        "binary_size_bytes",
+        "reliability_ppm",
+        "maintainability_ppm",
+        "runtime_min_ns",
+        "runtime_max_ns",
+        "runtime_range_ppm",
+        "included_count",
+        "excluded_count"
+      ],
+      "properties": {
+        "runtime_ns": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "peak_memory_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "binary_size_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reliability_ppm": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "maintainability_ppm": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "runtime_min_ns": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "runtime_max_ns": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "runtime_range_ppm": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "included_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "excluded_count": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "workload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "workload_id",
+        "warmup_count",
+        "repetition_count",
+        "minimum_included_repetitions",
+        "order",
+        "outlier_policy",
+        "outlier_deviation_ns",
+        "max_runtime_range_ppm",
+        "comparison_tolerance_ppm",
+        "minimum_improvement_ppm",
+        "timeout_ms",
+        "workload_weight",
+        "peak_memory_mix_weight",
+        "binary_size_mix_weight",
+        "baseline",
+        "candidate",
+        "comparison",
+        "complete",
+        "stable",
+        "runtime_improvement",
+        "memory_improvement",
+        "reliability_improvement",
+        "maintainability_improvement"
+      ],
+      "properties": {
+        "workload_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "warmup_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "repetition_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "minimum_included_repetitions": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_runtime_range_ppm": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "comparison_tolerance_ppm": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "minimum_improvement_ppm": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "baseline": {
+          "$ref": "#/$defs/aggregate"
+        },
+        "candidate": {
+          "$ref": "#/$defs/aggregate"
+        },
+        "comparison": {
+          "enum": [
+            "incomplete",
+            "unstable",
+            "slower",
+            "equal",
+            "faster"
+          ]
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "stable": {
+          "type": "boolean"
+        },
+        "runtime_improvement": {
+          "type": "number"
+        },
+        "memory_improvement": {
+          "type": "number"
+        },
+        "reliability_improvement": {
+          "type": "number"
+        },
+        "maintainability_improvement": {
+          "type": "number"
+        },
+        "order": {
+          "enum": [
+            "alternate-baseline-first",
+            "alternate-candidate-first"
+          ]
+        },
+        "outlier_policy": {
+          "enum": [
+            "none",
+            "absolute-median"
+          ]
+        },
+        "outlier_deviation_ns": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "timeout_ms": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "workload_weight": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "peak_memory_mix_weight": {
+          "type": "number",
+          "minimum": 0
+        },
+        "binary_size_mix_weight": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "sample": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "workload_id",
+        "subject",
+        "phase",
+        "pair_index",
+        "sequence_index",
+        "completed",
+        "timed_out",
+        "failed",
+        "excluded",
+        "exclusion_reason",
+        "condition_fingerprint",
+        "runtime_ns",
+        "peak_memory_bytes",
+        "binary_size_bytes",
+        "reliability_ppm",
+        "maintainability_ppm"
+      ],
+      "properties": {
+        "workload_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "subject": {
+          "enum": [
+            "baseline",
+            "candidate"
+          ]
+        },
+        "phase": {
+          "enum": [
+            "warmup",
+            "recorded"
+          ]
+        },
+        "pair_index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sequence_index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "completed": {
+          "type": "boolean"
+        },
+        "timed_out": {
+          "type": "boolean"
+        },
+        "failed": {
+          "type": "boolean"
+        },
+        "excluded": {
+          "type": "boolean"
+        },
+        "exclusion_reason": {
+          "type": "string"
+        },
+        "condition_fingerprint": {
+          "type": "string",
+          "minLength": 1
+        },
+        "runtime_ns": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "peak_memory_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "binary_size_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reliability_ppm": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "maintainability_ppm": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        }
+      }
+    },
+    "fitness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "correctness",
+        "performance",
+        "memory_use",
+        "reliability",
+        "maintainability",
+        "constraint_penalty",
+        "total"
+      ],
+      "properties": {
+        "correctness": {
+          "type": "number"
+        },
+        "performance": {
+          "type": "number"
+        },
+        "memory_use": {
+          "type": "number"
+        },
+        "reliability": {
+          "type": "number"
+        },
+        "maintainability": {
+          "type": "number"
+        },
+        "constraint_penalty": {
+          "type": "number"
+        },
+        "total": {
+          "type": "number"
+        }
+      }
+    },
+    "weights": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "correctness",
+        "performance",
+        "memory_use",
+        "reliability",
+        "maintainability",
+        "constraint_penalty"
+      ],
+      "properties": {
+        "correctness": {
+          "type": "number",
+          "minimum": 0
+        },
+        "performance": {
+          "type": "number",
+          "minimum": 0
+        },
+        "memory_use": {
+          "type": "number",
+          "minimum": 0
+        },
+        "reliability": {
+          "type": "number",
+          "minimum": 0
+        },
+        "maintainability": {
+          "type": "number",
+          "minimum": 0
+        },
+        "constraint_penalty": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}

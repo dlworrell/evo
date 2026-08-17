@@ -2,18 +2,21 @@
 
 This document distinguishes algorithms implemented by the reusable
 `catalyst_evo` core from the structured program transformations and evaluation
-algorithm required by the EVO 1.0 source optimizer. Version 0.39.0 implements
+algorithm required by the EVO 1.0 source optimizer. Version 0.40.0 implements
 the core plus project ingestion, immutable-baseline preparation, normalized
 Clang/LLVM analysis and hotspot ranking, canonical transformation recipes,
 three AST-aware source-transformation applications, deterministic isolated
-candidate materialization with a normalized reviewable patch, and exact
-candidate build/correctness assurance. The assurance algorithm validates an
-argv-only bounded gate policy, consumes exact outcomes from a caller-supplied
-isolated execution provider, short-circuits deterministically after required
-rejection while retaining explicit skipped records, admits performance only
-after all required fast gates, and admits a champion only after complete
-finalist gates across both declared profiles. Performance fitness remains the
-next source-optimizer algorithm boundary.
+candidate materialization, exact candidate build/correctness assurance, and
+reproducible baseline-versus-candidate performance measurement. The
+measurement algorithm consumes only performance-eligible assurance evidence,
+requests deterministic alternating baseline/candidate warmup and recorded
+samples, binds every provider result to one exact condition fingerprint,
+retains raw samples and declared exclusions, aggregates included samples by
+deterministic median, classifies unstable/incomplete evidence without fitness,
+and maps complete stable runtime/memory/binary/reliability/maintainability
+evidence into finite EVO fitness through explicit caller weights. Recipe
+evolution and whole-run orchestration remain the next source-optimizer
+algorithm boundary.
 
 ## EVO Core Initial Release
 

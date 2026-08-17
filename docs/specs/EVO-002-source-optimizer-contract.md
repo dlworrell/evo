@@ -1,9 +1,9 @@
 # EVO-002: Source-to-Source C Optimizer Contract
 
-Status: Implemented through the 0.39.0 candidate-assurance boundary; draft 1.0 target
-Version: 0.39.0
+Status: Implemented through the 0.40.0 candidate-measurement boundary; draft 1.0 target
+Version: 0.40.0
 Owner: EVO
-Governing ADRs: ADR-0016, ADR-0026, ADR-0035, ADR-0036, ADR-0037, ADR-0038, ADR-0039, and ADR-0040
+Governing ADRs: ADR-0016, ADR-0026, ADR-0035, ADR-0036, ADR-0037, ADR-0038, ADR-0039, ADR-0040, and ADR-0041
 
 ## Purpose
 
@@ -15,14 +15,16 @@ search as a reviewable patch and reproducibility package.
 
 This specification defines the product layer above the reusable C17
 evolutionary-search core governed by EVO-001. Nothing in this draft claims that
-the complete source optimizer is implemented in version 0.39.0. This release
+the complete source optimizer is implemented in version 0.40.0. This release
 implements strict project ingestion and immutable baselines, normalized
 analysis/hotspot evidence, canonical transformation recipes, the initial AST-
 aware C transformation catalogue, deterministic isolated candidate
-materialization, and candidate build/correctness assurance. Assurance consumes
-exact results from a caller-supplied isolated execution provider; portable OS
-sandbox implementation remains provider responsibility. Performance fitness
-and every later roadmap boundary remain a 1.0 target until their issues land.
+materialization, candidate build/correctness assurance, and reproducible
+baseline-versus-candidate performance measurement with finite fitness mapping.
+Assurance and measurement consume exact results from caller-supplied providers;
+portable OS sandboxing and target workload execution remain provider
+responsibilities. Whole-run recipe evolution/orchestration and every later
+roadmap boundary remain a 1.0 target until their issues land.
 
 ## Claim Boundary
 
@@ -151,6 +153,14 @@ diagnostics; and canonical JSON plus Markdown expose the same gate trace.
 Required fast-gate success controls performance admission and complete finalist
 success across both declared release profiles controls champion admission.
 ADR-0040 and EVO-HRA-012 retain this issue-specific assessment.
+
+The implemented 0.40.0 candidate measurement boundary also introduces no
+accelerator. Direct bounded workload/sample arrays and exact provider outcomes
+remain authority. Warmups and excluded or incomplete samples remain present in
+canonical order; deterministic aggregates, stability classification,
+comparison, and finite fitness derive from that record only. Correctness
+authority remains the candidate-assurance result, and no timing outcome can
+rewrite it. ADR-0041 and EVO-HRA-013 retain this issue-specific assessment.
 
 ## Optimization Manifest
 

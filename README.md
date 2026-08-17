@@ -44,6 +44,7 @@ The governing product records are:
 - `docs/adr/ADR-0038-ast-aware-c-transformation-catalogue.md`
 - `docs/adr/ADR-0039-isolated-candidate-materialization.md`
 - `docs/adr/ADR-0040-isolated-candidate-correctness-gates.md`
+- `docs/adr/ADR-0041-reproducible-candidate-performance-fitness.md`
 - `docs/specs/EVO-001-library-contract.md`
 - `docs/specs/EVO-002-source-optimizer-contract.md`
 - `docs/roadmap.md`
@@ -152,7 +153,12 @@ direct ordered gate policy and exact execution-provider outcomes remain
 authority, required fast gates control performance admission, required
 finalist gates control champion admission, and JSON/Markdown preserve the
 complete ordered gate trace. EVO-HRA-012 retains this assurance-specific
-audit.
+audit. ADR-0041 assesses 0.40.0 candidate performance measurement: exact
+ordered warmup/recorded samples and declared measurement policy remain
+authority, condition identity binds hardware/toolchain/environment/dataset
+and binary provenance, incomplete or unstable evidence yields no ranking
+fitness, and JSON/Markdown preserve every sample, exclusion, aggregate, and
+fitness derivation. EVO-HRA-013 retains this measurement-specific audit.
 
 ## Roadmap Scope
 
@@ -182,7 +188,8 @@ The source-optimizer track adds:
 - Implemented isolated candidate materialization
 - Implemented candidate build/correctness assurance with CMake/Clang/LLVM
   and independent Autotools/GNU release authority
-- Reproducible baseline-versus-candidate performance measurement
+- Implemented reproducible baseline-versus-candidate performance measurement
+  and finite fitness mapping
 - Bounded parallel compilation, checkpoint/resume, and deterministic replay
 - Reviewable optimized patches and machine-readable evidence bundles
 
@@ -209,10 +216,12 @@ ingestion, the 0.35.0 normalized Clang/LLVM analysis and hotspot model, the
 AST-aware C transformation catalogue, 0.38.0 isolated candidate
 materialization with deterministic patches and evidence, and 0.39.0
 candidate assurance with exact ordered fast/finalist gate authority through
-a caller-supplied isolated execution provider. Performance measurement,
-whole-run orchestration, and the installed executable remain dependency-
-ordered roadmap work; their absence is an explicit boundary, not an implicit
-feature claim.
+a caller-supplied isolated execution provider, and 0.40.0 reproducible
+baseline-versus-candidate measurement with ordered raw samples, explicit
+condition identity, deterministic aggregation, stability/tolerance policy,
+and finite EVO fitness only for complete stable evidence. Whole-run
+orchestration and the installed executable remain dependency-ordered roadmap
+work; their absence is an explicit boundary, not an implicit feature claim.
 
 ## Authoritative Native Builds
 
@@ -239,7 +248,7 @@ make check
 ```
 
 `CMakePresets.json`, `configure.ac`, and `Makefile.am` enumerate the same 26
-installed-core sources, 21 private source-foundation sources, and 38
+installed-core sources, 24 private source-foundation sources, and 39
 normative tests. CI also compares staged install
 manifests, public symbols, package metadata, and a downstream consumer built
 against each installed result. See
@@ -252,22 +261,22 @@ declared Clang/LLVM and GNU profiles.
 
 ## Status
 
-**Current implementation boundary:** EVO 0.39.0 packages the deterministic
+**Current implementation boundary:** EVO 0.40.0 packages the deterministic
 evolutionary-search core plus the private source-optimizer foundations for
 strict C-project ingestion, immutable baselines, normalized Clang/LLVM
 analysis, canonical transformation recipes, three AST-aware C
-transformations, isolated candidate materialization, and candidate assurance.
-Assurance consumes only a committed retained candidate and exact bounded gate
-policy. It uses argv-only commands, rejects shell executables and unsafe
-environment/path policy, requires a caller-supplied execution provider to
-enforce workspace/filesystem/network/resource/process cleanup obligations,
-records exact ordered gate outcomes, withholds performance eligibility after
-any required fast-gate rejection, and grants champion eligibility only after
-the complete finalist stage including both declared build profiles. The
-boundary remains private and uninstalled. Performance measurement (#64),
-recipe evolution/orchestration (#65-#66), product commands and installed
-executable (#67/#93), artifact publication (#68), end-to-end proof (#69), and
-final stabilization (#56) remain later dependency-ordered work.
+transformations, isolated candidate materialization, candidate assurance,
+and reproducible candidate performance measurement. Measurement consumes only
+performance-eligible assurance evidence, executes deterministic paired
+baseline/candidate warmup and recorded requests through a caller-supplied
+provider, binds every sample to one exact condition identity, retains explicit
+exclusions and raw evidence, rejects incomplete or unstable measurements from
+ranking, and derives finite EVO fitness from recorded component values and
+caller-declared weights without changing correctness authority. The boundary
+remains private and uninstalled. Recipe evolution/orchestration (#65-#66),
+product commands and installed executable (#67/#93), artifact publication
+(#68), end-to-end proof (#69), and final stabilization (#56) remain later
+dependency-ordered work.
 
 EVO 0.16.0 composes the complete deterministic generation pipeline into a
 bounded public `evo_run`. Generation zero is constructed, initialized,

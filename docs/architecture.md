@@ -75,6 +75,11 @@ candidate-assurance transaction with exact fast/finalist gate policy,
 deterministic gate traces, dual-profile finalist authority, and a caller-
 supplied execution-provider boundary that must enforce declared process,
 filesystem, network, resource, cleanup, and immutable-input obligations.
+Version 0.40.0 adds a private measurement transaction over performance-eligible
+assurance results. It records deterministic paired baseline/candidate samples,
+exact platform/toolchain/environment/dataset/binary condition identity,
+declared outlier/stability/tolerance policy, deterministic aggregates, and
+finite EVO fitness only for complete stable evidence.
 
 Source genomes never contain arbitrary C text for byte-wise mutation or
 crossover. One genome represents a complete transformation recipe containing
@@ -91,7 +96,13 @@ process, filesystem, network, environment, time, memory, and storage policy.
 
 Correctness and admissibility are hard gates. Performance evidence cannot make
 an invalid candidate valid, and a candidate cannot become the published
-champion until it passes every configured finalist gate.
+champion until it passes every configured finalist gate. Performance
+measurement consumes only a performance-eligible assurance result. Raw
+ordered samples remain authority; warmups are retained but excluded from
+aggregation, declared exclusions remain visible, and incomplete or unstable
+measurement produces no ranking fitness. Runtime, memory, binary size,
+reliability, and maintainability remain separately reconstructable before
+caller-declared weights derive the scalar EVO fitness.
 
 ### Product orchestration and artifacts
 
@@ -142,16 +153,18 @@ ADR-0026 defines the complete rule.
 
 ## Current Conformance Boundary
 
-Version 0.39.0 contains the evolutionary-search core, its bounded reference
+Version 0.40.0 contains the evolutionary-search core, its bounded reference
 consumers, private project ingestion, a private normalized analysis and hotspot
 model, a private canonical transformation-recipe model, a private initial AST-
 aware C transformation catalogue, private isolated candidate materialization,
-and private candidate assurance. Candidate process execution remains owned by
-the caller-supplied execution provider; EVO validates the declared policy and
-commits its exact attested outcome rather than pretending to provide a portable
-OS sandbox itself. Target-code measurement, product commands, the installed
-standalone executable, and final optimized-patch artifacts remain planned by
-issues #64 through #69 and #93. Documentation of those planned boundaries is not an implementation claim.
+private candidate assurance, and private reproducible candidate measurement
+with finite fitness mapping. Candidate process execution and target workload
+sampling remain owned by caller-supplied providers; EVO validates declared
+policy, condition identity, ordered outcomes, and exact evidence rather than
+pretending to provide a portable OS sandbox or universal timing environment.
+Whole-run orchestration, product commands, the installed standalone executable,
+and final optimized-patch artifacts remain planned by issues #65 through #69
+and #93. Documentation of those planned boundaries is not an implementation claim.
 
 The 0.37.0 package's core uses explicit bounded arrays, direct deterministic
 scans, and one direct constant-space adaptive-rate record rather than compressed,
@@ -204,8 +217,13 @@ fail closed. EVO-HRA-011 audits this 0.38.0 boundary. Candidate assurance
 likewise uses direct bounded gate arrays and exact execution-provider outcomes;
 skipped and rejected gates remain explicit in the ordered JSON/Markdown trace,
 and no cache or probabilistic result can grant performance or champion
-authority. EVO-HRA-012 audits this 0.39.0 boundary. The current implementation
-therefore has no opaque accelerated authority requiring remediation. This audit does not pre-approve later
+authority. EVO-HRA-012 audits this 0.39.0 boundary. Candidate measurement
+likewise retains direct bounded workload/sample arrays and exact provider
+outcomes; deterministic medians, exclusions, stability, comparisons, and
+fitness are derived from that complete record, with no cache, sketch, or
+probabilistic ranking authority. EVO-HRA-013 audits this 0.40.0 boundary. The
+current implementation therefore has no opaque accelerated authority requiring
+remediation. This audit does not pre-approve later
 variable pools, compressed checkpoints, persistent or distributed schedulers,
 transformation lookup indexes, candidate caches, orchestration, or artifact
 implementations.
