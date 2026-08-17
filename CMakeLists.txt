@@ -103,6 +103,7 @@ add_library(catalyst_evo::catalyst_evo ALIAS catalyst_evo)
 # stable core until its product-facing API is fixed by the later CLI milestone.
 add_library(catalyst_evo_project_foundation STATIC
     src/project_runtime.c
+    src/project_provider.c
     src/project_json.c
     src/project_fingerprint.c
     src/project_manifest.c
