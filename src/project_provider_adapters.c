@@ -4,6 +4,7 @@
 
 #include "internal/project_fingerprint.h"
 
+#include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
 
@@ -72,7 +73,8 @@ evo_project_status_t evo_project_sandbox_command_runner(
     outcome->completed = true;
     outcome->timed_out = sandbox.timed_out;
     outcome->exit_code =
-        sandbox.completed ? sandbox.exit_code : (sandbox.signaled ? 128 + sandbox.signal_number : -1);
+        sandbox.completed ? sandbox.exit_code
+                          : (sandbox.signaled ? 128 + sandbox.signal_number : -1);
     if (sandbox.stdout_bytes <= SIZE_MAX - sandbox.stderr_bytes) {
         outcome->output_bytes = sandbox.stdout_bytes + sandbox.stderr_bytes;
     } else {
@@ -151,7 +153,8 @@ evo_project_assurance_status_t evo_project_sandbox_assurance_runner(
         return EVO_PROJECT_ASSURANCE_ERROR_EXECUTION_PROVIDER;
     }
     diagnostic_bytes = evo_provider_diagnostic_bytes(
-        context->last_result.stderr_text == NULL ? "" : context->last_result.stderr_text,
+        context->last_result.stderr_text == NULL ? ""
+                                                 : context->last_result.stderr_text,
         context->last_result.stderr_bytes,
         context->max_diagnostic_bytes);
     *outcome = (evo_project_assurance_gate_outcome_t){0};
@@ -323,8 +326,9 @@ evo_project_measurement_status_t evo_project_sandbox_measurement_provider(
     outcome->binary_size_bytes = binary_size;
     outcome->reliability_ppm = workload->reliability_ppm;
     outcome->maintainability_ppm = workload->maintainability_ppm;
-    if (sandbox.completed && sandbox.exit_code == 0 && !sandbox.resource_exhausted &&
-        !sandbox.signaled && sandbox.elapsed_ns > 0U) {
+    if (sandbox.completed && sandbox.exit_code == 0 &&
+        !sandbox.resource_exhausted && !sandbox.signaled &&
+        sandbox.elapsed_ns > 0U) {
         outcome->completed = true;
     } else if (sandbox.timed_out) {
         outcome->timed_out = true;
