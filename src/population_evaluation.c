@@ -178,6 +178,185 @@ static evo_status_t rollback_population_evaluations(
     return status;
 }
 
+static bool evo_batch_fitness_is_zero(const evo_fitness_t *fitness)
+{
+    return fitness->correctness == 0.0 && fitness->performance == 0.0 &&
+           fitness->memory_use == 0.0 && fitness->reliability == 0.0 &&
+           fitness->maintainability == 0.0 &&
+           fitness->constraint_penalty == 0.0 && fitness->total == 0.0;
+}
+
+static evo_status_t evo_population_classify_batch_evaluations(
+    const evo_population_t *population,
+    uint64_t generation,
+    evo_candidate_evaluation_t *evaluations,
+    size_t evaluation_count,
+    size_t *valid_count,
+    size_t *best_index,
+    bool *has_best)
+{
+    size_t index;
+
+    if (population == NULL || evaluations == NULL || valid_count == NULL ||
+        best_index == NULL || has_best == NULL ||
+        evaluation_count != population->population_size) {
+        return EVO_ERROR_INVALID_ARGUMENT;
+    }
+    *valid_count = 0U;
+    *best_index = 0U;
+    *has_best = false;
+    for (index = 0U; index < evaluation_count; index += 1U) {
+        evo_fitness_candidate_view_t candidate_view = {0};
+        evo_fitness_candidate_view_t best_view = {0};
+        evo_fitness_order_t order = EVO_FITNESS_ORDER_EQUAL;
+
+        if (!evaluations[index].valid) {
+            if (evaluations[index].evaluated ||
+                !evo_batch_fitness_is_zero(&evaluations[index].fitness)) {
+                return EVO_ERROR_EVALUATION;
+            }
+            continue;
+        }
+        if (!evaluations[index].evaluated) {
+            return EVO_ERROR_EVALUATION;
+        }
+        candidate_view = (evo_fitness_candidate_view_t){
+            .fitness = &evaluations[index].fitness,
+            .generation = generation,
+            .population_index = index,
+            .hard_valid = true,
+            .evaluated = true,
+        };
+        if (!evo_fitness_candidate_is_rankable(&candidate_view)) {
+            return EVO_ERROR_EVALUATION;
+        }
+        *valid_count += 1U;
+        if (!*has_best) {
+            *best_index = index;
+            *has_best = true;
+            continue;
+        }
+        best_view = (evo_fitness_candidate_view_t){
+            .fitness = &evaluations[*best_index].fitness,
+            .generation = generation,
+            .population_index = *best_index,
+            .hard_valid = true,
+            .evaluated = true,
+        };
+        if (!evo_fitness_compare_candidates(
+                &candidate_view, &best_view, &order)) {
+            return EVO_ERROR_EVALUATION;
+        }
+        if (order == EVO_FITNESS_ORDER_LEFT) {
+            *best_index = index;
+        }
+    }
+    return EVO_SUCCESS;
+}
+
+evo_status_t evo_population_evaluate_ready_with_batch_evaluator(
+    const evo_problem_t *problem,
+    const evo_config_t *config,
+    void *context,
+    uint64_t generation,
+    evo_population_t *population,
+    const evo_population_batch_evaluator_t *batch_evaluator)
+{
+    evo_candidate_evaluation_t *evaluations = NULL;
+    size_t evaluation_bytes = 0U;
+    size_t valid_count = 0U;
+    size_t best_index = 0U;
+    bool has_best = false;
+    bool reused_storage = false;
+    evo_status_t status;
+
+    if (problem == NULL || config == NULL || population == NULL ||
+        problem->evaluate == NULL || batch_evaluator == NULL ||
+        batch_evaluator->evaluate == NULL ||
+        config->evaluation_worker_count != 0U) {
+        return EVO_ERROR_INVALID_ARGUMENT;
+    }
+    status = evo_evaluation_workers_validate_config(problem, config);
+    if (status != EVO_SUCCESS) {
+        return status;
+    }
+    status = evo_diversity_validate_config(problem, config);
+    if (status != EVO_SUCCESS) {
+        return status;
+    }
+    if (population->reusable_evaluations != NULL) {
+        if (!config->population_recycling_enabled ||
+            !evo_population_recycling_child_is_valid(config, population)) {
+            return EVO_ERROR_STATE;
+        }
+        evaluations = population->reusable_evaluations;
+        evaluation_bytes = population->reusable_evaluation_bytes;
+        population->reusable_evaluations = NULL;
+        population->reusable_evaluation_bytes = 0U;
+        reused_storage = true;
+        reset_evaluation_bytes(
+            evaluations, evaluation_bytes, population->secure_erasure_enabled);
+    } else {
+        status = allocate_evaluation_storage(config,
+                                             population->population_size,
+                                             &evaluations,
+                                             &evaluation_bytes);
+        if (status != EVO_SUCCESS) {
+            return status;
+        }
+    }
+    status = batch_evaluator->evaluate(problem,
+                                       config,
+                                       context,
+                                       generation,
+                                       population,
+                                       evaluations,
+                                       population->population_size,
+                                       batch_evaluator->context);
+    if (status != EVO_SUCCESS) {
+        return discard_provisional_evaluations(population,
+                                               evaluations,
+                                               evaluation_bytes,
+                                               reused_storage,
+                                               status);
+    }
+    status = evo_population_classify_batch_evaluations(population,
+                                                       generation,
+                                                       evaluations,
+                                                       population->population_size,
+                                                       &valid_count,
+                                                       &best_index,
+                                                       &has_best);
+    if (status != EVO_SUCCESS) {
+        return discard_provisional_evaluations(population,
+                                               evaluations,
+                                               evaluation_bytes,
+                                               reused_storage,
+                                               status);
+    }
+
+    population->evaluations = evaluations;
+    population->evaluation_bytes = evaluation_bytes;
+    population->valid_count = valid_count;
+    population->best_index = best_index;
+    population->fitness_comparison_policy_version =
+        EVO_FITNESS_COMPARISON_POLICY_VERSION;
+    population->parallel_evaluation_policy_version = 0U;
+    population->evaluation_worker_count = 0U;
+    population->has_best = has_best;
+    population->evaluated = true;
+    population->evaluations_recycled = reused_storage;
+    status = evo_population_measure_diversity(problem,
+                                              config,
+                                              context,
+                                              population);
+    if (status != EVO_SUCCESS) {
+        return rollback_population_evaluations(population, status);
+    }
+    population->evaluations_recycled = false;
+    return EVO_SUCCESS;
+}
+
 evo_status_t evo_population_evaluate_ready_with_worker_backend(
     const evo_problem_t *problem,
     const evo_config_t *config,
@@ -384,6 +563,31 @@ evo_status_t evo_population_evaluate_ready(
         context,
         population,
         NULL);
+}
+
+evo_status_t evo_population_evaluate_with_batch_evaluator(
+    const evo_problem_t *problem,
+    const evo_config_t *config,
+    void *context,
+    uint64_t generation,
+    evo_population_t *population,
+    const evo_population_batch_evaluator_t *batch_evaluator)
+{
+    if (problem == NULL || config == NULL || population == NULL ||
+        batch_evaluator == NULL || batch_evaluator->evaluate == NULL ||
+        generation != UINT64_C(0) || problem->evaluate == NULL) {
+        return EVO_ERROR_INVALID_ARGUMENT;
+    }
+    if (!initialized_population_ready_for_evaluation(
+            problem, config, population)) {
+        return EVO_ERROR_STATE;
+    }
+    return evo_population_evaluate_ready_with_batch_evaluator(problem,
+                                                              config,
+                                                              context,
+                                                              generation,
+                                                              population,
+                                                              batch_evaluator);
 }
 
 evo_status_t evo_population_restore_evaluations_allocate(

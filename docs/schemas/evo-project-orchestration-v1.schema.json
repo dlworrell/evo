@@ -1,0 +1,157 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dlworrell.github.io/evo/schemas/evo-project-orchestration-v1.schema.json",
+  "title": "EVO bounded source orchestration evidence v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "policy_identity",
+    "provider_identity",
+    "generation",
+    "candidate_count",
+    "external_worker_count",
+    "completion_count",
+    "committed_count",
+    "has_hard_failure",
+    "generation_committed",
+    "cleanup_complete",
+    "jobs",
+    "projection_complete",
+    "probabilistic_authority"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "policy_identity": { "$ref": "#/$defs/nonemptyString" },
+    "provider_identity": { "$ref": "#/$defs/nonemptyString" },
+    "generation": { "$ref": "#/$defs/nonnegativeInteger" },
+    "candidate_count": { "$ref": "#/$defs/positiveInteger" },
+    "external_worker_count": { "$ref": "#/$defs/positiveInteger" },
+    "completion_count": { "$ref": "#/$defs/nonnegativeInteger" },
+    "committed_count": { "$ref": "#/$defs/nonnegativeInteger" },
+    "first_hard_failure_index": { "$ref": "#/$defs/nonnegativeInteger" },
+    "has_hard_failure": { "type": "boolean" },
+    "generation_committed": { "type": "boolean" },
+    "cleanup_complete": { "type": "boolean" },
+    "jobs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/job" }
+    },
+    "projection_complete": { "const": true },
+    "probabilistic_authority": { "const": false }
+  },
+  "$defs": {
+    "nonemptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "nonnegativeInteger": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "positiveInteger": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "fingerprint": {
+      "type": "string",
+      "pattern": "^fnv1a64-v1:[0-9a-f]{16}$"
+    },
+    "fitness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "correctness",
+        "performance",
+        "memory_use",
+        "reliability",
+        "maintainability",
+        "constraint_penalty",
+        "total"
+      ],
+      "properties": {
+        "correctness": { "type": "number" },
+        "performance": { "type": "number" },
+        "memory_use": { "type": "number" },
+        "reliability": { "type": "number" },
+        "maintainability": { "type": "number" },
+        "constraint_penalty": { "type": "number", "minimum": 0 },
+        "total": { "type": "number" }
+      }
+    },
+    "job": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "generation",
+        "population_index",
+        "logical_worker_identity",
+        "dispatch_wave",
+        "completion_ordinal",
+        "commit_ordinal",
+        "state",
+        "terminal_reason",
+        "admitted",
+        "started",
+        "cancel_requested",
+        "terminal",
+        "joined",
+        "staged",
+        "committed",
+        "cleanup_complete"
+      ],
+      "properties": {
+        "generation": { "$ref": "#/$defs/nonnegativeInteger" },
+        "population_index": { "$ref": "#/$defs/nonnegativeInteger" },
+        "logical_worker_identity": { "$ref": "#/$defs/positiveInteger" },
+        "dispatch_wave": { "$ref": "#/$defs/nonnegativeInteger" },
+        "completion_ordinal": { "$ref": "#/$defs/nonnegativeInteger" },
+        "commit_ordinal": { "$ref": "#/$defs/nonnegativeInteger" },
+        "state": {
+          "enum": [
+            "unassigned",
+            "admitted",
+            "started",
+            "cancel-requested",
+            "terminal",
+            "joined",
+            "staged",
+            "committed"
+          ]
+        },
+        "terminal_reason": {
+          "enum": [
+            "none",
+            "success",
+            "candidate-rejected",
+            "start-failed",
+            "timeout",
+            "signal",
+            "cpu-limit",
+            "memory-limit",
+            "process-limit",
+            "storage-limit",
+            "output-limit",
+            "canceled",
+            "capability-unavailable",
+            "provider-protocol",
+            "join-failed",
+            "cleanup-failed"
+          ]
+        },
+        "candidate_fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "assurance_fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "measurement_fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "fitness": { "$ref": "#/$defs/fitness" },
+        "admitted": { "type": "boolean" },
+        "started": { "type": "boolean" },
+        "cancel_requested": { "type": "boolean" },
+        "terminal": { "type": "boolean" },
+        "joined": { "type": "boolean" },
+        "staged": { "type": "boolean" },
+        "committed": { "type": "boolean" },
+        "cleanup_complete": { "type": "boolean" }
+      }
+    }
+  }
+}

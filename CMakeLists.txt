@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(catalyst_evo VERSION 0.41.0 LANGUAGES C)
+project(catalyst_evo VERSION 0.42.0 LANGUAGES C)
 
 include(CTest)
 include(CheckSymbolExists)
@@ -107,6 +107,11 @@ add_library(catalyst_evo_project_foundation STATIC
     src/project_search_model.c
     src/project_search_runtime.c
     src/project_search.c
+    src/project_search_orchestration_trace.c
+    src/project_orchestration_model.c
+    src/project_orchestration_runtime.c
+    src/project_orchestration.c
+    src/project_orchestration_checkpoint.c
 )
 target_include_directories(catalyst_evo_project_foundation
     PUBLIC

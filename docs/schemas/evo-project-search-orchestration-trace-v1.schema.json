@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dlworrell.github.io/evo/schemas/evo-project-search-orchestration-trace-v1.schema.json",
+  "title": "EVO structured-search orchestration trace v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "policy_identity",
+    "provider_identity",
+    "batch_count",
+    "job_count",
+    "run_complete",
+    "batches",
+    "projection_complete",
+    "probabilistic_authority"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "policy_identity": { "type": "string", "minLength": 1 },
+    "provider_identity": { "type": "string", "minLength": 1 },
+    "batch_count": { "type": "integer", "minimum": 0 },
+    "job_count": { "type": "integer", "minimum": 0 },
+    "run_complete": { "type": "boolean" },
+    "batches": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/batch" }
+    },
+    "projection_complete": { "const": true },
+    "probabilistic_authority": { "const": false }
+  },
+  "$defs": {
+    "nonnegativeInteger": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "positiveInteger": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "batch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "generation",
+        "external_worker_count",
+        "completion_count",
+        "committed_count",
+        "first_hard_failure_index",
+        "has_hard_failure",
+        "generation_committed",
+        "cleanup_complete",
+        "jobs"
+      ],
+      "properties": {
+        "generation": { "$ref": "#/$defs/nonnegativeInteger" },
+        "external_worker_count": { "$ref": "#/$defs/positiveInteger" },
+        "completion_count": { "$ref": "#/$defs/nonnegativeInteger" },
+        "committed_count": { "$ref": "#/$defs/nonnegativeInteger" },
+        "first_hard_failure_index": { "$ref": "#/$defs/nonnegativeInteger" },
+        "has_hard_failure": { "type": "boolean" },
+        "generation_committed": { "type": "boolean" },
+        "cleanup_complete": { "type": "boolean" },
+        "jobs": {
+          "type": "array",
+          "items": {
+            "$ref": "evo-project-orchestration-v1.schema.json#/$defs/job"
+          }
+        }
+      }
+    }
+  }
+}

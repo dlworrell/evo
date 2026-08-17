@@ -2,21 +2,24 @@
 
 This document distinguishes algorithms implemented by the reusable
 `catalyst_evo` core from the structured program transformations and evaluation
-algorithm required by the EVO 1.0 source optimizer. Version 0.41.0 implements
+algorithm required by the EVO 1.0 source optimizer. Version 0.42.0 implements
 the core plus project ingestion, immutable-baseline preparation, normalized
 Clang/LLVM analysis and hotspot ranking, canonical transformation recipes,
 three AST-aware source-transformation applications, deterministic isolated
 candidate materialization, exact candidate build/correctness assurance,
-reproducible baseline-versus-candidate performance measurement, and structured
-recipe evolution. The search algorithm initializes canonical recipes from live
+reproducible baseline-versus-candidate performance measurement, structured
+recipe evolution, and bounded external-process source orchestration. The search
+algorithm initializes canonical recipes from live
 opportunities/catalogue authority, mutates only whole records or typed
 parameters, crosses whole records rather than source bytes, applies only
 versioned bounded deterministic repair, rejects invalid recipes before
 materialization, and records every operator event plus complete downstream
 recipe → candidate → assurance → measurement → fitness lineage. Fixed seeds
 replay population/search identity; strict improvements replace the winner and
-exact ties retain the earlier stable candidate. Bounded external-process
-orchestration remains the next source-optimizer algorithm boundary.
+exact ties retain the earlier stable candidate. External evaluation batches
+may finish out of order, but stable candidate-order commit, exact worker traces,
+fail-closed cleanup, and product checkpoint identity keep logical search and
+resume deterministic. Product command orchestration is the next boundary.
 
 ## EVO Core Initial Release
 

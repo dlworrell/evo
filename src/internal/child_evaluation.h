@@ -56,4 +56,14 @@ evo_status_t evo_child_population_evaluate(
     evo_population_t *children,
     evo_child_evaluation_evidence_t *evidence);
 
+/* Private product path using one complete-population evaluator transaction. */
+evo_status_t evo_child_population_evaluate_with_batch_evaluator(
+    const evo_problem_t *problem,
+    const evo_config_t *config,
+    void *context,
+    uint64_t source_generation,
+    evo_population_t *children,
+    evo_child_evaluation_evidence_t *evidence,
+    const evo_population_batch_evaluator_t *batch_evaluator);
+
 #endif

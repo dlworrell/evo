@@ -11,8 +11,8 @@ codebases. It emits the highest-ranked fully verified source candidate found
 within a recorded bounded search as a reviewable patch and reproducibility
 package.
 
-EVO 0.41.0 contains the completed deterministic C17 evolutionary-search core
-and the first eight private source-optimizer foundations: strict project-manifest
+EVO 0.42.0 contains the completed deterministic C17 evolutionary-search core
+and the first nine private source-optimizer foundations: strict project-manifest
 ingestion, immutable baseline snapshots, normalized compilation-unit evidence,
 bounded baseline-gate orchestration, and a versioned Clang/LLVM structural,
 compiler, runtime-hotspot, and opportunity model. It is not the completed
@@ -40,6 +40,12 @@ canonical recipe genomes to the deterministic EVO core: initialization,
 whole-record and typed-parameter mutation/crossover, bounded deterministic
 repair, exact rejection, complete ordered operator/lineage evidence, and
 fixed-seed strict-improvement/exact-tie replay across multiple source files.
+The ninth adds bounded external-process orchestration over source evaluations:
+explicit resource/capability policy, deterministic logical worker/workspace
+assignment, asynchronous completion with stable candidate-order commit, complete
+cancel/join cleanup before failure publication, persistent ordered worker traces,
+and product checkpoints that bind baseline/analysis/catalogue/search/provider/
+toolchain/workload/artifact identities before deterministic resume.
 
 Core issues #39 through #55 are represented in that boundary, including
 versioned constraints, diversity, convergence/stagnation, and caller-bounded
@@ -66,7 +72,9 @@ implements deterministic isolated candidate materialization. Issue #63
 implements candidate build/correctness assurance. Issue #64 implements
 reproducible candidate performance measurement and fitness. Issue #65
 implements deterministic structured recipe evolution and bounded search. Issue
-#66 is the next dependency-ready source-optimizer implementation work.
+#66 implements bounded external-process orchestration, stable commit/cleanup
+traces, and product checkpoint/resume authority. Issue #67 is the next
+dependency-ready source-optimizer implementation work.
 
 ## Cross-Cutting Human-Readable Abstraction Gate
 
