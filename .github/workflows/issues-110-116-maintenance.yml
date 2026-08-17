@@ -24,18 +24,39 @@ jobs:
       - uses: actions/checkout@v5
         with:
           ref: agent/issues-110-116-audit-maintenance
-      - name: Repair reconciler self-check invocation
+      - name: Repair reconciler self-check and verifier scope
         shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
           path = Path('.github/scripts/issues-110-116-maintenance.py')
           text = path.read_text(encoding='utf-8')
+
           old = '''    namespace = {"__name__": "__main__"}\n    exec((ROOT / "scripts/verify_aes_bld_profile.py").read_text(encoding="utf-8"), namespace)\n    exec((ROOT / "scripts/verify_github_actions_runtime.py").read_text(encoding="utf-8"), {"__name__": "__main__"})\n'''
           new = '''    runpy.run_path(str(ROOT / "scripts/verify_aes_bld_profile.py"), run_name="__main__")\n    runpy.run_path(str(ROOT / "scripts/verify_github_actions_runtime.py"), run_name="__main__")\n'''
           if old not in text:
               raise SystemExit('expected self-check block not found')
-          path.write_text(text.replace(old, new), encoding='utf-8')
+          text = text.replace(old, new)
+
+          old = 'TEST_CMAKE = ROOT / "tests/CMakeLists.txt"\nREADINESS = ROOT / "scripts/release_readiness.py"'
+          new = 'TEST_CMAKE = ROOT / "tests/CMakeLists.txt"\nBENCH_CMAKE = ROOT / "benchmarks/CMakeLists.txt"\nREADINESS = ROOT / "scripts/release_readiness.py"'
+          if old not in text:
+              raise SystemExit('expected generated verifier path block not found')
+          text = text.replace(old, new)
+
+          old = 'test_cmake = TEST_CMAKE.read_text(encoding="utf-8")\ncore = target_sources(cmake, "catalyst_evo")'
+          new = 'test_cmake = TEST_CMAKE.read_text(encoding="utf-8")\nbench_cmake = BENCH_CMAKE.read_text(encoding="utf-8")\ncore = target_sources(cmake, "catalyst_evo")'
+          if old not in text:
+              raise SystemExit('expected generated verifier read block not found')
+          text = text.replace(old, new)
+
+          old = 'combined_build = cmake + "\\\\n" + test_cmake + "\\\\n" + makefile'
+          new = 'combined_build = cmake + "\\\\n" + test_cmake + "\\\\n" + bench_cmake + "\\\\n" + makefile'
+          if old not in text:
+              raise SystemExit('expected generated verifier combined-build block not found')
+          text = text.replace(old, new)
+
+          path.write_text(text, encoding='utf-8')
           PY
       - name: Reconcile audit findings
         run: python3 .github/scripts/issues-110-116-maintenance.py
