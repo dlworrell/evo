@@ -24,6 +24,10 @@ assurance, reproducible baseline-versus-candidate measurement, deterministic
 structured recipe evolution, and bounded external-process orchestration with
 stable commit/cleanup traces and product checkpoint/resume authority.
 
+Issue #64 implements reproducible candidate performance measurement; its
+0.40.0 evidence and fitness semantics remain part of the 0.43.0 package
+boundary unchanged by the command-contract layer.
+
 EVO 0.43.0 adds the fixed `analyze`, `evolve`, `replay`, and `report` command
 registry defined by EVO-003 and ADR-0045. The command layer validates an
 already parsed manifest, explicit path roles, checkpoint/replay policy, stable
