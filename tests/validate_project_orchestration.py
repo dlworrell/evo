@@ -34,6 +34,7 @@ def main() -> int:
     trace_header = read("src/internal/project_search_orchestration.h")
     trace_runtime = read("src/project_search_orchestration_trace.c")
     test = read("tests/project_orchestration_test.c")
+    search_test = read("tests/project_search_test.c")
     checkpoint_test = read("tests/project_orchestration_checkpoint_test.c")
     cmake = read("CMakeLists.txt")
     tests_cmake = read("tests/CMakeLists.txt")
@@ -204,11 +205,13 @@ def main() -> int:
         "copied evaluation fingerprint rebinding missing",
     )
     require(
-        "orchestration trace retains every committed evaluation batch" in test,
+        "persistent worker traces retain every dispatched generation and job"
+        in search_test,
         "successful persistent worker-trace oracle missing",
     )
     require(
-        "failed search retains complete trustworthy worker schedule evidence" in test,
+        "failed search retains complete trustworthy worker schedule evidence"
+        in search_test,
         "failed persistent worker-trace oracle missing",
     )
 
