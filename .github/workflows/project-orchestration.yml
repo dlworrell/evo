@@ -59,7 +59,7 @@ jobs:
           grep -F '#define EVO_VERSION_MAJOR 0' include/catalyst/evo/evo.h
           grep -F '#define EVO_VERSION_MINOR 37' include/catalyst/evo/evo.h
           grep -F '#define EVO_VERSION_PATCH 0' include/catalyst/evo/evo.h
-          grep -F "status: product-command-contract-implemented-${product_version}" repo.yaml
+          grep -F "status: production-providers-implemented-${product_version}" repo.yaml
           grep -F "Version: ${product_version}" docs/specs/EVO-003-product-command-contract.md
       - name: Verify focused branch contents
         run: |
