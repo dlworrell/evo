@@ -2,44 +2,7 @@ name: Project Orchestration
 
 on:
   push:
-    branches:
-      - agent/bounded-source-orchestration
-    paths:
-      - 'src/project_orchestration*.c'
-      - 'src/internal/project_orchestration*.h'
-      - 'src/project_search.c'
-      - 'src/project_search_orchestration_trace.c'
-      - 'src/internal/project_search_orchestration.h'
-      - 'src/internal/project_search_orchestration_trace.h'
-      - 'src/internal/batch_evaluation.h'
-      - 'src/internal/run_batch.h'
-      - 'src/population_evaluation.c'
-      - 'src/internal/population_evaluation.h'
-      - 'src/child_evaluation.c'
-      - 'src/internal/child_evaluation.h'
-      - 'src/bounded_run.c'
-      - 'src/internal/bounded_run.h'
-      - 'src/population.c'
-      - 'include/catalyst/evo/evo.h'
-      - 'tests/project_orchestration*.c'
-      - 'tests/project_search_test.c'
-      - 'tests/validate_project_orchestration.py'
-      - 'docs/adr/ADR-0043-bounded-parallel-source-orchestration.md'
-      - 'docs/engineering/reports/EVO-HRA-015-bounded-source-orchestration-audit.md'
-      - 'docs/schemas/evo-project-orchestration-v1.schema.json'
-      - 'docs/roadmap.md'
-      - 'docs/algorithms.md'
-      - 'docs/architecture.md'
-      - 'docs/specs/EVO-001-library-contract.md'
-      - 'docs/specs/EVO-002-source-optimizer-contract.md'
-      - 'README.md'
-      - 'repo.yaml'
-      - '.aems/aes-bld-001.json'
-      - 'CMakeLists.txt'
-      - 'tests/CMakeLists.txt'
-      - 'Makefile.am'
-      - 'configure.ac'
-      - '.github/workflows/project-orchestration.yml'
+    branches: [main]
   pull_request:
     paths:
       - 'src/project_orchestration*.c'
