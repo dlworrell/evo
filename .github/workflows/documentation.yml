@@ -9,6 +9,8 @@ on:
         default: repository
         type: choice
         options: [repository, docs, full-tree]
+  push:
+    branches: [main]
   pull_request:
     paths:
       - '**/*.md'

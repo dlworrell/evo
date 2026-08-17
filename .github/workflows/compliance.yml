@@ -2,6 +2,8 @@ name: Repository Compliance
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
   pull_request:
     paths:
       - 'README.md'

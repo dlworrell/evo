@@ -2,22 +2,7 @@ name: Project Measurement
 
 on:
   push:
-    branches:
-      - agent/reproducible-candidate-fitness
-    paths:
-      - 'src/project_measurement*.c'
-      - 'src/internal/project_measurement*.h'
-      - 'tests/project_measurement_test.c'
-      - 'tests/validate_project_measurement.py'
-      - 'docs/adr/ADR-0041-reproducible-candidate-performance-fitness.md'
-      - 'docs/engineering/reports/EVO-HRA-013-candidate-performance-fitness-audit.md'
-      - 'docs/schemas/evo-project-measurement-v1.schema.json'
-      - '.aems/aes-bld-001.json'
-      - 'CMakeLists.txt'
-      - 'tests/CMakeLists.txt'
-      - 'Makefile.am'
-      - 'configure.ac'
-      - '.github/workflows/project-measurement.yml'
+    branches: [main]
   pull_request:
     paths:
       - 'src/project_measurement*.c'

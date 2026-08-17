@@ -15,55 +15,44 @@ on:
         options: [candidate, production, documentation]
 
 permissions:
+  actions: read
   contents: read
 
 jobs:
-  verify:
-    uses: ./.github/workflows/verify.yml
-
-  package:
-    needs: verify
+  readiness:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out exact release commit
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-      - name: Build release evidence manifest
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+
+      - name: Aggregate exact-SHA release gates
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: >-
+          python3 scripts/release_readiness.py
+          --repository "${{ github.repository }}"
+          --commit "${{ github.sha }}"
+          --version "${{ inputs.version }}"
+          --release-type "${{ inputs.release_type }}"
+          --output build/release-readiness
+
+      - name: Publish readiness summary
+        if: always()
         shell: bash
         run: |
-          set -euo pipefail
-          mkdir -p build/release-readiness
-          python3 - <<'PY'
-          import json, os
-          from pathlib import Path
-          manifest = {
-              'schema': 'catalyst.release-readiness.v1',
-              'repository': os.environ.get('GITHUB_REPOSITORY', 'local'),
-              'commit': os.environ.get('GITHUB_SHA', 'local'),
-              'version': os.environ['RELEASE_VERSION'],
-              'release_type': os.environ['RELEASE_TYPE'],
-              'verification': 'passed',
-              'tag_created': False,
-              'release_published': False,
-          }
-          out = Path('build/release-readiness')
-          (out / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
-          (out / 'report.md').write_text(
-              '# Release Readiness\n\n'
-              f"Version: `{manifest['version']}`\n\n"
-              f"Type: `{manifest['release_type']}`\n\n"
-              'Verification: **passed**\n\n'
-              'This template workflow does not create tags or publish releases.\n'
-          )
-          PY
-        env:
-          RELEASE_VERSION: ${{ inputs.version }}
-          RELEASE_TYPE: ${{ inputs.release_type }}
-      - name: Publish summary
-        run: cat build/release-readiness/report.md >> "$GITHUB_STEP_SUMMARY"
+          if [[ -f build/release-readiness/report.md ]]; then
+            cat build/release-readiness/report.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: Upload release evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: release-readiness-${{ inputs.version }}-${{ github.run_id }}
           path: build/release-readiness/
+          if-no-files-found: warn
           retention-days: 365

@@ -50,3 +50,12 @@ jobs:
           name: test-logs-${{ matrix.os }}-${{ matrix.compiler }}
           path: build/Testing/Temporary/
           if-no-files-found: ignore
+
+  release-readiness-unit:
+    name: release readiness authority semantics
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Test release readiness aggregation
+        run: python3 -m unittest tests/test_release_readiness.py
