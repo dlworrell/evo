@@ -1,6 +1,7 @@
 #define _XOPEN_SOURCE 700
 
 #include "internal/project_provider.h"
+#include "internal/project_fingerprint.h"
 #include "internal/project_provider_clang_ast.h"
 #include "internal/project_provider_sandbox.h"
 #include "internal/project_runtime.h"
@@ -133,20 +134,35 @@ static bool prepare_target(
     return true;
 }
 
-static evo_project_transformation_status_t run_provider(
+static evo_project_transformation_status_t run_provider_with_fingerprint(
     const char *source,
     const char *workspace,
     const evo_project_recipe_target_t *target,
     const char *transformation,
     const evo_project_compilation_record_t *unit,
     evo_project_clang_ast_context_t *context,
-    evo_project_transformation_ast_result_t *result)
+    evo_project_transformation_ast_result_t *result,
+    bool stale_fingerprint)
 {
-    const evo_project_transformation_request_t request = {
+    evo_project_fingerprint_t fingerprint;
+    char source_fingerprint[EVO_PROJECT_FINGERPRINT_TEXT_SIZE];
+    evo_project_transformation_request_t request = {0};
+
+    evo_project_fingerprint_begin(&fingerprint);
+    evo_project_fingerprint_bytes(
+        &fingerprint, (const unsigned char *)source, strlen(source));
+    evo_project_fingerprint_format(fingerprint.value, source_fingerprint);
+    if (stale_fingerprint) {
+        source_fingerprint[EVO_PROJECT_FINGERPRINT_TEXT_SIZE - 2U] =
+            source_fingerprint[EVO_PROJECT_FINGERPRINT_TEXT_SIZE - 2U] == '0'
+                ? '1'
+                : '0';
+    }
+    request = (evo_project_transformation_request_t){
         .schema_version = EVO_PROJECT_TRANSFORMATION_AST_SCHEMA_VERSION,
-        .baseline_fingerprint = "evo-fnv1a64:0000000000000000",
-        .analysis_fingerprint = "evo-fnv1a64:0000000000000001",
-        .recipe_fingerprint = "evo-fnv1a64:0000000000000002",
+        .baseline_fingerprint = "fnv1a64-v1:0000000000000000",
+        .analysis_fingerprint = "fnv1a64-v1:0000000000000001",
+        .recipe_fingerprint = "fnv1a64-v1:0000000000000002",
         .snapshot_path = workspace,
         .record_identity = "provider-fixture-record",
         .target = target,
@@ -155,7 +171,7 @@ static evo_project_transformation_status_t run_provider(
         .parameter_count = 0U,
         .parameters = NULL,
         .source_size = strlen(source),
-        .source_fingerprint = "evo-fnv1a64:0000000000000003",
+        .source_fingerprint = source_fingerprint,
         .limits = transformation_limits(),
         .network_access = false,
     };
@@ -168,6 +184,26 @@ static evo_project_transformation_status_t run_provider(
     context->max_storage_bytes = 1048576U;
     context->max_output_bytes = 4194304U;
     return evo_project_clang_ast_provider(&request, context, result);
+}
+
+static evo_project_transformation_status_t run_provider(
+    const char *source,
+    const char *workspace,
+    const evo_project_recipe_target_t *target,
+    const char *transformation,
+    const evo_project_compilation_record_t *unit,
+    evo_project_clang_ast_context_t *context,
+    evo_project_transformation_ast_result_t *result)
+{
+    return run_provider_with_fingerprint(
+        source,
+        workspace,
+        target,
+        transformation,
+        unit,
+        context,
+        result,
+        false);
 }
 
 static void exercise_source(
@@ -251,7 +287,9 @@ static void exercise_source(
     check(result.literal_value == (already_satisfied ? 3U : 8U), "shift literal");
     check(result.result_unsigned_integer, "shift unsigned type");
     check(result.result_type_matches_primary, "shift type preservation");
-    check(result.result_width_bits >= 16U, "shift conservative width");
+    check(result.result_width_bits == 16U, "target-local unsigned-int width");
+    check(!result.contains_macro, "target macro-free despite unrelated macro");
+    check(!result.volatile_access, "target nonvolatile despite unrelated volatile");
     check(!result.contains_comment, "target comment-free");
     check(!result.contains_preprocessor, "target preprocessor-free");
 }
@@ -263,22 +301,28 @@ int main(void)
     return 77;
 #else
     static const char before_source[] =
+        "#define EVO_AST_NOISE(x) ((x) + 1U)\n"
         "static unsigned int transform_fixture(unsigned int value, int ready)\n"
         "{\n"
+        "    volatile unsigned long long unrelated = 1ULL;\n"
+        "    unsigned int macro_noise = EVO_AST_NOISE(value);\n"
         "    unsigned int scaled = value * 8U;\n"
         "    int total = 0;\n"
         "    total = total + ready;\n"
         "    if (!!ready) { total += 1; }\n"
-        "    return scaled + (unsigned int)total;\n"
+        "    return scaled + (unsigned int)total + macro_noise + (unsigned int)unrelated;\n"
         "}\n";
     static const char after_source[] =
+        "#define EVO_AST_NOISE(x) ((x) + 1U)\n"
         "static unsigned int transform_fixture(unsigned int value, int ready)\n"
         "{\n"
+        "    volatile unsigned long long unrelated = 1ULL;\n"
+        "    unsigned int macro_noise = EVO_AST_NOISE(value);\n"
         "    unsigned int scaled = (value << 3);\n"
         "    int total = 0;\n"
         "    total += ready;\n"
         "    if (ready) { total += 1; }\n"
-        "    return scaled + (unsigned int)total;\n"
+        "    return scaled + (unsigned int)total + macro_noise + (unsigned int)unrelated;\n"
         "}\n";
     static const char *const compile_arguments[] = {
         "cc", "-std=c17", "-c", "fixture.c"};
@@ -314,6 +358,31 @@ int main(void)
         (void)fprintf(stderr, "unable to create AST fixture\n");
         (void)rmdir(workspace);
         return 1;
+    }
+    {
+        evo_project_recipe_target_t stale_target = {0};
+        evo_project_transformation_ast_result_t stale_result = {0};
+
+        check(
+            prepare_target(
+                before_source,
+                "total = total + ready",
+                0U,
+                "location-stale",
+                &stale_target),
+            "stale fingerprint target prepared");
+        check(
+            run_provider_with_fingerprint(
+                before_source,
+                workspace,
+                &stale_target,
+                "catalyst.evo.c.assignment-to-compound",
+                &unit,
+                &context,
+                &stale_result,
+                true) == EVO_PROJECT_TRANSFORMATION_ERROR_BASELINE_CHANGED,
+            "stale source fingerprint rejected before AST authorization");
+        evo_project_clang_ast_context_destroy(&context);
     }
     exercise_source(workspace, before_source, false, &unit, &context);
     evo_project_clang_ast_context_destroy(&context);

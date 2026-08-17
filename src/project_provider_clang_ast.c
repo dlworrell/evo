@@ -2,7 +2,9 @@
 
 #include "internal/project_provider_clang_ast.h"
 
+#include "internal/project_fingerprint.h"
 #include "internal/project_provider.h"
+#include "internal/project_provider_clang_ast_authority.h"
 #include "internal/project_provider_sandbox.h"
 #include "internal/project_runtime.h"
 
@@ -566,83 +568,21 @@ static evo_project_transformation_status_t evo_clang_ast_dump(
     return EVO_PROJECT_TRANSFORMATION_SUCCESS;
 }
 
-static bool evo_clang_ast_has_operator(const char *ast, const char *operator_text)
-{
-    char needle[32];
-    const int written = evo_project_format(
-        needle, sizeof(needle), "\"opcode\": \"%s\"", operator_text);
-
-    return written > 0 && (size_t)written < sizeof(needle) && strstr(ast, needle) != NULL;
-}
-
-static evo_project_transformation_condition_context_t evo_clang_ast_condition_context(
-    const unsigned char *source,
-    size_t target_start)
-{
-    size_t line_start = target_start;
-    size_t position;
-
-    while (line_start > 0U && source[line_start - 1U] != '\n') {
-        line_start -= 1U;
-    }
-    position = line_start;
-    while (position < target_start && isspace((int)source[position]) != 0) {
-        position += 1U;
-    }
-    if (target_start >= position + 3U &&
-        source[position] == 'i' && source[position + 1U] == 'f') {
-        return EVO_PROJECT_TRANSFORMATION_CONDITION_IF;
-    }
-    if (target_start >= position + 6U && strncmp((const char *)source + position, "while", 5U) == 0) {
-        size_t scan = line_start;
-        while (scan > 0U && scan + 4U >= 4U) {
-            scan -= 1U;
-            if (scan + 2U <= line_start && source[scan] == 'd' && source[scan + 1U] == 'o') {
-                return EVO_PROJECT_TRANSFORMATION_CONDITION_DO_WHILE;
-            }
-            if (line_start - scan > 512U) {
-                break;
-            }
-        }
-        return EVO_PROJECT_TRANSFORMATION_CONDITION_WHILE;
-    }
-    if (target_start >= position + 4U && strncmp((const char *)source + position, "for", 3U) == 0) {
-        return EVO_PROJECT_TRANSFORMATION_CONDITION_FOR;
-    }
-    return EVO_PROJECT_TRANSFORMATION_CONDITION_NONE;
-}
-
-static uint32_t evo_clang_ast_minimum_unsigned_width(const char *ast)
-{
-    if (strstr(ast, "\"qualType\": \"unsigned long long\"") != NULL) {
-        return 64U;
-    }
-    if (strstr(ast, "\"qualType\": \"unsigned long\"") != NULL) {
-        return 32U;
-    }
-    if (strstr(ast, "\"qualType\": \"unsigned int\"") != NULL) {
-        return 16U;
-    }
-    if (strstr(ast, "\"qualType\": \"unsigned short\"") != NULL) {
-        return 16U;
-    }
-    if (strstr(ast, "\"qualType\": \"unsigned char\"") != NULL) {
-        return 8U;
-    }
-    return 0U;
-}
-
 static evo_project_transformation_status_t evo_clang_ast_assignment(
     const evo_project_transformation_request_t *request,
     const unsigned char *source,
     evo_project_transformation_byte_range_t target,
     const char *ast,
+    size_t ast_size,
     evo_project_clang_ast_context_t *context,
     evo_project_transformation_ast_result_t *result)
 {
     evo_project_transformation_byte_range_t primary = {0};
     evo_project_transformation_byte_range_t duplicate = {0};
     evo_project_transformation_byte_range_t operand = {0};
+    evo_project_clang_ast_authority_t authority = {0};
+    evo_project_transformation_status_t status;
+    evo_project_transformation_operator_t operator_kind;
     size_t position;
     char operator_char;
     bool compound = false;
@@ -655,7 +595,7 @@ static evo_project_transformation_status_t evo_clang_ast_assignment(
         return EVO_PROJECT_TRANSFORMATION_ERROR_NOT_APPLICABLE;
     }
     operator_char = (char)source[position];
-    if (operator_char == '=' ) {
+    if (operator_char == '=') {
         position = evo_clang_ast_skip_space(source, position + 1U, target.end);
         if (!evo_clang_ast_identifier_range(source, position, target.end, &duplicate) ||
             !evo_clang_ast_bytes_equal(source, primary, duplicate)) {
@@ -676,12 +616,28 @@ static evo_project_transformation_status_t evo_clang_ast_assignment(
         operand.start = evo_clang_ast_skip_space(source, position + 2U, target.end);
         operand.end = evo_clang_ast_trim_end(source, operand.start, target.end);
     }
-    if (operand.start >= operand.end || evo_clang_ast_operator(operator_char) == EVO_PROJECT_TRANSFORMATION_OPERATOR_NONE) {
+    operator_kind = evo_clang_ast_operator(operator_char);
+    if (operand.start >= operand.end ||
+        operator_kind == EVO_PROJECT_TRANSFORMATION_OPERATOR_NONE) {
         return EVO_PROJECT_TRANSFORMATION_ERROR_NOT_APPLICABLE;
     }
-    if (!evo_clang_ast_has_operator(ast, compound ? (char[3]){operator_char, '=', '\0'} : "=") ||
-        (!compound && !evo_clang_ast_has_operator(ast, (char[2]){operator_char, '\0'}))) {
-        return EVO_PROJECT_TRANSFORMATION_ERROR_AST_MALFORMED;
+    status = evo_project_clang_ast_authorize_assignment(
+        ast,
+        ast_size,
+        target,
+        primary,
+        duplicate,
+        operand,
+        compound,
+        operator_kind,
+        &request->limits,
+        &authority);
+    if (status != EVO_PROJECT_TRANSFORMATION_SUCCESS) {
+        return status;
+    }
+    if (!authority.primary_reference_resolved ||
+        (!compound && !authority.duplicate_reference_matches)) {
+        return EVO_PROJECT_TRANSFORMATION_ERROR_NOT_APPLICABLE;
     }
     context->primary_declaration_identity =
         evo_clang_ast_declaration_identity(request, source, primary);
@@ -695,32 +651,40 @@ static evo_project_transformation_status_t evo_clang_ast_assignment(
             return EVO_PROJECT_TRANSFORMATION_ERROR_OUT_OF_MEMORY;
         }
     }
-    result->form = compound ? EVO_PROJECT_AST_ASSIGNMENT_COMPOUND : EVO_PROJECT_AST_ASSIGNMENT_BINARY;
-    result->operator_kind = evo_clang_ast_operator(operator_char);
+    result->form = compound ? EVO_PROJECT_AST_ASSIGNMENT_COMPOUND
+                            : EVO_PROJECT_AST_ASSIGNMENT_BINARY;
+    result->operator_kind = operator_kind;
     result->primary = primary;
     result->duplicate_primary = duplicate;
     result->operand = operand;
     result->primary_declaration_identity = context->primary_declaration_identity;
     result->duplicate_declaration_identity = context->duplicate_declaration_identity;
     result->primary_plain_identifier = true;
-    result->result_type_matches_primary = true;
+    result->volatile_access = authority.volatile_access;
+    result->contains_macro = authority.contains_macro;
+    result->language_extension = authority.language_extension;
+    result->ambiguous_target = authority.ambiguous_target;
+    result->result_type_matches_primary = authority.result_type_matches_primary;
     return EVO_PROJECT_TRANSFORMATION_SUCCESS;
 }
 
 static evo_project_transformation_status_t evo_clang_ast_condition(
+    const evo_project_transformation_request_t *request,
     const unsigned char *source,
     evo_project_transformation_byte_range_t target,
     const char *ast,
+    size_t ast_size,
     evo_project_transformation_ast_result_t *result)
 {
+    evo_project_clang_ast_authority_t authority = {0};
+    evo_project_transformation_status_t status;
     size_t position = evo_clang_ast_skip_space(source, target.start, target.end);
     size_t end = evo_clang_ast_trim_end(source, position, target.end);
+    bool double_negated = false;
 
-    result->condition_context = evo_clang_ast_condition_context(source, target.start);
-    if (position + 2U <= end && source[position] == '!' && source[position + 1U] == '!') {
-        if (!evo_clang_ast_has_operator(ast, "!")) {
-            return EVO_PROJECT_TRANSFORMATION_ERROR_AST_MALFORMED;
-        }
+    if (position + 2U <= end && source[position] == '!' &&
+        source[position + 1U] == '!') {
+        double_negated = true;
         result->form = EVO_PROJECT_AST_DOUBLE_NEGATED_CONDITION;
         result->operand.start = evo_clang_ast_skip_space(source, position + 2U, end);
         result->operand.end = end;
@@ -729,11 +693,29 @@ static evo_project_transformation_status_t evo_clang_ast_condition(
         result->operand.start = position;
         result->operand.end = end;
     }
-    if (result->operand.start >= result->operand.end ||
-        result->condition_context == EVO_PROJECT_TRANSFORMATION_CONDITION_NONE) {
+    if (result->operand.start >= result->operand.end) {
         return EVO_PROJECT_TRANSFORMATION_ERROR_NOT_APPLICABLE;
     }
-    result->scalar_operand = true;
+    status = evo_project_clang_ast_authorize_condition(
+        ast,
+        ast_size,
+        target,
+        double_negated,
+        &request->limits,
+        &authority);
+    if (status != EVO_PROJECT_TRANSFORMATION_SUCCESS) {
+        return status;
+    }
+    if (!authority.scalar_operand ||
+        authority.condition_context == EVO_PROJECT_TRANSFORMATION_CONDITION_NONE) {
+        return EVO_PROJECT_TRANSFORMATION_ERROR_NOT_APPLICABLE;
+    }
+    result->condition_context = authority.condition_context;
+    result->scalar_operand = authority.scalar_operand;
+    result->volatile_access = authority.volatile_access;
+    result->contains_macro = authority.contains_macro;
+    result->language_extension = authority.language_extension;
+    result->ambiguous_target = authority.ambiguous_target;
     return EVO_PROJECT_TRANSFORMATION_SUCCESS;
 }
 
@@ -742,46 +724,66 @@ static evo_project_transformation_status_t evo_clang_ast_shift(
     const unsigned char *source,
     evo_project_transformation_byte_range_t target,
     const char *ast,
+    size_t ast_size,
     evo_project_clang_ast_context_t *context,
     evo_project_transformation_ast_result_t *result)
 {
+    evo_project_clang_ast_authority_t authority = {0};
+    evo_project_transformation_status_t status;
+    evo_project_transformation_byte_range_t expression;
     size_t content_start = target.start;
     size_t content_end = target.end;
     size_t position;
-    char operator_char;
-    bool shift = false;
+    bool shift_form = false;
 
     if (content_end - content_start >= 2U && source[content_start] == '(' &&
         source[content_end - 1U] == ')') {
         content_start += 1U;
         content_end -= 1U;
-        shift = true;
+        shift_form = true;
     }
-    if (!evo_clang_ast_identifier_range(source, content_start, content_end, &result->primary)) {
+    expression.start = content_start;
+    expression.end = content_end;
+    if (!evo_clang_ast_identifier_range(
+            source, content_start, content_end, &result->primary)) {
         return EVO_PROJECT_TRANSFORMATION_ERROR_NOT_APPLICABLE;
     }
     position = evo_clang_ast_skip_space(source, result->primary.end, content_end);
-    if (shift) {
-        if (position + 1U >= content_end || source[position] != '<' || source[position + 1U] != '<') {
+    if (shift_form) {
+        if (position + 1U >= content_end || source[position] != '<' ||
+            source[position + 1U] != '<') {
             return EVO_PROJECT_TRANSFORMATION_ERROR_NOT_APPLICABLE;
         }
         position += 2U;
-        operator_char = '<';
     } else {
         if (position >= content_end || source[position] != '*') {
             return EVO_PROJECT_TRANSFORMATION_ERROR_NOT_APPLICABLE;
         }
         position += 1U;
-        operator_char = '*';
     }
     result->literal.start = evo_clang_ast_skip_space(source, position, content_end);
-    result->literal.end = evo_clang_ast_trim_end(source, result->literal.start, content_end);
+    result->literal.end =
+        evo_clang_ast_trim_end(source, result->literal.start, content_end);
     if (result->literal.start >= result->literal.end ||
-        !evo_clang_ast_parse_u64(source, result->literal, &result->literal_value)) {
+        !evo_clang_ast_parse_u64(
+            source, result->literal, &result->literal_value)) {
         return EVO_PROJECT_TRANSFORMATION_ERROR_NOT_APPLICABLE;
     }
-    if (!evo_clang_ast_has_operator(ast, shift ? "<<" : "*")) {
-        return EVO_PROJECT_TRANSFORMATION_ERROR_AST_MALFORMED;
+    status = evo_project_clang_ast_authorize_shift(
+        ast,
+        ast_size,
+        expression,
+        result->primary,
+        result->literal,
+        shift_form,
+        &request->limits,
+        &authority);
+    if (status != EVO_PROJECT_TRANSFORMATION_SUCCESS) {
+        return status;
+    }
+    if (!authority.primary_reference_resolved ||
+        !authority.result_unsigned_integer) {
+        return EVO_PROJECT_TRANSFORMATION_ERROR_NOT_APPLICABLE;
     }
     context->primary_declaration_identity =
         evo_clang_ast_declaration_identity(request, source, result->primary);
@@ -789,15 +791,37 @@ static evo_project_transformation_status_t evo_clang_ast_shift(
         return EVO_PROJECT_TRANSFORMATION_ERROR_OUT_OF_MEMORY;
     }
     result->primary_declaration_identity = context->primary_declaration_identity;
-    result->form = shift ? EVO_PROJECT_AST_UNSIGNED_SHIFT_POWER_OF_TWO : EVO_PROJECT_AST_UNSIGNED_MULTIPLY_POWER_OF_TWO;
-    result->operator_kind = shift ? EVO_PROJECT_TRANSFORMATION_OPERATOR_SHIFT_LEFT : EVO_PROJECT_TRANSFORMATION_OPERATOR_MULTIPLY;
-    result->result_width_bits = evo_clang_ast_minimum_unsigned_width(ast);
-    result->result_unsigned_integer = result->result_width_bits > 0U;
-    result->result_type_matches_primary = result->result_unsigned_integer;
-    if (!result->result_unsigned_integer || operator_char == 0) {
-        return EVO_PROJECT_TRANSFORMATION_ERROR_NOT_APPLICABLE;
-    }
+    result->form = shift_form ? EVO_PROJECT_AST_UNSIGNED_SHIFT_POWER_OF_TWO
+                              : EVO_PROJECT_AST_UNSIGNED_MULTIPLY_POWER_OF_TWO;
+    result->operator_kind = shift_form
+                                ? EVO_PROJECT_TRANSFORMATION_OPERATOR_SHIFT_LEFT
+                                : EVO_PROJECT_TRANSFORMATION_OPERATOR_MULTIPLY;
+    result->volatile_access = authority.volatile_access;
+    result->contains_macro = authority.contains_macro;
+    result->language_extension = authority.language_extension;
+    result->ambiguous_target = authority.ambiguous_target;
+    result->result_width_bits = authority.result_width_bits;
+    result->result_unsigned_integer = authority.result_unsigned_integer;
+    result->result_type_matches_primary = authority.result_type_matches_primary;
     return EVO_PROJECT_TRANSFORMATION_SUCCESS;
+}
+
+static bool evo_clang_ast_source_matches_request(
+    const evo_project_transformation_request_t *request,
+    const unsigned char *source,
+    size_t source_size)
+{
+    evo_project_fingerprint_t fingerprint;
+    char formatted[EVO_PROJECT_FINGERPRINT_TEXT_SIZE];
+
+    if (request == NULL || source == NULL || request->source_fingerprint == NULL ||
+        source_size != request->source_size) {
+        return false;
+    }
+    evo_project_fingerprint_begin(&fingerprint);
+    evo_project_fingerprint_bytes(&fingerprint, source, source_size);
+    evo_project_fingerprint_format(fingerprint.value, formatted);
+    return strcmp(formatted, request->source_fingerprint) == 0;
 }
 
 evo_project_transformation_status_t evo_project_clang_ast_provider(
@@ -835,9 +859,26 @@ evo_project_transformation_status_t evo_project_clang_ast_provider(
         return EVO_PROJECT_TRANSFORMATION_ERROR_PROVIDER;
     }
     evo_project_clang_ast_context_destroy(context);
-    if (!evo_clang_ast_read_source(request, &source, &source_size) ||
-        !evo_clang_ast_offset(source, source_size, request->target->line, request->target->column, &target_start) ||
-        !evo_clang_ast_offset(source, source_size, request->target->end_line, request->target->end_column, &target_end) ||
+    if (!evo_clang_ast_read_source(request, &source, &source_size)) {
+        evo_project_release(source);
+        return EVO_PROJECT_TRANSFORMATION_ERROR_SOURCE_IO;
+    }
+    if (!evo_clang_ast_source_matches_request(request, source, source_size)) {
+        evo_project_release(source);
+        return EVO_PROJECT_TRANSFORMATION_ERROR_BASELINE_CHANGED;
+    }
+    if (!evo_clang_ast_offset(
+            source,
+            source_size,
+            request->target->line,
+            request->target->column,
+            &target_start) ||
+        !evo_clang_ast_offset(
+            source,
+            source_size,
+            request->target->end_line,
+            request->target->end_column,
+            &target_end) ||
         target_start >= target_end || target_end > source_size) {
         evo_project_release(source);
         return EVO_PROJECT_TRANSFORMATION_ERROR_SOURCE_IO;
@@ -862,8 +903,8 @@ evo_project_transformation_status_t evo_project_clang_ast_provider(
     result->location_identity = context->location_identity;
     result->file = context->file;
     result->target = target;
-    result->volatile_access = strstr(sandbox.stdout_text, "volatile") != NULL;
-    result->contains_macro = strstr(sandbox.stdout_text, "expansionLoc") != NULL;
+    result->volatile_access = false;
+    result->contains_macro = false;
     result->language_extension = false;
     result->ambiguous_target = false;
     result->alias_assumption_required = false;
@@ -872,11 +913,31 @@ evo_project_transformation_status_t evo_project_clang_ast_provider(
     result->contains_preprocessor = preprocessor;
 
     if (strcmp(request->transformation_identity, "catalyst.evo.c.assignment-to-compound") == 0) {
-        status = evo_clang_ast_assignment(request, source, target, sandbox.stdout_text, context, result);
+        status = evo_clang_ast_assignment(
+            request,
+            source,
+            target,
+            sandbox.stdout_text,
+            sandbox.stdout_bytes,
+            context,
+            result);
     } else if (strcmp(request->transformation_identity, "catalyst.evo.c.double-negation-condition") == 0) {
-        status = evo_clang_ast_condition(source, target, sandbox.stdout_text, result);
+        status = evo_clang_ast_condition(
+            request,
+            source,
+            target,
+            sandbox.stdout_text,
+            sandbox.stdout_bytes,
+            result);
     } else if (strcmp(request->transformation_identity, "catalyst.evo.c.unsigned-multiply-to-shift") == 0) {
-        status = evo_clang_ast_shift(request, source, target, sandbox.stdout_text, context, result);
+        status = evo_clang_ast_shift(
+            request,
+            source,
+            target,
+            sandbox.stdout_text,
+            sandbox.stdout_bytes,
+            context,
+            result);
     } else {
         status = EVO_PROJECT_TRANSFORMATION_ERROR_NOT_APPLICABLE;
     }

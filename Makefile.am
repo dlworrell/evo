@@ -82,6 +82,7 @@ noinst_HEADERS = \
 	src/internal/project_provider_async.h \
 	src/internal/project_provider_clang.h \
 	src/internal/project_provider_clang_ast.h \
+	src/internal/project_provider_clang_ast_authority.h \
 	src/internal/project_json.h \
 	src/internal/project_fingerprint.h \
 	src/internal/project_manifest.h \
@@ -139,6 +140,7 @@ libevo_project_foundation_la_SOURCES = \
 	src/project_provider_async.c \
 	src/project_provider_clang.c \
 	src/project_provider_clang_ast.c \
+	src/project_provider_clang_ast_authority.c \
 	src/project_json.c \
 	src/project_fingerprint.c \
 	src/project_manifest.c \
