@@ -1,9 +1,36 @@
 # Governance
 
 Catalyst EVO is the source-to-source C optimization product in the Catalyst
-ecosystem. It contains a reusable deterministic evolutionary-search core and
-will add separately bounded source-analysis, transformation, candidate-
-evaluation, orchestration, and artifact components on the path to 1.0.
+ecosystem. It contains a reusable deterministic evolutionary-search core and a
+separately bounded source-analysis, transformation, candidate-evaluation,
+orchestration, provider, command, and artifact product layer on the path to
+1.0.
+
+## Repository Classification
+
+Catylist disposition `CAT-DISP-001` classifies `dlworrell/evo` as a
+`governed-product` repository with the product role
+`source-optimization-toolchain`.
+
+That primary repository class coexists deliberately with two local component
+classes:
+
+- `catalyst_evo` is a `reusable-library` component and owns the stable public
+  C17 evolutionary-search core; and
+- `evo-source-optimizer` is an `engineering-application` component and owns the
+  source-to-source optimization product.
+
+The reusable core does not make the whole repository a shared-service or
+reusable-library authority. Conversely, the product classification does not
+remove the reusable core's supported API/ABI obligations. The repository has
+one ecosystem-level primary class and preserves both component boundaries.
+
+The authoritative Catylist record is
+`dlworrell/Catylist:docs/reviews/CAT-DISP-001-EVO-repository-classification.md`.
+It supersedes the earlier provisional Catylist inventory assignment for EVO.
+The classification is resolved before the installed standalone executable
+(#93) and 1.0 stabilization (#56); those boundaries may rely on it once this
+repository-local reconciliation is on `main`.
 
 ## Authority
 
@@ -13,15 +40,20 @@ The repository follows this authority chain:
 Catylist -> AES -> AEMS -> repo_templates -> EVO
 ```
 
-- Catylist defines ecosystem structure and repository relationships.
+- Catylist defines ecosystem structure, repository relationships, and EVO's
+  repository classification.
 - AES defines engineering, security, and lifecycle obligations.
 - AEMS evaluates repository state and preserves enforcement evidence.
 - Project Zero performed the one-time preparation and Engineering Ready
   onboarding recorded by EVO-P0-002; it is not a standing development gate.
 - `repo_templates` supplies the canonical lifecycle scaffold.
 - EVO owns its core-library architecture and its source-analysis,
-  transformation, candidate-evaluation, optimization, evidence, and artifact
-  contracts within those constraints.
+  transformation, candidate-evaluation, optimization, provider, command,
+  evidence, packaging, and artifact contracts within those constraints.
+
+The Catylist classification changes no AES or AEMS applicability and grants no
+waiver. EVO remains a governed consumer of upstream standards and assessment;
+it does not acquire ecosystem governance, standards, or enforcement authority.
 
 EVO does not supersede its upstream authorities. Target-project maintainers
 remain authoritative for their source, tests, workloads, acceptance criteria,
@@ -33,9 +65,10 @@ target repository.
 
 - `catalyst_evo` owns deterministic bounded evolutionary-search mechanics and
   the stable public C ABI defined by EVO-001.
-- The source optimizer owns the product contract defined by EVO-002, including
-  project ingestion, analysis, structured transformation recipes, candidate
-  isolation, validation, measurement, replay, and artifact emission.
+- The source optimizer owns the product contract defined by EVO-002 and EVO-003,
+  including project ingestion, analysis, structured transformation recipes,
+  candidate isolation, validation, measurement, production-provider execution,
+  command planning/execution, replay, and artifact emission.
 - Raw textual mutation or crossover of C source is prohibited. Source genomes
   encode versioned structured transformation recipes.
 - An optimized patch is a proposal. Applying, committing, pushing, merging,
