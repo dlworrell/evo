@@ -79,6 +79,7 @@ noinst_HEADERS = \
 	src/internal/project_provider_probe.h \
 	src/internal/project_provider_sandbox.h \
 	src/internal/project_provider_adapters.h \
+	src/internal/project_provider_async.h \
 	src/internal/project_provider_clang.h \
 	src/internal/project_provider_clang_ast.h \
 	src/internal/project_json.h \
@@ -135,6 +136,7 @@ libevo_project_foundation_la_SOURCES = \
 	src/project_provider_probe.c \
 	src/project_provider_sandbox.c \
 	src/project_provider_adapters.c \
+	src/project_provider_async.c \
 	src/project_provider_clang.c \
 	src/project_provider_clang_ast.c \
 	src/project_json.c \
@@ -216,6 +218,7 @@ check_PROGRAMS = \
 	tests/evo_project_orchestration_checkpoint_test \
 	tests/evo_project_orchestration_resume_test \
 	tests/evo_project_provider_test \
+	tests/evo_project_provider_async_test \
 	tests/evo_project_provider_sandbox_test \
 	tests/evo_project_provider_clang_test \
 	tests/evo_project_provider_clang_ast_test \
@@ -396,6 +399,11 @@ tests_evo_project_provider_test_SOURCES = \
 tests_evo_project_provider_test_LDADD = \
 	libevo_project_foundation.la
 
+tests_evo_project_provider_async_test_SOURCES = \
+	tests/project_provider_async_test.c
+tests_evo_project_provider_async_test_LDADD = \
+	libevo_project_foundation.la
+
 tests_evo_project_provider_sandbox_test_SOURCES = \
 	tests/project_provider_sandbox_test.c
 tests_evo_project_provider_sandbox_test_LDADD = \
@@ -485,6 +493,7 @@ EXTRA_DIST = \
 	.github/workflows/project-assurance.yml \
 	.github/workflows/project-measurement.yml \
 	.github/workflows/production-providers.yml \
+	.github/workflows/production-provider-async.yml \
 	CMakeLists.txt \
 	CMakePresets.json \
 	benchmarks/CMakeLists.txt \
