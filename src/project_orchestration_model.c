@@ -120,7 +120,9 @@ static bool evo_orchestration_candidates_valid(
         if (candidate->schema_version !=
                 EVO_PROJECT_ORCHESTRATION_SCHEMA_VERSION ||
             candidate->generation != generation ||
-            candidate->population_index != index ||
+            (index > 0U &&
+             candidate->population_index <=
+                 config->candidates[index - 1U].population_index) ||
             !evo_orchestration_text_valid(
                 candidate->recipe_fingerprint,
                 config->limits.max_string_bytes,
