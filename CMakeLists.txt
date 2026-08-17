@@ -106,6 +106,7 @@ add_library(catalyst_evo_project_foundation STATIC
     src/project_provider.c
     src/project_provider_sandbox.c
     src/project_provider_adapters.c
+    src/project_provider_clang.c
     src/project_json.c
     src/project_fingerprint.c
     src/project_manifest.c
