@@ -16,7 +16,21 @@
       "type": "array",
       "minItems": 2,
       "maxItems": 2,
-      "items": {"$ref": "#/$defs/provider"}
+      "prefixItems": [
+        {
+          "allOf": [
+            {"$ref": "#/$defs/provider"},
+            {"properties": {"identity": {"const": "catalyst.evo.provider.clang-analysis.v1"}}}
+          ]
+        },
+        {
+          "allOf": [
+            {"$ref": "#/$defs/provider"},
+            {"properties": {"identity": {"const": "catalyst.evo.provider.linux-bwrap.v1"}}}
+          ]
+        }
+      ],
+      "items": false
     }
   },
   "$defs": {
@@ -25,12 +39,7 @@
       "additionalProperties": false,
       "required": ["identity", "implementationVersion", "capabilities", "available"],
       "properties": {
-        "identity": {
-          "enum": [
-            "catalyst.evo.provider.clang-analysis.v1",
-            "catalyst.evo.provider.linux-bwrap.v1"
-          ]
-        },
+        "identity": {"type": "string", "minLength": 1},
         "implementationVersion": {"const": 1},
         "capabilities": {"type": "integer", "minimum": 0},
         "available": {"type": "boolean"}
