@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(catalyst_evo VERSION 0.42.0 LANGUAGES C)
+project(catalyst_evo VERSION 0.43.0 LANGUAGES C)
 
 set(EVO_PRODUCT_VERSION "${PROJECT_VERSION}")
 set(EVO_PUBLIC_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/include/catalyst/evo/evo.h")
@@ -99,8 +99,8 @@ add_library(catalyst_evo STATIC
 )
 add_library(catalyst_evo::catalyst_evo ALIAS catalyst_evo)
 
-# The source-optimizer foundation is deliberately separate from the installed
-# stable core until its product-facing API is fixed by the later CLI milestone.
+# The source-optimizer foundation and production providers remain separate from
+# the installed stable core; issue #93 owns standalone executable installation.
 add_library(catalyst_evo_project_foundation STATIC
     src/project_runtime.c
     src/project_provider.c
@@ -145,6 +145,7 @@ add_library(catalyst_evo_project_foundation STATIC
     src/project_orchestration_runtime.c
     src/project_orchestration.c
     src/project_orchestration_checkpoint.c
+    src/project_command.c
 )
 target_include_directories(catalyst_evo_project_foundation
     PUBLIC
@@ -180,6 +181,18 @@ endif()
 if(BUILD_TESTING)
     add_subdirectory(benchmarks)
     add_subdirectory(tests)
+    add_executable(evo_project_command_test tests/project_command_test.c)
+    target_include_directories(
+        evo_project_command_test
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/src
+    )
+    target_link_libraries(
+        evo_project_command_test
+        PRIVATE
+            catalyst_evo_project_foundation
+    )
+    add_test(NAME evo_project_command_test COMMAND evo_project_command_test)
 
     add_executable(evo_project_provider_test tests/project_provider_test.c)
     target_include_directories(

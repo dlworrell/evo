@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/dlworrell/evo/docs/schemas/evo-command-replay-v1.schema.json",
+  "title": "EVO replay command v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "operation", "manifest", "input", "evidence", "output", "providerPolicy", "providers", "replayIdentityComplete", "externalInputsDeclared"],
+  "properties": {
+    "schema": {"const": "catalyst.evo.command.replay.v1"},
+    "operation": {"const": "replay"},
+    "manifest": {"type": "string", "minLength": 1},
+    "input": {"type": "string", "minLength": 1},
+    "evidence": {"type": "string", "minLength": 1},
+    "output": {"type": "string", "minLength": 1},
+    "checkpoint": {"type": "string", "minLength": 1},
+    "providerPolicy": {"const": "catalyst.evo.provider-policy.v1"},
+    "replayIdentityComplete": {"const": true},
+    "externalInputsDeclared": {"const": true},
+    "providers": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "prefixItems": [
+        {
+          "allOf": [
+            {"$ref": "#/$defs/provider"},
+            {"properties": {"identity": {"const": "catalyst.evo.provider.clang-analysis.v1"}}}
+          ]
+        },
+        {
+          "allOf": [
+            {"$ref": "#/$defs/provider"},
+            {"properties": {"identity": {"const": "catalyst.evo.provider.clang-ast.v1"}}}
+          ]
+        },
+        {
+          "allOf": [
+            {"$ref": "#/$defs/provider"},
+            {"properties": {"identity": {"const": "catalyst.evo.provider.linux-bwrap.v1"}}}
+          ]
+        },
+        {
+          "allOf": [
+            {"$ref": "#/$defs/provider"},
+            {"properties": {"identity": {"const": "catalyst.evo.provider.local-evaluation.v1"}}}
+          ]
+        }
+      ],
+      "items": false
+    }
+  },
+  "$defs": {
+    "provider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["identity", "implementationVersion", "capabilities", "available"],
+      "properties": {
+        "identity": {"type": "string", "minLength": 1},
+        "implementationVersion": {"const": 1},
+        "capabilities": {"type": "integer", "minimum": 0},
+        "available": {"type": "boolean"}
+      }
+    }
+  }
+}

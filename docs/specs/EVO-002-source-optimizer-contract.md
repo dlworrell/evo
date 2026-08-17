@@ -1,9 +1,9 @@
 # EVO-002: Source-to-Source C Optimizer Contract
 
-Status: Implemented through the 0.42.0 bounded source-orchestration boundary; draft 1.0 target
-Version: 0.42.0
+Status: Implemented through the 0.43.0 product command-contract boundary; draft 1.0 target
+Version: 0.43.0
 Owner: EVO
-Governing ADRs: ADR-0016, ADR-0026, ADR-0035, ADR-0036, ADR-0037, ADR-0038, ADR-0039, ADR-0040, ADR-0041, ADR-0042, and ADR-0043
+Governing ADRs: ADR-0016, ADR-0026, ADR-0035, ADR-0036, ADR-0037, ADR-0038, ADR-0039, ADR-0040, ADR-0041, ADR-0042, ADR-0043, ADR-0044, and ADR-0045
 
 ## Purpose
 
@@ -15,7 +15,7 @@ search as a reviewable patch and reproducibility package.
 
 This specification defines the product layer above the reusable C17
 evolutionary-search core governed by EVO-001. Nothing in this draft claims that
-the complete source optimizer is implemented in version 0.42.0. This release
+the complete source optimizer is implemented in version 0.43.0. This release
 implements strict project ingestion and immutable baselines, normalized
 analysis/hotspot evidence, canonical transformation recipes, the initial AST-
 aware C transformation catalogue, deterministic isolated candidate
@@ -24,10 +24,14 @@ baseline-versus-candidate performance measurement with finite fitness mapping,
 deterministic structured recipe evolution through the reusable EVO core, and
 bounded external-process source orchestration with stable result commit, cleanup
 evidence, persistent worker traces, and product checkpoint/resume authority.
-Assurance, measurement, and candidate execution consume exact results from
-caller-supplied providers; portable OS sandboxing and target workload execution
-remain provider responsibilities. Product commands, installed application
-delivery, artifact publication, and later roadmap boundaries remain 1.0 targets.
+The 0.34.0-0.42.0 foundation continues to expose private caller-supplied
+provider seams for deterministic testing and internal composition. Version
+0.43.0 adds the executable-facing `analyze`, `evolve`, `replay`, and `report`
+request/execution-plan contract. EVO-002A and EVO-003 govern the standalone
+provider interpretation: exact production provider identity/version/capability
+policy must pass before external execution is authorized. Concrete providers,
+installed application delivery, artifact publication, and later roadmap
+boundaries remain #114/#93/#68/#69 work.
 
 ## Claim Boundary
 

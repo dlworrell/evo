@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/dlworrell/evo/docs/schemas/evo-command-report-v1.schema.json",
+  "title": "EVO report command v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "operation", "evidence", "output"],
+  "properties": {
+    "schema": {"const": "catalyst.evo.command.report.v1"},
+    "operation": {"const": "report"},
+    "evidence": {"type": "string", "minLength": 1},
+    "output": {"type": "string", "minLength": 1}
+  }
+}
