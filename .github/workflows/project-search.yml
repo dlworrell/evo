@@ -2,29 +2,7 @@ name: Project Search
 
 on:
   push:
-    branches:
-      - agent/evolve-compatible-source-recipes
-    paths:
-      - 'src/project_search*.c'
-      - 'src/internal/project_search*.h'
-      - 'tests/project_search_test.c'
-      - 'tests/validate_project_search.py'
-      - 'docs/adr/ADR-0042-structured-recipe-evolution.md'
-      - 'docs/engineering/reports/EVO-HRA-014-structured-recipe-evolution-audit.md'
-      - 'docs/schemas/evo-project-search-v1.schema.json'
-      - 'docs/roadmap.md'
-      - 'docs/architecture.md'
-      - 'docs/algorithms.md'
-      - 'docs/specs/EVO-001-library-contract.md'
-      - 'docs/specs/EVO-002-source-optimizer-contract.md'
-      - 'README.md'
-      - 'repo.yaml'
-      - '.aems/aes-bld-001.json'
-      - 'CMakeLists.txt'
-      - 'tests/CMakeLists.txt'
-      - 'Makefile.am'
-      - 'configure.ac'
-      - '.github/workflows/project-search.yml'
+    branches: [main]
   pull_request:
     paths:
       - 'src/project_search*.c'
