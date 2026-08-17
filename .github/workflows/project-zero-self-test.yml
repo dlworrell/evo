@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Validate Python and JSON inputs
         shell: bash
@@ -57,7 +57,10 @@ jobs:
           done
           grep -q 'workflow_call:' .github/workflows/project-zero.yml
           grep -q 'Production mutation: \*\*not permitted\*\*' .github/workflows/optimization.yml
-          grep -q 'does not create tags or publish releases' .github/workflows/release.yml
+          grep -Eq '^[[:space:]]*contents:[[:space:]]*read[[:space:]]*$' .github/workflows/release.yml
+          ! grep -Eq '^[[:space:]]*contents:[[:space:]]*write[[:space:]]*$' .github/workflows/release.yml
+          grep -q 'scripts/release_readiness.py' .github/workflows/release.yml
+          ! grep -Eq '(^|[[:space:]])(gh[[:space:]]+release|git[[:space:]]+tag)([[:space:]]|$)' .github/workflows/release.yml
           test -s docs/standards/repository-lifecycle-contract.md
 
       - name: Run inspection contract
@@ -110,7 +113,7 @@ jobs:
 
       - name: Upload self-test evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: project-zero-self-test-${{ github.run_id }}
           path: build/project-zero-self-test/

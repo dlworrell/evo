@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Configure with Clang and sanitizers
         run: cmake -S . -B build-measurement -DCMAKE_C_COMPILER=clang -DEVO_ENABLE_SANITIZERS=ON
       - name: Build measurement target
@@ -47,7 +47,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Bootstrap Autotools
         run: autoreconf -fi
       - name: Configure with GCC
@@ -63,7 +63,7 @@ jobs:
     runs-on: macos-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Configure with Apple Clang
         run: cmake -S . -B build-measurement -DCMAKE_C_COMPILER=clang
       - name: Build measurement target

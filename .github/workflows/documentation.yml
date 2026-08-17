@@ -18,6 +18,13 @@ on:
       - '**/*.adoc'
       - '**/*.txt'
       - '.github/workflows/documentation.yml'
+      - '.aems/aes-bld-001.json'
+      - 'CMakeLists.txt'
+      - 'Makefile.am'
+      - 'tests/CMakeLists.txt'
+      - 'scripts/release_readiness.py'
+      - 'scripts/verify_aes_bld_profile.py'
+      - 'docs/engineering/AES-BLD-001-toolchain-profile.md'
 
 permissions:
   contents: read
@@ -26,7 +33,9 @@ jobs:
   documentation:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+      - name: Verify AES-BLD profile projection
+        run: python3 scripts/verify_aes_bld_profile.py
       - name: Build documentation inventory and report
         shell: bash
         run: |
@@ -67,7 +76,7 @@ jobs:
         run: cat build/documentation-report/report.md >> "$GITHUB_STEP_SUMMARY"
       - name: Upload documentation report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: documentation-report-${{ github.run_id }}
           path: build/documentation-report/

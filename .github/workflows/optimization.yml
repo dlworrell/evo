@@ -24,7 +24,7 @@ jobs:
   experiment:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Initialize experiment record
         shell: bash
         run: |
@@ -64,7 +64,7 @@ jobs:
         run: cat build/evo-experiment/report.md >> "$GITHUB_STEP_SUMMARY"
       - name: Upload experiment evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: evo-experiment-${{ inputs.experiment_id }}-${{ github.run_id }}
           path: build/evo-experiment/
