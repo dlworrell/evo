@@ -7,12 +7,11 @@ def replace_once(text, old, new, label):
     return text.replace(old, new, 1)
 
 
-# Extend the private search/orchestration contract with an owned, persistent
-# trace that survives each temporary batch transaction.
+# Extend the private search/orchestration contract with a persistent,
+# human-readable batch/job trace owned independently of the search result.
 path = Path("src/internal/project_search_orchestration.h")
 text = path.read_text()
-if "evo_project_search_orchestration_batch_record" not in text:
-    marker = '''typedef struct evo_project_search_orchestration_policy {
+policy_marker = '''typedef struct evo_project_search_orchestration_policy {
     uint32_t schema_version;
     const char *identity;
     evo_project_orchestration_resource_policy_t resources;
@@ -20,7 +19,11 @@ if "evo_project_search_orchestration_batch_record" not in text:
     evo_project_orchestration_limits_t limits;
 } evo_project_search_orchestration_policy_t;
 '''
-    block = marker + '''
+if "evo_project_search_orchestration_batch_record" not in text:
+    text = replace_once(
+        text,
+        policy_marker,
+        policy_marker + '''
 typedef struct evo_project_search_orchestration_batch_record {
     uint64_t generation;
     size_t external_worker_count;
@@ -49,71 +52,64 @@ typedef struct evo_project_search_orchestration_trace {
 
 void evo_project_search_orchestration_trace_destroy(
     evo_project_search_orchestration_trace_t *trace);
-'''
-    text = replace_once(text, marker, block, "search orchestration policy marker")
-if "evo_project_search_run_orchestrated_with_trace" not in text:
-    marker = '''evo_project_search_status_t evo_project_search_run_orchestrated(
+''',
+        "search orchestration policy marker",
+    )
+run_marker = '''evo_project_search_status_t evo_project_search_run_orchestrated(
     const evo_project_search_config_t *config,
     const evo_project_search_orchestration_policy_t *orchestration_policy,
     evo_project_search_t *search);
 '''
-    block = marker + '''
+if "evo_project_search_run_orchestrated_with_trace" not in text:
+    text = replace_once(
+        text,
+        run_marker,
+        run_marker + '''
 
 evo_project_search_status_t evo_project_search_run_orchestrated_with_trace(
     const evo_project_search_config_t *config,
     const evo_project_search_orchestration_policy_t *orchestration_policy,
     evo_project_search_t *search,
     evo_project_search_orchestration_trace_t *trace);
-'''
-    text = replace_once(text, marker, block, "orchestrated search declaration")
-path.write_text(text)
-
-
-# Bind one optional trace owner into search runtime context. Serial search leaves
-# it NULL; orchestrated search creates and owns it for the complete run.
-path = Path("src/internal/project_search_owner.h")
-text = path.read_text()
-if "project_search_orchestration_trace" not in text:
-    text = text.replace(
-        '#include "internal/project_search.h"\n',
-        '#include "internal/project_search.h"\n#include "internal/project_search_orchestration_trace.h"\n',
-        1,
-    )
-if "orchestration_trace_owner" not in text:
-    marker = "    evo_project_search_birth_event_t *birth_events;\n"
-    text = replace_once(
-        text,
-        marker,
-        marker + "    evo_project_search_orchestration_trace_owner_t *orchestration_trace_owner;\n",
-        "search owner birth events",
-    )
-path.write_text(text)
-
-path = Path("src/internal/project_search_internal.h")
-text = path.read_text()
-if "orchestration_trace_owner" not in text:
-    marker = "    bool fatal_state;\n"
-    text = replace_once(
-        text,
-        marker,
-        marker + "    evo_project_search_orchestration_trace_owner_t *orchestration_trace_owner;\n",
-        "search runtime fatal state",
+''',
+        "orchestrated search declaration",
     )
 path.write_text(text)
 
 
-# Capture each completed orchestration transaction before its temporary owner is
-# destroyed. This preserves failure evidence while still failing the search
-# atomically.
+# Retain every completed batch before its temporary orchestration owner is
+# destroyed. Runtime completion timing remains diagnostic, while stable batch
+# and population order remain authority.
 path = Path("src/project_search.c")
 text = path.read_text()
 if 'internal/project_search_orchestration_trace.h' not in text:
     text = text.replace(
-        '#include "internal/project_search_internal.h"\n',
-        '#include "internal/project_search_internal.h"\n#include "internal/project_search_orchestration_trace.h"\n',
+        '#include "internal/project_search_orchestration.h"\n',
+        '#include "internal/project_search_orchestration.h"\n#include "internal/project_search_orchestration_trace.h"\n',
         1,
     )
-needle = '''    if (evo_project_orchestration_run_batch(
+context_marker = '''typedef struct evo_search_run_context {
+    const evo_project_search_config_t *config;
+    const evo_project_search_orchestration_policy_t *orchestration_policy;
+    evo_project_search_owner_t *owner;
+    bool fatal_state;
+} evo_search_run_context_t;
+'''
+if "orchestration_trace_owner" not in text:
+    text = replace_once(
+        text,
+        context_marker,
+        '''typedef struct evo_search_run_context {
+    const evo_project_search_config_t *config;
+    const evo_project_search_orchestration_policy_t *orchestration_policy;
+    evo_project_search_orchestration_trace_owner_t *orchestration_trace_owner;
+    evo_project_search_owner_t *owner;
+    bool fatal_state;
+} evo_search_run_context_t;
+''',
+        "search run context",
+    )
+batch_marker = '''    if (evo_project_orchestration_run_batch(
             &orchestration_config, &orchestration) !=
         EVO_PROJECT_ORCHESTRATION_SUCCESS) {
         context->fatal_state = true;
@@ -121,38 +117,68 @@ needle = '''    if (evo_project_orchestration_run_batch(
         goto finish;
     }
 '''
-if "append(context->orchestration_trace_owner" not in text:
-    replacement = needle + '''    if (context->orchestration_trace_owner != NULL &&
+if "evo_project_search_orchestration_trace_append(" not in text:
+    text = replace_once(
+        text,
+        batch_marker,
+        batch_marker + '''    if (context->orchestration_trace_owner != NULL &&
         !evo_project_search_orchestration_trace_append(
             context->orchestration_trace_owner, &orchestration)) {
         context->fatal_state = true;
         status = EVO_ERROR_EVALUATION;
         goto finish;
     }
-'''
-    text = replace_once(text, needle, replacement, "orchestration batch append point")
-path.write_text(text)
-
-
-# Public private entry point: ordinary orchestrated search remains compatible;
-# the traced variant transfers trace ownership even when the search itself fails.
-path = Path("src/project_search_runtime.c")
-text = path.read_text()
-if 'internal/project_search_orchestration_trace.h' not in text:
-    text = text.replace(
-        '#include "internal/project_search_internal.h"\n',
-        '#include "internal/project_search_internal.h"\n#include "internal/project_search_orchestration_trace.h"\n',
-        1,
+''',
+        "orchestration batch append point",
     )
-needle = '''evo_project_search_status_t evo_project_search_run_orchestrated(
+common_marker = '''static evo_project_search_status_t evo_project_search_run_common(
     const evo_project_search_config_t *config,
     const evo_project_search_orchestration_policy_t *orchestration_policy,
     evo_project_search_t *search)
 '''
-if "evo_project_search_run_orchestrated_with_trace" not in text:
-    start = text.index(needle)
-    # Keep the existing function intact and add a traced sibling before it.
-    block = '''evo_project_search_status_t evo_project_search_run_orchestrated_with_trace(
+if "evo_project_search_orchestration_trace_owner_t *orchestration_trace_owner" not in text[text.find(common_marker) if common_marker in text else 0:]:
+    text = replace_once(
+        text,
+        common_marker,
+        '''static evo_project_search_status_t evo_project_search_run_common(
+    const evo_project_search_config_t *config,
+    const evo_project_search_orchestration_policy_t *orchestration_policy,
+    evo_project_search_orchestration_trace_owner_t *orchestration_trace_owner,
+    evo_project_search_t *search)
+''',
+        "search run common signature",
+    )
+owner_bind = '''    run_context.config = config;
+    run_context.orchestration_policy = orchestration_policy;
+    run_context.owner = owner;
+'''
+if "run_context.orchestration_trace_owner" not in text:
+    text = replace_once(
+        text,
+        owner_bind,
+        '''    run_context.config = config;
+    run_context.orchestration_policy = orchestration_policy;
+    run_context.orchestration_trace_owner = orchestration_trace_owner;
+    run_context.owner = owner;
+''',
+        "search run context binding",
+    )
+text = text.replace(
+    "    return evo_project_search_run_common(config, NULL, search);\n",
+    "    return evo_project_search_run_common(config, NULL, NULL, search);\n",
+    1,
+)
+text = text.replace(
+    '''    return evo_project_search_run_common(
+        config, orchestration_policy, search);
+''',
+    '''    return evo_project_search_run_common(
+        config, orchestration_policy, NULL, search);
+''',
+    1,
+)
+if "evo_project_search_run_orchestrated_with_trace(" not in text:
+    insertion = '''evo_project_search_status_t evo_project_search_run_orchestrated_with_trace(
     const evo_project_search_config_t *config,
     const evo_project_search_orchestration_policy_t *orchestration_policy,
     evo_project_search_t *search,
@@ -161,15 +187,21 @@ if "evo_project_search_run_orchestrated_with_trace" not in text:
     evo_project_search_orchestration_trace_owner_t *trace_owner = NULL;
     evo_project_search_status_t status;
 
-    if (trace == NULL || trace->private_owner != NULL) {
+    if (config == NULL || orchestration_policy == NULL || search == NULL ||
+        trace == NULL || trace->private_owner != NULL ||
+        !evo_search_config_valid(config) ||
+        !evo_search_orchestration_policy_valid(config, orchestration_policy)) {
         return EVO_PROJECT_SEARCH_ERROR_INVALID_ARGUMENT;
+    }
+    if (search->private_owner != NULL || search->schema_version != 0U) {
+        return EVO_PROJECT_SEARCH_ERROR_RESULT_ACTIVE;
     }
     *trace = (evo_project_search_orchestration_trace_t){0};
     if (!evo_project_search_orchestration_trace_owner_create(
             config, orchestration_policy, &trace_owner)) {
         return EVO_PROJECT_SEARCH_ERROR_RESOURCE_LIMIT;
     }
-    status = evo_project_search_run_internal(
+    status = evo_project_search_run_common(
         config, orchestration_policy, trace_owner, search);
     evo_project_search_orchestration_trace_publish(
         trace_owner, status == EVO_PROJECT_SEARCH_SUCCESS, trace);
@@ -177,54 +209,33 @@ if "evo_project_search_run_orchestrated_with_trace" not in text:
 }
 
 '''
-    text = text[:start] + block + text[start:]
-# The internal helper signature receives an optional trace owner.
-text = text.replace(
-    '''static evo_project_search_status_t evo_project_search_run_internal(
-    const evo_project_search_config_t *config,
-    const evo_project_search_orchestration_policy_t *orchestration_policy,
-    evo_project_search_t *search)''',
-    '''static evo_project_search_status_t evo_project_search_run_internal(
-    const evo_project_search_config_t *config,
-    const evo_project_search_orchestration_policy_t *orchestration_policy,
-    evo_project_search_orchestration_trace_owner_t *orchestration_trace_owner,
-    evo_project_search_t *search)''',
-    1,
-)
-text = text.replace(
-    "    context.orchestration_policy = orchestration_policy;\n",
-    "    context.orchestration_policy = orchestration_policy;\n    context.orchestration_trace_owner = orchestration_trace_owner;\n",
-    1,
-)
-text = text.replace(
-    "    return evo_project_search_run_internal(config, NULL, search);\n",
-    "    return evo_project_search_run_internal(config, NULL, NULL, search);\n",
-    1,
-)
-text = text.replace(
-    "    return evo_project_search_run_internal(\n        config, orchestration_policy, search);\n",
-    "    return evo_project_search_run_internal(\n        config, orchestration_policy, NULL, search);\n",
-    1,
-)
+    destroy_marker = "void evo_project_search_destroy(evo_project_search_t *search)\n"
+    text = replace_once(
+        text,
+        destroy_marker,
+        insertion + destroy_marker,
+        "search destroy marker",
+    )
 path.write_text(text)
 
 
-# Tests: reuse the async fixtures, compare serial/parallel traces, and prove a
-# failed generation leaves trustworthy cleanup/failure evidence without a
-# partial search result.
+# Normative integration tests compare serial and parallel search authority while
+# retaining complete batch traces. A hard worker failure must keep cleanup and
+# rejection evidence while publishing no partial search result.
 path = Path("tests/project_search_test.c")
 text = path.read_text()
-if 'internal/project_search_orchestration_trace.h' not in text:
-    text = text.replace(
-        '#include "internal/project_search_internal.h"\n',
-        '#include "internal/project_search_internal.h"\n#include "internal/project_search_orchestration_trace.h"\n',
-        1,
+serial_decl = '''    evo_project_search_t serial = {0};
+    evo_project_search_t parallel = {0};
+'''
+if "serial_trace" not in text:
+    text = replace_once(
+        text,
+        serial_decl,
+        serial_decl + '''    evo_project_search_orchestration_trace_t serial_trace = {0};
+    evo_project_search_orchestration_trace_t parallel_trace = {0};
+''',
+        "orchestrated search trace declarations",
     )
-text = text.replace(
-    "    evo_project_search_t serial = {0};\n    evo_project_search_t parallel = {0};\n",
-    "    evo_project_search_t serial = {0};\n    evo_project_search_t parallel = {0};\n    evo_project_search_orchestration_trace_t serial_trace = {0};\n    evo_project_search_orchestration_trace_t parallel_trace = {0};\n",
-    1,
-)
 text = text.replace(
     '''        evo_project_search_run_orchestrated(
             &serial_config, &serial_policy, &serial) ==
@@ -243,7 +254,27 @@ text = text.replace(
 ''',
     1,
 )
-needle = '''    test_check(
+early_marker = '''    if (serial.private_owner == NULL || parallel.private_owner == NULL) {
+        evo_project_search_destroy(&parallel);
+        evo_project_search_destroy(&serial);
+        return;
+    }
+'''
+if "trace_destroy(&parallel_trace)" not in text:
+    text = replace_once(
+        text,
+        early_marker,
+        '''    if (serial.private_owner == NULL || parallel.private_owner == NULL) {
+        evo_project_search_orchestration_trace_destroy(&parallel_trace);
+        evo_project_search_orchestration_trace_destroy(&serial_trace);
+        evo_project_search_destroy(&parallel);
+        evo_project_search_destroy(&serial);
+        return;
+    }
+''',
+        "orchestrated search early cleanup",
+    )
+equivalence_marker = '''    test_check(
         strcmp(serial.search_fingerprint, parallel.search_fingerprint) == 0 &&
             strcmp(serial.best_recipe_fingerprint,
                    parallel.best_recipe_fingerprint) == 0 &&
@@ -255,7 +286,10 @@ needle = '''    test_check(
         "external worker count preserves complete logical search authority");
 '''
 if "persistent worker traces retain every generation" not in text:
-    replacement = needle + '''    test_check(
+    text = replace_once(
+        text,
+        equivalence_marker,
+        equivalence_marker + '''    test_check(
         serial_trace.run_complete && parallel_trace.run_complete &&
             serial_trace.projection_complete && parallel_trace.projection_complete &&
             !serial_trace.probabilistic_authority &&
@@ -278,15 +312,30 @@ if "persistent worker traces retain every generation" not in text:
         "worker schedule remains diagnostic while generation authority matches");
     evo_project_search_orchestration_trace_destroy(&parallel_trace);
     evo_project_search_orchestration_trace_destroy(&serial_trace);
+''',
+        "orchestrated search trace assertions",
+    )
+failure_decl = '''    evo_project_search_t search = {0};
+
+    test_check(
+        evo_project_search_run_orchestrated(&config, &policy, &search) !=
+                EVO_PROJECT_SEARCH_SUCCESS &&
 '''
-    text = replace_once(text, needle, replacement, "equivalence trace assertion")
-# Failure test gets a trace result.
-text = text.replace(
-    "    evo_project_search_t search = {0};\n\n    test_check(\n        evo_project_search_run_orchestrated(&config, &policy, &search) !=\n",
-    "    evo_project_search_t search = {0};\n    evo_project_search_orchestration_trace_t trace = {0};\n\n    test_check(\n        evo_project_search_run_orchestrated_with_trace(\n            &config, &policy, &search, &trace) !=\n",
-    1,
-)
-needle = '''    test_check(
+if "evo_project_search_orchestration_trace_t trace" not in text:
+    text = replace_once(
+        text,
+        failure_decl,
+        '''    evo_project_search_t search = {0};
+    evo_project_search_orchestration_trace_t trace = {0};
+
+    test_check(
+        evo_project_search_run_orchestrated_with_trace(
+            &config, &policy, &search, &trace) !=
+                EVO_PROJECT_SEARCH_SUCCESS &&
+''',
+        "orchestrated failure trace call",
+    )
+failure_marker = '''    test_check(
         provider.start_count > 0U &&
             provider.start_count == provider.join_count &&
             provider.cancel_count > 0U,
@@ -294,26 +343,30 @@ needle = '''    test_check(
 }
 '''
 if "failed search retains complete trustworthy worker schedule evidence" not in text:
-    replacement = '''    test_check(
+    text = replace_once(
+        text,
+        failure_marker,
+        '''    test_check(
         provider.start_count > 0U &&
             provider.start_count == provider.join_count &&
             provider.cancel_count > 0U,
         "hard external worker failure cancels and joins started siblings");
     test_check(
         !trace.run_complete && trace.projection_complete &&
-            trace.batch_count == 1U && trace.job_count > 0U &&
-            trace.batches[0].has_hard_failure &&
+            !trace.probabilistic_authority && trace.batch_count == 1U &&
+            trace.job_count > 0U && trace.batches[0].has_hard_failure &&
             !trace.batches[0].generation_committed &&
             trace.batches[0].cleanup_complete,
         "failed search retains complete trustworthy worker schedule evidence");
     evo_project_search_orchestration_trace_destroy(&trace);
 }
-'''
-    text = replace_once(text, needle, replacement, "failure trace assertion")
+''',
+        "orchestrated failure trace assertion",
+    )
 path.write_text(text)
 
 
-# Build-system registration.
+# Register the trace owner in both build frontends.
 path = Path("CMakeLists.txt")
 text = path.read_text()
 if "src/project_search_orchestration_trace.c" not in text:
@@ -329,12 +382,21 @@ path = Path("Makefile.am")
 lines = path.read_text().splitlines()
 slash = chr(92)
 if not any("src/internal/project_search_orchestration_trace.h" in line for line in lines):
-    index = next(i for i, line in enumerate(lines) if "src/internal/project_search_orchestration.h" in line)
+    index = next(
+        i for i, line in enumerate(lines)
+        if "src/internal/project_search_orchestration.h" in line
+    )
     if not lines[index].rstrip().endswith(slash):
         lines[index] += " " + slash
-    lines.insert(index + 1, "\tsrc/internal/project_search_orchestration_trace.h " + slash)
+    lines.insert(
+        index + 1,
+        "\tsrc/internal/project_search_orchestration_trace.h " + slash,
+    )
 if not any("src/project_search_orchestration_trace.c" in line for line in lines):
-    index = next(i for i, line in enumerate(lines) if "src/project_search.c" in line)
+    index = next(
+        i for i, line in enumerate(lines)
+        if "src/project_search.c" in line
+    )
     if not lines[index].rstrip().endswith(slash):
         lines[index] += " " + slash
     lines.insert(index + 1, "\tsrc/project_search_orchestration_trace.c " + slash)
