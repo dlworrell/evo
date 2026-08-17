@@ -503,7 +503,6 @@ EXTRA_DIST = \
 	docs/engineering/reports/EVO-HRA-011-candidate-materialization-audit.md \
 	docs/engineering/reports/EVO-HRA-012-candidate-correctness-gates-audit.md \
 	docs/engineering/reports/EVO-HRA-013-candidate-performance-fitness-audit.md \
-	docs/adr/ADR-0044-built-in-production-providers.md \
 	docs/adr/ADR-0045-product-command-contract.md \
 	docs/specs/EVO-002A-product-command-provider-addendum.md \
 	docs/specs/EVO-003-product-command-contract.md \
