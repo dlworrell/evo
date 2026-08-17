@@ -6,6 +6,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 
 #define TEST_POPULATION_SIZE 4U
 #define TEST_GENOME_SIZE 8U
