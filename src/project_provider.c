@@ -1,5 +1,7 @@
 #include "internal/project_provider.h"
 
+#include "internal/project_provider_probe.h"
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -25,19 +27,25 @@ static const evo_project_provider_record_t evo_project_providers[] = {
      EVO_PROJECT_PROVIDER_CLANG_ANALYSIS_ID,
      1U,
      EVO_PROJECT_PROVIDER_ANALYSIS,
-     "posix",
-     "clang",
+     "linux",
+     "clang,bwrap",
      EVO_PROJECT_PROVIDER_CAPABILITY_CLANG_AST |
          EVO_PROJECT_PROVIDER_CAPABILITY_COMPILATION_DATABASE |
-         EVO_PROJECT_PROVIDER_CAPABILITY_DIRECT_ARGV},
+         EVO_PROJECT_PROVIDER_CAPABILITY_DIRECT_ARGV |
+         EVO_PROJECT_PROVIDER_CAPABILITY_FILESYSTEM_ISOLATION |
+         EVO_PROJECT_PROVIDER_CAPABILITY_NETWORK_ISOLATION |
+         EVO_PROJECT_PROVIDER_CAPABILITY_DESCENDANT_CLEANUP},
     {EVO_PROJECT_PROVIDER_REGISTRY_SCHEMA_VERSION,
      EVO_PROJECT_PROVIDER_CLANG_AST_ID,
      1U,
      EVO_PROJECT_PROVIDER_TRANSFORMATION_AST,
-     "posix",
-     "clang",
+     "linux",
+     "clang,bwrap",
      EVO_PROJECT_PROVIDER_CAPABILITY_CLANG_AST |
-         EVO_PROJECT_PROVIDER_CAPABILITY_DIRECT_ARGV},
+         EVO_PROJECT_PROVIDER_CAPABILITY_DIRECT_ARGV |
+         EVO_PROJECT_PROVIDER_CAPABILITY_FILESYSTEM_ISOLATION |
+         EVO_PROJECT_PROVIDER_CAPABILITY_NETWORK_ISOLATION |
+         EVO_PROJECT_PROVIDER_CAPABILITY_DESCENDANT_CLEANUP},
     {EVO_PROJECT_PROVIDER_REGISTRY_SCHEMA_VERSION,
      EVO_PROJECT_PROVIDER_LINUX_BWRAP_ID,
      1U,
@@ -143,30 +151,29 @@ const evo_project_provider_record_t *evo_project_provider_find(
 bool evo_project_provider_available(
     const evo_project_provider_record_t *provider)
 {
+    bool sandbox_available;
+
     if (provider == NULL ||
         provider->schema_version != EVO_PROJECT_PROVIDER_REGISTRY_SCHEMA_VERSION) {
         return false;
     }
+#if !defined(__linux__)
+    return false;
+#else
+    sandbox_available = evo_project_provider_program_available("bwrap") &&
+                        evo_project_provider_probe_bwrap();
     switch (provider->kind) {
     case EVO_PROJECT_PROVIDER_ANALYSIS:
     case EVO_PROJECT_PROVIDER_TRANSFORMATION_AST:
-        return evo_project_provider_program_available("clang");
+        return sandbox_available && evo_project_provider_program_available("clang");
     case EVO_PROJECT_PROVIDER_EXECUTION:
-#if defined(__linux__)
-        return evo_project_provider_program_available("bwrap");
-#else
-        return false;
-#endif
+        return sandbox_available;
     case EVO_PROJECT_PROVIDER_EVALUATION:
-#if defined(__linux__)
-        return evo_project_provider_program_available("bwrap") &&
-               evo_project_provider_program_available("clang");
-#else
-        return false;
-#endif
+        return sandbox_available && evo_project_provider_program_available("clang");
     default:
         return false;
     }
+#endif
 }
 
 const char *evo_project_provider_kind_name(evo_project_provider_kind_t kind)
