@@ -103,13 +103,15 @@ jobs:
           make -C build/production-providers-autotools -j2 \
             tests/evo_project_provider_test \
             tests/evo_project_provider_sandbox_test \
-            tests/evo_project_provider_clang_test
+            tests/evo_project_provider_clang_test \
+            tests/evo_project_provider_clang_ast_test
 
       - name: Execute Autotools real provider fixtures without skips
         run: |
           build/production-providers-autotools/tests/evo_project_provider_test
           build/production-providers-autotools/tests/evo_project_provider_sandbox_test
           build/production-providers-autotools/tests/evo_project_provider_clang_test
+          build/production-providers-autotools/tests/evo_project_provider_clang_ast_test
 
       - name: Require CMake registry runtime availability
         run: |
