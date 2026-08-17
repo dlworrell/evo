@@ -50,11 +50,29 @@ typedef struct evo_project_sandbox_measurement_context {
 } evo_project_sandbox_measurement_context_t;
 
 /*
+ * One caller-owned provider handle. Slots are intentionally explicit rather
+ * than allocator-backed because the orchestration callback ABI has no
+ * post-join handle destructor. A joined slot remains stable for the duration
+ * of the join return and may be reused by a later dispatch wave.
+ */
+typedef struct evo_project_local_evaluation_slot {
+    bool active;
+    bool canceled;
+    bool joined;
+    evo_project_orchestration_terminal_reason_t terminal_reason;
+    evo_project_orchestration_provider_capabilities_t capabilities;
+    evo_project_search_evaluation_outcome_t evaluation;
+    char candidate_fingerprint[EVO_PROJECT_FINGERPRINT_TEXT_SIZE];
+    char assurance_fingerprint[EVO_PROJECT_FINGERPRINT_TEXT_SIZE];
+    char measurement_fingerprint[EVO_PROJECT_FINGERPRINT_TEXT_SIZE];
+} evo_project_local_evaluation_slot_t;
+
+/*
  * Adapter from the synchronous source-evaluation contract to the product
  * orchestration start/poll/cancel/join contract. The evaluator is private
  * product plumbing, not a public provider ABI. Its returned result must be
  * fully owned/settled before the callback returns; this adapter deep-copies
- * all committed fingerprint identities before publishing a handle.
+ * all committed fingerprint identities into the acquired slot.
  *
  * capabilities are evidence supplied by the concrete evaluation composition.
  * The adapter will not invent missing capabilities and will return a terminal
@@ -65,6 +83,8 @@ typedef struct evo_project_local_evaluation_context {
     evo_project_search_evaluation_provider_fn evaluator;
     void *evaluator_context;
     evo_project_orchestration_provider_capabilities_t capabilities;
+    size_t slot_count;
+    evo_project_local_evaluation_slot_t *slots;
 } evo_project_local_evaluation_context_t;
 
 evo_project_status_t evo_project_sandbox_command_runner(
