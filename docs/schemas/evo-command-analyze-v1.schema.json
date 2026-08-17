@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/dlworrell/evo/docs/schemas/evo-command-analyze-v1.schema.json",
+  "title": "EVO analyze command v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "operation", "manifest", "input", "output", "providerPolicy", "providers"],
+  "properties": {
+    "schema": {"const": "catalyst.evo.command.analyze.v1"},
+    "operation": {"const": "analyze"},
+    "manifest": {"type": "string", "minLength": 1},
+    "input": {"type": "string", "minLength": 1},
+    "output": {"type": "string", "minLength": 1},
+    "providerPolicy": {"const": "catalyst.evo.provider-policy.v1"},
+    "providers": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "prefixItems": [
+        {
+          "allOf": [
+            {"$ref": "#/$defs/provider"},
+            {"properties": {"identity": {"const": "catalyst.evo.provider.clang-analysis.v1"}}}
+          ]
+        },
+        {
+          "allOf": [
+            {"$ref": "#/$defs/provider"},
+            {"properties": {"identity": {"const": "catalyst.evo.provider.linux-bwrap.v1"}}}
+          ]
+        }
+      ],
+      "items": false
+    }
+  },
+  "$defs": {
+    "provider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["identity", "implementationVersion", "capabilities", "available"],
+      "properties": {
+        "identity": {"type": "string", "minLength": 1},
+        "implementationVersion": {"const": 1},
+        "capabilities": {"type": "integer", "minimum": 0},
+        "available": {"type": "boolean"}
+      }
+    }
+  }
+}

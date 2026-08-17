@@ -2,7 +2,7 @@
 
 This document distinguishes algorithms implemented by the reusable
 `catalyst_evo` core from the structured program transformations and evaluation
-algorithm required by the EVO 1.0 source optimizer. Version 0.42.0 implements
+algorithm required by the EVO 1.0 source optimizer. Version 0.43.0 implements
 the core plus project ingestion, immutable-baseline preparation, normalized
 Clang/LLVM analysis and hotspot ranking, canonical transformation recipes,
 three AST-aware source-transformation applications, deterministic isolated
@@ -19,7 +19,9 @@ replay population/search identity; strict improvements replace the winner and
 exact ties retain the earlier stable candidate. External evaluation batches
 may finish out of order, but stable candidate-order commit, exact worker traces,
 fail-closed cleanup, and product checkpoint identity keep logical search and
-resume deterministic. Product command orchestration is the next boundary.
+resume deterministic. Version 0.43.0 adds the declarative `analyze`, `evolve`, `replay`, and
+`report` registry plus fail-closed execution-plan validation. Concrete
+production providers and installed command execution are the next boundary.
 
 ## EVO Core Initial Release
 

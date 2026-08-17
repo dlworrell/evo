@@ -11,70 +11,62 @@ codebases. It emits the highest-ranked fully verified source candidate found
 within a recorded bounded search as a reviewable patch and reproducibility
 package.
 
-EVO 0.42.0 contains the completed deterministic C17 evolutionary-search core
-and the first nine private source-optimizer foundations: strict project-manifest
-ingestion, immutable baseline snapshots, normalized compilation-unit evidence,
-bounded baseline-gate orchestration, and a versioned Clang/LLVM structural,
-compiler, runtime-hotspot, and opportunity model. It is not the completed
-source optimizer or a standalone installed application. The third foundation
-maps bounded proposals to canonical versioned transformation recipes with
-stable targets, parameters, dependency/conflict closure, provenance, fixed
-genome encoding, strict decode/rebuild validation, and a complete audit view.
-The fourth supplies three versioned AST-aware C operations, exact immutable-
-source range/token validation, deterministic edit/no-change evidence, and a
-complete capability/application audit view without materializing source. The
-fifth composes those exact applications into isolated complete source trees,
-rejects overlapping edits, and emits deterministic reviewable patch, changed-
-file, candidate-identity, and replay evidence without compiling target code.
-The sixth adds exact ordered fast/finalist candidate-assurance policy and
-evidence: a caller-supplied isolated execution provider must attest declared
-filesystem, network, resource, cleanup, and immutable-input policy; required
-fast gates control performance admission and complete finalist gates across
-both declared build profiles control champion admission. The seventh adds
-reproducible baseline-versus-candidate performance measurement: deterministic
-paired sample order, explicit condition identity, bounded warmup/repetition
-policy, visible outlier handling, stability and tolerance checks, and finite
-EVO fitness only when complete stable evidence is available; correctness
-authority remains unchanged from candidate assurance. The eighth connects
-canonical recipe genomes to the deterministic EVO core: initialization,
-whole-record and typed-parameter mutation/crossover, bounded deterministic
-repair, exact rejection, complete ordered operator/lineage evidence, and
-fixed-seed strict-improvement/exact-tie replay across multiple source files.
-The ninth adds bounded external-process orchestration over source evaluations:
-explicit resource/capability policy, deterministic logical worker/workspace
-assignment, asynchronous completion with stable candidate-order commit, complete
-cancel/join cleanup before failure publication, persistent ordered worker traces,
-and product checkpoints that bind baseline/analysis/catalogue/search/provider/
-toolchain/workload/artifact identities before deterministic resume.
+EVO 0.43.0 contains the completed deterministic C17 evolutionary-search core,
+the private source-optimizer foundation through bounded external-process
+orchestration, and the first executable-facing product command contract. It is
+not yet the installed standalone application.
 
-Core issues #39 through #55 are represented in that boundary, including
-versioned constraints, diversity, convergence/stagnation, and caller-bounded
-deterministic elite preservation, stable rank-based parent selection, and
-explicit reference byte-genome crossover/mutation operators and evidence-driven
-adaptive mutation, opt-in exact secure erasure, and versioned deterministic
-checkpoint/resume with an ordered audit projection. Opt-in deterministic
-population-storage recycling adds a fixed two-slot lifecycle and complete
-address-free registry while preserving the explicit allocation path as its
-reference oracle. Bounded parallel evaluation retains serial evaluation as its
-reference oracle and projects complete stable candidate assignment and commit
-order independent of runtime scheduling. Reproducible core benchmarks retain
-explicit correctness oracles, generation traces, and raw measurements while
-deriving a validated human-readable projection from canonical JSON. Issue #55
-adds four installed reference consumers with exact replay, checkpoint/resume,
-bounded parallel evaluation, constraints, stopping, complete JSON evidence,
-and explicit source-optimizer non-claims. The core integration track is
-complete at this boundary. Issue #58 implements project ingestion without
-claiming candidate evolution or a CLI; issue #59 implements bounded normalized
-analysis without source writes or evolutionary operators. Issue #60 implements
-the recipe representation without materializing source; issue #61 implements
-the initial AST-aware catalogue without writing source; and issue #62
-implements deterministic isolated candidate materialization. Issue #63
-implements candidate build/correctness assurance. Issue #64 implements
-reproducible candidate performance measurement and fitness. Issue #65
-implements deterministic structured recipe evolution and bounded search. Issue
-#66 implements bounded external-process orchestration, stable commit/cleanup
-traces, and product checkpoint/resume authority. Issue #67 is the next
-dependency-ready source-optimizer implementation work.
+The source-optimizer foundation provides strict project-manifest ingestion,
+immutable baseline snapshots, normalized compilation-unit and Clang/LLVM
+evidence, canonical transformation recipes, three versioned AST-aware C
+operations, isolated source-candidate materialization, candidate correctness
+assurance, reproducible baseline-versus-candidate measurement, deterministic
+structured recipe evolution, and bounded external-process orchestration with
+stable commit/cleanup traces and product checkpoint/resume authority.
+
+Issue #63 implements candidate build/correctness assurance; its 0.39.0 hard-gate
+semantics remain part of the 0.43.0 package boundary unchanged by the command-
+contract layer.
+
+Issue #64 implements reproducible candidate performance measurement; its
+0.40.0 evidence and fitness semantics remain part of the 0.43.0 package
+boundary unchanged by the command-contract layer.
+
+EVO 0.43.0 adds the fixed `analyze`, `evolve`, `replay`, and `report` command
+registry defined by EVO-003 and ADR-0045. The command layer validates an
+already parsed manifest, explicit path roles, checkpoint/replay policy, stable
+exit-status semantics, output/stream authority, and the exact production
+provider identities, implementation versions, availability, and capability
+policy required before external project execution may be authorized. The
+planner itself launches no target process, mutates no repository, and exposes
+no callback-based substitute for the standalone product path.
+
+The v1 provider policy is `catalyst.evo.provider-policy.v1`. The command
+contract selects the production identities owned by #114:
+
+- `catalyst.evo.provider.clang-analysis.v1`;
+- `catalyst.evo.provider.clang-ast.v1`;
+- `catalyst.evo.provider.linux-bwrap.v1`; and
+- `catalyst.evo.provider.local-evaluation.v1`.
+
+`analyze` requires production analysis plus sandboxed execution; `evolve` and
+`replay` require all four provider roles; `report` consumes retained evidence
+without authorizing target execution. Missing, unavailable, version-mismatched,
+or capability-incompatible required providers fail before execution is
+permitted. EVO-002A reconciles the historical caller-supplied provider language
+of the private 0.34.0-0.42.0 foundation with this product boundary.
+
+Core issues #39 through #55 remain the installed reusable C17 evolutionary-core
+track. The core compatibility version is independent of the source-optimizer
+product version. Issues #58 through #66 implement the private source-optimizer
+foundation without claiming an installed CLI. Issue #67 fixes the command and
+configuration contract consumed by the next production-provider and installed
+application milestones.
+
+**After #67 lands, #114 is the next dependency-ready implementation boundary.**
+Its concrete provider implementation may already be prepared on a separate
+branch, but final #114 closure must reconcile against the landed EVO-003
+command/provider contract before #93 installs the executable.
 
 ## Cross-Cutting Human-Readable Abstraction Gate
 
@@ -100,6 +92,11 @@ structures and projections or explicitly state that the rule is not
 applicable. This is a conformance gate, not a new serial dependency in the
 spine below.
 
+For issue #67, the command registry and provider-requirement registry are fixed
+ordered arrays with direct scans. They are their own exact reference
+representations; no accelerated authority is introduced. EVO-HRA-016 records
+that issue-specific assessment.
+
 ## Phase Topology
 
 | Phase | Issues | Boundary |
@@ -113,7 +110,7 @@ spine below.
 | Structured source evolution | #60–#62 | Recipes, AST-aware catalogue, and isolated source materialization |
 | Candidate assurance | #63–#64 | Build/correctness gates and reproducible performance fitness |
 | Whole-codebase search | #65–#66 | Recipe evolution and bounded external-process orchestration |
-| Product interface/artifacts | #67, #93, #68 | Product commands, installed standalone executable, and optimized patch evidence |
+| Product interface/artifacts | #67, #114, #93, #68 | Product commands, concrete production providers, installed standalone executable, and optimized patch evidence |
 | Product proof/release | #69, #56 | End-to-end source proof and 1.0 stabilization |
 
 ## Dependency Spine
@@ -142,17 +139,48 @@ Source optimizer:
 
 `#49 + #60 + #61 + #63 + #64 → #65`
 
-`#51 + #53 + #65 → #66 → #67 → #93 → #68 → #69 → #56`
+`#51 + #53 + #65 → #66 → #67 → #114 → #93 → #68 → #69 → #56`
+
+## Product Interface Handoff
+
+### #67 — command contract
+
+EVO-003 fixes operation names, request schemas, help synopses, manifest/path
+roles, checkpoint/replay preconditions, exact production-provider selection,
+security/output invariants, and stable exit-status classes. It deliberately
+stops before installing or executing a final product binary.
+
+### #114 — concrete production providers
+
+#114 must implement the exact provider identities, implementation versions, and
+capability vocabulary admitted by EVO-003. Real providers replace private fake
+or caller-supplied seams as the standalone operational path. Unsupported
+provider capabilities fail closed; there is no silent weaker execution mode.
+
+### #93 — installed executable
+
+#93 parses the documented CLI into EVO-003 requests, resolves real #114
+providers, performs filesystem/path/symlink and installed-asset resolution,
+executes valid plans, implements stdout/stderr and signal behavior, and proves
+staged CMake/Autotools installation from an unrelated working directory.
+
+### #68 and #69 — artifacts and proof
+
+#68 emits the complete optimized patch/evidence bundle. #69 proves the complete
+installed path on reference C projects using the same production providers; a
+private test harness or fake provider cannot satisfy the 1.0 product proof.
 
 ## 1.0 Gate
 
-The release must prove actual source evolution through the installed
-standalone executable. Compiler-option changes or a private test harness alone
-are insufficient. The retained proof must include a real C baseline, at least
-one source-level change, supported builds, all declared correctness and
-security gates, statistically defensible improvement, a reviewable patch,
-successful replay, and staged CMake/Autotools invocation of the documented
-analyze/evolve/replay/report command surface.
+The release must prove actual source evolution through the installed standalone
+executable. Compiler-option changes or a private test harness alone are
+insufficient. The retained proof must include a real C baseline, at least one
+source-level change, supported builds, all declared correctness and security
+gates, statistically defensible improvement, a reviewable patch, successful
+replay, and staged CMake/Autotools invocation of the documented
+`analyze`/`evolve`/`replay`/`report` command surface using the production
+provider identities.
+
 Any accelerated structure exercised by that proof must also produce its
 declared human-readable audit projection and pass reference-equivalence
 verification.

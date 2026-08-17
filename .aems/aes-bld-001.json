@@ -145,7 +145,8 @@
       "src/project_orchestration_model.c",
       "src/project_orchestration_runtime.c",
       "src/project_orchestration.c",
-      "src/project_orchestration_checkpoint.c"
+      "src/project_orchestration_checkpoint.c",
+      "src/project_command.c"
     ],
     "normative_tests": [
       {
@@ -411,6 +412,12 @@
         "source": "tests/project_orchestration_resume_test.c",
         "cmake": "evo_project_orchestration_resume_test",
         "autotools": "tests/evo_project_orchestration_resume_test"
+      },
+      {
+        "id": "project-command",
+        "source": "tests/project_command_test.c",
+        "cmake": "evo_project_command_test",
+        "autotools": "tests/evo_project_command_test"
       }
     ],
     "consumer_sources": [
