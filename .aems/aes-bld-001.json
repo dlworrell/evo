@@ -112,6 +112,14 @@
       "src/checkpoint.c",
       "src/rng.c",
       "src/project_runtime.c",
+      "src/project_provider.c",
+      "src/project_provider_probe.c",
+      "src/project_provider_sandbox.c",
+      "src/project_provider_adapters.c",
+      "src/project_provider_async.c",
+      "src/project_provider_clang.c",
+      "src/project_provider_clang_ast.c",
+      "src/project_provider_clang_ast_authority.c",
       "src/project_json.c",
       "src/project_fingerprint.c",
       "src/project_manifest.c",
@@ -418,6 +426,36 @@
         "source": "tests/project_command_test.c",
         "cmake": "evo_project_command_test",
         "autotools": "tests/evo_project_command_test"
+      },
+      {
+        "id": "project-provider",
+        "source": "tests/project_provider_test.c",
+        "cmake": "evo_project_provider_test",
+        "autotools": "tests/evo_project_provider_test"
+      },
+      {
+        "id": "project-provider-async",
+        "source": "tests/project_provider_async_test.c",
+        "cmake": "evo_project_provider_async_test",
+        "autotools": "tests/evo_project_provider_async_test"
+      },
+      {
+        "id": "project-provider-sandbox",
+        "source": "tests/project_provider_sandbox_test.c",
+        "cmake": "evo_project_provider_sandbox_test",
+        "autotools": "tests/evo_project_provider_sandbox_test"
+      },
+      {
+        "id": "project-provider-clang",
+        "source": "tests/project_provider_clang_test.c",
+        "cmake": "evo_project_provider_clang_test",
+        "autotools": "tests/evo_project_provider_clang_test"
+      },
+      {
+        "id": "project-provider-clang-ast",
+        "source": "tests/project_provider_clang_ast_test.c",
+        "cmake": "evo_project_provider_clang_ast_test",
+        "autotools": "tests/evo_project_provider_clang_ast_test"
       }
     ],
     "consumer_sources": [

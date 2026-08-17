@@ -14,7 +14,11 @@ jobs:
   verify:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+      - name: Verify AES-BLD profile projection
+        run: python3 scripts/verify_aes_bld_profile.py
+      - name: Verify GitHub Actions runtime floor
+        run: python3 scripts/verify_github_actions_runtime.py
       - name: Configure EVO
         run: cmake -S . -B build/evo -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON
       - name: Build EVO
@@ -61,7 +65,7 @@ jobs:
           fi
       - name: Upload verification evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: verification-report-${{ github.run_id }}
           path: |

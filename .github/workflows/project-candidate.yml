@@ -16,7 +16,7 @@ jobs:
       CC: clang
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Configure candidate foundation with sanitizers
         run: >-
@@ -59,7 +59,7 @@ jobs:
       CC: clang
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Configure candidate foundation
         run: >-
@@ -87,7 +87,7 @@ jobs:
       CC: gcc
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install Autotools dependencies
         run: sudo apt-get update && sudo apt-get install -y autoconf automake libtool

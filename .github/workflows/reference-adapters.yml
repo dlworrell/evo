@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Configure and install EVO with CMake
         run: >-
@@ -53,7 +53,7 @@ jobs:
         run: cat build/adapters-cmake/EVO-ADAPTERS-001.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload CMake adapter evidence
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: evo-reference-adapters-cmake-${{ github.run_id }}
           path: build/adapters-cmake/EVO-ADAPTERS-001.*
@@ -63,7 +63,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install Autotools dependencies
         run: sudo apt-get update && sudo apt-get install -y autoconf automake libtool
@@ -90,7 +90,7 @@ jobs:
         run: cat build/adapters-autotools/EVO-ADAPTERS-001.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload Autotools adapter evidence
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: evo-reference-adapters-autotools-${{ github.run_id }}
           path: build/adapters-autotools/EVO-ADAPTERS-001.*
