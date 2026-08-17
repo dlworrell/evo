@@ -51,15 +51,16 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
-      - name: Verify EVO 0.42.0 package parity
+      - name: Verify release-forward package parity
         run: |
-          grep -F 'project(catalyst_evo VERSION 0.42.0 LANGUAGES C)' CMakeLists.txt
-          grep -F '[0.42.0],' configure.ac
+          product_version="$(sed -n 's/^project(catalyst_evo VERSION \([0-9][0-9.]*\) LANGUAGES C)$/\1/p' CMakeLists.txt)"
+          test -n "${product_version}"
+          grep -F "[${product_version}]," configure.ac
           grep -F '#define EVO_VERSION_MAJOR 0' include/catalyst/evo/evo.h
           grep -F '#define EVO_VERSION_MINOR 37' include/catalyst/evo/evo.h
           grep -F '#define EVO_VERSION_PATCH 0' include/catalyst/evo/evo.h
-          grep -F 'status: implemented-0.42.0' repo.yaml
-          grep -F 'status: bounded-source-orchestration-implemented-0.42.0' repo.yaml
+          grep -F "status: product-command-contract-implemented-${product_version}" repo.yaml
+          grep -F "Version: ${product_version}" docs/specs/EVO-003-product-command-contract.md
       - name: Verify focused branch contents
         run: |
           test ! -e .github/scripts/core_batch_patch.py
