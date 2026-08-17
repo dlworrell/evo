@@ -19,4 +19,5 @@ EXTRA_DIST += \
 	docs/schemas/evo-command-analyze-v1.schema.json \
 	docs/schemas/evo-command-evolve-v1.schema.json \
 	docs/schemas/evo-command-replay-v1.schema.json \
-	docs/schemas/evo-command-report-v1.schema.json
+	docs/schemas/evo-command-report-v1.schema.json \
+	tests/test_product_command_schemas.py
