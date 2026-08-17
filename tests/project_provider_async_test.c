@@ -76,7 +76,7 @@ static evo_project_orchestration_provider_request_t request_for(
             .schema_version = EVO_PROJECT_ORCHESTRATION_SCHEMA_VERSION,
             .generation = 2U,
             .population_index = 3U,
-            .recipe_fingerprint = "evo-fnv1a64:0000000000000001",
+            .recipe_fingerprint = "fnv1a64-v1:0000000000000001",
             .workspace_identity = "async-provider-workspace-0",
             .random_seed = UINT64_C(42),
             .recipe = candidate_recipe,
@@ -104,9 +104,9 @@ static evo_project_search_status_t immediate_evaluator(
         .correctness_preserved = true,
         .performance_eligible = true,
         .fitness_available = true,
-        .candidate_fingerprint = "evo-fnv1a64:1111111111111111",
-        .assurance_fingerprint = "evo-fnv1a64:2222222222222222",
-        .measurement_fingerprint = "evo-fnv1a64:3333333333333333",
+        .candidate_fingerprint = "fnv1a64-v1:1111111111111111",
+        .assurance_fingerprint = "fnv1a64-v1:2222222222222222",
+        .measurement_fingerprint = "fnv1a64-v1:3333333333333333",
     };
     return EVO_PROJECT_SEARCH_SUCCESS;
 }
@@ -184,8 +184,9 @@ static void test_success(void)
     check(join.cleanup_complete, "successful join cleanup complete");
     check(join.evaluation.accepted, "accepted outcome preserved");
     check(
-        strcmp(join.evaluation.candidate_fingerprint,
-               "evo-fnv1a64:1111111111111111") == 0,
+        join.evaluation.candidate_fingerprint != NULL &&
+            strcmp(join.evaluation.candidate_fingerprint,
+                   "fnv1a64-v1:1111111111111111") == 0,
         "candidate fingerprint copied into parent ownership");
     evo_project_async_local_evaluation_context_destroy(&context);
 }
