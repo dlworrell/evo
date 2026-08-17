@@ -7,9 +7,11 @@ on:
     paths:
       - 'src/internal/batch_evaluation.h'
       - 'src/internal/population_evaluation.h'
+      - 'src/internal/bounded_run.h'
       - 'src/child_evaluation.c'
       - 'src/internal/child_evaluation.h'
       - '.github/scripts/core_batch_patch.py'
+      - '.github/scripts/core_batch_run_patch.py'
       - '.github/workflows/core-batch-evaluation-sync.yml'
   workflow_dispatch:
 
@@ -27,6 +29,8 @@ jobs:
           fetch-depth: 0
       - name: Add atomic batch population evaluation
         run: python3 .github/scripts/core_batch_patch.py
+      - name: Thread batch evaluator through run and resume
+        run: python3 .github/scripts/core_batch_run_patch.py
       - name: Canonicalize modified core files
         run: >-
           clang-format -i
@@ -36,13 +40,16 @@ jobs:
           src/population_evaluation.c
           src/internal/child_evaluation.h
           src/child_evaluation.c
+          src/internal/bounded_run.h
+          src/bounded_run.c
+          src/population.c
       - name: Commit private batch seam
         run: |
           git config user.name 'Donovan Worrell'
           git config user.email 'donovan.worrell@just-a-geek.com'
-          git add src/internal/batch_evaluation.h src/internal/run_batch.h src/internal/population_evaluation.h src/population_evaluation.c src/internal/child_evaluation.h src/child_evaluation.c
+          git add src/internal/batch_evaluation.h src/internal/run_batch.h src/internal/population_evaluation.h src/population_evaluation.c src/internal/child_evaluation.h src/child_evaluation.c src/internal/bounded_run.h src/bounded_run.c src/population.c
           if ! git diff --cached --quiet; then
-            git commit -m 'core: add private atomic batch evaluation seam'
+            git commit -m 'core: thread private batch evaluator through run and resume'
             git push origin HEAD:agent/bounded-source-orchestration
           fi
       - name: Verify complete CMake core
