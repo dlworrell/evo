@@ -114,6 +114,7 @@ noinst_HEADERS = \
 	src/internal/project_orchestration_owner.h \
 	src/internal/project_orchestration_internal.h \
 	src/internal/project_orchestration_checkpoint.h \
+	src/internal/project_command.h \
 	tests/research/seed_schedule_research.h
 
 noinst_LTLIBRARIES = \
@@ -158,7 +159,8 @@ libevo_project_foundation_la_SOURCES = \
 	src/project_orchestration_model.c \
 	src/project_orchestration_runtime.c \
 	src/project_orchestration.c \
-	src/project_orchestration_checkpoint.c
+	src/project_orchestration_checkpoint.c \
+	src/project_command.c
 libevo_project_foundation_la_LIBADD = libcatalyst_evo.la -lm
 
 check_PROGRAMS = \
@@ -203,6 +205,7 @@ check_PROGRAMS = \
 	tests/evo_project_orchestration_test \
 	tests/evo_project_orchestration_checkpoint_test \
 	tests/evo_project_orchestration_resume_test \
+	tests/evo_project_command_test \
 	benchmarks/evo_core_benchmark \
 	tests/evo_secure_erasure_test \
 	tests/evo_allocation_failure_test
@@ -375,6 +378,9 @@ tests_evo_project_orchestration_resume_test_SOURCES = \
 tests_evo_project_orchestration_resume_test_LDADD = \
 	libevo_project_foundation.la
 
+tests_evo_project_command_test_SOURCES = tests/project_command_test.c
+tests_evo_project_command_test_LDADD = libevo_project_foundation.la
+
 benchmarks_evo_core_benchmark_SOURCES = benchmarks/core_benchmark.c
 benchmarks_evo_core_benchmark_LDADD = libcatalyst_evo.la -lm
 benchmarks_evo_core_benchmark_CPPFLAGS = \
@@ -497,6 +503,16 @@ EXTRA_DIST = \
 	docs/engineering/reports/EVO-HRA-011-candidate-materialization-audit.md \
 	docs/engineering/reports/EVO-HRA-012-candidate-correctness-gates-audit.md \
 	docs/engineering/reports/EVO-HRA-013-candidate-performance-fitness-audit.md \
+	docs/adr/ADR-0044-built-in-production-providers.md \
+	docs/adr/ADR-0045-product-command-contract.md \
+	docs/specs/EVO-002A-product-command-provider-addendum.md \
+	docs/specs/EVO-003-product-command-contract.md \
+	docs/engineering/reports/EVO-HRA-016-product-command-audit.md \
+	docs/schemas/evo-command-analyze-v1.schema.json \
+	docs/schemas/evo-command-evolve-v1.schema.json \
+	docs/schemas/evo-command-replay-v1.schema.json \
+	docs/schemas/evo-command-report-v1.schema.json \
+	tests/test_product_command_schemas.py \
 	tests/project_candidate.cmake \
 	tests/validate_project_ingestion.py \
 	tests/validate_project_analysis.py \
@@ -532,5 +548,3 @@ EXTRA_DIST = \
 	tests/fuzz/checkpoint_fuzz.c \
 	build-aux/.gitkeep \
 	m4/.gitkeep
-
-include build-aux/product-command.am
