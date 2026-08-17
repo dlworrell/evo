@@ -104,6 +104,7 @@ add_library(catalyst_evo::catalyst_evo ALIAS catalyst_evo)
 add_library(catalyst_evo_project_foundation STATIC
     src/project_runtime.c
     src/project_provider.c
+    src/project_provider_probe.c
     src/project_provider_sandbox.c
     src/project_provider_adapters.c
     src/project_provider_clang.c
