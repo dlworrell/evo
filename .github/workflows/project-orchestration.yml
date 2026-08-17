@@ -7,7 +7,19 @@ on:
     paths:
       - 'src/project_orchestration*.c'
       - 'src/internal/project_orchestration*.h'
+      - 'src/project_search.c'
+      - 'src/internal/project_search_orchestration.h'
+      - 'src/internal/batch_evaluation.h'
+      - 'src/internal/run_batch.h'
+      - 'src/population_evaluation.c'
+      - 'src/internal/population_evaluation.h'
+      - 'src/child_evaluation.c'
+      - 'src/internal/child_evaluation.h'
+      - 'src/bounded_run.c'
+      - 'src/internal/bounded_run.h'
+      - 'src/population.c'
       - 'tests/project_orchestration*.c'
+      - 'tests/project_search_test.c'
       - 'tests/validate_project_orchestration.py'
       - 'docs/adr/ADR-0043-bounded-parallel-source-orchestration.md'
       - 'docs/engineering/reports/EVO-HRA-015-bounded-source-orchestration-audit.md'
@@ -22,7 +34,19 @@ on:
     paths:
       - 'src/project_orchestration*.c'
       - 'src/internal/project_orchestration*.h'
+      - 'src/project_search.c'
+      - 'src/internal/project_search_orchestration.h'
+      - 'src/internal/batch_evaluation.h'
+      - 'src/internal/run_batch.h'
+      - 'src/population_evaluation.c'
+      - 'src/internal/population_evaluation.h'
+      - 'src/child_evaluation.c'
+      - 'src/internal/child_evaluation.h'
+      - 'src/bounded_run.c'
+      - 'src/internal/bounded_run.h'
+      - 'src/population.c'
       - 'tests/project_orchestration*.c'
+      - 'tests/project_search_test.c'
       - 'tests/validate_project_orchestration.py'
       - 'docs/adr/ADR-0043-bounded-parallel-source-orchestration.md'
       - 'docs/engineering/reports/EVO-HRA-015-bounded-source-orchestration-audit.md'
@@ -46,16 +70,16 @@ jobs:
       - uses: actions/checkout@v5
       - name: Configure with Clang and sanitizers
         run: cmake -S . -B build-orchestration -DCMAKE_C_COMPILER=clang -DEVO_ENABLE_SANITIZERS=ON
-      - name: Build orchestration targets
+      - name: Build orchestration and structured-search targets
         run: >-
           cmake --build build-orchestration
-          --target evo_project_orchestration_test evo_project_orchestration_checkpoint_test
+          --target evo_project_orchestration_test evo_project_orchestration_checkpoint_test evo_project_search_test
           --parallel 2
-      - name: Run orchestration targets
+      - name: Run orchestration and structured-search targets
         env:
           ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
           UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
-        run: ctest --test-dir build-orchestration -R '^evo_project_orchestration(_checkpoint)?_test$' --output-on-failure
+        run: ctest --test-dir build-orchestration -R '^evo_project_(orchestration|orchestration_checkpoint|search)_test$' --output-on-failure
       - name: Independent orchestration validation
         run: python3 tests/validate_project_orchestration.py
       - name: Build complete project foundation
@@ -70,10 +94,10 @@ jobs:
         run: autoreconf -fi
       - name: Configure with GCC
         run: ./configure CC=gcc
-      - name: Build orchestration targets
-        run: make -j2 tests/evo_project_orchestration_test tests/evo_project_orchestration_checkpoint_test
-      - name: Run normative orchestration checks
-        run: make check TESTS='tests/evo_project_orchestration_test tests/evo_project_orchestration_checkpoint_test'
+      - name: Build orchestration and structured-search targets
+        run: make -j2 tests/evo_project_orchestration_test tests/evo_project_orchestration_checkpoint_test tests/evo_project_search_test
+      - name: Run normative orchestration and structured-search checks
+        run: make check TESTS='tests/evo_project_orchestration_test tests/evo_project_orchestration_checkpoint_test tests/evo_project_search_test'
       - name: Independent orchestration validation
         run: python3 tests/validate_project_orchestration.py
 
@@ -84,12 +108,12 @@ jobs:
       - uses: actions/checkout@v5
       - name: Configure with Apple Clang
         run: cmake -S . -B build-orchestration -DCMAKE_C_COMPILER=clang
-      - name: Build orchestration targets
+      - name: Build orchestration and structured-search targets
         run: >-
           cmake --build build-orchestration
-          --target evo_project_orchestration_test evo_project_orchestration_checkpoint_test
+          --target evo_project_orchestration_test evo_project_orchestration_checkpoint_test evo_project_search_test
           --parallel 2
-      - name: Run orchestration targets
-        run: ctest --test-dir build-orchestration -R '^evo_project_orchestration(_checkpoint)?_test$' --output-on-failure
+      - name: Run orchestration and structured-search targets
+        run: ctest --test-dir build-orchestration -R '^evo_project_(orchestration|orchestration_checkpoint|search)_test$' --output-on-failure
       - name: Independent orchestration validation
         run: python3 tests/validate_project_orchestration.py
