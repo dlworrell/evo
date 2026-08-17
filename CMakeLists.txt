@@ -107,6 +107,7 @@ add_library(catalyst_evo_project_foundation STATIC
     src/project_provider_probe.c
     src/project_provider_sandbox.c
     src/project_provider_adapters.c
+    src/project_provider_async.c
     src/project_provider_clang.c
     src/project_provider_clang_ast.c
     src/project_json.c
@@ -191,6 +192,25 @@ if(BUILD_TESTING)
             catalyst_evo_project_foundation
     )
     add_test(NAME evo_project_provider_test COMMAND evo_project_provider_test)
+
+    add_executable(
+        evo_project_provider_async_test
+        tests/project_provider_async_test.c
+    )
+    target_include_directories(
+        evo_project_provider_async_test
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/src
+    )
+    target_link_libraries(
+        evo_project_provider_async_test
+        PRIVATE
+            catalyst_evo_project_foundation
+    )
+    add_test(
+        NAME evo_project_provider_async_test
+        COMMAND evo_project_provider_async_test
+    )
 
     add_executable(
         evo_project_provider_sandbox_test
