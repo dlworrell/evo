@@ -16,7 +16,11 @@ class TestStreamingSHA256(unittest.TestCase):
         cls.work = tempfile.TemporaryDirectory()
         cls.exe = Path(cls.work.name) / 'stream_hash'
         flags = subprocess.check_output(['pkg-config','--cflags','--libs','openssl'],text=True).split()
-        subprocess.run(['cc','-std=c17','-O2','-Wall','-Wextra','-Wpedantic','-Werror',str(SOURCE),'-o',str(cls.exe),*flags],check=True)
+        compiler = os.environ.get('CC', 'cc')
+        extra = os.environ.get('ARCHIVE_AUDIT_CFLAGS', '').split()
+        subprocess.run([compiler,'-std=c17','-O2','-Wall','-Wextra',
+                        '-Wpedantic','-Werror',*extra,str(SOURCE),
+                        '-o',str(cls.exe),*flags],check=True)
 
     @classmethod
     def tearDownClass(cls):
