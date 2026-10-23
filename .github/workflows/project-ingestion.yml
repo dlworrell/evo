@@ -16,7 +16,7 @@ jobs:
       CC: clang
     steps:
       - name: Check out repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Configure project-ingestion foundation
         run: >-
@@ -43,7 +43,7 @@ jobs:
       CC: gcc
     steps:
       - name: Check out repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install Autotools dependencies
         run: sudo apt-get update && sudo apt-get install -y autoconf automake libtool
