@@ -1,7 +1,7 @@
 {
   "template_id": "project_zero",
-  "version": "0.1.0",
-  "description": "Installs the Project Zero workflow, shared engine, local command wrapper, and default readiness profile.",
+  "version": "0.2.0",
+  "description": "Installs Project Zero with the canonical GitHub-verified remediation commit helper.",
   "files": [
     {
       "source": ".github/workflows/project-zero.yml",
@@ -10,6 +10,10 @@
     {
       "source": "tools/project_zero.py",
       "target": "tools/project_zero.py"
+    },
+    {
+      "source": "tools/project_zero_commit.py",
+      "target": "tools/project_zero_commit.py"
     },
     {
       "source": "scripts/project-zero",

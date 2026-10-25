@@ -60,9 +60,10 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Check out repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Run Project Zero engine
         id: p0
@@ -92,7 +93,7 @@ jobs:
 
       - name: Upload evidence package
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: project-zero-report-${{ github.run_id }}
           path: |
@@ -114,27 +115,47 @@ jobs:
               --body-file build/project-zero-report/executive-summary.md
           fi
 
-      - name: Open remediation pull request
-        if: inputs.mode == 'remediate' && inputs.mutation_policy == 'open-remediation-pr'
+      # AES-DEV-001-R005: remediation commits are created through the GraphQL
+      # createCommitOnBranch API with GITHUB_TOKEN, so GitHub signs them and they
+      # are "Verified". No local git commit/push is performed, and the commit
+      # always lands on a p0/remediation-* branch, never the default branch.
+      - name: Create verified remediation commit
+        id: remediation_commit
+        if: >-
+          inputs.mode == 'remediate'
+          && inputs.mutation_policy == 'open-remediation-pr'
+          && github.event_name != 'pull_request_target'
         env:
-          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
+          BASE_BRANCH: ${{ github.ref_name }}
         shell: bash
         run: |
           set -euo pipefail
-          git add SECURITY.md CONTRIBUTING.md GOVERNANCE.md repo.yaml p0.yaml .github/pull_request_template.md 2>/dev/null || true
-          if git diff --cached --quiet; then
-            echo "No safe remediation changes were generated." >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
           branch="p0/remediation-${GITHUB_RUN_ID}"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git switch -c "$branch"
-          git commit -m "fix(p0): apply safe repository baseline remediation"
-          git push --set-upstream origin "$branch"
+          echo "branch=${branch}" >> "$GITHUB_OUTPUT"
+          python3 tools/project_zero_commit.py \
+            --branch "$branch" \
+            --base "$BASE_BRANCH" \
+            --message "fix(p0): apply safe repository baseline remediation" \
+            SECURITY.md CONTRIBUTING.md GOVERNANCE.md repo.yaml p0.yaml .github/pull_request_template.md
+
+      - name: Report no-op remediation
+        if: steps.remediation_commit.outputs.committed == 'false'
+        shell: bash
+        run: echo "No safe remediation changes were generated." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Open remediation pull request
+        if: steps.remediation_commit.outputs.committed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE_BRANCH: ${{ github.ref_name }}
+          HEAD_BRANCH: ${{ steps.remediation_commit.outputs.branch }}
+        shell: bash
+        run: |
+          set -euo pipefail
           gh pr create \
-            --base "${GITHUB_REF_NAME}" \
-            --head "$branch" \
+            --base "$BASE_BRANCH" \
+            --head "$HEAD_BRANCH" \
             --title "Project Zero baseline remediation" \
             --body-file build/project-zero-report/executive-summary.md
 
