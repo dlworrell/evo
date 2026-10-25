@@ -166,12 +166,13 @@ class MainFlowTest(unittest.TestCase):
             },
         )
 
-    def test_existing_branch_uses_its_head(self) -> None:
+    def test_refuses_divergent_existing_branch(self) -> None:
         (self.root / "SECURITY.md").write_text("sec\n")
         fake = FakeGitHub({"main": self.head, "p0/remediation-1": "a" * 40})
-        self.run_main(fake, "SECURITY.md")
+        with self.assertRaisesRegex(pzc.CommitError, "differs from the checked-out base"):
+            self.run_main(fake, "SECURITY.md")
         self.assertEqual(fake.created_refs, [])
-        self.assertEqual(fake.mutations[0]["expectedHeadOid"], "a" * 40)
+        self.assertEqual(fake.mutations, [])
 
     def test_refuses_when_base_moved(self) -> None:
         (self.root / "SECURITY.md").write_text("sec\n")
@@ -191,6 +192,41 @@ class MainFlowTest(unittest.TestCase):
         os.environ["GITHUB_EVENT_NAME"] = "pull_request_target"
         with self.assertRaises(pzc.CommitError):
             self.run_main(FakeGitHub({"main": self.head}), "SECURITY.md")
+
+
+class ApiVerificationTest(unittest.TestCase):
+    def test_rejects_unsigned_missing_invalid_and_wrong_ancestry(self):
+        oid, parent = "f" * 40, "a" * 40
+        request = pzc.build_mutation_input("o/r", "p0/x", parent, "fix: x", {})
+        good = {"sha": oid, "commit": {"verification": {"verified": True, "reason": "valid"}},
+                "parents": [{"sha": parent}]}
+        import copy
+        cases = []
+        for verification in ({}, {"verified": False, "reason": "unsigned"},
+                             {"verified": True, "reason": "unknown_key"},
+                             {"verified": 1, "reason": "valid"}):
+            item = copy.deepcopy(good)
+            item["commit"]["verification"] = verification
+            cases.append(item)
+        wrong_parent = copy.deepcopy(good)
+        wrong_parent["parents"] = [{"sha": "b" * 40}]
+        cases.append(wrong_parent)
+        wrong_oid = copy.deepcopy(good)
+        wrong_oid["sha"] = "b" * 40
+        cases.append(wrong_oid)
+        for observed in cases:
+            with self.subTest(observed=observed):
+                api = pzc.GitHub("test", "https://api.invalid", "https://graphql.invalid")
+                with mock.patch.object(api, "request", return_value=(200, {
+                        "data": {"createCommitOnBranch": {"commit": {"oid": oid, "url": "u"}}}})), \
+                     mock.patch.object(api, "rest", return_value=(200, observed)):
+                    with self.assertRaises(pzc.CommitError):
+                        api.create_commit(request)
+        api = pzc.GitHub("test", "https://api.invalid", "https://graphql.invalid")
+        with mock.patch.object(api, "request", return_value=(200, {
+                "data": {"createCommitOnBranch": {"commit": {"oid": oid, "url": "u"}}}})), \
+             mock.patch.object(api, "rest", return_value=(200, good)):
+            self.assertEqual(api.create_commit(request)["oid"], oid)
 
 
 if __name__ == "__main__":

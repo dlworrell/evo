@@ -230,7 +230,18 @@ class GitHub:
         )
         if status != 200 or not isinstance(data, dict) or data.get("errors"):
             raise CommitError(f"createCommitOnBranch failed: HTTP {status} {data}")
-        return data["data"]["createCommitOnBranch"]["commit"]
+        commit = data["data"]["createCommitOnBranch"]["commit"]
+        repository = mutation_input["branch"]["repositoryNameWithOwner"]
+        oid = commit["oid"]
+        status, observed = self.rest("GET", f"/repos/{repository}/commits/{oid}")
+        verification = observed.get("commit", {}).get("verification", {}) if isinstance(observed, dict) else {}
+        parents = [parent.get("sha") for parent in observed.get("parents", [])] if isinstance(observed, dict) else []
+        if (status != 200 or not isinstance(observed, dict) or observed.get("sha") != oid
+                or verification.get("verified") is not True
+                or verification.get("reason") != "valid"
+                or parents != [mutation_input["expectedHeadOid"]]):
+            raise CommitError(f"GitHub did not verify the exact replacement commit {oid}")
+        return commit
 
 
 def write_output(name: str, value: str) -> None:
@@ -290,6 +301,11 @@ def main(argv: list[str] | None = None) -> int:
         api.create_ref(args.repository, args.branch, base_head)
         head = base_head
         print(f"Created branch {args.branch} at {head}.")
+
+    if head != local_head:
+        raise CommitError(
+            "remediation branch differs from the checked-out base; inspect its head before retrying"
+        )
 
     file_changes = build_file_changes(changes, lambda path: (root / path).read_bytes())
     commit = api.create_commit(
