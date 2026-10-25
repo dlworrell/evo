@@ -10,6 +10,8 @@ on:
       - 'scripts/project-zero'
       - 'templates/project_zero/**'
       - 'tools/project_zero.py'
+      - 'tools/project_zero_commit.py'
+      - 'tests/test_project_zero_commit.py'
   push:
     branches: [main]
     paths:
@@ -20,6 +22,8 @@ on:
       - 'scripts/project-zero'
       - 'templates/project_zero/**'
       - 'tools/project_zero.py'
+      - 'tools/project_zero_commit.py'
+      - 'tests/test_project_zero_commit.py'
 
 permissions:
   contents: read
@@ -29,15 +33,18 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Check out repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Validate Python and JSON inputs
         shell: bash
         run: |
           set -euo pipefail
-          python3 -m py_compile tools/project_zero.py
+          python3 -m py_compile tools/project_zero.py tools/project_zero_commit.py
           python3 -m json.tool .aems/project-zero/profiles/default/profile.json >/dev/null
           python3 -m json.tool templates/project_zero/template.json >/dev/null
+
+      - name: Test verified remediation commit behavior
+        run: python3 -m unittest discover -s tests -p test_project_zero_commit.py -v
 
       - name: Validate lifecycle workflow inventory
         shell: bash
@@ -56,6 +63,14 @@ jobs:
             grep -q 'workflow_dispatch:' "$file"
           done
           grep -q 'workflow_call:' .github/workflows/project-zero.yml
+          grep -q 'tools/project_zero_commit.py' .github/workflows/project-zero.yml
+          if grep -Eq '^[[:space:]]*git (commit|push)' .github/workflows/project-zero.yml; then
+            echo "Project Zero must use GitHub-verified commits" >&2
+            exit 1
+          fi
+          if grep -Eq '^[[:space:]]*pull_request_target:' .github/workflows/project-zero.yml; then
+            exit 1
+          fi
           grep -q 'Production mutation: \*\*not permitted\*\*' .github/workflows/optimization.yml
           grep -Eq '^[[:space:]]*contents:[[:space:]]*read[[:space:]]*$' .github/workflows/release.yml
           ! grep -Eq '^[[:space:]]*contents:[[:space:]]*write[[:space:]]*$' .github/workflows/release.yml
