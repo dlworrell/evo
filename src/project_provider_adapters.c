@@ -64,6 +64,9 @@ evo_project_status_t evo_project_sandbox_command_runner(
         .cancel_requested = context->cancel_requested,
     };
     status = evo_project_sandbox_run(&sandbox_command, &sandbox);
+    context->last_stage = command->stage;
+    context->last_status = status;
+    context->exhausted_resource = sandbox.exhausted_resource;
     context->interrupted = context->interrupted ||
                            status == EVO_PROJECT_SANDBOX_ERROR_INTERRUPTED;
     context->cleanup_failed = context->cleanup_failed ||

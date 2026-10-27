@@ -61,6 +61,12 @@ the program never downloads a toolchain, discovers a user plugin, grants
 network access, or mutates the authorized project. Existing Bubblewrap
 filesystem/network/resource policy remains in force.
 
+The live storage monitor tolerates only `ENOENT` for children removed during
+a scan, as happens in CMake compiler probes. A missing root and all other I/O
+errors still fail closed; actual retained bytes remain bounded by the same
+declared storage limit. Installed tests require both a real CMake configure
+and rejection of a retained 40 MiB file under the 32 MiB fixture budget.
+
 Output is assembled in a private 0700 sibling stage. Exclusive 0600 writes
 retain the exact parsed manifest and derived summary; native evidence retains
 its stricter file modes. Linux `renameat2(RENAME_NOREPLACE)` commits the complete

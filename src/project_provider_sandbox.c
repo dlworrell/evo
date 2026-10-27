@@ -216,14 +216,15 @@ static bool evo_sandbox_clock_ns(uint64_t *value)
 static bool evo_sandbox_sum_storage(
     const char *path,
     uint64_t limit,
-    uint64_t *total)
+    uint64_t *total,
+    bool missing_is_empty)
 {
     DIR *directory;
     struct dirent *entry;
 
     directory = opendir(path);
     if (directory == NULL) {
-        return false;
+        return missing_is_empty && errno == ENOENT;
     }
     while ((entry = readdir(directory)) != NULL) {
         char child[PATH_MAX];
@@ -236,8 +237,17 @@ static bool evo_sandbox_sum_storage(
         }
         written = evo_project_format(
             child, sizeof(child), "%s/%s", path, entry->d_name);
-        if (written <= 0 || (size_t)written >= sizeof(child) ||
-            lstat(child, &metadata) != 0) {
+        if (written <= 0 || (size_t)written >= sizeof(child)) {
+            (void)closedir(directory);
+            return false;
+        }
+        if (lstat(child, &metadata) != 0) {
+            /* Build tools remove temporary entries while the live scan runs.
+             * A disappeared child contributes no retained bytes; every other
+             * lookup failure remains fail-closed. The root must still exist. */
+            if (errno == ENOENT) {
+                continue;
+            }
             (void)closedir(directory);
             return false;
         }
@@ -256,7 +266,7 @@ static bool evo_sandbox_sum_storage(
             }
             *total += bytes;
         } else if (S_ISDIR(metadata.st_mode)) {
-            if (!evo_sandbox_sum_storage(child, limit, total)) {
+            if (!evo_sandbox_sum_storage(child, limit, total, true)) {
                 (void)closedir(directory);
                 return false;
             }
@@ -273,7 +283,7 @@ static bool evo_sandbox_storage_within(const char *workspace, uint64_t limit)
 {
     uint64_t total = 0U;
 
-    return evo_sandbox_sum_storage(workspace, limit, &total) && total <= limit;
+    return evo_sandbox_sum_storage(workspace, limit, &total, false) && total <= limit;
 }
 
 static bool evo_sandbox_read_children(pid_t process, size_t limit, size_t *count)

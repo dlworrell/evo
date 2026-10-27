@@ -258,6 +258,14 @@ class InstalledContract:
             self.no_partial(destination)
             assert snapshot(project) == original
         changed = copy.deepcopy(manifest)
+        changed["build"]["configure"] = ["/bin/sh", "-c", "dd if=/dev/zero of=oversized bs=1048576 count=40; sleep 2"]
+        write_json(path, changed)
+        destination = self.root / "storage-limit"
+        result = self.run("analyze", "--manifest", path, "--input", project, "--output", destination, status=70)
+        assert " / storage" in result.stderr, result.stderr
+        self.no_partial(destination)
+        assert snapshot(project) == original
+        changed = copy.deepcopy(manifest)
         changed["build"]["configure"] = ["/bin/sleep", "5"]
         changed["budgets"]["command_timeout_ms"] = 100
         write_json(path, changed)
