@@ -296,6 +296,10 @@ int evo_product_execute_analyze(const char *manifest_argument, const char *input
         goto done;
     }
     if (runner.resource_exhausted || capture_status == EVO_PROJECT_ERROR_RESOURCE_LIMIT || capture_status == EVO_PROJECT_ERROR_OUT_OF_MEMORY) {
+        (void)fprintf(stderr, "evo: capture: %s; command stage %u; sandbox %s / %s\n",
+                      evo_project_status_name(capture_status), (unsigned int)runner.last_stage,
+                      evo_project_sandbox_status_name(runner.last_status),
+                      evo_project_sandbox_resource_name(runner.exhausted_resource));
         exit_status = EVO_PROJECT_COMMAND_EXIT_RESOURCE;
         goto done;
     }
