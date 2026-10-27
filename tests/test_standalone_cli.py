@@ -179,9 +179,10 @@ class InstalledContract:
         analysis = {"schema": "catalyst.evo-project-analysis.v1", "schema_version": 1,
                     "baseline_fingerprint": label, "analysis_fingerprint": label,
                     "provider": {"identity": "catalyst.evo.provider.clang-analysis.v1"},
-                    "runtime_profile": {}, "human_readable_abstraction": {}}
+                    "runtime_profile": {}, "human_readable_abstraction": {},
+                    "source_modified": False, "evolutionary_operator_invoked": False}
         for field in ("translation_units", "source_locations", "declarations", "calls", "control_flows",
-                      "data_flows", "optimization_records", "runtime_records", "opportunities"):
+                      "data_flows", "compiler_optimizations", "runtime_hotspots", "opportunities"):
             analysis[field] = []
         write_json(evidence / "baseline/baseline.json", baseline)
         analysis_path = evidence / "analysis/analysis.json"
@@ -195,6 +196,7 @@ class InstalledContract:
         for mutate in (lambda value: value.update(schema_version=2),
                        lambda value: value.update(baseline_fingerprint="fnv1a64-v1:ffffffffffffffff"),
                        lambda value: value.update(translation_units=["unexpected.c"]),
+                       lambda value: value.update(source_modified=True),
                        lambda value: value.pop("runtime_profile"),
                        lambda value: value.update(unknown=True)):
             changed = copy.deepcopy(analysis)
@@ -257,6 +259,14 @@ class InstalledContract:
             self.run("analyze", "--manifest", path, "--input", project, "--output", destination, status=expected)
             self.no_partial(destination)
             assert snapshot(project) == original
+        changed = copy.deepcopy(manifest)
+        changed["build"]["configure"] = ["/bin/sh", "-c", "dd if=/dev/zero of=oversized bs=1048576 count=40; sleep 2"]
+        write_json(path, changed)
+        destination = self.root / "storage-limit"
+        result = self.run("analyze", "--manifest", path, "--input", project, "--output", destination, status=70)
+        assert " / storage" in result.stderr, result.stderr
+        self.no_partial(destination)
+        assert snapshot(project) == original
         changed = copy.deepcopy(manifest)
         changed["build"]["configure"] = ["/bin/sleep", "5"]
         changed["budgets"]["command_timeout_ms"] = 100

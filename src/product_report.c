@@ -103,6 +103,12 @@ static bool evo_product_array_count(const evo_product_document_t *document, cons
            (uint64_t)document->tokens[index].child_count == expected;
 }
 
+static bool evo_product_false(const evo_product_document_t *document, const char *name)
+{
+    size_t index;
+    return evo_product_member(document, 0U, name, &index) && document->tokens[index].type == EVO_PROJECT_JSON_FALSE;
+}
+
 static bool evo_product_fingerprint(const char *value)
 {
     if (strlen(value) != 27U || strncmp(value, "fnv1a64-v1:", 11U) != 0) {
@@ -120,7 +126,7 @@ int evo_product_execute_report(const char *evidence_argument, evo_product_stage_
                                evo_product_summary_t *summary)
 {
     static const char *const baseline_keys[] = {"schema", "schema_version", "state", "manifest", "baseline", "files", "compilation_units", "commands", "human_readable_abstraction"};
-    static const char *const analysis_keys[] = {"schema", "schema_version", "baseline_fingerprint", "analysis_fingerprint", "provider", "runtime_profile", "translation_units", "source_locations", "declarations", "calls", "control_flows", "data_flows", "optimization_records", "runtime_records", "opportunities", "human_readable_abstraction"};
+    static const char *const analysis_keys[] = {"schema", "schema_version", "baseline_fingerprint", "analysis_fingerprint", "provider", "runtime_profile", "translation_units", "source_locations", "declarations", "calls", "control_flows", "data_flows", "compiler_optimizations", "runtime_hotspots", "opportunities", "human_readable_abstraction", "source_modified", "evolutionary_operator_invoked"};
     char root_path[EVO_PRODUCT_PATH_BYTES];
     char analysis_baseline[EVO_PROJECT_FINGERPRINT_TEXT_SIZE];
     evo_product_document_t baseline = {0};
@@ -157,6 +163,7 @@ int evo_product_execute_report(const char *evidence_argument, evo_product_stage_
         !evo_product_envelope(&analysis, analysis_keys, sizeof(analysis_keys) / sizeof(analysis_keys[0])) ||
         !evo_product_string_is(&baseline, 0U, "schema", "catalyst.evo-project-baseline.v1") ||
         !evo_product_string_is(&analysis, 0U, "schema", "catalyst.evo-project-analysis.v1") ||
+        !evo_product_false(&analysis, "source_modified") || !evo_product_false(&analysis, "evolutionary_operator_invoked") ||
         !evo_product_string_is(&baseline, 0U, "state", "eligible") ||
         !evo_product_number(&baseline, 0U, "schema_version", &version) || version != 1U ||
         !evo_product_number(&analysis, 0U, "schema_version", &version) || version != 1U ||
