@@ -15,6 +15,24 @@ recipes, isolated candidate source trees, build and correctness gates,
 baseline-versus-candidate measurement, whole-run orchestration, and optimized
 patch/evidence artifacts.
 
+## Proposed REA recovery companion
+
+[ADR-0046](adr/ADR-0046-rea-assisted-recovery-and-source-admission.md) and
+[EVO-004](specs/EVO-004-rea-recovery-integration-contract.md) propose the
+REA-assisted recovery capability tracked by
+[EVO #132](https://github.com/dlworrell/evo/issues/132). The companion stays
+outside the C17 core ABI and consumes pinned external-reference REA evidence
+through its public CLI/MCP contracts. An evidence-linked specification and
+independently verified, buildable C baseline precede optimizer admission.
+
+These documents remain Proposed. They define future module placement,
+unchanged native-evidence handoff, admission/security boundaries and staged
+acceptance; they do not implement the adapter or qualify an installed optimizer
+or hardware. TASK-38 retains its existing read-only mining scope. The original
+[integration plan](engineering/REA-EVO-INTEGRATION-PLAN.md) and
+[workspace guide](engineering/REA-EVO-INTEGRATION-WORKSPACE.md) remain source
+context rather than execution evidence.
+
 ## Product Component Model
 
 ### Evolutionary-search core
