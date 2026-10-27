@@ -1,0 +1,54 @@
+name: Issue 93 standalone verified publication (bootstrap)
+on:
+  push:
+    branches: [bootstrap/issue-93-standalone-20261027]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  publish:
+    if: github.repository == 'dlworrell/evo' && github.actor == 'dlworrell' && github.ref == 'refs/heads/bootstrap/issue-93-standalone-20261027'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Publish the content-bound reviewed standalone implementation
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          EXPECTED_BOOTSTRAP_BRANCH: bootstrap/issue-93-standalone-20261027
+          EXPECTED_PAYLOAD_SHA256: e4e985d9d55e95d77bb6e827de29849e4b11a3d3aab4042401aebbcd42f3c33c
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import base64
+          import gzip
+          import hashlib
+          import io
+          from pathlib import Path
+          import runpy
+          import sys
+          import urllib.request
+          def get(url, limit):
+              with urllib.request.urlopen(url, timeout=30) as response:
+                  value = response.read(limit + 1)
+              if len(value) > limit:
+                  raise SystemExit('Pinned publication input exceeded its bound')
+              return value
+          source = get('https://raw.githubusercontent.com/dlworrell/AEMS/e620f4bd3cc45f05f2f18b61e3a087303eb2b4bd/scripts/publish_reviewed_repair.py', 1024 * 1024)
+          if hashlib.sha256(source).hexdigest() != '74d3acbd02420652c9a8f953e305ba4919c684646f0ea444815f8b752b23f290':
+              raise SystemExit('Pinned publisher identity mismatch')
+          encoded = get('https://raw.githubusercontent.com/dlworrell/evo/d93ef2a2fa4779b15c54aa35aef25fb41087a83e/.github/issue-93-publication/payload.gz.b64', 179517)
+          if len(encoded) != 179517:
+              raise SystemExit('Publication payload size mismatch')
+          compressed = base64.b64decode(encoded.strip(), validate=True)
+          if len(compressed) != 134637 or hashlib.sha256(compressed).hexdigest() != '492a0429cdacf0367019589709955f450181b4bd64b7b911db70f6b4fdcf4045':
+              raise SystemExit('Compressed payload identity mismatch')
+          with gzip.GzipFile(fileobj=io.BytesIO(compressed)) as stream:
+              payload = stream.read(503103 + 1)
+          if len(payload) != 503103 or hashlib.sha256(payload).hexdigest() != 'e4e985d9d55e95d77bb6e827de29849e4b11a3d3aab4042401aebbcd42f3c33c':
+              raise SystemExit('Reviewed payload identity mismatch')
+          publisher = Path('publish_reviewed_repair.py')
+          publisher.write_bytes(source)
+          Path('reviewed-payload.json').write_bytes(payload)
+          sys.argv = [str(publisher), '--payload', 'reviewed-payload.json']
+          runpy.run_path(str(publisher), run_name='__main__')
+          PY
