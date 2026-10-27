@@ -120,7 +120,7 @@ int evo_product_execute_report(const char *evidence_argument, evo_product_stage_
                                evo_product_summary_t *summary)
 {
     static const char *const baseline_keys[] = {"schema", "schema_version", "state", "manifest", "baseline", "files", "compilation_units", "commands", "human_readable_abstraction"};
-    static const char *const analysis_keys[] = {"schema", "schema_version", "baseline_fingerprint", "analysis_fingerprint", "provider", "runtime_profile", "translation_units", "source_locations", "declarations", "calls", "control_flows", "data_flows", "optimization_records", "runtime_records", "opportunities", "human_readable_abstraction"};
+    static const char *const analysis_keys[] = {"schema", "schema_version", "baseline_fingerprint", "analysis_fingerprint", "provider", "runtime_profile", "translation_units", "source_locations", "declarations", "calls", "control_flows", "data_flows", "compiler_optimizations", "runtime_hotspots", "opportunities", "human_readable_abstraction"};
     char root_path[EVO_PRODUCT_PATH_BYTES];
     char analysis_baseline[EVO_PROJECT_FINGERPRINT_TEXT_SIZE];
     evo_product_document_t baseline = {0};
