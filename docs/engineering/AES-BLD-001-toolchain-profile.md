@@ -124,17 +124,17 @@ The 0.43 `Project Command` contract is represented in the normative inventory by
 matrices; the release-readiness catalog does not currently define a separate
 Project Command workflow, so this profile does not invent one.
 
-The proposed Standalone CLI workflow is retained at
-`docs/engineering/ci/standalone.yml` for owner review. It relocates installations
+The Standalone CLI workflow is active at `.github/workflows/standalone.yml`,
+with a matching reviewed copy at `docs/engineering/ci/standalone.yml`. It relocates installations
 produced by CMake/Clang and Autotools/GCC, inspects runtime dependencies/RPATH,
 and invokes `evo` through an installation-only `PATH` from unrelated directories.
 Its real-provider mode requires Clang 18 and working Bubblewrap isolation;
-unavailable execution or missing proof fails the job. Activation under
-`.github/workflows/standalone.yml` and registration as a required source-optimizer
-release gate remain #93 blockers: the existing signed-publication token cannot
-authorize workflow-file changes. A separate read-only bootstrap validation run
-may test an explicit verified source commit; that is retained validation, not
-an active normative PR/release gate. Archive/distcheck remains an independent
+unavailable execution or missing proof fails the job. Successful installed
+validation is followed by executable packaging, complete checksums, observed
+runtime requirements and an extracted help/version check. Failed-run diagnostics
+use a separate artifact name. Registration as a required source-optimizer
+release gate remains #93 work. Earlier read-only bootstrap validation runs
+are retained evidence for their explicit commits. Archive/distcheck remains an independent
 AES-BLD gate. See [the development CLI boundary](../guides/standalone-cli.md).
 
 ## Observable evidence

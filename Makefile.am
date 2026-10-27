@@ -520,6 +520,9 @@ EXTRA_DIST = \
 	.github/workflows/production-providers.yml \
 	.github/workflows/production-provider-async.yml \
 	docs/engineering/ci/standalone.yml \
+	.github/workflows/standalone.yml \
+	scripts/package_standalone.py \
+	tests/test_standalone_package.py \
 	CMakeLists.txt \
 	CMakePresets.json \
 	benchmarks/CMakeLists.txt \
