@@ -176,8 +176,21 @@ libevo_project_foundation_la_SOURCES = \
 	src/project_orchestration_runtime.c \
 	src/project_orchestration.c \
 	src/project_orchestration_checkpoint.c \
-	src/project_command.c
+	src/project_command.c \
+	src/product_cli.c \
+	src/product_paths.c \
+	src/product_execution.c \
+	src/product_report.c
+libevo_project_foundation_la_CPPFLAGS = $(AM_CPPFLAGS) \
+	-DEVO_PRODUCT_VERSION=\"$(EVO_PRODUCT_VERSION)\"
 libevo_project_foundation_la_LIBADD = libcatalyst_evo.la -lm
+
+bin_PROGRAMS = evo
+evo_SOURCES = src/product_main.c
+evo_LDADD = libevo_project_foundation.la
+evo_LDFLAGS = -static-libtool-libs
+
+noinst_HEADERS += src/internal/product_cli.h
 
 check_PROGRAMS = \
 	tests/evo_smoke_test \
@@ -231,6 +244,10 @@ check_PROGRAMS = \
 	tests/evo_secure_erasure_test \
 	tests/evo_allocation_failure_test
 TESTS = $(check_PROGRAMS)
+
+check_PROGRAMS += tests/evo_product_cli_test
+tests_evo_product_cli_test_SOURCES = tests/product_cli_test.c
+tests_evo_product_cli_test_LDADD = libevo_project_foundation.la
 
 tests_evo_smoke_test_SOURCES = tests/smoke_test.c
 tests_evo_smoke_test_LDADD = libcatalyst_evo.la -lm
@@ -502,6 +519,7 @@ EXTRA_DIST = \
 	.github/workflows/project-measurement.yml \
 	.github/workflows/production-providers.yml \
 	.github/workflows/production-provider-async.yml \
+	docs/engineering/ci/standalone.yml \
 	CMakeLists.txt \
 	CMakePresets.json \
 	benchmarks/CMakeLists.txt \
@@ -553,6 +571,8 @@ EXTRA_DIST = \
 	docs/engineering/reports/EVO-HRA-012-candidate-correctness-gates-audit.md \
 	docs/engineering/reports/EVO-HRA-013-candidate-performance-fitness-audit.md \
 	docs/adr/ADR-0045-product-command-contract.md \
+	docs/adr/ADR-0047-standalone-cli-development-boundary.md \
+	docs/guides/standalone-cli.md \
 	docs/specs/EVO-002A-product-command-provider-addendum.md \
 	docs/specs/EVO-003-product-command-contract.md \
 	docs/engineering/reports/EVO-HRA-016-product-command-audit.md \
@@ -561,6 +581,7 @@ EXTRA_DIST = \
 	docs/schemas/evo-command-replay-v1.schema.json \
 	docs/schemas/evo-command-report-v1.schema.json \
 	tests/test_product_command_schemas.py \
+	tests/test_standalone_cli.py \
 	tests/project_candidate.cmake \
 	tests/validate_project_ingestion.py \
 	tests/validate_project_analysis.py \

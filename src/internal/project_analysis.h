@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <signal.h>
 
 #define EVO_PROJECT_ANALYSIS_SCHEMA_VERSION 1U
 
@@ -23,7 +24,8 @@ typedef enum evo_project_analysis_status {
     EVO_PROJECT_ANALYSIS_ERROR_OUTPUT_EXISTS = 10,
     EVO_PROJECT_ANALYSIS_ERROR_EVIDENCE_IO = 11,
     EVO_PROJECT_ANALYSIS_ERROR_STATE = 12,
-    EVO_PROJECT_ANALYSIS_ERROR_UNSUPPORTED_EVIDENCE = 13
+    EVO_PROJECT_ANALYSIS_ERROR_UNSUPPORTED_EVIDENCE = 13,
+    EVO_PROJECT_ANALYSIS_ERROR_CLEANUP = 14
 } evo_project_analysis_status_t;
 
 typedef enum evo_project_source_location_kind {
@@ -198,6 +200,7 @@ typedef struct evo_project_analysis_request {
     uint64_t max_storage_bytes;
     size_t max_output_bytes;
     bool network_access;
+    const volatile sig_atomic_t *cancel_requested;
 } evo_project_analysis_request_t;
 
 typedef evo_project_analysis_status_t (*evo_project_analysis_provider_fn)(
@@ -218,6 +221,7 @@ typedef struct evo_project_analysis_config {
     evo_project_analysis_limits_t limits;
     evo_project_analysis_provider_fn provider;
     void *provider_context;
+    const volatile sig_atomic_t *cancel_requested;
 } evo_project_analysis_config_t;
 
 typedef struct evo_project_opportunity_record {

@@ -154,7 +154,12 @@
       "src/project_orchestration_runtime.c",
       "src/project_orchestration.c",
       "src/project_orchestration_checkpoint.c",
-      "src/project_command.c"
+      "src/project_command.c",
+      "src/product_cli.c",
+      "src/product_paths.c",
+      "src/product_execution.c",
+      "src/product_report.c",
+      "src/product_main.c"
     ],
     "normative_tests": [
       {
@@ -456,6 +461,12 @@
         "source": "tests/project_provider_clang_ast_test.c",
         "cmake": "evo_project_provider_clang_ast_test",
         "autotools": "tests/evo_project_provider_clang_ast_test"
+      },
+      {
+        "id": "product-cli",
+        "source": "tests/product_cli_test.c",
+        "cmake": "evo_product_cli_test",
+        "autotools": "tests/evo_product_cli_test"
       }
     ],
     "consumer_sources": [
@@ -519,6 +530,7 @@
   },
   "parity": {
     "expected_install_paths": [
+      "bin/evo",
       "include/catalyst/evo/evo.h",
       "lib/libcatalyst_evo.a",
       "lib/pkgconfig/catalyst-evo.pc"

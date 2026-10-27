@@ -33,5 +33,6 @@ repository:
     - immutable C-project baseline snapshot and normalized build evidence
     - C source analysis and structured transformation evidence
     - versioned analyze/evolve/replay/report execution plans
+    - development installed evo analyze/report executable (issue 93 incomplete)
     - highest-ranked verified candidate source patch
     - baseline comparison and deterministic replay bundle

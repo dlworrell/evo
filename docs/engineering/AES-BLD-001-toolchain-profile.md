@@ -12,18 +12,24 @@
 - Product version: 0.43.0
 - Installed reusable-core compatibility version: 0.37.0
 
-<!-- AES-BLD-INVENTORY installed_core=26 private_product=44 production=70 normative_tests=50 -->
+<!-- AES-BLD-INVENTORY installed_core=26 private_product=49 production=75 normative_tests=51 -->
 
 ## Build-output boundary
 
-EVO is deliberately a two-layer C17 repository rather than only a static-library
-project. The installed output at the current 0.43.0 boundary remains the stable
-`catalyst_evo` reusable library, public header, and `catalyst-evo.pc`. The
-source-optimizer product foundation, command planner, and built-in production
-providers are compiled as a private, uninstalled product layer. Issue #93 owns
-installation of the standalone executable; until that boundary lands, the
-AES-BLD machine profile's `build.kind: c-library` describes the installed
-distribution surface, not the complete repository mission.
+EVO retains the stable `catalyst_evo` reusable library, public header and
+`catalyst-evo.pc`, and now installs a development `evo` executable. Its first
+standalone slice executes production-provider `analyze` and projects retained
+native evidence with `report`. `evolve`/`replay` execution and complete #93
+acceptance remain draft work; the source package stays 0.43.0 until the full
+0.44.0 milestone is qualified. The reusable-core compatibility remains 0.37.0.
+
+The machine profile retains `build.kind: c-library` so existing library symbol,
+consumer and metadata obligations stay active. Its complete source and install
+inventories also include the executable. There are 26 installed-core sources,
+49 private/product sources (48 foundation sources plus the program entry), and
+51 normative C fixtures. The private headers and foundation library are not
+installed. Both frontends statically link the private program implementation;
+no uninstalled product library or source-relative runtime asset is required.
 
 CMake and GNU Autotools are independent supported build frontends over the same
 declared source and normative-test inventory.
@@ -48,10 +54,10 @@ their versions as evidence.
 revision it projects to:
 
 - **26 installed-core production sources** in `catalyst_evo`;
-- **44 private source-optimizer/product production sources** in
-  `catalyst_evo_project_foundation`;
-- **70 total production sources**; and
-- **50 normative build/test targets**.
+- **49 private source-optimizer/product production sources**: 48 in
+  `catalyst_evo_project_foundation` plus the standalone program entry;
+- **75 total production sources**; and
+- **51 normative build/test targets**.
 
 `scripts/verify_aes_bld_profile.py` derives the CMake target membership, compares
 it byte-for-byte by ordered path against the machine inventory, validates every
@@ -80,7 +86,7 @@ Both frontends:
   widening the installed public C API;
 - build the private core-benchmark executable and equivalent bounded smoke
   evidence targets;
-- install `libcatalyst_evo.a`, the public header, and `catalyst-evo.pc`; and
+- install `bin/evo`, `libcatalyst_evo.a`, the public header, and `catalyst-evo.pc`; and
 - support out-of-tree operation without network access after bootstrap.
 
 The AEMS consumer inventory remains public-only: installed smoke and reference
@@ -117,6 +123,19 @@ The 0.43 `Project Command` contract is represented in the normative inventory by
 `tests/project_command_test.c`. It is exercised by the complete build/test
 matrices; the release-readiness catalog does not currently define a separate
 Project Command workflow, so this profile does not invent one.
+
+The proposed Standalone CLI workflow is retained at
+`docs/engineering/ci/standalone.yml` for owner review. It relocates installations
+produced by CMake/Clang and Autotools/GCC, inspects runtime dependencies/RPATH,
+and invokes `evo` through an installation-only `PATH` from unrelated directories.
+Its real-provider mode requires Clang 18 and working Bubblewrap isolation;
+unavailable execution or missing proof fails the job. Activation under
+`.github/workflows/standalone.yml` and registration as a required source-optimizer
+release gate remain #93 blockers: the existing signed-publication token cannot
+authorize workflow-file changes. A separate read-only bootstrap validation run
+may test an explicit verified source commit; that is retained validation, not
+an active normative PR/release gate. Archive/distcheck remains an independent
+AES-BLD gate. See [the development CLI boundary](../guides/standalone-cli.md).
 
 ## Observable evidence
 

@@ -43,7 +43,7 @@ evo_project_status_t evo_project_sandbox_command_runner(
     void *opaque,
     evo_project_command_outcome_t *outcome)
 {
-    const evo_project_sandbox_command_context_t *context = opaque;
+    evo_project_sandbox_command_context_t *context = opaque;
     evo_project_sandbox_result_t sandbox = {0};
     evo_project_sandbox_command_t sandbox_command;
     evo_project_sandbox_status_t status;
@@ -61,12 +61,25 @@ evo_project_status_t evo_project_sandbox_command_runner(
         .environment_count = context->environment_count,
         .environment = context->environment,
         .limits = evo_provider_command_limits(command),
+        .cancel_requested = context->cancel_requested,
     };
     status = evo_project_sandbox_run(&sandbox_command, &sandbox);
+    context->last_stage = command->stage;
+    context->last_status = status;
+    context->exhausted_resource = sandbox.exhausted_resource;
+    context->interrupted = context->interrupted ||
+                           status == EVO_PROJECT_SANDBOX_ERROR_INTERRUPTED;
+    context->cleanup_failed = context->cleanup_failed ||
+                              status == EVO_PROJECT_SANDBOX_ERROR_CLEANUP;
+    context->resource_exhausted = context->resource_exhausted ||
+                                  sandbox.resource_exhausted ||
+                                  status == EVO_PROJECT_SANDBOX_ERROR_RESOURCE_LIMIT;
     if (status == EVO_PROJECT_SANDBOX_ERROR_OUT_OF_MEMORY) {
+        evo_project_sandbox_result_destroy(&sandbox);
         return EVO_PROJECT_ERROR_OUT_OF_MEMORY;
     }
     if (status != EVO_PROJECT_SANDBOX_SUCCESS) {
+        evo_project_sandbox_result_destroy(&sandbox);
         return EVO_PROJECT_ERROR_EXECUTION_PROVIDER;
     }
     *outcome = (evo_project_command_outcome_t){0};
