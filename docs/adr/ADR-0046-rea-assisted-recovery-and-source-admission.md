@@ -115,6 +115,14 @@ accelerated structure. Each implementing PR must reassess that obligation.
 
 ## Verification required before implementation acceptance
 
+Owner follow-up: every file in the pinned repository pull requires a recorded
+source-intake baseline before affected source/provider admission. EVO-004
+section 2.1/B0 defines complete inventory, per-file applicable scan/disposition,
+default-exclusion visibility, dependency closure and repeat/delta requirements.
+The [full-file REA baseline](../engineering/rea-recovery/baseline-9e22da8/README.md)
+retains the actual byte/diagnostic scan and its unresolved checks; it supplies
+neither the later verified C baseline nor optimizer/hardware qualification.
+
 Use the staged acceptance matrix in EVO-004. Preserve malformed-input,
 identity-mismatch, independent-oracle, immutable-input, isolation, cleanup,
 installed-provider and replay evidence at their exact subjects. Missing,

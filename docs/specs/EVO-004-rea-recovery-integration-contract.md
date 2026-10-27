@@ -57,6 +57,52 @@ compatible implementation must identify its specification, authorship and
 licensed reuse/source exposure. Claim a clean-room process only if the actual
 separation and review evidence supports it.
 
+### 2.1 Required full-file source-intake baseline
+
+Before selecting or admitting recovered source into EVO, baseline the complete
+pulled repository at its exact commit/tree. The REA source-intake baseline is
+distinct from the later independently verified C correctness/build baseline.
+Inventorying selected interfaces or only changed files does not satisfy this
+requirement.
+
+1. Account for every tracked file, including documentation, configuration,
+   workflows, hooks, build/release scripts, tests, fixtures, generated/vendored
+   content and binary assets. Retain path, object type/mode, Git identity, byte
+   count, SHA-256, content/type/role classification and a locator for the exact
+   source bytes. Reconcile the registry against the complete Git tree; missing,
+   duplicate, unreadable or mismatched entries block baseline acceptance.
+2. Record applicable scanners/rule revisions and tool identities, actual
+   outcomes, coverage and exclusions **per file**. An unsupported file, binary
+   asset, fixture or third-party path needs an explicit disposition or open gap.
+   Default scanner exclusions cannot silently remove it from the baseline.
+   Hashing or parsing a file does not establish its security or correctness.
+3. Cover the actual language/security surfaces, dependency/lockfile and license
+   identities, package hooks, source effects, workflow/provider trust and
+   sensitive-data handling. Retain independent review/dispositions where the
+   applicable requirement calls for them. Do not count a lexical marker pass,
+   an unavailable typechecker or an unrun vulnerability scan as passing evidence.
+4. Record all submodule Gitlinks, LFS/external payloads and provider references.
+   A pinned reference does not scan its referenced contents. Baseline each
+   required dependency/provider closure before its selected use is admitted;
+   preserve unavailable contents and their affected claims as blocked/not-run.
+5. Publish a bounded machine-readable registry, human-readable report, findings,
+   reproducible method and integrity manifest in EVO. Link them from the intake
+   record without copying or replacing native REA observations. Keep private
+   artifacts/access-controlled locators out of public evidence packages.
+6. On each new pin, repeat the complete baseline and retain the prior result
+   plus added/removed/renamed, mode and content changes. Re-evaluate changed
+   scanners, policy, dependencies and toolchains even for unchanged file bytes.
+
+This project acceptance requirement changes no external-reference classification
+or AES adoption. TASK-38 retains its existing read-only mining scope. Required
+findings, unsupported analysis and missing dependency contents remain explicit
+admission blockers until their claim-specific dispositions/evidence exist.
+
+The [retained full-file baseline](../engineering/rea-recovery/baseline-9e22da8/README.md)
+accounts for the pinned REA snapshot. Its byte registry and diagnostic scan are
+complete for their stated methods; dependency closure, language/security review
+and the other listed gaps remain open. It is not an admitted C baseline.
+
 ## 3. Lossless evidence and companion manifest
 
 Retain each original native REA export byte-for-byte in an authorized evidence
@@ -115,6 +161,9 @@ for investigation does not authorize a build or optimization run.
    artifact and dependency. Separate private originals from redistributable
    source, specifications and synthetic fixtures. Unresolved rights needed for
    the requested use reject that use; do not infer a license from possession.
+   Require the full-file source-intake baseline in section 2.1 and reconcile
+   every applicable finding, unsupported analysis and dependency-coverage gap
+   before the affected source or provider is admitted.
 2. Resolve every required reference against retained bytes. Validate supported
    versions, semantic IDs/relationships and expected byte digests; reject
    missing, corrupt, duplicated/ambiguous or mismatched required evidence.
@@ -219,6 +268,7 @@ tolerances and decision rules before measuring.
 | Stage / claim | Required exit evidence | Current limit / dependency |
 |---|---|---|
 | G1 — governance contract | Attributable acceptance of this EVO ADR/contract and the separate Catylist relationship amendment; consistent ownership and unchanged external-reference classification. | Publication is a proposal, not acceptance; TASK-38 remains open. |
+| B0 — full-file source-intake scan | Complete tracked-file/Gitlink registry bound to the pulled commit/tree; exact file identities, applicable scanner/tool/rule results, exclusions and dispositions; dependency/provider closure for selected use; retained report/method/integrity evidence. | The retained 9e22da8 scan accounts for all 2,404 entries; required language/security review and five submodule-content gaps remain open. Byte/syntax coverage alone cannot authorize admission. |
 | E1 — evidence handoff | Native validation, unchanged original bytes/IDs/unknown history, complete linked metadata and rights/access; tests refuse corrupt IDs, broken references, unsupported versions and subject mismatches. | Adapter/serializer/validator implementation and relevant intake dispositions still required. |
 | C1 — offline compatibility | One selected record decoded deterministically to value/unit/status/timestamp against independently obtained expectations; unchanged originals and complete identity chain. | No real instrument/capture selected; no decoder executed by this proposal. |
 | C2 — negative and unknown cases | Applicable truncation/corruption, wrong units/scaling, unsupported revision, device mismatch, stale sequence/time and missing/conflicting calibration cases; invalid/missing samples never become plausible valid readings. | Each omission needs claim-specific rationale. Synthetic cases are labeled synthetic; no self-round-trip-only acceptance. |

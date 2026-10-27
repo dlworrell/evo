@@ -1,0 +1,100 @@
+{
+  "aems_commit": "e620f4bd3cc45f05f2f18b61e3a087303eb2b4bd",
+  "governance_classification": "external-reference",
+  "governance_default_branch_policy": "excluded",
+  "mode": "diagnostic-report-only",
+  "note": "Scanner adoption/absence results are signals, not obligations imposed on this external reference.",
+  "scanner_result": {
+    "build_surface_count": 0,
+    "build_surfaces": [],
+    "classification": "native-code-active",
+    "excluded_paths": [],
+    "findings": [
+      {
+        "disposition_classification": null,
+        "disposition_status": "new",
+        "finding_id": "aes-sec-001:657cd9d73c56fa32304b985dbd53bb5afacf1e93c001f914cf73f2f2629b72a9",
+        "line": 11,
+        "path": "scripts/fixtures/binary-layout.c",
+        "remediation": "Check the return value and handle truncation explicitly.",
+        "severity": "review-required",
+        "source_fingerprint": "sha256:3f0fc250cbb43bf41df01ad4af8e144ea411aee7cf40a855023385e546c681da",
+        "symbol": "snprintf"
+      },
+      {
+        "disposition_classification": null,
+        "disposition_status": "new",
+        "finding_id": "aes-sec-001:fd92f50ca1e75eaadd2515c08b934d28231fb18e93fe884ef60fabfb9d5cc03d",
+        "line": 22,
+        "path": "tests/conformance/native/calls.m",
+        "remediation": "For ordinary initialization, prove the destination bound. For secret erasure, use explicit_bzero, memset_s where supported, or an approved non-optimizable wrapper.",
+        "severity": "review-required",
+        "source_fingerprint": "sha256:55c8bee85f576d558426a5e4fd4e30e827180433f5e21b7f156c47822dee2818",
+        "symbol": "memset"
+      }
+    ],
+    "fuzz_signals": [],
+    "hardware_file_count": 0,
+    "hardware_files": [],
+    "native_file_count": 22,
+    "native_files": [
+      "native/windows/src/addon.cc",
+      "native/windows/src/authority.hpp",
+      "native/windows/src/filesystem.cc",
+      "native/windows/src/process.cc",
+      "scripts/fixtures/binary-layout-high.S",
+      "scripts/fixtures/binary-layout.c",
+      "scripts/fixtures/recorded-crash.c",
+      "tests/conformance/c/fixture.c",
+      "tests/conformance/ghidra/cross-format.c",
+      "tests/conformance/ghidra/entry-aliases.c",
+      "tests/conformance/ghidra/inventory.c",
+      "tests/conformance/ghidra/large-results.c",
+      "tests/conformance/ghidra/namespaces.c",
+      "tests/conformance/ghidra/relative-switch.S",
+      "tests/conformance/ida/inventory.c",
+      "tests/conformance/interface-builder/fixture.c",
+      "tests/conformance/napi/fixture.c",
+      "tests/conformance/native/calls.m",
+      "tests/conformance/native/dispatch.m",
+      "tests/conformance/objc/fixture.m",
+      "tests/conformance/versions/v1.c",
+      "tests/conformance/versions/v2.c"
+    ],
+    "repository": "dlworrell/rea",
+    "review_dispositions": {
+      "baseline_count": 0,
+      "disposition_count": 0,
+      "evaluated": true,
+      "new": 2,
+      "passes_ratchet": false,
+      "path": "docs/engineering/AES-SEC-001-review-dispositions.json",
+      "present": false,
+      "reviewed": 0,
+      "schema_version": null,
+      "source_drifted": 0,
+      "stale": 0,
+      "total": 2,
+      "unresolved": 2
+    },
+    "root": "<pinned-REA-checkout>",
+    "sanitizer_signals": [],
+    "scan_root": ".",
+    "secure_profile_present": false,
+    "static_analysis_signals": [],
+    "summary": {
+      "has_banned_api_findings": false,
+      "has_native_code": true,
+      "passes_minimum_adoption_gate": false,
+      "passes_review_ratchet": false,
+      "requires_secure_profile": true
+    },
+    "waiver_log_present": false,
+    "waiver_signals": []
+  },
+  "scanner_sha256": {
+    "aes_sec_001_scan.py": "2af99be2c49dbdc384cbe6642ce9c37d02503280915e3408aff70563983358a8",
+    "aes_sec_002_scan.py": "89f6b9529c2bd292c24c101ed5e54160739e9f622331082d5d2171973e9bae0c"
+  },
+  "subject_commit": "9e22da845bf8b447f81539e0ba57d5deb59e9103"
+}
