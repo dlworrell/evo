@@ -33,6 +33,12 @@ or hardware. TASK-38 retains its existing read-only mining scope. The original
 [workspace guide](engineering/REA-EVO-INTEGRATION-WORKSPACE.md) remain source
 context rather than execution evidence.
 
+The [full-file REA source-intake baseline](engineering/rea-recovery/baseline-9e22da8/README.md)
+records all tracked files and submodule references, scan coverage/findings,
+dependency metadata and open analysis. EVO-004 section 2.1 requires this whole
+snapshot baseline and applicable dispositions before affected source admission;
+the separate independently verified C baseline remains required afterward.
+
 ## Product Component Model
 
 ### Evolutionary-search core

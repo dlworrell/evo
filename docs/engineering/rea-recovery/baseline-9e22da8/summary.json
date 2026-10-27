@@ -1,0 +1,77 @@
+{
+  "admission": "blocked-pending-applicable-review-and-unrun-checks",
+  "aems_commit": "e620f4bd3cc45f05f2f18b61e3a087303eb2b4bd",
+  "all_native_files_scanned": 28,
+  "category_counts": {
+    "ci": 22,
+    "documentation": 92,
+    "fixture": 165,
+    "source-or-configuration": 1622,
+    "test": 491,
+    "third-party": 12
+  },
+  "dependency_closure_complete": false,
+  "encoding_counts": {
+    "binary-or-non-utf8": 2,
+    "not-applicable": 5,
+    "utf-8": 2397
+  },
+  "external_action_references": 92,
+  "external_action_refs_without_full_commit": 92,
+  "gitlinks": 5,
+  "governance_classification": "external-reference",
+  "governance_default_branch_policy": "excluded",
+  "locked_package_count": 560,
+  "locked_packages_without_integrity": 0,
+  "method_sha256": "80703884206c0338bc97cec5fd6dde8041a27da4c9b549c99c77358275918016",
+  "mode": "diagnostic-report-only",
+  "native_api_candidates": {
+    "review-required": 4
+  },
+  "not_run": [
+    "submodule contents",
+    "full dependency vulnerability and license review",
+    "TypeScript semantic/type analysis",
+    "CodeQL/Semgrep",
+    "full secret/history scan",
+    "build/tests",
+    "REA provider execution",
+    "installed EVO integration",
+    "hardware validation"
+  ],
+  "note": "Scanner adoption/absence results are signals, not obligations imposed on this external reference.",
+  "package_install_script_count": 2,
+  "scanner_sha256": {
+    "aes_sec_001_scan.py": "2af99be2c49dbdc384cbe6642ce9c37d02503280915e3408aff70563983358a8",
+    "aes_sec_002_scan.py": "89f6b9529c2bd292c24c101ed5e54160739e9f622331082d5d2171973e9bae0c"
+  },
+  "sec001_default_coverage": {
+    "excluded-directory": 7,
+    "excluded-fixture": 142,
+    "native-api": 22,
+    "not-applicable": 5,
+    "signals-only": 2228
+  },
+  "sec002_default_coverage": {
+    "excluded-directory": 7,
+    "not-applicable": 5,
+    "text-signals": 257,
+    "unsupported-extension": 2135
+  },
+  "source_unchanged": true,
+  "subject_commit": "9e22da845bf8b447f81539e0ba57d5deb59e9103",
+  "syntax_counts": {
+    "parse-review": 9,
+    "pass": 2131
+  },
+  "token_shape_candidates": 0,
+  "tools": {
+    "git": "git version 2.51.1",
+    "node": "v24.22.1",
+    "python": "3.12.14"
+  },
+  "total_blob_bytes": 17425756,
+  "tracked_entries": 2404,
+  "tree": "652cb43560a2034fa1fffdff2c07e91062b9d070",
+  "verified_blobs": 2399
+}
