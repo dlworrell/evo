@@ -1,0 +1,1962 @@
+{
+  "affected_lock_entries": 21,
+  "archive_execution": "none",
+  "license_approval": "not-established",
+  "method_sha256": "4bba42ae76e1da16efe90283e9c00bf7c54a3da9093a0b98c85078ffdb908863",
+  "original_commit": "9e22da845bf8b447f81539e0ba57d5deb59e9103",
+  "registry": "https://registry.npmjs.org",
+  "results": [
+    {
+      "declared_engines": null,
+      "declared_license": "MIT",
+      "dist": {
+        "attestations": {
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          },
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@oxc-project%2ftypes@0.152.0"
+        },
+        "fileCount": 4,
+        "integrity": "sha512-oM/5rLBm2tPkg0iBgkH/FOeR3PCDpY19GTgAZjMFM8h9WI9VW7cLgzp6nwtarYKmovavIQZ+Fe/RKX/8C8O/Rw==",
+        "shasum": "643ff80ce7aacea025f859f13b60cbb42ae0a613",
+        "signatures": [
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEUCIGz34o5KcKBAtBBBKNMNESJ5mU9R1e+y/gUSFzMl9K5bAiEAvQ+MouXlZW5izN40RqDRKenSFD07MsnEj4/86/rwIIQ="
+          },
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEUCIEV0v6RQ1+h98iiJaKO2h0xTibKsWBOgkTMg45TZFzC7AiEAho7saYWAlm2UgrAy/43UlDvAaWdR42sh3cEh+UZh/YE="
+          }
+        ],
+        "tarball": "https://registry.npmjs.org/@oxc-project/types/-/types-0.152.0.tgz",
+        "unpackedSize": 44596
+      },
+      "metadata_bytes": 1703,
+      "metadata_sha256": "8b1719eea33e1775b85a15cded0b76310102e014711c6bda490c7ce23004d99e",
+      "metadata_url": "https://registry.npmjs.org/@oxc-project%2Ftypes/0.152.0",
+      "name": "@oxc-project/types",
+      "observed_at": "2026-10-27T19:54:56.870505+00:00",
+      "package_scripts": {},
+      "path": "node_modules/@oxc-project/types",
+      "provenance_verification": "not-run; metadata availability is not verification",
+      "stage": "before",
+      "status": "metadata-verified",
+      "version": "0.152.0"
+    },
+    {
+      "declared_engines": {
+        "node": "^20.19.0 || >=22.12.0"
+      },
+      "declared_license": "MIT",
+      "dist": {
+        "attestations": {
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          },
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@rolldown%2fbinding-android-arm-eabi@1.2.12"
+        },
+        "fileCount": 3,
+        "integrity": "sha512-dB/a1214qKfHMXCpgqR4OZT+jS4kTyEXbQGJPqzobt5EwH5rX080pxE37alt3RzvR1bf1Yz/yGqRfrYAxuPw0A==",
+        "shasum": "efba4353480c76804606f106c9ac01f0ddfa7d13",
+        "signatures": [
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEUCIQDAX68ffVu4CdQTWMBoHvongy3Rk7ve1+J4CC1ei5Lq7wIgMatWQ16c6jbnYFTO1fBd0Qu61LymG93/IR7uhtd5X8Q="
+          },
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEQCIHDxEG7xwE1YwJE1wR2ANp2q3527IJy+hm/X7Y1O27QmAiBQkhztzpdyT+GHkO/gQmUORG3yT7QOdod+cSoJ9V/p4g=="
+          }
+        ],
+        "tarball": "https://registry.npmjs.org/@rolldown/binding-android-arm-eabi/-/binding-android-arm-eabi-1.2.12.tgz",
+        "unpackedSize": 11539321
+      },
+      "metadata_bytes": 2185,
+      "metadata_sha256": "904a13ef99987f4ae408117d87fffae94b8d758c1a4a30c98732be185a7c073b",
+      "metadata_url": "https://registry.npmjs.org/@rolldown%2Fbinding-android-arm-eabi/1.2.12",
+      "name": "@rolldown/binding-android-arm-eabi",
+      "observed_at": "2026-10-27T19:54:56.871817+00:00",
+      "package_scripts": {},
+      "path": "node_modules/@rolldown/binding-android-arm-eabi",
+      "provenance_verification": "not-run; metadata availability is not verification",
+      "stage": "before",
+      "status": "metadata-verified",
+      "version": "1.2.12"
+    },
+    {
+      "declared_engines": {
+        "node": "^20.19.0 || >=22.12.0"
+      },
+      "declared_license": "MIT",
+      "dist": {
+        "attestations": {
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          },
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@rolldown%2fbinding-android-arm64@1.2.12"
+        },
+        "fileCount": 3,
+        "integrity": "sha512-7KHFgQ5VJxIHcLlrwrc3Xbds7oTNQT7Pgi9gQCJKrd2VGab/UksIOYp6VD8MzCstGxOKMgNamPwUCfxPdP1OHg==",
+        "shasum": "6255422c39c2b45ee44b0286df902b9481f76ecb",
+        "signatures": [
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEYCIQCnTeQBMP2gITf9Enrzxn4DK6Cyt8IaJVegGqu4njKI9gIhAPwqQdfiDgmOZI5wajYI1IVg34C6pIYgecRD+ql2omtw"
+          },
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEYCIQDYhUZbayom3UgWRl58/lPpa+QzoFxCJgauKXq3rXUKCwIhAPe1S/n3X6K/+c1wiVMu6TNiR4WXn+83ZLyJkm7yxA9i"
+          }
+        ],
+        "tarball": "https://registry.npmjs.org/@rolldown/binding-android-arm64/-/binding-android-arm64-1.2.12.tgz",
+        "unpackedSize": 17548949
+      },
+      "metadata_bytes": 2164,
+      "metadata_sha256": "de92e31fcb9353562547e38253648661d8294743b4b1b568fa160705a59879a0",
+      "metadata_url": "https://registry.npmjs.org/@rolldown%2Fbinding-android-arm64/1.2.12",
+      "name": "@rolldown/binding-android-arm64",
+      "observed_at": "2026-10-27T19:54:56.872988+00:00",
+      "package_scripts": {},
+      "path": "node_modules/@rolldown/binding-android-arm64",
+      "provenance_verification": "not-run; metadata availability is not verification",
+      "stage": "before",
+      "status": "metadata-verified",
+      "version": "1.2.12"
+    },
+    {
+      "declared_engines": {
+        "node": "^20.19.0 || >=22.12.0"
+      },
+      "declared_license": "MIT",
+      "dist": {
+        "attestations": {
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          },
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@rolldown%2fbinding-darwin-arm64@1.2.12"
+        },
+        "fileCount": 3,
+        "integrity": "sha512-3YIhqHD96nA5SaYNRBR16HnGv4oavZvXfD/ayHM+oYZ0WD/8lBAtf6zQua4kEyAvpqrluKXl0lnOBoiNby7x9w==",
+        "shasum": "2d7d153d657f5ee4d44abb752ae7d64cac049ca5",
+        "signatures": [
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEYCIQCWdTv/R3U4K5UuNs0YX0SpqVTKG5ipFGTfu6uSiIPESgIhANAXyn9zbqbgEEBAjjABgRlNUBpaWBRcE1LzvJmOQOZ4"
+          },
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEUCIEWrN4/1dIXy2lWTyD8Ls0Rd6pAhUYIB1ywpNkKK/8BNAiEA3tkrOMgV+6hHidpvX/u77knY257KZQoRfsQG12RZ5ys="
+          }
+        ],
+        "tarball": "https://registry.npmjs.org/@rolldown/binding-darwin-arm64/-/binding-darwin-arm64-1.2.12.tgz",
+        "unpackedSize": 16704367
+      },
+      "metadata_bytes": 2156,
+      "metadata_sha256": "ea8a3e8f17c71fccfab8cd63e65d4c9bdcaa00bae8e8d5b16333d3ded84c1bd0",
+      "metadata_url": "https://registry.npmjs.org/@rolldown%2Fbinding-darwin-arm64/1.2.12",
+      "name": "@rolldown/binding-darwin-arm64",
+      "observed_at": "2026-10-27T19:54:56.874636+00:00",
+      "package_scripts": {},
+      "path": "node_modules/@rolldown/binding-darwin-arm64",
+      "provenance_verification": "not-run; metadata availability is not verification",
+      "stage": "before",
+      "status": "metadata-verified",
+      "version": "1.2.12"
+    },
+    {
+      "declared_engines": {
+        "node": "^20.19.0 || >=22.12.0"
+      },
+      "declared_license": "MIT",
+      "dist": {
+        "attestations": {
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          },
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@rolldown%2fbinding-darwin-x64@1.2.12"
+        },
+        "fileCount": 3,
+        "integrity": "sha512-UuuJ35MFw4gmFOrE9pEqIV+K3syIKveph+Qc1/ljHZVdoDW4pz/JHR/eMVom+TZGl/5OOvGJOWaOCVt3ZfqhxA==",
+        "shasum": "7ddc83ecef05fb28f1174e5be3eb4ae5307faedf",
+        "signatures": [
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEUCIH70JBeAXcwB8fsRiiK9uPFNFPToVWkVMDQ5rFmZzfEKAiEAntiFj4KD2batiEg9JYS0jPg+58DmHMbX5nFHS9am5R0="
+          },
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEYCIQDC4+3iCpZB696O8PugYC3qAFc+WUaLTrZdCx/Eu24zDwIhAOFRhbWwZGsIUBEkXJTTbv/Ftotvkuqk4wA2tamTvDpN"
+          }
+        ],
+        "tarball": "https://registry.npmjs.org/@rolldown/binding-darwin-x64/-/binding-darwin-x64-1.2.12.tgz",
+        "unpackedSize": 17643436
+      },
+      "metadata_bytes": 2140,
+      "metadata_sha256": "f08a0a9b8722a65941e5e6e3e10dee37dc7947353b8b9d9c1161af638c028f86",
+      "metadata_url": "https://registry.npmjs.org/@rolldown%2Fbinding-darwin-x64/1.2.12",
+      "name": "@rolldown/binding-darwin-x64",
+      "observed_at": "2026-10-27T19:55:00.386842+00:00",
+      "package_scripts": {},
+      "path": "node_modules/@rolldown/binding-darwin-x64",
+      "provenance_verification": "not-run; metadata availability is not verification",
+      "stage": "before",
+      "status": "metadata-verified",
+      "version": "1.2.12"
+    },
+    {
+      "declared_engines": {
+        "node": "^20.19.0 || >=22.12.0"
+      },
+      "declared_license": "MIT",
+      "dist": {
+        "attestations": {
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          },
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@rolldown%2fbinding-freebsd-x64@1.2.12"
+        },
+        "fileCount": 3,
+        "integrity": "sha512-uMvssit0a4W+/7D8CbHUvG719mH3R2jwXAlh/XcPvuHTE0g++LymF88DCGNX0HM2rBOn0xrzgXktIB6fLSJBTQ==",
+        "shasum": "9e68e57cc3a1c5ea363129234fd5dcc8537606dd",
+        "signatures": [
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEYCIQDFjQAV0+qW9MOxQPxTNdcZxHsniKjSvGX/UyqpICia4AIhAPHNgFBhruRPySg+8tpKJGuNfwvgpu49/mig+nOs/nhX"
+          },
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEUCIBT9b1q+wRhPcimX/B/+EpI/TeX8E+GQVqlSNqq8l/3OAiEAwquI/ayAwaOZMKOHgtyScyC8KX2xicAAbkC2Ro119cU="
+          }
+        ],
+        "tarball": "https://registry.npmjs.org/@rolldown/binding-freebsd-x64/-/binding-freebsd-x64-1.2.12.tgz",
+        "unpackedSize": 19474908
+      },
+      "metadata_bytes": 2149,
+      "metadata_sha256": "d8140b24456052d2fc4e24b5b7f4e6c0877cad5035bdf92eec6f50d4be5aaa8b",
+      "metadata_url": "https://registry.npmjs.org/@rolldown%2Fbinding-freebsd-x64/1.2.12",
+      "name": "@rolldown/binding-freebsd-x64",
+      "observed_at": "2026-10-27T19:55:00.400113+00:00",
+      "package_scripts": {},
+      "path": "node_modules/@rolldown/binding-freebsd-x64",
+      "provenance_verification": "not-run; metadata availability is not verification",
+      "stage": "before",
+      "status": "metadata-verified",
+      "version": "1.2.12"
+    },
+    {
+      "declared_engines": {
+        "node": "^20.19.0 || >=22.12.0"
+      },
+      "declared_license": "MIT",
+      "dist": {
+        "attestations": {
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          },
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@rolldown%2fbinding-linux-arm-gnueabihf@1.2.12"
+        },
+        "fileCount": 3,
+        "integrity": "sha512-XcFu0R0xWnwzSf4IQgFH1rJIckPN1pLy2R+4r9IDB7Yfu/ys9cVqfa4pBrMHj7a3gl8mIR4nRNPg0e5IvEVs6g==",
+        "shasum": "335b4f2cbf8c8a2d1016f79feeb0187c578f5f7a",
+        "signatures": [
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEUCIQC2GPj/FUnqEBnGpM6rB1bQIFkLtC7cC3xN4jBrMlkomAIgJE0NlCiGmz/jjXcsdeemQndQHU+nCDBaABf+6leh6DQ="
+          },
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEUCIQDuoQwNhZCn+Mv5RP4X+S7cnUb5B3/SaytwXzFV7YvDbQIgMd7SqYdr2vAP2sqRL0rsoeftNMus+zR42cJL54nxVVc="
+          }
+        ],
+        "tarball": "https://registry.npmjs.org/@rolldown/binding-linux-arm-gnueabihf/-/binding-linux-arm-gnueabihf-1.2.12.tgz",
+        "unpackedSize": 16070397
+      },
+      "metadata_bytes": 2202,
+      "metadata_sha256": "46ccfee665392a3292c57286d80035bb707d3f92b9b8d67e169788330198c086",
+      "metadata_url": "https://registry.npmjs.org/@rolldown%2Fbinding-linux-arm-gnueabihf/1.2.12",
+      "name": "@rolldown/binding-linux-arm-gnueabihf",
+      "observed_at": "2026-10-27T19:55:00.418832+00:00",
+      "package_scripts": {},
+      "path": "node_modules/@rolldown/binding-linux-arm-gnueabihf",
+      "provenance_verification": "not-run; metadata availability is not verification",
+      "stage": "before",
+      "status": "metadata-verified",
+      "version": "1.2.12"
+    },
+    {
+      "declared_engines": {
+        "node": "^20.19.0 || >=22.12.0"
+      },
+      "declared_license": "MIT",
+      "dist": {
+        "attestations": {
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          },
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@rolldown%2fbinding-linux-arm64-gnu@1.2.12"
+        },
+        "fileCount": 3,
+        "integrity": "sha512-260UrKgn8tz39ak+SMDOirKzr7V04M9dWPw5llW00SwBivCZoWcRBKV1d8cXnRkUmSZA3BdiUmBHWk7734Ulpw==",
+        "shasum": "759fc27992583653f87dc447b4be02b4ddd0d1b4",
+        "signatures": [
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEUCIEBSEL8A90eHfZpIGiFhdasmSAADiZwTQHNeTDnzjggAAiEAmaMgWz9/EFskm4BgwxkLYtWu3HpfKS2qH7PiPV6e9Fk="
+          },
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEUCIQDgDPr35KGamFeyJYH3M80sT9G9kTXFVpSLGy9KGeepbQIgRGfJutRz58HTaofe1U6M8ac6gFYh0hGaekT0IlWD0E4="
+          }
+        ],
+        "tarball": "https://registry.npmjs.org/@rolldown/binding-linux-arm64-gnu/-/binding-linux-arm64-gnu-1.2.12.tgz",
+        "unpackedSize": 17514972
+      },
+      "metadata_bytes": 2194,
+      "metadata_sha256": "2beeba7a2ecb191aa73d9baf8c2292805ee2f65d3d399f36538894f6bd4fb689",
+      "metadata_url": "https://registry.npmjs.org/@rolldown%2Fbinding-linux-arm64-gnu/1.2.12",
+      "name": "@rolldown/binding-linux-arm64-gnu",
+      "observed_at": "2026-10-27T19:55:00.454087+00:00",
+      "package_scripts": {},
+      "path": "node_modules/@rolldown/binding-linux-arm64-gnu",
+      "provenance_verification": "not-run; metadata availability is not verification",
+      "stage": "before",
+      "status": "metadata-verified",
+      "version": "1.2.12"
+    },
+    {
+      "declared_engines": {
+        "node": "^20.19.0 || >=22.12.0"
+      },
+      "declared_license": "MIT",
+      "dist": {
+        "attestations": {
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          },
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@rolldown%2fbinding-linux-arm64-musl@1.2.12"
+        },
+        "fileCount": 3,
+        "integrity": "sha512-5YK1I9SqDkbPgc1IA8BgDl34suqUS2q0KWnBrirm0E51YjOs6eo6dV6jbQfNE/argHRSvd0QUGgtpIoYx+WWpw==",
+        "shasum": "e1f3094429a874cb76e2c7735759d333ad8f6791",
+        "signatures": [
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEUCID0dx8cgqIMBZPGzT76pltqqjIJrc+hvtCTh+bYTdrUiAiEA+7b6+UVSh9IktdC6m5h1PKpzytrWdLXQoIhyD6TJ3gI="
+          },
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEQCIFL7g4pMrayOt8L5O0LXIqBhpNNWV2vdOPGetYkvVVEdAiApW+jeBJ2hnPMkiN2NcLlmxQV/1NMvw4rbSaLRWpfRVw=="
+          }
+        ],
+        "tarball": "https://registry.npmjs.org/@rolldown/binding-linux-arm64-musl/-/binding-linux-arm64-musl-1.2.12.tgz",
+        "unpackedSize": 17534480
+      },
+      "metadata_bytes": 2199,
+      "metadata_sha256": "bc797c228d91cb83b14696b02de8e67ceecd8fc2e2a1760e92316661ad857c35",
+      "metadata_url": "https://registry.npmjs.org/@rolldown%2Fbinding-linux-arm64-musl/1.2.12",
+      "name": "@rolldown/binding-linux-arm64-musl",
+      "observed_at": "2026-10-27T19:55:03.011135+00:00",
+      "package_scripts": {},
+      "path": "node_modules/@rolldown/binding-linux-arm64-musl",
+      "provenance_verification": "not-run; metadata availability is not verification",
+      "stage": "before",
+      "status": "metadata-verified",
+      "version": "1.2.12"
+    },
+    {
+      "declared_engines": {
+        "node": "^20.19.0 || >=22.12.0"
+      },
+      "declared_license": "MIT",
+      "dist": {
+        "attestations": {
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          },
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@rolldown%2fbinding-linux-ppc64-gnu@1.2.12"
+        },
+        "fileCount": 3,
+        "integrity": "sha512-Rkcrmp7eFRg74yL5fXEU91JEWbdEPLevWwGtXpmhbjlD1StScbWTmO94Bhly+Mo+ketKYkdmM1vNUKeWSlx8cQ==",
+        "shasum": "0ca361ac97774403dd5fe5976a363eb9c2139dc5",
+        "signatures": [
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEUCID0TS9OcUcw6zfEsy8P+Z//1D8KY+KrZRU1sj8FBR5EmAiEA39d6zWw5Y98moH+sHx6OJIKnS5fa+/AxiTaXeMXHZ00="
+          },
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEUCIQD+QHz7JKQZpLBpJhhiea6+N7iNxcypa+DK/ptcPz0ZZQIgB2269PhT+/fJ9VASCXBP6hXTlesmywWyor/6C3/xGO0="
+          }
+        ],
+        "tarball": "https://registry.npmjs.org/@rolldown/binding-linux-ppc64-gnu/-/binding-linux-ppc64-gnu-1.2.12.tgz",
+        "unpackedSize": 22103288
+      },
+      "metadata_bytes": 2194,
+      "metadata_sha256": "22717c2237e653b5c0359026730fd38c29723b8e764be595ae99b9192f854210",
+      "metadata_url": "https://registry.npmjs.org/@rolldown%2Fbinding-linux-ppc64-gnu/1.2.12",
+      "name": "@rolldown/binding-linux-ppc64-gnu",
+      "observed_at": "2026-10-27T19:55:03.012465+00:00",
+      "package_scripts": {},
+      "path": "node_modules/@rolldown/binding-linux-ppc64-gnu",
+      "provenance_verification": "not-run; metadata availability is not verification",
+      "stage": "before",
+      "status": "metadata-verified",
+      "version": "1.2.12"
+    },
+    {
+      "declared_engines": {
+        "node": "^20.19.0 || >=22.12.0"
+      },
+      "declared_license": "MIT",
+      "dist": {
+        "attestations": {
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          },
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@rolldown%2fbinding-linux-s390x-gnu@1.2.12"
+        },
+        "fileCount": 3,
+        "integrity": "sha512-qvK4DuAsQc2BSjlx+Xr+IzOIvvxbGZqxFwdWfG6F518Erj0GGISyQbJ6pIappnOxlNPzNHvo/L0BwB30GZ+zVw==",
+        "shasum": "e40fb19c56e99197aec91ecb02756ebd378a347c",
+        "signatures": [
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEQCIGzvCw+8dSgRCxmJVRWFmU0Z5qFv4JTq5prAVqw0Q3J+AiA+qbpqssdp7CySE8d6J7fBvddjt9RFyP9l1KTahEkRDQ=="
+          },
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEUCIQD9Vv47eT60VI6rrJLlAvNcqhH8q9w4Dg0QyPrQ2Ok2YwIgP5s8vGgzWsuyCHg43afzpZYGAETVfUCbnU4PGMz5Yp8="
+          }
+        ],
+        "tarball": "https://registry.npmjs.org/@rolldown/binding-linux-s390x-gnu/-/binding-linux-s390x-gnu-1.2.12.tgz",
+        "unpackedSize": 20603386
+      },
+      "metadata_bytes": 2193,
+      "metadata_sha256": "439ce9e9e0e4cbb4bd19f6c4ff17508917b2de88e5eb1576693c32128ac405b0",
+      "metadata_url": "https://registry.npmjs.org/@rolldown%2Fbinding-linux-s390x-gnu/1.2.12",
+      "name": "@rolldown/binding-linux-s390x-gnu",
+      "observed_at": "2026-10-27T19:55:03.051147+00:00",
+      "package_scripts": {},
+      "path": "node_modules/@rolldown/binding-linux-s390x-gnu",
+      "provenance_verification": "not-run; metadata availability is not verification",
+      "stage": "before",
+      "status": "metadata-verified",
+      "version": "1.2.12"
+    },
+    {
+      "declared_engines": {
+        "node": "^20.19.0 || >=22.12.0"
+      },
+      "declared_license": "MIT",
+      "dist": {
+        "attestations": {
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          },
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@rolldown%2fbinding-linux-x64-gnu@1.2.12"
+        },
+        "fileCount": 3,
+        "integrity": "sha512-Q9uLBO53Xd4QIq1WOycVQyPP1O4HhraEV2qqb3uTrnVw6QZih9duY4vNXOivL1xoUS1/z+W8eF4NMfl2a8Sdjw==",
+        "shasum": "215aeb601d0daaf5d28582c1f2e967c775a6c70a",
+        "signatures": [
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEQCIAW6fqOPz5Mn3P6Wm8I+VHppEnO39wZaMywmPsmXEnyLAiABdQEWWsyaSepmXrYi12ANn9tyItZknwJJfJ5iOhL2Jg=="
+          },
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEUCIQDxoSSIsiNihKLUhceV3UuaXmT88t+p0N/+NjECBN4lMQIgGvUshJVc8tfWR5//1f5npWTA5Q7GX0nfk09xA3LxgHU="
+          }
+        ],
+        "tarball": "https://registry.npmjs.org/@rolldown/binding-linux-x64-gnu/-/binding-linux-x64-gnu-1.2.12.tgz",
+        "unpackedSize": 19465281
+      },
+      "metadata_bytes": 2177,
+      "metadata_sha256": "2b1454c4d8e4ae74df65b80547868420f74fff8c53f627f4c23fab281f7aeb6a",
+      "metadata_url": "https://registry.npmjs.org/@rolldown%2Fbinding-linux-x64-gnu/1.2.12",
+      "name": "@rolldown/binding-linux-x64-gnu",
+      "observed_at": "2026-10-27T19:55:03.058099+00:00",
+      "package_scripts": {},
+      "path": "node_modules/@rolldown/binding-linux-x64-gnu",
+      "provenance_verification": "not-run; metadata availability is not verification",
+      "stage": "before",
+      "status": "metadata-verified",
+      "version": "1.2.12"
+    },
+    {
+      "declared_engines": {
+        "node": "^20.19.0 || >=22.12.0"
+      },
+      "declared_license": "MIT",
+      "dist": {
+        "attestations": {
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          },
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@rolldown%2fbinding-linux-x64-musl@1.2.12"
+        },
+        "fileCount": 3,
+        "integrity": "sha512-3IBxWFMjbOZskDPKv8Lf9BCnahlKuHthWkYnyIxOH/QcJrFcS4EmcenthApkwr/5+nEqZlLzeYbxeMaX7A5u4g==",
+        "shasum": "90905cdd1ab12242d72de38b7ec9aa826a9ee17c",
+        "signatures": [
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEYCIQDdelnvzL/spZ0yTvFtu3uT5m5AXXZ/Wy/9fgxlMrgoNgIhAKbgyXTlXzqqc3cdaUloKU9RkMjz/2E/hkFpZjuYAciv"
+          },
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEUCIGwdqpHUMjjNpsO+CdDjlI4NwRKzSky0QMEDl7jX3IY+AiEAlK+KeoZhspmUZmrfFD6yvrCPGm1fYRB5zyXfTbnIaaE="
+          }
+        ],
+        "tarball": "https://registry.npmjs.org/@rolldown/binding-linux-x64-musl/-/binding-linux-x64-musl-1.2.12.tgz",
+        "unpackedSize": 19530261
+      },
+      "metadata_bytes": 2182,
+      "metadata_sha256": "c643d0561126b72ae4375f46e3c379e5c8217c1923bd456e5375a019ae80bef1",
+      "metadata_url": "https://registry.npmjs.org/@rolldown%2Fbinding-linux-x64-musl/1.2.12",
+      "name": "@rolldown/binding-linux-x64-musl",
+      "observed_at": "2026-10-27T19:55:05.418063+00:00",
+      "package_scripts": {},
+      "path": "node_modules/@rolldown/binding-linux-x64-musl",
+      "provenance_verification": "not-run; metadata availability is not verification",
+      "stage": "before",
+      "status": "metadata-verified",
+      "version": "1.2.12"
+    },
+    {
+      "declared_engines": {
+        "node": "^20.19.0 || >=22.12.0"
+      },
+      "declared_license": "MIT",
+      "dist": {
+        "attestations": {
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          },
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@rolldown%2fbinding-openharmony-arm64@1.2.12"
+        },
+        "fileCount": 3,
+        "integrity": "sha512-xtX61xg4LKPkPWilZU1ynKClz5Gj4bf74LML4r3eVLWumKnGjoEr1OSHQhMdbBDoYTi+yjrujvpZe2pUnqCrrA==",
+        "shasum": "e6868debd9202c476786f0995ca8250f3f647972",
+        "signatures": [
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEQCIDdJtX1zuZaKs7AtqdmOjV5AqObAGUbeQMHz52YScUkCAiADSCUJ6d3KcYE6kv9P9vK6oDIFgD2Jk8i7YBPQpHnl0w=="
+          },
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEUCIAEl9Y5E8kV1twAs0sWl7EkNvCQVLK+ECAjaH+laXY41AiEA//JUbC6w2qx6WeDv4QswXPff8RdPEeK7P08f5nabpfA="
+          }
+        ],
+        "tarball": "https://registry.npmjs.org/@rolldown/binding-openharmony-arm64/-/binding-openharmony-arm64-1.2.12.tgz",
+        "unpackedSize": 17533846
+      },
+      "metadata_bytes": 2196,
+      "metadata_sha256": "ebdfcc5bd901ae5cd59ca483a1cac0f5b2182fdbecd44b3729f2f8b1f3c513d0",
+      "metadata_url": "https://registry.npmjs.org/@rolldown%2Fbinding-openharmony-arm64/1.2.12",
+      "name": "@rolldown/binding-openharmony-arm64",
+      "observed_at": "2026-10-27T19:55:05.418994+00:00",
+      "package_scripts": {},
+      "path": "node_modules/@rolldown/binding-openharmony-arm64",
+      "provenance_verification": "not-run; metadata availability is not verification",
+      "stage": "before",
+      "status": "metadata-verified",
+      "version": "1.2.12"
+    },
+    {
+      "declared_engines": {
+        "node": "^20.19.0 || >=22.12.0"
+      },
+      "declared_license": "MIT",
+      "dist": {
+        "attestations": {
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          },
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@rolldown%2fbinding-win32-arm64-msvc@1.2.12"
+        },
+        "fileCount": 3,
+        "integrity": "sha512-At7fPB6PCaIjzgIhEZFxuT+BBFqiQibJDT4d3PhiR3f4E7bbMZF4aKblbFfEM3sETRDd1YiQx/+U/g/B/ou5Ew==",
+        "shasum": "a335ae382cbf3b282c3a6fe620fe4f4a0e25dfda",
+        "signatures": [
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEQCICw9Gb/ZHFnMhIjvXHktlb3QUcSVHNvTELzRS7r50IZ3AiBFccF89S1Hgrjw5ouZS4QwIT2QMMiHgpJjjShN8+hQOQ=="
+          },
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEUCIQDAiVU8vk/M3/kzzSabLfKTmcrEy3XgV0njzHyfIjEvbgIgOYGLCN2KqdzYK382jDpmMqRxLPmIIHNRw58EI+u+VrE="
+          }
+        ],
+        "tarball": "https://registry.npmjs.org/@rolldown/binding-win32-arm64-msvc/-/binding-win32-arm64-msvc-1.2.12.tgz",
+        "unpackedSize": 18266577
+      },
+      "metadata_bytes": 2183,
+      "metadata_sha256": "31656a1748dcf0b6a58f6f272e68b46e53a2e9cf5b7ed0b3daef421318005adc",
+      "metadata_url": "https://registry.npmjs.org/@rolldown%2Fbinding-win32-arm64-msvc/1.2.12",
+      "name": "@rolldown/binding-win32-arm64-msvc",
+      "observed_at": "2026-10-27T19:55:05.421828+00:00",
+      "package_scripts": {},
+      "path": "node_modules/@rolldown/binding-win32-arm64-msvc",
+      "provenance_verification": "not-run; metadata availability is not verification",
+      "stage": "before",
+      "status": "metadata-verified",
+      "version": "1.2.12"
+    },
+    {
+      "declared_engines": {
+        "node": "^20.19.0 || >=22.12.0"
+      },
+      "declared_license": "MIT",
+      "dist": {
+        "attestations": {
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          },
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@rolldown%2fbinding-win32-x64-msvc@1.2.12"
+        },
+        "fileCount": 3,
+        "integrity": "sha512-WIw2haVKwjuYdXkHaoC0mF8Le71TuCBxjrdKqLbJGctbBABj+ClfmNvtbOnzpq3RokNo5+V1qhtSzJyXorsklQ==",
+        "shasum": "55d6f9c288aa220f758310c39c31aa1c4d309830",
+        "signatures": [
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEQCIHiOpWmlNCIVHgTCgY7UUJrnSgeWsSvSZATAUOgq4EfiAiBycW1Omvg6ohyALQ7pMXOQGYYVC65BpXfuY3SqNnTRpw=="
+          },
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEQCIBKiLsQdUOGxnEGSvlRXDtONJ5SvhFpT60OiLjRfQJrPAiBZMZYlx2Eu/rsC3rjteEtJs+Jgsl1KbrIMZROfwcCBAw=="
+          }
+        ],
+        "tarball": "https://registry.npmjs.org/@rolldown/binding-win32-x64-msvc/-/binding-win32-x64-msvc-1.2.12.tgz",
+        "unpackedSize": 21177798
+      },
+      "metadata_bytes": 2167,
+      "metadata_sha256": "670ab48f67fb69f4eb578ea8b9b911aeefac4e387220f3a1719b983ef5400f73",
+      "metadata_url": "https://registry.npmjs.org/@rolldown%2Fbinding-win32-x64-msvc/1.2.12",
+      "name": "@rolldown/binding-win32-x64-msvc",
+      "observed_at": "2026-10-27T19:55:05.447591+00:00",
+      "package_scripts": {},
+      "path": "node_modules/@rolldown/binding-win32-x64-msvc",
+      "provenance_verification": "not-run; metadata availability is not verification",
+      "stage": "before",
+      "status": "metadata-verified",
+      "version": "1.2.12"
+    },
+    {
+      "declared_engines": null,
+      "declared_license": "BSD-3-Clause",
+      "dist": {
+        "fileCount": 44,
+        "integrity": "sha512-GZMtZUTNRpOVIECoXwLNZS5xUGE+mVNbTB8h/7Rwh2TFWcBQiPzTgyZi05BF9UMZKkLJv8XBRJTlU7zg8+ZfMg==",
+        "shasum": "f7db8d942e20eead3cfe93b0beeb4eb0169e938b",
+        "signatures": [
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEQCIAFY8R/oklnujz86Qp91RCMZ7Q4UKVpOIyK6SVQucORxAiB3QAr2EGigSFZvLpNSMnMTSU+e6xRonnMOqbVfgCgmGw=="
+          },
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEQCIBapYWmwkYVjiNluF7sQZV/v5LCo8e8ABySbJBEICb0CAiAIZoX7yNR4Bh0DuxT3O6hMiBK+fJMbXyEtMYKHbj+Fkg=="
+          }
+        ],
+        "tarball": "https://registry.npmjs.org/fast-uri/-/fast-uri-3.1.8.tgz",
+        "unpackedSize": 220886
+      },
+      "metadata_bytes": 3209,
+      "metadata_sha256": "3939d6da40e9588f9c5356ce0494964db85b258454aed1c46666be4660f2caaf",
+      "metadata_url": "https://registry.npmjs.org/fast-uri/3.1.8",
+      "name": "fast-uri",
+      "observed_at": "2026-10-27T19:55:07.797112+00:00",
+      "package_scripts": {
+        "lint": "eslint",
+        "lint:fix": "eslint --fix",
+        "test": "npm run test:unit && npm run test:typescript",
+        "test:browser": "npm run test:browser:chromium && npm run test:browser:firefox && npm run test:browser:webkit",
+        "test:browser:chromium": "playwright-test ./test/* --runner tape --browser=chromium",
+        "test:browser:firefox": "playwright-test ./test/* --runner tape --browser=firefox",
+        "test:browser:webkit": "playwright-test ./test/* --runner tape --browser=webkit",
+        "test:typescript": "tsd",
+        "test:unit": "tape test/**/*.js",
+        "test:unit:dev": "npm run test:unit -- --coverage-report=html"
+      },
+      "path": "node_modules/fast-uri",
+      "provenance_verification": "not-run; metadata availability is not verification",
+      "stage": "before",
+      "status": "metadata-verified",
+      "version": "3.1.8"
+    },
+    {
+      "declared_engines": {
+        "node": "^20.19.0 || >=22.12.0"
+      },
+      "declared_license": "MIT",
+      "dist": {
+        "attestations": {
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          },
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/rolldown@1.2.12"
+        },
+        "fileCount": 52,
+        "integrity": "sha512-8wafseiaG80xmXSfqidUNqZcylTlhmPZZt+za2m+js2sFZ8dTNlhIOV2WcbIPx2hgwPBJpEUGFAMZ9bgBBLTSQ==",
+        "shasum": "75215a6b55a2a9e8f577ac937a4fe42d9682ae0c",
+        "signatures": [
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEYCIQCOVR48wxGF3XDkdb23J1xu2PsDBtbUdrsIrwhEne3fIgIhAP/VXGejn3338UqsQQJOuLa9kdrCDxnWPE2RJmPJN4Rc"
+          },
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEYCIQDhOv/xmfv8lJhusrFw/l/dq7zI/3eYLwCqbHJOsdGo0wIhANhbg67Ho9QEV7g2J8LkucZqf1rXtBIdTcUfsf4APj+G"
+          }
+        ],
+        "tarball": "https://registry.npmjs.org/rolldown/-/rolldown-1.2.12.tgz",
+        "unpackedSize": 873971
+      },
+      "metadata_bytes": 6513,
+      "metadata_sha256": "a6b272bf6d485c1e74b4263bd9fc620f59d5fd2a222e9dc4841dd4487eeedde5",
+      "metadata_url": "https://registry.npmjs.org/rolldown/1.2.12",
+      "name": "rolldown",
+      "observed_at": "2026-10-27T19:55:07.803258+00:00",
+      "package_scripts": {
+        "# Scrips for binding #": "_",
+        "# Scrips for docs #": "_",
+        "# Scrips for node #": "_",
+        "artifacts": "napi artifacts --cwd ./src --package-json-path ../package.json -o=../artifacts --npm-dir ../npm",
+        "build-binding": "oxnode ./build-binding.ts",
+        "build-binding:profile": "pnpm build-binding --profile profile --features chrome-tracing",
+        "build-binding:release": "pnpm build-binding --release",
+        "build-binding:wasi": "pnpm build-binding --target wasm32-wasip1-threads",
+        "build-binding:wasi:release": "pnpm build-binding --profile release-wasi --target wasm32-wasip1-threads",
+        "build-browser-pkg:debug": "TARGET='browser' pnpm run --sequential '/^build-(binding:wasi|node)$/'",
+        "build-browser-pkg:release": "TARGET='browser' pnpm run --sequential '/^build-(binding:wasi:release|node)$/'",
+        "build-js-glue": "pnpm run --sequential '/^build-(node|types-check)$/'",
+        "build-native:debug": "pnpm run --sequential '/^build-(binding|js-glue)$/'",
+        "build-native:memory-profile": "pnpm run build-binding:profile --features default_global_allocator && pnpm run build-js-glue",
+        "build-native:profile": "pnpm run build-binding:profile && pnpm run build-js-glue",
+        "build-native:release": "pnpm run --sequential '/^build-(binding:release|js-glue)$/'",
+        "build-node": "node --enable-source-maps --import @oxc-node/core/register -C dev ./build.ts",
+        "build-types-check": "tsc -p ./tsconfig.check.json",
+        "build-wasi:debug": "TARGET='rolldown-wasi' pnpm run --sequential '/^build-(binding|binding:wasi|node)$/'",
+        "build-wasi:release": "TARGET='rolldown-wasi' pnpm run --sequential '/^build-(binding|binding:wasi:release|node)$/'",
+        "publint": "publint ."
+      },
+      "path": "node_modules/rolldown",
+      "provenance_verification": "not-run; metadata availability is not verification",
+      "stage": "before",
+      "status": "metadata-verified",
+      "version": "1.2.12"
+    },
+    {
+      "declared_engines": {
+        "node": "^20.19.0 || >=22.12.0"
+      },
+      "declared_license": "MIT",
+      "dist": {
+        "attestations": {
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          },
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/vite@8.3.2"
+        },
+        "fileCount": 37,
+        "integrity": "sha512-SQr1x6W5vVSbROg7vsyXIaxK9b0G7zsT68acdWWRmnBUsgDieLCRG+Rep9WdZgcposvv/GSnr4GUUBqB3vXq6w==",
+        "shasum": "391d1e62761b343435b8e4b512e449a4f90670a3",
+        "signatures": [
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEUCIDRyJ0oCTApxHzpji4V1tMk6RP8QObK5M97EgjbqtxCrAiEApp9GKD31PA9YCNdNCGWyUas9XBS4h+GF5btID2Q/9Qk="
+          },
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEUCIQDvZM4Bjpou5XEbQ5Cnt94ULPTQyAINHSgQLxmIVRZaXgIgAfG4fvQedEEGafW9vyG5gmfhtrSj2VeIN+n5JFpAxR8="
+          }
+        ],
+        "tarball": "https://registry.npmjs.org/vite/-/vite-8.3.2.tgz",
+        "unpackedSize": 2368132
+      },
+      "metadata_bytes": 5193,
+      "metadata_sha256": "851e68112ac34917881f90def6a29010037e672caa0de8cada4a97fdcff49727",
+      "metadata_url": "https://registry.npmjs.org/vite/8.3.2",
+      "name": "vite",
+      "observed_at": "2026-10-27T19:55:07.812594+00:00",
+      "package_scripts": {
+        "build": "premove dist && pnpm build-bundle && pnpm build-types",
+        "build-bundle": "rolldown --config rolldown.config.ts",
+        "build-types": "pnpm build-types-roll && pnpm build-types-check",
+        "build-types-check": "tsc --project tsconfig.check.json",
+        "build-types-roll": "rolldown --config rolldown.dts.config.ts",
+        "dev": "premove dist && pnpm build-bundle -w",
+        "format": "oxfmt",
+        "generate-target": "tsx scripts/generateTarget.ts",
+        "lint": "eslint --cache --ext .ts src/**",
+        "typecheck": "tsc && tsc -p src/node && tsc -p src/client && tsc -p src/module-runner && tsc -p src/shared && tsc -p src/node/__tests_dts__ && tsc -p src/module-runner/__tests_dts__"
+      },
+      "path": "node_modules/vite",
+      "provenance_verification": "not-run; metadata availability is not verification",
+      "stage": "before",
+      "status": "metadata-verified",
+      "version": "8.3.2"
+    },
+    {
+      "declared_engines": null,
+      "declared_license": "MIT",
+      "dist": {
+        "attestations": {
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          },
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/zod@4.4.3"
+        },
+        "fileCount": 718,
+        "integrity": "sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==",
+        "shasum": "b680f172885d18bbebf21a834ea25e55a1bbf356",
+        "signatures": [
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEUCICXiI3d+54gvQ8d1poVyZTc26Dr5plcZx+ejALqUNZqcAiEAstbq/tr8ZdKGnzA/FX2xu90qvr5PzqSyT0liMo7W1s4="
+          }
+        ],
+        "tarball": "https://registry.npmjs.org/zod/-/zod-4.4.3.tgz",
+        "unpackedSize": 4558122
+      },
+      "metadata_bytes": 4033,
+      "metadata_sha256": "116e556cd34d18b4bc632e546260717c54b6a3f58bbf1c304c9962f7f783eb18",
+      "metadata_url": "https://registry.npmjs.org/zod/4.4.3",
+      "name": "zod",
+      "observed_at": "2026-10-27T19:55:07.835642+00:00",
+      "package_scripts": {
+        "build": "zshy --project tsconfig.build.json",
+        "clean": "git clean -xdf . -e node_modules",
+        "postbuild": "tsx ../../scripts/write-stub-package-jsons.ts && pnpm biome check --write .",
+        "prepublishOnly": "tsx ../../scripts/check-versions.ts",
+        "test": "pnpm vitest run",
+        "test:watch": "pnpm vitest"
+      },
+      "path": "node_modules/zod",
+      "provenance_verification": "not-run; metadata availability is not verification",
+      "stage": "before",
+      "status": "metadata-verified",
+      "version": "4.4.3"
+    },
+    {
+      "archive_bytes": 7629,
+      "archive_declared_license": "MIT",
+      "archive_entries": 4,
+      "archive_lifecycle_hooks": {},
+      "archive_manifest_sha256": "54cbf740e2fecba094a637c344ac2beac157d54e2086f1cecef15d29a8ded070",
+      "archive_sha256": "fdc38c0c4ee5fecf7e6f90093be14cc828d4453f81fd847c659de871c0c44853",
+      "archive_sri": "sha512-SeE8JPwW1xs1tHeNycjUtUBdhorRa8o4jlvjwk49R7/Z291i+4DQa7JJIgOm/TaYQZx+QrPQbVJ/9c8dMIZN8Q==",
+      "archive_unpacked_bytes": 44596,
+      "declared_engines": null,
+      "declared_license": "MIT",
+      "dist": {
+        "attestations": {
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          },
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@oxc-project%2ftypes@0.155.0"
+        },
+        "fileCount": 4,
+        "integrity": "sha512-SeE8JPwW1xs1tHeNycjUtUBdhorRa8o4jlvjwk49R7/Z291i+4DQa7JJIgOm/TaYQZx+QrPQbVJ/9c8dMIZN8Q==",
+        "shasum": "a3525bff41bc0575839e95d2064635dd73dfef81",
+        "signatures": [
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEQCIB3prGw/WuSCd59eNGknEt2YTuhV8XVzRZGYlo3nfXXDAiAVMi+yDbSwEdV7KEuc6zDwVckJ3qBhO8K+eqtnUA72Mg=="
+          },
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEUCIQCDGtEIDDZLkU6D5mGr1rIIDt092hEFZxSJz4tobCNgkgIgQaFYEWKh6rdaeIbw+VdvqBQyKoPcY/aBF34VaySWEt4="
+          }
+        ],
+        "tarball": "https://registry.npmjs.org/@oxc-project/types/-/types-0.155.0.tgz",
+        "unpackedSize": 44596
+      },
+      "license_notices": [
+        {
+          "bytes": 1119,
+          "interpretation": "notice located and hashed; complete legal review not inferred",
+          "mit_grant_phrase_present": true,
+          "path": "package/LICENSE",
+          "sha256": "95ced5ecf1133fbf41d409b5555c86c344f83f3b019926057ddbc07cfdcc27b3"
+        }
+      ],
+      "metadata_bytes": 1697,
+      "metadata_sha256": "f2d8bd8bfbdd4da7cadab6f94e80e1252e7f493ec340f87b032cf12768315ec3",
+      "metadata_url": "https://registry.npmjs.org/@oxc-project%2Ftypes/0.155.0",
+      "name": "@oxc-project/types",
+      "observed_at": "2026-10-27T19:55:11.147030+00:00",
+      "package_scripts": {},
+      "path": "node_modules/@oxc-project/types",
+      "provenance_verification": "not-run; metadata availability is not verification",
+      "stage": "after",
+      "status": "archive-integrity-verified",
+      "version": "0.155.0"
+    },
+    {
+      "archive_bytes": 6834015,
+      "archive_declared_license": "MIT",
+      "archive_entries": 3,
+      "archive_lifecycle_hooks": {},
+      "archive_manifest_sha256": "a06aafae3ed9fdcc7046a59c5dd6d0a73f1b631d5cdf18f602cd49d5994d06cf",
+      "archive_sha256": "bf1f300a606ecc5b60403de5f423336b66106b7f0de7f27f8b4447a0a01694bb",
+      "archive_sri": "sha512-aLcgK9gIJ3YRvrrtfSBbRa27F5WrpiTaPulnFpsHPxpUHgFlSgnU4854MHwoRGEBhfRJDWCS2WQ7lIjskE9Olw==",
+      "archive_unpacked_bytes": 11799305,
+      "declared_engines": {
+        "node": "^20.19.0 || >=22.12.0"
+      },
+      "declared_license": "MIT",
+      "dist": {
+        "attestations": {
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          },
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@rolldown%2fbinding-android-arm-eabi@1.2.15"
+        },
+        "fileCount": 3,
+        "integrity": "sha512-aLcgK9gIJ3YRvrrtfSBbRa27F5WrpiTaPulnFpsHPxpUHgFlSgnU4854MHwoRGEBhfRJDWCS2WQ7lIjskE9Olw==",
+        "shasum": "3bdaa2e77aabbb78194500e22d46ebbdfc009558",
+        "signatures": [
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEUCIDHB1M4aY/9BKhkech4BvjkoClY2zzgSAx7+RLHMAAuaAiEA4QsgNlDhmt7LS4AIx4REWzflb3uDxwJDQ5w5VBfpyss="
+          },
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEUCIQCbIVQFMtz63YNxj+pdHZZ129unZpV58SGu0XOejPzHJAIgMpYZEhhIyWmqhqotlbXEwsOw5TWWIs+qTHAihAwDvJM="
+          }
+        ],
+        "tarball": "https://registry.npmjs.org/@rolldown/binding-android-arm-eabi/-/binding-android-arm-eabi-1.2.15.tgz",
+        "unpackedSize": 11799305
+      },
+      "license_notices": [],
+      "metadata_bytes": 2184,
+      "metadata_sha256": "05003b9e9705c30c8f56fd57629f49318ff0b2d4a8e84303a7b778636cf1b17f",
+      "metadata_url": "https://registry.npmjs.org/@rolldown%2Fbinding-android-arm-eabi/1.2.15",
+      "name": "@rolldown/binding-android-arm-eabi",
+      "observed_at": "2026-10-27T19:55:11.173282+00:00",
+      "package_scripts": {},
+      "path": "node_modules/@rolldown/binding-android-arm-eabi",
+      "provenance_verification": "not-run; metadata availability is not verification",
+      "stage": "after",
+      "status": "archive-integrity-verified",
+      "version": "1.2.15"
+    },
+    {
+      "archive_bytes": 7842207,
+      "archive_declared_license": "MIT",
+      "archive_entries": 3,
+      "archive_lifecycle_hooks": {},
+      "archive_manifest_sha256": "4e69cf0981bf9efefd45ff339674c83f20063d42fbf8c331038cdb859ba6bd40",
+      "archive_sha256": "3f8e938029110b4b1116e108078f843bb92d5251fecabe156a94b70717383caf",
+      "archive_sri": "sha512-xD7DdZCrbThKuxNg7ooQmvp07ys4J/pnSEMTG3/OdOWl6daC67m/Q4fL78sRHMxTH/N4fGUbYhcPM0MF5WFHkg==",
+      "archive_unpacked_bytes": 17985341,
+      "declared_engines": {
+        "node": "^20.19.0 || >=22.12.0"
+      },
+      "declared_license": "MIT",
+      "dist": {
+        "attestations": {
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          },
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@rolldown%2fbinding-android-arm64@1.2.15"
+        },
+        "fileCount": 3,
+        "integrity": "sha512-xD7DdZCrbThKuxNg7ooQmvp07ys4J/pnSEMTG3/OdOWl6daC67m/Q4fL78sRHMxTH/N4fGUbYhcPM0MF5WFHkg==",
+        "shasum": "1bf2dd523e6b94be1366f397b946d7fd0de67f1d",
+        "signatures": [
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEYCIQCOfwuSiREfp4tofF1FEMVfyVeKVsFPrXBbVQUPJ9N7/gIhAMqJfrfGyI0UJi75jaRFXEV5tGPRjWl50KyMkl0lesUq"
+          },
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEYCIQC9PdWT96mu75N60GpcZAOu7yo1ehvNoAEg9JKDIbMsogIhANK5m7MSK0UP04daD5jlQDpsVsdkk0sh1pCC8sbBXWR6"
+          }
+        ],
+        "tarball": "https://registry.npmjs.org/@rolldown/binding-android-arm64/-/binding-android-arm64-1.2.15.tgz",
+        "unpackedSize": 17985341
+      },
+      "license_notices": [],
+      "metadata_bytes": 2165,
+      "metadata_sha256": "42b9c11800e24642a7fc0ec709d8822a2dc9703f37ffaaadb18841ff8cf0c383",
+      "metadata_url": "https://registry.npmjs.org/@rolldown%2Fbinding-android-arm64/1.2.15",
+      "name": "@rolldown/binding-android-arm64",
+      "observed_at": "2026-10-27T19:55:11.221711+00:00",
+      "package_scripts": {},
+      "path": "node_modules/@rolldown/binding-android-arm64",
+      "provenance_verification": "not-run; metadata availability is not verification",
+      "stage": "after",
+      "status": "archive-integrity-verified",
+      "version": "1.2.15"
+    },
+    {
+      "archive_bytes": 7537415,
+      "archive_declared_license": "MIT",
+      "archive_entries": 3,
+      "archive_lifecycle_hooks": {},
+      "archive_manifest_sha256": "4f27e0f36c870264a620cf065e0fc87463af2b76bf16f75ad7149dd4ff9261ef",
+      "archive_sha256": "7e76cf1bedecbb4c13d04df74d4604ad99f934425b519d265fa0acda442ebbf5",
+      "archive_sri": "sha512-m2WuQ6r0B4OTYxyPpNLtXaMRbRDUbG8YQV2Q3KTdSSK8Th6KHCnC8jVCJt8bvYeSB5WivkkNbc85mKadaSdOxA==",
+      "archive_unpacked_bytes": 17134975,
+      "declared_engines": {
+        "node": "^20.19.0 || >=22.12.0"
+      },
+      "declared_license": "MIT",
+      "dist": {
+        "attestations": {
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          },
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@rolldown%2fbinding-darwin-arm64@1.2.15"
+        },
+        "fileCount": 3,
+        "integrity": "sha512-m2WuQ6r0B4OTYxyPpNLtXaMRbRDUbG8YQV2Q3KTdSSK8Th6KHCnC8jVCJt8bvYeSB5WivkkNbc85mKadaSdOxA==",
+        "shasum": "99fdcc6be79f156331099de799f726809af142e7",
+        "signatures": [
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEQCIG/ppGOxSFvMNfTVh0OFWM3UIiLwfSqh4Je5dc/4roQLAiA64hZ/AdebJ1GT/7ZM2/1qcHR497jkHPTlxdFAfPaO7w=="
+          },
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEQCIBUCeJCyNV+j/KsSDipCMVsL8p5a+KZSGvikGVjUJC/bAiA1JfPqe5PG32dBpWWGh44UigYdSpEL2Nj9qHMb/C+GWw=="
+          }
+        ],
+        "tarball": "https://registry.npmjs.org/@rolldown/binding-darwin-arm64/-/binding-darwin-arm64-1.2.15.tgz",
+        "unpackedSize": 17134975
+      },
+      "license_notices": [],
+      "metadata_bytes": 2156,
+      "metadata_sha256": "b01b1a0c2b09cab09d71243a121cbbb305d95254c9f50f88206cb3a6d9e194ea",
+      "metadata_url": "https://registry.npmjs.org/@rolldown%2Fbinding-darwin-arm64/1.2.15",
+      "name": "@rolldown/binding-darwin-arm64",
+      "observed_at": "2026-10-27T19:55:11.255082+00:00",
+      "package_scripts": {},
+      "path": "node_modules/@rolldown/binding-darwin-arm64",
+      "provenance_verification": "not-run; metadata availability is not verification",
+      "stage": "after",
+      "status": "archive-integrity-verified",
+      "version": "1.2.15"
+    },
+    {
+      "archive_bytes": 7901428,
+      "archive_declared_license": "MIT",
+      "archive_entries": 3,
+      "archive_lifecycle_hooks": {},
+      "archive_manifest_sha256": "691da76e6d32f40a29dd2ab3d27f70208f32e169126e8254ff232f0acb1889c0",
+      "archive_sha256": "af1f68c4f2b23d4cd8fddf5585f6551fba61adde8ea4f24e1a964b286a2146ff",
+      "archive_sri": "sha512-5RtnsHM36nodM9WbMy+zip0LGS/G+y5wro5RHrpOlr4ac24+1zSi9kiV2MP1myZeZ/ifEHfulQcWjnAXzc2C2A==",
+      "archive_unpacked_bytes": 18046860,
+      "declared_engines": {
+        "node": "^20.19.0 || >=22.12.0"
+      },
+      "declared_license": "MIT",
+      "dist": {
+        "attestations": {
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          },
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@rolldown%2fbinding-darwin-x64@1.2.15"
+        },
+        "fileCount": 3,
+        "integrity": "sha512-5RtnsHM36nodM9WbMy+zip0LGS/G+y5wro5RHrpOlr4ac24+1zSi9kiV2MP1myZeZ/ifEHfulQcWjnAXzc2C2A==",
+        "shasum": "752b56bcede7851580735a6cd48437eca936a182",
+        "signatures": [
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEUCIHZiebKX9am0nUOcRamLFum1c1Rbm3RkgH+7RAk/+kY+AiEAv/NWNoBqvLflCPtyk5kPentjxpeqpIqPHOOXj74HmT4="
+          },
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEYCIQD2lXjEGzrtXy0BHMBnzVbZmotYSB9p9QrVG+bg3x4W5wIhAIz7gC4oWzIMJSnEYCG/X2whnafDmz7SNp+Rvq23J9qC"
+          }
+        ],
+        "tarball": "https://registry.npmjs.org/@rolldown/binding-darwin-x64/-/binding-darwin-x64-1.2.15.tgz",
+        "unpackedSize": 18046860
+      },
+      "license_notices": [],
+      "metadata_bytes": 2141,
+      "metadata_sha256": "c9464d7e96bb555c28b26b7802b04fe1c05cdb24e142d8035cc2c48301fd617b",
+      "metadata_url": "https://registry.npmjs.org/@rolldown%2Fbinding-darwin-x64/1.2.15",
+      "name": "@rolldown/binding-darwin-x64",
+      "observed_at": "2026-10-27T19:55:16.376243+00:00",
+      "package_scripts": {},
+      "path": "node_modules/@rolldown/binding-darwin-x64",
+      "provenance_verification": "not-run; metadata availability is not verification",
+      "stage": "after",
+      "status": "archive-integrity-verified",
+      "version": "1.2.15"
+    },
+    {
+      "archive_bytes": 8259941,
+      "archive_declared_license": "MIT",
+      "archive_entries": 3,
+      "archive_lifecycle_hooks": {},
+      "archive_manifest_sha256": "178b2c78654f6342ffa359ea1862b51a3dd847fc24d951f0d8e7020ea599ac0a",
+      "archive_sha256": "23b86bc50abcf39485412a0a846b66b564b11601f860dbd93d41bdffc4dbbdac",
+      "archive_sri": "sha512-g3l09pyFqhu+135JKkbkwiKGQmwU5hUMUPJ4VdBADvuqR8d33L6H578rh8m7rtxbdp+VmX/+nzI7nvhSZlzpUQ==",
+      "archive_unpacked_bytes": 19923452,
+      "declared_engines": {
+        "node": "^20.19.0 || >=22.12.0"
+      },
+      "declared_license": "MIT",
+      "dist": {
+        "attestations": {
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          },
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@rolldown%2fbinding-freebsd-x64@1.2.15"
+        },
+        "fileCount": 3,
+        "integrity": "sha512-g3l09pyFqhu+135JKkbkwiKGQmwU5hUMUPJ4VdBADvuqR8d33L6H578rh8m7rtxbdp+VmX/+nzI7nvhSZlzpUQ==",
+        "shasum": "f5104c1f4e50a63afae5d4d8c976a51d2facc8c6",
+        "signatures": [
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEQCIGbXQ4Sfp5yzGG1S6D/fEPqvj5S5iHc2T0GE27t8qZddAiAxRCpDkbT4aiPV6ieG7el9bRRjVMd1yshjWQs/G0970Q=="
+          },
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEUCIQDU4jVZR0rTA4vMoLnC7qLz1/St6WGTCL6K4gEan+VwugIgQxZlEIy31u6O2DG/g9wIqTLQMrj4dsD8PIIRk8BY+mM="
+          }
+        ],
+        "tarball": "https://registry.npmjs.org/@rolldown/binding-freebsd-x64/-/binding-freebsd-x64-1.2.15.tgz",
+        "unpackedSize": 19923452
+      },
+      "license_notices": [],
+      "metadata_bytes": 2149,
+      "metadata_sha256": "e606d32436a8cb0e832cf4515cbd46adf244ca5026b090e723e6175ccc6516c7",
+      "metadata_url": "https://registry.npmjs.org/@rolldown%2Fbinding-freebsd-x64/1.2.15",
+      "name": "@rolldown/binding-freebsd-x64",
+      "observed_at": "2026-10-27T19:55:16.742266+00:00",
+      "package_scripts": {},
+      "path": "node_modules/@rolldown/binding-freebsd-x64",
+      "provenance_verification": "not-run; metadata availability is not verification",
+      "stage": "after",
+      "status": "archive-integrity-verified",
+      "version": "1.2.15"
+    },
+    {
+      "archive_bytes": 7571404,
+      "archive_declared_license": "MIT",
+      "archive_entries": 3,
+      "archive_lifecycle_hooks": {},
+      "archive_manifest_sha256": "9f875adf54ab043d8c2be06456b718ee8dab2dbd587bdec0791f1c6e9a9c33f8",
+      "archive_sha256": "3d5fd4b71244a9fb76a1cf98b6ff9be8dbf396cbb903b41ab426c16539906bd8",
+      "archive_sri": "sha512-nIe3VugI97nGQtspPxDqA4sXMUpeiocKIP/CqpY/u/vgbT+alX+cVxu1C/oVBPKg4feNTmYovE91v4DgXvXNwQ==",
+      "archive_unpacked_bytes": 16422741,
+      "declared_engines": {
+        "node": "^20.19.0 || >=22.12.0"
+      },
+      "declared_license": "MIT",
+      "dist": {
+        "attestations": {
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          },
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@rolldown%2fbinding-linux-arm-gnueabihf@1.2.15"
+        },
+        "fileCount": 3,
+        "integrity": "sha512-nIe3VugI97nGQtspPxDqA4sXMUpeiocKIP/CqpY/u/vgbT+alX+cVxu1C/oVBPKg4feNTmYovE91v4DgXvXNwQ==",
+        "shasum": "b0a53d7f4b5293687de6ef8727469a5e2ad68312",
+        "signatures": [
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEUCICQcw69QF5rV3C0n1V5KiUorEHIx8EyhBiFtwpLvF45NAiEAgWd8G/kCi5/fXFihLcnFCOuBNSVcUojjD4Cs1WxfOsM="
+          },
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEQCIBsS+crapiFuF1HqZaI8Z+CVCQd/E6NjIMzCN/FOD148AiBsZqNHFZ7OxPKiERMsx/SSvapUGXPkKJd8qYHawqJszQ=="
+          }
+        ],
+        "tarball": "https://registry.npmjs.org/@rolldown/binding-linux-arm-gnueabihf/-/binding-linux-arm-gnueabihf-1.2.15.tgz",
+        "unpackedSize": 16422741
+      },
+      "license_notices": [],
+      "metadata_bytes": 2204,
+      "metadata_sha256": "e9383cd242ff8a877da087cd418bcc17b1e6925af3b112f3be98f1af3b080dda",
+      "metadata_url": "https://registry.npmjs.org/@rolldown%2Fbinding-linux-arm-gnueabihf/1.2.15",
+      "name": "@rolldown/binding-linux-arm-gnueabihf",
+      "observed_at": "2026-10-27T19:55:16.833041+00:00",
+      "package_scripts": {},
+      "path": "node_modules/@rolldown/binding-linux-arm-gnueabihf",
+      "provenance_verification": "not-run; metadata availability is not verification",
+      "stage": "after",
+      "status": "archive-integrity-verified",
+      "version": "1.2.15"
+    },
+    {
+      "archive_bytes": 7849083,
+      "archive_declared_license": "MIT",
+      "archive_entries": 3,
+      "archive_lifecycle_hooks": {},
+      "archive_manifest_sha256": "e90653140f0356b112522de9bf1d6672a62882f8d3b6f957757649c6783c7bab",
+      "archive_sha256": "974913ec7ee49d0cdf2cadfd71e488b0485ff0e92129b8c705d96c864748f51d",
+      "archive_sri": "sha512-iTBjXx+B5QSvgI89lJfmqh4wTh8NabR1YZIIN3hNx4zSG0EVfVqkOvLulNpG4251pbd6/IAmZ/LefVk1Y4rPhw==",
+      "archive_unpacked_bytes": 17863308,
+      "declared_engines": {
+        "node": "^20.19.0 || >=22.12.0"
+      },
+      "declared_license": "MIT",
+      "dist": {
+        "attestations": {
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          },
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@rolldown%2fbinding-linux-arm64-gnu@1.2.15"
+        },
+        "fileCount": 3,
+        "integrity": "sha512-iTBjXx+B5QSvgI89lJfmqh4wTh8NabR1YZIIN3hNx4zSG0EVfVqkOvLulNpG4251pbd6/IAmZ/LefVk1Y4rPhw==",
+        "shasum": "b9832ceb22aca59cef2d20e267550fc83cd60fce",
+        "signatures": [
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEQCICU/Ao9GtNKA0zc7lsTC64qeq7Mai9bAuLwQocZEEXNHAiAQCeyvj6ojW4fuPTU570G6wFoeQKSNAqyKZ0F/zlaX7A=="
+          },
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEUCIQDg/TICc36pqUpaFaItTqDGElLRuGorEtJL3Mgr81oAUAIgCz9q49sjj1Dd5nZGfdZg8J7lL6QYLLcQimEPauXt4JU="
+          }
+        ],
+        "tarball": "https://registry.npmjs.org/@rolldown/binding-linux-arm64-gnu/-/binding-linux-arm64-gnu-1.2.15.tgz",
+        "unpackedSize": 17863308
+      },
+      "license_notices": [],
+      "metadata_bytes": 2193,
+      "metadata_sha256": "75cc447b4899dec30b0f58add178793c6667ad4ff0abd5ae596e020c9af5cc7f",
+      "metadata_url": "https://registry.npmjs.org/@rolldown%2Fbinding-linux-arm64-gnu/1.2.15",
+      "name": "@rolldown/binding-linux-arm64-gnu",
+      "observed_at": "2026-10-27T19:55:16.907758+00:00",
+      "package_scripts": {},
+      "path": "node_modules/@rolldown/binding-linux-arm64-gnu",
+      "provenance_verification": "not-run; metadata availability is not verification",
+      "stage": "after",
+      "status": "archive-integrity-verified",
+      "version": "1.2.15"
+    },
+    {
+      "archive_bytes": 7869508,
+      "archive_declared_license": "MIT",
+      "archive_entries": 3,
+      "archive_lifecycle_hooks": {},
+      "archive_manifest_sha256": "8cdcde497caffde2ba0a6f2ab4bf2912d06cabb2be93c4a00dc4ae1c3d68379d",
+      "archive_sha256": "0e3b82884dfa10a758eee181ac95c16170bf134558e371a63f7b0354afe9e6b6",
+      "archive_sri": "sha512-uN26XOnVR7rqQupG3V9oAG2EGGatWjcJHOeDOHUFCh4TBWmP2tHTFoVN13aYbwfm0aHqJAEmcwhAu6sooIjfqQ==",
+      "archive_unpacked_bytes": 17916608,
+      "declared_engines": {
+        "node": "^20.19.0 || >=22.12.0"
+      },
+      "declared_license": "MIT",
+      "dist": {
+        "attestations": {
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          },
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@rolldown%2fbinding-linux-arm64-musl@1.2.15"
+        },
+        "fileCount": 3,
+        "integrity": "sha512-uN26XOnVR7rqQupG3V9oAG2EGGatWjcJHOeDOHUFCh4TBWmP2tHTFoVN13aYbwfm0aHqJAEmcwhAu6sooIjfqQ==",
+        "shasum": "43d43aa8cd490ef529b37129755879c276ec899c",
+        "signatures": [
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEUCICM8nWVoil3+cAzcufhHjXajIBavon9wybGB8ig/VcAbAiEAzUkEzt8iu7+f68qdIdLYl1EZCvsBKi8KLBLVX3NNOyQ="
+          },
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEUCIQDcPev+OFXoQBGkQhPB7VrEWVp/ZOXcDL/VzrY0LtqvIwIgLZ2N+R/ba3AUMWuaKRgEP4yqjn34O8qXsqNCIoFiTII="
+          }
+        ],
+        "tarball": "https://registry.npmjs.org/@rolldown/binding-linux-arm64-musl/-/binding-linux-arm64-musl-1.2.15.tgz",
+        "unpackedSize": 17916608
+      },
+      "license_notices": [],
+      "metadata_bytes": 2199,
+      "metadata_sha256": "a9f3118bf4ea85a41be1caef6a48a8f5cf3bb2ef410cb88f968c8b03761a847a",
+      "metadata_url": "https://registry.npmjs.org/@rolldown%2Fbinding-linux-arm64-musl/1.2.15",
+      "name": "@rolldown/binding-linux-arm64-musl",
+      "observed_at": "2026-10-27T19:55:21.614472+00:00",
+      "package_scripts": {},
+      "path": "node_modules/@rolldown/binding-linux-arm64-musl",
+      "provenance_verification": "not-run; metadata availability is not verification",
+      "stage": "after",
+      "status": "archive-integrity-verified",
+      "version": "1.2.15"
+    },
+    {
+      "archive_bytes": 9163112,
+      "archive_declared_license": "MIT",
+      "archive_entries": 3,
+      "archive_lifecycle_hooks": {},
+      "archive_manifest_sha256": "db0a32e69d2026dbba634e7d842d35e958b32624f9fb61d6396504b47487d25b",
+      "archive_sha256": "87c313cb1bc100c829fb0d0dd64915ab8ed35a04de3af58b2b53b684ea9cdf71",
+      "archive_sri": "sha512-9nWkcdd+H+XhaA3fQIwpHnKIrfx/PQ6rO0pivr78Og07tXlUlctBBJoEYLPfhTmCR/QxEVdn6uPjHV5SymPhdw==",
+      "archive_unpacked_bytes": 22562216,
+      "declared_engines": {
+        "node": "^20.19.0 || >=22.12.0"
+      },
+      "declared_license": "MIT",
+      "dist": {
+        "attestations": {
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          },
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@rolldown%2fbinding-linux-ppc64-gnu@1.2.15"
+        },
+        "fileCount": 3,
+        "integrity": "sha512-9nWkcdd+H+XhaA3fQIwpHnKIrfx/PQ6rO0pivr78Og07tXlUlctBBJoEYLPfhTmCR/QxEVdn6uPjHV5SymPhdw==",
+        "shasum": "455df0b3a2ee6cacc004b8dad6295b43c39906e7",
+        "signatures": [
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEUCIQDoN6XI8A+C518m2EJYGcf9FhNg5Gf8NtmLhH8i16cPLwIgI6inGJVxrybVxajlBDar2z+1ERL9b7OwDCj3JdQAif0="
+          },
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEQCIHkvDoH6pOBYW9y4HCSLtSko9NnAZ+021gTW/yy48aJhAiAHue7pLh/kcXMTU+8JHuGDhEEre/yxOZHc2s5eLSspBw=="
+          }
+        ],
+        "tarball": "https://registry.npmjs.org/@rolldown/binding-linux-ppc64-gnu/-/binding-linux-ppc64-gnu-1.2.15.tgz",
+        "unpackedSize": 22562216
+      },
+      "license_notices": [],
+      "metadata_bytes": 2194,
+      "metadata_sha256": "c71965e7a15a962115b10ae33a95608599fcaeb4c20b98ca9758342866594835",
+      "metadata_url": "https://registry.npmjs.org/@rolldown%2Fbinding-linux-ppc64-gnu/1.2.15",
+      "name": "@rolldown/binding-linux-ppc64-gnu",
+      "observed_at": "2026-10-27T19:55:21.805171+00:00",
+      "package_scripts": {},
+      "path": "node_modules/@rolldown/binding-linux-ppc64-gnu",
+      "provenance_verification": "not-run; metadata availability is not verification",
+      "stage": "after",
+      "status": "archive-integrity-verified",
+      "version": "1.2.15"
+    },
+    {
+      "archive_bytes": 8492581,
+      "archive_declared_license": "MIT",
+      "archive_entries": 3,
+      "archive_lifecycle_hooks": {},
+      "archive_manifest_sha256": "5ae76d19d62e144ef6b71dae9df674782058a0db32a1f04e442398bd45ec46a2",
+      "archive_sha256": "e1ce773804fb2d75495e2d88b1a4bf96d2233cdf134bd074e1819154cec68916",
+      "archive_sri": "sha512-Ggh0ciFjLwIusLSLz7LZYEaGdxOAUJXI+Qu5JCbhPJJHEt8vP+IjRATTJheiJsdzzTYgUiHUiw3X1Ea3ZpMBdA==",
+      "archive_unpacked_bytes": 21197482,
+      "declared_engines": {
+        "node": "^20.19.0 || >=22.12.0"
+      },
+      "declared_license": "MIT",
+      "dist": {
+        "attestations": {
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          },
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@rolldown%2fbinding-linux-s390x-gnu@1.2.15"
+        },
+        "fileCount": 3,
+        "integrity": "sha512-Ggh0ciFjLwIusLSLz7LZYEaGdxOAUJXI+Qu5JCbhPJJHEt8vP+IjRATTJheiJsdzzTYgUiHUiw3X1Ea3ZpMBdA==",
+        "shasum": "a2f243b64683c72cd1b2fcbe67505a89d9c9d89b",
+        "signatures": [
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEUCIAIBNcEDJT4z9d6a38gEemteMlml9LBKqQGX+V4ny/8lAiEA59NPnFxEI/XSE/p5Sg0QanXYreXNm5rOoKQKbSJ8VCg="
+          },
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEQCIEpbtoZQBV335Jt3FXweyCakraZ1w3NhS4C+8rKhpzGfAiBvtrH0UYYiBcXTLqQZz7NoG669OFRs+zK/jG/qPjWjdA=="
+          }
+        ],
+        "tarball": "https://registry.npmjs.org/@rolldown/binding-linux-s390x-gnu/-/binding-linux-s390x-gnu-1.2.15.tgz",
+        "unpackedSize": 21197482
+      },
+      "license_notices": [],
+      "metadata_bytes": 2193,
+      "metadata_sha256": "49a976f4b98accb476394ddddc531602a8470396bb23a9205bb095aa3c1ef61c",
+      "metadata_url": "https://registry.npmjs.org/@rolldown%2Fbinding-linux-s390x-gnu/1.2.15",
+      "name": "@rolldown/binding-linux-s390x-gnu",
+      "observed_at": "2026-10-27T19:55:21.818678+00:00",
+      "package_scripts": {},
+      "path": "node_modules/@rolldown/binding-linux-s390x-gnu",
+      "provenance_verification": "not-run; metadata availability is not verification",
+      "stage": "after",
+      "status": "archive-integrity-verified",
+      "version": "1.2.15"
+    },
+    {
+      "archive_bytes": 8302590,
+      "archive_declared_license": "MIT",
+      "archive_entries": 3,
+      "archive_lifecycle_hooks": {},
+      "archive_manifest_sha256": "20501c7e94b156c4ad98f1ff50aeb89fed28cb69a70eadd10017770e1cc9b116",
+      "archive_sha256": "c13db693e72bd7c5e9b30bb1b43aa96015e4b8610edb4143c540bcc68aaca3c1",
+      "archive_sri": "sha512-FHg60rS6DBePAYZ9X9F67x+JObFdmgn6tupA1C/a3B+CufFmTD4mX+e8M75tCiAO3foR/6xwVBI0KQiI7sn/rw==",
+      "archive_unpacked_bytes": 19891457,
+      "declared_engines": {
+        "node": "^20.19.0 || >=22.12.0"
+      },
+      "declared_license": "MIT",
+      "dist": {
+        "attestations": {
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          },
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@rolldown%2fbinding-linux-x64-gnu@1.2.15"
+        },
+        "fileCount": 3,
+        "integrity": "sha512-FHg60rS6DBePAYZ9X9F67x+JObFdmgn6tupA1C/a3B+CufFmTD4mX+e8M75tCiAO3foR/6xwVBI0KQiI7sn/rw==",
+        "shasum": "a514415b06af3517fcdbf228ebb7e06e8ed8385a",
+        "signatures": [
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEQCIFW+P/4gPsMLnf55bL/U0cfgchSkMz5ahNFMOVkGvEYxAiAaAD1FL6Gi7mkWVimVHTsXbvojwOnhJMIRjqxA8L8mCA=="
+          },
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEYCIQDr8BkP7BYv8R0YAMn+RFXbmcLI3ZEGyJkX0/mF/k6DUgIhAJtoBHOvGsYFajLdUR9pnTCCCqIwAWaDguHdAA5QGTm9"
+          }
+        ],
+        "tarball": "https://registry.npmjs.org/@rolldown/binding-linux-x64-gnu/-/binding-linux-x64-gnu-1.2.15.tgz",
+        "unpackedSize": 19891457
+      },
+      "license_notices": [],
+      "metadata_bytes": 2178,
+      "metadata_sha256": "7b5db11f34d5494c9d753cc0934ce6d0cd27ffdca0c1b30d76be9c1d578e40b4",
+      "metadata_url": "https://registry.npmjs.org/@rolldown%2Fbinding-linux-x64-gnu/1.2.15",
+      "name": "@rolldown/binding-linux-x64-gnu",
+      "observed_at": "2026-10-27T19:55:21.854403+00:00",
+      "package_scripts": {},
+      "path": "node_modules/@rolldown/binding-linux-x64-gnu",
+      "provenance_verification": "not-run; metadata availability is not verification",
+      "stage": "after",
+      "status": "archive-integrity-verified",
+      "version": "1.2.15"
+    },
+    {
+      "archive_bytes": 8286999,
+      "archive_declared_license": "MIT",
+      "archive_entries": 3,
+      "archive_lifecycle_hooks": {},
+      "archive_manifest_sha256": "2058841a2500db2ae834d3be00d834ab597b0e57ef3a525e9605bf3ea7d70e70",
+      "archive_sha256": "3c17e36bddfcd0a81020f5719aec403dca5c0316dadf2b4f5e96a8c71c39c2cb",
+      "archive_sri": "sha512-/cvV/7v5VGz/moiz0XKRj2dE8DzsKyhIu1KpOvJGPjRywg3yscON889UGvAe8zfiJLHup7VLjBduoGWi3HusWQ==",
+      "archive_unpacked_bytes": 19972981,
+      "declared_engines": {
+        "node": "^20.19.0 || >=22.12.0"
+      },
+      "declared_license": "MIT",
+      "dist": {
+        "attestations": {
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          },
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@rolldown%2fbinding-linux-x64-musl@1.2.15"
+        },
+        "fileCount": 3,
+        "integrity": "sha512-/cvV/7v5VGz/moiz0XKRj2dE8DzsKyhIu1KpOvJGPjRywg3yscON889UGvAe8zfiJLHup7VLjBduoGWi3HusWQ==",
+        "shasum": "2b6ac8d0487af711741e1bc218cd49f113542f66",
+        "signatures": [
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEYCIQDpiHB/CzUAxxwXXKokfG1CkcHcKXpxGhtkOSW5GeG3MwIhAPUQ6jNOmU1i+41834N2ZxXsWVWSXmni2mHnL4Pe9yPp"
+          },
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEUCIG1j3sD0D7qMJ2CJT/UNrcXf1nkmojpssEnPWhYrg+pbAiEA0VfMYbRp6cwzjvQlj0TpiTv7jDxzl/hZ0Y/TXVvfg8Y="
+          }
+        ],
+        "tarball": "https://registry.npmjs.org/@rolldown/binding-linux-x64-musl/-/binding-linux-x64-musl-1.2.15.tgz",
+        "unpackedSize": 19972981
+      },
+      "license_notices": [],
+      "metadata_bytes": 2183,
+      "metadata_sha256": "db27b43404d96030cc44e1fc6b42e7a57dc21fdd96480b393c0ecdcd369f81b5",
+      "metadata_url": "https://registry.npmjs.org/@rolldown%2Fbinding-linux-x64-musl/1.2.15",
+      "name": "@rolldown/binding-linux-x64-musl",
+      "observed_at": "2026-10-27T19:55:26.943728+00:00",
+      "package_scripts": {},
+      "path": "node_modules/@rolldown/binding-linux-x64-musl",
+      "provenance_verification": "not-run; metadata availability is not verification",
+      "stage": "after",
+      "status": "archive-integrity-verified",
+      "version": "1.2.15"
+    },
+    {
+      "archive_bytes": 7798801,
+      "archive_declared_license": "MIT",
+      "archive_entries": 3,
+      "archive_lifecycle_hooks": {},
+      "archive_manifest_sha256": "8281c8ec96d62f834fa673614e66c4bc138de7787bd494ebc5f169942288ee1b",
+      "archive_sha256": "a7d88b7e3c4bf00b10e18750b616a20dad559343ded347e67918734ece654841",
+      "archive_sri": "sha512-MyzC5Hrv/sm+Z7TSGKP/j8001RO2xQm1zOpCNVL4j0cY/VhBZviludA2YFQ7i4lH6ZAXxQm0lcMdBzM+99mE7w==",
+      "archive_unpacked_bytes": 17976214,
+      "declared_engines": {
+        "node": "^20.19.0 || >=22.12.0"
+      },
+      "declared_license": "MIT",
+      "dist": {
+        "attestations": {
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          },
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@rolldown%2fbinding-openharmony-arm64@1.2.15"
+        },
+        "fileCount": 3,
+        "integrity": "sha512-MyzC5Hrv/sm+Z7TSGKP/j8001RO2xQm1zOpCNVL4j0cY/VhBZviludA2YFQ7i4lH6ZAXxQm0lcMdBzM+99mE7w==",
+        "shasum": "70cdb40621eb478999a015019f68a97012f5e8cd",
+        "signatures": [
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEYCIQCvH2VEcxIRkCediDYNfmisG5PLqrI5EuZGPUysrKAMzwIhAOKcxsZfjGCmAzsHaZRhD8M8a6zsNr77RkaMtiuL+zoQ"
+          },
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEYCIQC2WQwuAx1EFbdao8himygqn86nw9qDGYFEL91/M3B9kQIhAIjEWows008Pg6dUmUZ6qhek16mipriyUrh+EvZ6uJYd"
+          }
+        ],
+        "tarball": "https://registry.npmjs.org/@rolldown/binding-openharmony-arm64/-/binding-openharmony-arm64-1.2.15.tgz",
+        "unpackedSize": 17976214
+      },
+      "license_notices": [],
+      "metadata_bytes": 2197,
+      "metadata_sha256": "9d8ca63690289e9918c36c7d32eabfbda1b1df24af2840e15bce0bce88158d83",
+      "metadata_url": "https://registry.npmjs.org/@rolldown%2Fbinding-openharmony-arm64/1.2.15",
+      "name": "@rolldown/binding-openharmony-arm64",
+      "observed_at": "2026-10-27T19:55:27.120786+00:00",
+      "package_scripts": {},
+      "path": "node_modules/@rolldown/binding-openharmony-arm64",
+      "provenance_verification": "not-run; metadata availability is not verification",
+      "stage": "after",
+      "status": "archive-integrity-verified",
+      "version": "1.2.15"
+    },
+    {
+      "archive_bytes": 7967631,
+      "archive_declared_license": "MIT",
+      "archive_entries": 3,
+      "archive_lifecycle_hooks": {},
+      "archive_manifest_sha256": "4a5a0cc7c9aac27a66a50eb2b6c09ca6e18b8e5930cbceeb92e9a4f681831b6e",
+      "archive_sha256": "2659d147edd495eac5da99cff514c9155805db569af70f5a299f86e91bd00e1f",
+      "archive_sri": "sha512-+PgYiS+AH5omy6L45ZLxybasauJaj3M8buoT83D+nzPmCayXlxUV9hydhciCKVyIg0B/v0BtXPDE1uGqNwCPpg==",
+      "archive_unpacked_bytes": 18683345,
+      "declared_engines": {
+        "node": "^20.19.0 || >=22.12.0"
+      },
+      "declared_license": "MIT",
+      "dist": {
+        "attestations": {
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          },
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@rolldown%2fbinding-win32-arm64-msvc@1.2.15"
+        },
+        "fileCount": 3,
+        "integrity": "sha512-+PgYiS+AH5omy6L45ZLxybasauJaj3M8buoT83D+nzPmCayXlxUV9hydhciCKVyIg0B/v0BtXPDE1uGqNwCPpg==",
+        "shasum": "8345076b3d3b4c362e5e8411aae227f729840a39",
+        "signatures": [
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEUCIQDCsapmuHXyV1pKe964Fe4wQYpGoxpyDKUQycrwB63ppQIgBVSIojpzMhXlvQHAgP6kk+GRMotVfNHclfhYdZoKxZk="
+          },
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEUCIHy7PuPRrSEmhTj6mup8ui9o880f/h74/fBn9ZgBlWoQAiEAn1PIe7xFcGYZSowXxlxVgbddwOD/81EwgbfU7p0+6JA="
+          }
+        ],
+        "tarball": "https://registry.npmjs.org/@rolldown/binding-win32-arm64-msvc/-/binding-win32-arm64-msvc-1.2.15.tgz",
+        "unpackedSize": 18683345
+      },
+      "license_notices": [],
+      "metadata_bytes": 2183,
+      "metadata_sha256": "435c415b6de0891323ea3cefff3aa2be0b6d739979330f41efee0c66fdea03f1",
+      "metadata_url": "https://registry.npmjs.org/@rolldown%2Fbinding-win32-arm64-msvc/1.2.15",
+      "name": "@rolldown/binding-win32-arm64-msvc",
+      "observed_at": "2026-10-27T19:55:27.148369+00:00",
+      "package_scripts": {},
+      "path": "node_modules/@rolldown/binding-win32-arm64-msvc",
+      "provenance_verification": "not-run; metadata availability is not verification",
+      "stage": "after",
+      "status": "archive-integrity-verified",
+      "version": "1.2.15"
+    },
+    {
+      "archive_bytes": 8378130,
+      "archive_declared_license": "MIT",
+      "archive_entries": 3,
+      "archive_lifecycle_hooks": {},
+      "archive_manifest_sha256": "e0cd107c8863b73d3e1d701d21aa27fefd523942d56d59c3a31683919f25cb74",
+      "archive_sha256": "b0b5e3f40e330952d99a084bd6278be6b8015679395a96361f389ae87167a40e",
+      "archive_sri": "sha512-HFZd2QNQYn1JbIi+Hpd7H+r/lkWxcfIu28nirZ6eCn2LafuvmExMlb/P96Sfx5tf7pPArw39IdhmCF8vmV+NhQ==",
+      "archive_unpacked_bytes": 21732294,
+      "declared_engines": {
+        "node": "^20.19.0 || >=22.12.0"
+      },
+      "declared_license": "MIT",
+      "dist": {
+        "attestations": {
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          },
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@rolldown%2fbinding-win32-x64-msvc@1.2.15"
+        },
+        "fileCount": 3,
+        "integrity": "sha512-HFZd2QNQYn1JbIi+Hpd7H+r/lkWxcfIu28nirZ6eCn2LafuvmExMlb/P96Sfx5tf7pPArw39IdhmCF8vmV+NhQ==",
+        "shasum": "04ff5f1e8786fd31a68d040661a50e6dae3c7669",
+        "signatures": [
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEYCIQCh3udE4+NSZhYN54fmderoogu7c3TxyhBmoEnRymedPgIhAISsQyXPs+Su+v3NPKTLL7xXLZTBhBv8DH/DDGWTJXmb"
+          },
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEUCIAjWEqvS3i/c5NGV60wN9o8HOngrjdhXrTNy3mA9eUjxAiEAl3WGJEszuzjYYxEOcG2PvkytZVHa7JFeYSIDLsXcPZc="
+          }
+        ],
+        "tarball": "https://registry.npmjs.org/@rolldown/binding-win32-x64-msvc/-/binding-win32-x64-msvc-1.2.15.tgz",
+        "unpackedSize": 21732294
+      },
+      "license_notices": [],
+      "metadata_bytes": 2166,
+      "metadata_sha256": "b3ea8e4c0aeabbab99c5469e2be41ea0cee34d3dd8d22e96238366c574c806d6",
+      "metadata_url": "https://registry.npmjs.org/@rolldown%2Fbinding-win32-x64-msvc/1.2.15",
+      "name": "@rolldown/binding-win32-x64-msvc",
+      "observed_at": "2026-10-27T19:55:27.264116+00:00",
+      "package_scripts": {},
+      "path": "node_modules/@rolldown/binding-win32-x64-msvc",
+      "provenance_verification": "not-run; metadata availability is not verification",
+      "stage": "after",
+      "status": "archive-integrity-verified",
+      "version": "1.2.15"
+    },
+    {
+      "archive_bytes": 50086,
+      "archive_declared_license": "BSD-3-Clause",
+      "archive_entries": 47,
+      "archive_lifecycle_hooks": {},
+      "archive_manifest_sha256": "0afd3a82f40237f64ce9cbfdbc69c9cd4ef9400e7ddd6e6d26804f00f813650a",
+      "archive_sha256": "4f5a67f7b61110aae7b3ad38e806627f5712f4c150bd38eb804a562e69a9ee5e",
+      "archive_sri": "sha512-hS/0Wt3Ya043oKXs0sIxrMpKQITXhMLIrVAKKXi4gozGC9v7YRWVnXIZzjNPTO02M9BdxLCWqK1yRXgNziVyJQ==",
+      "archive_unpacked_bytes": 241202,
+      "declared_engines": null,
+      "declared_license": "BSD-3-Clause",
+      "dist": {
+        "attestations": {
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          },
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/fast-uri@3.1.9"
+        },
+        "fileCount": 47,
+        "integrity": "sha512-hS/0Wt3Ya043oKXs0sIxrMpKQITXhMLIrVAKKXi4gozGC9v7YRWVnXIZzjNPTO02M9BdxLCWqK1yRXgNziVyJQ==",
+        "shasum": "f1deba822b1d6ac79da2f860e872a63470cff203",
+        "signatures": [
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEUCIHlOcZJWkzro+RMHTZPFoOfer8+uTqVue+z6sM/cSq0MAiEAkwrQDvF8xLxIrHqE1wk63NbDQfug6v+ksa0iJlTenrk="
+          },
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEUCIA1XSFh8LWv4DXuNeC2nryDy6n1oLo0kwepbbVBZLra2AiEA7Bj7Umkl+kLxzFz4OkPSuGwrtXe7TuhzrVSXboq9zb4="
+          }
+        ],
+        "tarball": "https://registry.npmjs.org/fast-uri/-/fast-uri-3.1.9.tgz",
+        "unpackedSize": 241202
+      },
+      "license_notices": [
+        {
+          "bytes": 1813,
+          "interpretation": "notice located and hashed; complete legal review not inferred",
+          "mit_grant_phrase_present": false,
+          "path": "package/LICENSE",
+          "sha256": "b010b0dfdfdb23d7396e03b82cd4621fc9bb8f95d6b0aea70b9c24e12074c786"
+        }
+      ],
+      "metadata_bytes": 3257,
+      "metadata_sha256": "8bc07d844b6831d56d8a2edc35f9a1794982afb1fa58e44df67c3e20535efe7e",
+      "metadata_url": "https://registry.npmjs.org/fast-uri/3.1.9",
+      "name": "fast-uri",
+      "observed_at": "2026-10-27T19:55:32.940669+00:00",
+      "package_scripts": {
+        "lint": "eslint",
+        "lint:fix": "eslint --fix",
+        "test": "npm run test:unit && npm run test:typescript",
+        "test:browser": "npm run test:browser:chromium && npm run test:browser:firefox && npm run test:browser:webkit",
+        "test:browser:chromium": "playwright-test ./test/* --runner tape --browser=chromium",
+        "test:browser:firefox": "playwright-test ./test/* --runner tape --browser=firefox",
+        "test:browser:webkit": "playwright-test ./test/* --runner tape --browser=webkit",
+        "test:typescript": "tsd",
+        "test:unit": "tape test/**/*.js",
+        "test:unit:dev": "npm run test:unit -- --coverage-report=html"
+      },
+      "path": "node_modules/fast-uri",
+      "provenance_verification": "not-run; metadata availability is not verification",
+      "stage": "after",
+      "status": "archive-integrity-verified",
+      "version": "3.1.9"
+    },
+    {
+      "archive_bytes": 203090,
+      "archive_declared_license": "MIT",
+      "archive_entries": 52,
+      "archive_lifecycle_hooks": {},
+      "archive_manifest_sha256": "7c9c9615663e3f4e49ddf53be7eeb9a4bfe8126f890683e28a5a33d1ce28dee6",
+      "archive_sha256": "0f4e689f37f168b87605f3b9756b150c63bd1cb52bd04ba5d90e156794625067",
+      "archive_sri": "sha512-6odND+fel5zVw3I4Yc2e69gvguDnX0CAAGiNDZSq4ik5WUcaLrkD2GLuog0XcODbor31hZ5ayEMgVDno+KPV5g==",
+      "archive_unpacked_bytes": 875869,
+      "declared_engines": {
+        "node": "^20.19.0 || >=22.12.0"
+      },
+      "declared_license": "MIT",
+      "dist": {
+        "attestations": {
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          },
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/rolldown@1.2.15"
+        },
+        "fileCount": 52,
+        "integrity": "sha512-6odND+fel5zVw3I4Yc2e69gvguDnX0CAAGiNDZSq4ik5WUcaLrkD2GLuog0XcODbor31hZ5ayEMgVDno+KPV5g==",
+        "shasum": "d232b8201e1be3471d636375fe10af1dfc4eac35",
+        "signatures": [
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEUCIQDLcrH6Vp0d5rjfiQi+rTdabXSbPwP8/hQDTsKNhVijxgIgIVmWHd73uB8Sl6dLTgGwuMvBm4R2XZyd2lb46CHkcYk="
+          },
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEUCIH46Xex5WZNgQWYAG0Qfph1hFS1wh6DdamLuY7gaZQG5AiEAiZ9zMNv6Kpqx1EmS9n44VI9NhHIZnyBACWKFzOkUR+A="
+          }
+        ],
+        "tarball": "https://registry.npmjs.org/rolldown/-/rolldown-1.2.15.tgz",
+        "unpackedSize": 875869
+      },
+      "license_notices": [
+        {
+          "bytes": 1302,
+          "interpretation": "notice located and hashed; complete legal review not inferred",
+          "mit_grant_phrase_present": true,
+          "path": "package/LICENSE",
+          "sha256": "23ecfff35a5a2e80d92142f75228912c3b1abc4b5a8337a821ff4397e2f9f734"
+        }
+      ],
+      "metadata_bytes": 6485,
+      "metadata_sha256": "72460d7f7f0d219143fe8346492208585e7ebf6c7b6af540b48773a6fcd943c2",
+      "metadata_url": "https://registry.npmjs.org/rolldown/1.2.15",
+      "name": "rolldown",
+      "observed_at": "2026-10-27T19:55:33.162908+00:00",
+      "package_scripts": {
+        "# Scrips for binding #": "_",
+        "# Scrips for docs #": "_",
+        "# Scrips for node #": "_",
+        "artifacts": "napi artifacts --cwd ./src --package-json-path ../package.json -o=../artifacts --npm-dir ../npm",
+        "build-binding": "oxnode ./build-binding.ts",
+        "build-binding:profile": "pnpm build-binding --profile profile --features chrome-tracing",
+        "build-binding:release": "pnpm build-binding --release",
+        "build-binding:wasi": "pnpm build-binding --target wasm32-wasip1-threads",
+        "build-binding:wasi:release": "pnpm build-binding --profile release-wasi --target wasm32-wasip1-threads",
+        "build-browser-pkg:debug": "TARGET='browser' pnpm run --sequential '/^build-(binding:wasi|node)$/'",
+        "build-browser-pkg:release": "TARGET='browser' pnpm run --sequential '/^build-(binding:wasi:release|node)$/'",
+        "build-js-glue": "pnpm run --sequential '/^build-(node|types-check)$/'",
+        "build-native:debug": "pnpm run --sequential '/^build-(binding|js-glue)$/'",
+        "build-native:memory-profile": "pnpm run build-binding:profile --features default_global_allocator && pnpm run build-js-glue",
+        "build-native:profile": "pnpm run build-binding:profile && pnpm run build-js-glue",
+        "build-native:release": "pnpm run --sequential '/^build-(binding:release|js-glue)$/'",
+        "build-node": "node --enable-source-maps --import @oxc-node/core/register -C dev ./build.ts",
+        "build-types-check": "tsc -p ./tsconfig.check.json",
+        "build-wasi:debug": "TARGET='rolldown-wasi' pnpm run --sequential '/^build-(binding|binding:wasi|node)$/'",
+        "build-wasi:release": "TARGET='rolldown-wasi' pnpm run --sequential '/^build-(binding|binding:wasi:release|node)$/'",
+        "publint": "publint ."
+      },
+      "path": "node_modules/rolldown",
+      "provenance_verification": "not-run; metadata availability is not verification",
+      "stage": "after",
+      "status": "archive-integrity-verified",
+      "version": "1.2.15"
+    },
+    {
+      "archive_bytes": 587457,
+      "archive_declared_license": "MIT",
+      "archive_entries": 37,
+      "archive_lifecycle_hooks": {},
+      "archive_manifest_sha256": "7d5957911e302b7942b0065d917aa49377c82d8ee591242b2a817d8aa22739cf",
+      "archive_sha256": "7f22c2a78d15bac5ad755c5f413806048db453604fa0c293f6a0613890dc7c17",
+      "archive_sri": "sha512-z1YpjieJ9g0ebTmQpLBv/oq9E3F9EIlOe+7LahW8SrE3LTiG3udBRUXQOlYXP9b+IC2q2phHeVxj9xGlw34OEQ==",
+      "archive_unpacked_bytes": 2383283,
+      "declared_engines": {
+        "node": "^20.19.0 || >=22.12.0"
+      },
+      "declared_license": "MIT",
+      "dist": {
+        "attestations": {
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          },
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/vite@8.3.5"
+        },
+        "fileCount": 37,
+        "integrity": "sha512-z1YpjieJ9g0ebTmQpLBv/oq9E3F9EIlOe+7LahW8SrE3LTiG3udBRUXQOlYXP9b+IC2q2phHeVxj9xGlw34OEQ==",
+        "shasum": "9614f66026cb92fe486cb9d3c90780b2a69fc85d",
+        "signatures": [
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEUCIQCkxHmW9S61MNuyy4DXnW7ycbvIM+zLgMLTZY8apoH/7QIgUYeeXGnwTa1EtnZYtLxO8KeaaprYp0Zleoi3Z0ptC4o="
+          },
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEQCIBXwoS/AmN2uPnY/afXHZ95+19ukFqZNAU1UXqF3/wZEAiAPd1Qjn/zSliT6hF8t80jMjz9Gjqw324wpmsbW+fGQXQ=="
+          }
+        ],
+        "tarball": "https://registry.npmjs.org/vite/-/vite-8.3.5.tgz",
+        "unpackedSize": 2383283
+      },
+      "license_notices": [
+        {
+          "bytes": 98196,
+          "interpretation": "notice located and hashed; complete legal review not inferred",
+          "mit_grant_phrase_present": true,
+          "path": "package/LICENSE.md",
+          "sha256": "a22152baa1aef74402443008e767e7c689a524c0909d19b0431d97f5ab066a13"
+        }
+      ],
+      "metadata_bytes": 5170,
+      "metadata_sha256": "ba34bc2cd5e3e2c14de8d81d000e5596d4c110aab59b723c8b9bdb175df78723",
+      "metadata_url": "https://registry.npmjs.org/vite/8.3.5",
+      "name": "vite",
+      "observed_at": "2026-10-27T19:55:33.175391+00:00",
+      "package_scripts": {
+        "build": "premove dist && pnpm build-bundle && pnpm build-types",
+        "build-bundle": "rolldown --config rolldown.config.ts",
+        "build-types": "pnpm build-types-roll && pnpm build-types-check",
+        "build-types-check": "tsc --project tsconfig.check.json",
+        "build-types-roll": "rolldown --config rolldown.dts.config.ts",
+        "dev": "premove dist && pnpm build-bundle -w",
+        "format": "oxfmt",
+        "generate-target": "tsx scripts/generateTarget.ts",
+        "lint": "oxlint src",
+        "typecheck": "tsc && tsc -p src/node && tsc -p src/client && tsc -p src/module-runner && tsc -p src/shared && tsc -p src/node/__tests_dts__ && tsc -p src/module-runner/__tests_dts__"
+      },
+      "path": "node_modules/vite",
+      "provenance_verification": "not-run; metadata availability is not verification",
+      "stage": "after",
+      "status": "archive-integrity-verified",
+      "version": "8.3.5"
+    },
+    {
+      "archive_bytes": 52955,
+      "archive_declared_license": "MIT",
+      "archive_entries": 55,
+      "archive_lifecycle_hooks": {},
+      "archive_manifest_sha256": "7cfd86d633308c8470f9c782adad5fe2552fbc4ed3228d3f0e723c1b600f8f4e",
+      "archive_sha256": "113c998ca647657bc1989ef7e50084a574981ebb3e7b57c5a57c6c5d32ba2118",
+      "archive_sri": "sha512-YUbWYCgErwnMAVkjUnYa+KlMBzGpHwiIt/DE7f0G33AuX2LH9UcTk6KgWxd3zRU+pN3u/C+Xl3EnMLM4Hea7Sg==",
+      "archive_unpacked_bytes": 220893,
+      "declared_engines": {
+        "node": "^10 || ^12 || >=14"
+      },
+      "declared_license": "MIT",
+      "dist": {
+        "attestations": {
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          },
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/postcss@8.5.31"
+        },
+        "fileCount": 55,
+        "integrity": "sha512-YUbWYCgErwnMAVkjUnYa+KlMBzGpHwiIt/DE7f0G33AuX2LH9UcTk6KgWxd3zRU+pN3u/C+Xl3EnMLM4Hea7Sg==",
+        "shasum": "d44731fa02f8ae8371629ec7220e2ae0dbdf23ec",
+        "signatures": [
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEUCIBqKFCYpkv4W8Iey7ucaykLoTDwnaCJCdZxiAoxmxpQLAiEAh0A/SPUQvvNxMhETFcYQe9+ZkCdEDJqRBQlhKPoTrr4="
+          }
+        ],
+        "tarball": "https://registry.npmjs.org/postcss/-/postcss-8.5.31.tgz",
+        "unpackedSize": 220893
+      },
+      "license_notices": [
+        {
+          "bytes": 1095,
+          "interpretation": "notice located and hashed; complete legal review not inferred",
+          "mit_grant_phrase_present": true,
+          "path": "package/LICENSE",
+          "sha256": "5be1f3465bba68a626777f984878814aaf35e7ef8e9fd314d469bcf887050fb8"
+        }
+      ],
+      "metadata_bytes": 3288,
+      "metadata_sha256": "346278ac8171ef4dfaa46976ce7413d401a1326c4fc8fde56fbf2eb41baf62b6",
+      "metadata_url": "https://registry.npmjs.org/postcss/8.5.31",
+      "name": "postcss",
+      "observed_at": "2026-10-27T19:55:33.176036+00:00",
+      "package_scripts": {},
+      "path": "node_modules/vite/node_modules/postcss",
+      "provenance_verification": "not-run; metadata availability is not verification",
+      "stage": "after",
+      "status": "archive-integrity-verified",
+      "version": "8.5.31"
+    },
+    {
+      "archive_bytes": 1141941,
+      "archive_declared_license": "MIT",
+      "archive_entries": 840,
+      "archive_lifecycle_hooks": {},
+      "archive_manifest_sha256": "61bb40a954e5ef63c6856913f1abad3eaf312dc6ccc657d7aa1d5527782511ff",
+      "archive_sha256": "84efd155bed93270286e793fc951be270b536cbd5b0eeb111f0fa3967201d698",
+      "archive_sri": "sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==",
+      "archive_unpacked_bytes": 6148944,
+      "declared_engines": null,
+      "declared_license": "MIT",
+      "dist": {
+        "attestations": {
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          },
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/zod@4.6.7"
+        },
+        "fileCount": 840,
+        "integrity": "sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==",
+        "shasum": "e806cf64a7f4e37635ce9f2f52c04c3766f75e5b",
+        "signatures": [
+          {
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+            "sig": "MEUCIQCwQ7Os025hoW1C24cDvgD4t5gynQpYlWHx1ok/Bke33AIgPP2J7w4z9B/fqA62pHpEBvjlB5ScCMm3c0adt03XQlY="
+          }
+        ],
+        "tarball": "https://registry.npmjs.org/zod/-/zod-4.6.7.tgz",
+        "unpackedSize": 6148944
+      },
+      "license_notices": [
+        {
+          "bytes": 1072,
+          "interpretation": "notice located and hashed; complete legal review not inferred",
+          "mit_grant_phrase_present": true,
+          "path": "package/LICENSE",
+          "sha256": "3f1189b28e3866e0d979968d466b78f813f76827cfdca1fbb124cc0a5c8841f8"
+        }
+      ],
+      "metadata_bytes": 4362,
+      "metadata_sha256": "d6eac84f6c13cbef91acd6ee6b4c1ccbaef774a2f5e7147a0166880ca30ccbbb",
+      "metadata_url": "https://registry.npmjs.org/zod/4.6.7",
+      "name": "zod",
+      "observed_at": "2026-10-27T19:55:38.512453+00:00",
+      "package_scripts": {
+        "build": "nub exec --node zshy --project tsconfig.build.json",
+        "clean": "git clean -xdf . -e node_modules",
+        "postbuild": "nub ../../scripts/write-stub-package-jsons.ts && nub exec --node biome check --write .",
+        "prepublishOnly": "nub ../../scripts/check-versions.ts",
+        "test": "nub exec --node vitest run",
+        "test:watch": "nub exec --node vitest"
+      },
+      "path": "node_modules/zod",
+      "provenance_verification": "not-run; metadata availability is not verification",
+      "stage": "after",
+      "status": "archive-integrity-verified",
+      "version": "4.6.7"
+    }
+  ],
+  "scope": "before/after metadata for changed lock entries; current archives only; original archive notices not compared",
+  "subject_commit": "eb3b90beb4ac9245bac415696aa0de5a1a66c6d2",
+  "tls_verification": "enabled; system or explicitly selected CA bundle"
+}

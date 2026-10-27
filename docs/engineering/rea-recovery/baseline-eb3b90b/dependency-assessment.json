@@ -1,0 +1,158 @@
+{
+  "admission": "blocked",
+  "archive_integrity": {
+    "after_metadata_records": 21,
+    "archive_execution": "none",
+    "before_metadata_records": 20,
+    "cryptographic_registry_signature_verification": "not-run",
+    "current_tarballs_verified_against_lock_sri": 21,
+    "metadata_identity_mismatches": 0,
+    "network_verification_gaps": 0,
+    "registry_provenance_metadata_present": 21,
+    "registry_signature_metadata_present": 21,
+    "report": "registry-evidence.json",
+    "slsa_sigstore_provenance_verification": "not-run"
+  },
+  "authority": "Original REA records and histories remain canonical. This assessment updates EVO intake observations; no enrollment, second evidence authority, TASK-38 closure, source admission, implementation completion or human approval is inferred.",
+  "classification": "external-reference",
+  "compatibility": {
+    "absent_optional_peers": 9,
+    "analysis_node": "v24.22.1",
+    "audit_npm": "11.9.0",
+    "declared_node": "24.18.0",
+    "declared_package_manager": "npm@11.16.0",
+    "manifest_root_lock_agreement": true,
+    "node_engine_checks": 19,
+    "node_engine_mismatches": 0,
+    "report": "compatibility.json",
+    "required_range_mismatches": 0,
+    "satisfied_dependency_ranges": 39,
+    "semantic_typecheck_build_tests": "not-run",
+    "toolchain_qualification": "not-established; analysis tool differences are recorded, not silently treated as the pinned project toolchain"
+  },
+  "default_branch_policy": "excluded",
+  "dependency_changes": {
+    "added_nonroot_entries": 1,
+    "after_count": 561,
+    "attribution": "PR #1 Vite/toolchain; PR #2 zod; PR #4 fast-uri; see upstream-records.json and Git history",
+    "before_count": 560,
+    "changed_nonroot_entries": 20,
+    "raw_delta": "dependency-delta.json",
+    "removed_nonroot_entries": 0,
+    "unchanged_nonroot_entries": 540
+  },
+  "license_evidence": {
+    "affected_declared_licenses": {
+      "BSD-3-Clause": 1,
+      "MIT": 20
+    },
+    "changed_existing_license_labels": [],
+    "current_archives_with_notice_files": 6,
+    "current_archives_without_notice_files": [
+      "node_modules/@rolldown/binding-android-arm-eabi",
+      "node_modules/@rolldown/binding-android-arm64",
+      "node_modules/@rolldown/binding-darwin-arm64",
+      "node_modules/@rolldown/binding-darwin-x64",
+      "node_modules/@rolldown/binding-freebsd-x64",
+      "node_modules/@rolldown/binding-linux-arm-gnueabihf",
+      "node_modules/@rolldown/binding-linux-arm64-gnu",
+      "node_modules/@rolldown/binding-linux-arm64-musl",
+      "node_modules/@rolldown/binding-linux-ppc64-gnu",
+      "node_modules/@rolldown/binding-linux-s390x-gnu",
+      "node_modules/@rolldown/binding-linux-x64-gnu",
+      "node_modules/@rolldown/binding-linux-x64-musl",
+      "node_modules/@rolldown/binding-openharmony-arm64",
+      "node_modules/@rolldown/binding-win32-arm64-msvc",
+      "node_modules/@rolldown/binding-win32-x64-msvc"
+    ],
+    "full_lock_declared_licenses": {
+      "(MIT AND BSD-3-Clause)": 1,
+      "(MIT AND Zlib)": 1,
+      "0BSD": 1,
+      "Apache-2.0": 30,
+      "BSD-2-Clause": 2,
+      "BSD-3-Clause": 9,
+      "BlueOak-1.0.0": 5,
+      "CC0-1.0": 1,
+      "ISC": 17,
+      "MIT": 482,
+      "MPL-2.0": 12
+    },
+    "metadata_archive_lock_license_labels_agree": true,
+    "new_risk_attribution": "Missing binding notices are newly recorded verification gaps, not demonstrated changes introduced by these versions.",
+    "scope": "Current changed/added archive notices located and hashed; previous archive notice contents not compared. Bundled third-party licenses and complete distribution notices not approved.",
+    "transitive_license_approval": "not-established"
+  },
+  "new_confirmed_security_defects_introduced_by_updates": [],
+  "newly_recorded_gaps": [
+    {
+      "disposition": "Run the declared compiler/typechecker and relevant schema/CLI/MCP/Vitest/Vite checks in an approved isolated execution environment; range agreement is insufficient.",
+      "id": "REA-REFRESH-DEP-01",
+      "topic": "Changed package behavior"
+    },
+    {
+      "disposition": "Resolve notices and bundled-component rights for selected Rolldown bindings; retain platform-specific qualification. No native binding was executed.",
+      "id": "REA-REFRESH-DEP-02",
+      "topic": "Native platform and notice closure"
+    },
+    {
+      "disposition": "Verify signatures and build provenance for selected archives, including zod following the upstream-reported Git credential incident and fast-uri trusted-publishing transition. Available metadata and valid SRI do not complete provenance review.",
+      "id": "REA-REFRESH-DEP-03",
+      "topic": "Release provenance"
+    }
+  ],
+  "observed_date": "2026-10-27",
+  "original_commit": "9e22da845bf8b447f81539e0ba57d5deb59e9103",
+  "producer": "EVO; AI-assisted preparation by ChatGPT for @dlworrell; no independent reviewer asserted",
+  "remaining_admission_requirements": [
+    "Applicable selected-provider/submodule content baselines and access/license dispositions",
+    "Nine declared-project-parser outcomes and TypeScript semantic/security analysis",
+    "Independent native API candidate dispositions",
+    "Full secret/history, source-effect and isolation assessment",
+    "Complete applicable dependency provenance and redistribution license approval",
+    "Independently verified buildable C correctness baseline before optimization",
+    "Installed production-provider EVO replay and any separately claimed hardware qualification"
+  ],
+  "retained_findings": {
+    "all_original_finding_ids_fingerprints_and_syntax_results_preserved": true,
+    "existing_install_script_packages": [
+      {
+        "path": "node_modules/fsevents",
+        "version": "2.3.3"
+      },
+      {
+        "path": "node_modules/vitepress/node_modules/esbuild",
+        "version": "0.25.12"
+      }
+    ],
+    "native_api_candidates": 4,
+    "native_finding_disposition": "independent disposition remains open",
+    "new_archive_install_or_prepare_hooks": 0,
+    "parser_reviews": 9,
+    "root_lifecycle_hooks_unchanged": true,
+    "unpinned_external_ci_action_occurrences": 92,
+    "unscanned_submodule_references": 5
+  },
+  "subject_commit": "eb3b90beb4ac9245bac415696aa0de5a1a66c6d2",
+  "vulnerability_evidence": {
+    "after_known_findings": 0,
+    "before_advisories_by_package": {
+      "fast-uri": 4,
+      "vite": 6,
+      "zod": 1
+    },
+    "before_distinct_advisory_count": 11,
+    "before_package_severities": {
+      "high": 2,
+      "moderate": 1
+    },
+    "before_vulnerable_package_count": 3,
+    "limits": "No exploit, reachability, behavioral regression, malware-absence or future-database guarantee. Optional platform packages are inventoried, not executed.",
+    "reports": [
+      "npm-audit-before.json",
+      "npm-audit-after.json"
+    ],
+    "result": "known advisory matches removed in this dated lockfile query",
+    "source": "npm public registry advisory endpoint; no dependency omission flags"
+  }
+}

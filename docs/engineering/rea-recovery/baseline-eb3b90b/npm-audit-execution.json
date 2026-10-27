@@ -1,0 +1,61 @@
+{
+  "runs": [
+    {
+      "command": [
+        "npm",
+        "audit",
+        "--package-lock-only",
+        "--ignore-scripts",
+        "--json",
+        "--no-fund",
+        "--no-progress",
+        "--registry=https://registry.npmjs.org",
+        "--fetch-retries=0",
+        "--fetch-timeout=20000",
+        "--cafile=/etc/ssl/certs/ca-certificates.crt",
+        "--strict-ssl=true"
+      ],
+      "exit_code": 1,
+      "seconds": 8.03,
+      "npm_version": "11.9.0",
+      "node_version": "v24.22.1",
+      "config": "empty npm configs; runtime network proxy; system CA; TLS verification enforced; no npm authentication",
+      "stage": "before",
+      "observed_date": "2026-10-27",
+      "source_inputs_sha256": {
+        "package.json": "5d29e225f6ea16ac8589b2e4f1150a5084409e26f4e51f6005dfbf41ed7a7ad8",
+        "package-lock.json": "ac44c86b6211dd6e505e39241a477c6e4a56af0ed29aea48c703332cbb1b5c21"
+      },
+      "stderr": "npm warn Unknown env config \"http-proxy\". This will stop working in the next major version of npm.\n"
+    },
+    {
+      "command": [
+        "npm",
+        "audit",
+        "--package-lock-only",
+        "--ignore-scripts",
+        "--json",
+        "--no-fund",
+        "--no-progress",
+        "--registry=https://registry.npmjs.org",
+        "--fetch-retries=0",
+        "--fetch-timeout=20000",
+        "--cafile=/etc/ssl/certs/ca-certificates.crt",
+        "--strict-ssl=true"
+      ],
+      "exit_code": 0,
+      "seconds": 2.87,
+      "npm_version": "11.9.0",
+      "node_version": "v24.22.1",
+      "config": "empty npm configs; runtime network proxy; system CA; TLS verification enforced; no npm authentication",
+      "stage": "after",
+      "observed_date": "2026-10-27",
+      "source_inputs_sha256": {
+        "package.json": "3a96fc76e72c2165d0c99639013bf521e53962288210b34276931cfe6d4714db",
+        "package-lock.json": "0b9d9b1b34ba616cce93f94549f20088b2c67ad90f3f04b60b43380cce6ab0f6"
+      },
+      "stderr": "npm warn Unknown env config \"http-proxy\". This will stop working in the next major version of npm.\n"
+    }
+  ],
+  "interpretation": "exit 1 before is a completed audit with findings; exit 0 after is a completed audit with no known findings. No audit fix, install or target execution."
+}

@@ -103,6 +103,14 @@ accounts for the pinned REA snapshot. Its byte registry and diagnostic scan are
 complete for their stated methods; dependency closure, language/security review
 and the other listed gaps remain open. It is not an admitted C baseline.
 
+The [2026-10-27 refresh](../engineering/rea-recovery/baseline-eb3b90b/README.md)
+assesses the current verified external-reference candidate
+`eb3b90beb4ac9245bac415696aa0de5a1a66c6d2` with a repeated full-tree inventory,
+an integrity-verified comparison to the original, and supplemental dependency
+audit, compatibility metadata and archive/license evidence. It preserves the
+original interface-analysis pin and findings. A scanned candidate is not an
+approved replacement for the contract pin or an admitted C implementation.
+
 ## 3. Lossless evidence and companion manifest
 
 Retain each original native REA export byte-for-byte in an authorized evidence

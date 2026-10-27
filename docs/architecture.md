@@ -39,6 +39,12 @@ dependency metadata and open analysis. EVO-004 section 2.1 requires this whole
 snapshot baseline and applicable dispositions before affected source admission;
 the separate independently verified C baseline remains required afterward.
 
+The [2026-10-27 refresh and complete comparison](engineering/rea-recovery/baseline-eb3b90b/README.md)
+assesses candidate source `eb3b90beb4ac9245bac415696aa0de5a1a66c6d2` against
+that original baseline. It retains dependency audit/archive/license evidence
+and the original unresolved findings. This evidence does not admit the source
+or change REA's external-reference classification.
+
 ## Product Component Model
 
 ### Evolutionary-search core
