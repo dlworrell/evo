@@ -1,0 +1,45 @@
+{
+  "observed_date": "2026-10-27",
+  "attribution": "Upstream maintainer records; application reachability and full release provenance are not independently established.",
+  "records": [
+    {
+      "url": "https://github.com/fastify/fast-uri/releases/tag/v3.1.9",
+      "tag": "v3.1.9",
+      "published_at": "2026-10-19T23:04:37Z",
+      "observation": "Maintainer designates 3.1.9 as the 3.x patch for four URI parsing/normalization advisories.",
+      "advisories": [
+        "GHSA-w74x-v6f9-j3xg",
+        "GHSA-wjr9-j795-jxcr",
+        "GHSA-xhq7-xmqj-769h",
+        "GHSA-333x-w4r6-6crp"
+      ]
+    },
+    {
+      "url": "https://github.com/colinhacks/zod/releases/tag/v4.6.6",
+      "tag": "v4.6.6",
+      "published_at": "2026-10-11T16:19:03Z",
+      "observation": "Maintainer reports six malicious September 21 Git commits were reverted and removed; reports none reached npm. Release includes collection-size early checking and a type declaration correction.",
+      "disposition": "Retain as an upstream supply-chain incident report. Do not infer malicious npm bytes or verified provenance for 4.6.7."
+    },
+    {
+      "url": "https://github.com/vitejs/vite/releases/tag/v8.3.5",
+      "tag": "v8.3.5",
+      "published_at": "2026-10-21T06:35:46Z",
+      "observation": "Release records build, module resolution, dev-server and dependency changes. Same major/minor does not prove behavior equivalence."
+    },
+    {
+      "url": "https://github.com/rolldown/rolldown/releases/tag/v1.2.15",
+      "tag": "v1.2.15",
+      "published_at": "2026-10-21T13:12:08Z",
+      "observation": "Release records native bundler/plugin behavior changes and OXC update; selected-platform execution remains unverified."
+    },
+    {
+      "url": "https://github.com/dlworrell/rea/pull/1",
+      "number": 1,
+      "merged": true,
+      "merge_commit_sha": "1689769ed56b0c9296c3a0d234960418329d85f5",
+      "merged_at": "2026-10-27T01:35:12Z",
+      "observation": "Previously unmentioned PR #1 accounts for the Vite/toolchain lockfile delta. The six-commit comparison includes PRs #1, #2 and #4."
+    }
+  ]
+}

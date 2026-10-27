@@ -123,6 +123,12 @@ The [full-file REA baseline](../engineering/rea-recovery/baseline-9e22da8/README
 retains the actual byte/diagnostic scan and its unresolved checks; it supplies
 neither the later verified C baseline nor optimizer/hardware qualification.
 
+The [2026-10-27 source-intake refresh](../engineering/rea-recovery/baseline-eb3b90b/README.md)
+repeats the full-file scan for verified candidate `eb3b90b` and reconciles its
+dependency changes against the original baseline. The original contract and
+interface analysis retain their recorded pin; independently reviewed source
+admission, provider closure and license approval remain outstanding.
+
 Use the staged acceptance matrix in EVO-004. Preserve malformed-input,
 identity-mismatch, independent-oracle, immutable-input, isolation, cleanup,
 installed-provider and replay evidence at their exact subjects. Missing,

@@ -1,0 +1,1260 @@
+{
+  "after_locked_packages": 561,
+  "before_locked_packages": 560,
+  "counts_including_root": {
+    "added": 1,
+    "changed": 21
+  },
+  "entries": [
+    {
+      "after": {
+        "bin": {
+          "rea": "scripts/rea.mjs",
+          "rea-agents": "scripts/rea.mjs"
+        },
+        "dependencies": {
+          "@babel/parser": "8.0.4",
+          "@babel/types": "8.0.4",
+          "@clack/prompts": "1.7.0",
+          "@electron/asar": "4.2.0",
+          "@jridgewell/trace-mapping": "0.3.31",
+          "@lydell/node-pty": "1.1.0",
+          "@modelcontextprotocol/client": "2.3.1",
+          "@modelcontextprotocol/server": "2.3.1",
+          "@xterm/addon-serialize": "0.14.0",
+          "@xterm/headless": "6.0.0",
+          "@zip.js/zip.js": "2.15.0",
+          "ajv": "8.20.0",
+          "ajv-formats": "3.0.1",
+          "canonicalize": "3.0.0",
+          "cross-spawn": "7.0.6",
+          "diff": "9.0.0",
+          "evmole": "0.9.3",
+          "har-schema": "2.0.0",
+          "ignore": "7.0.6",
+          "incur": "0.6.1",
+          "isomorphic-git": "1.38.7",
+          "jsonc-parser": "3.3.1",
+          "lossless-json": "4.3.1",
+          "parse5": "8.0.1",
+          "pino": "10.4.0",
+          "playwright-core": "1.58.2",
+          "plist": "5.0.0",
+          "semver": "7.8.5",
+          "smol-toml": "1.9.0",
+          "stream-json": "3.7.0",
+          "write-file-atomic": "7.0.0",
+          "ws": "8.21.0",
+          "yaml": "2.9.0",
+          "zod": "4.6.7"
+        },
+        "devDependencies": {
+          "@fast-check/vitest": "0.5.0",
+          "@types/cross-spawn": "6.0.6",
+          "@types/node": "26.6.4",
+          "@types/semver": "7.7.1",
+          "@types/write-file-atomic": "4.0.3",
+          "@types/ws": "8.18.1",
+          "@vitest/coverage-v8": "5.0.3",
+          "husky": "9.1.7",
+          "jscpd": "5.0.12",
+          "knip": "6.39.0",
+          "lint-staged": "16.4.0",
+          "oxfmt": "0.72.0",
+          "oxlint": "1.87.0",
+          "turbo": "2.11.7",
+          "typescript": "7.0.2",
+          "vitepress": "1.6.4",
+          "vitest": "5.0.3"
+        },
+        "engines": {
+          "node": "^22.19.0 || ^24.11.0 || >=26.0.0"
+        },
+        "license": "MIT",
+        "name": "rea-agents",
+        "version": "6.3.0"
+      },
+      "before": {
+        "bin": {
+          "rea": "scripts/rea.mjs",
+          "rea-agents": "scripts/rea.mjs"
+        },
+        "dependencies": {
+          "@babel/parser": "8.0.4",
+          "@babel/types": "8.0.4",
+          "@clack/prompts": "1.7.0",
+          "@electron/asar": "4.2.0",
+          "@jridgewell/trace-mapping": "0.3.31",
+          "@lydell/node-pty": "1.1.0",
+          "@modelcontextprotocol/client": "2.3.1",
+          "@modelcontextprotocol/server": "2.3.1",
+          "@xterm/addon-serialize": "0.14.0",
+          "@xterm/headless": "6.0.0",
+          "@zip.js/zip.js": "2.15.0",
+          "ajv": "8.20.0",
+          "ajv-formats": "3.0.1",
+          "canonicalize": "3.0.0",
+          "cross-spawn": "7.0.6",
+          "diff": "9.0.0",
+          "evmole": "0.9.3",
+          "har-schema": "2.0.0",
+          "ignore": "7.0.6",
+          "incur": "0.6.1",
+          "isomorphic-git": "1.38.7",
+          "jsonc-parser": "3.3.1",
+          "lossless-json": "4.3.1",
+          "parse5": "8.0.1",
+          "pino": "10.4.0",
+          "playwright-core": "1.58.2",
+          "plist": "5.0.0",
+          "semver": "7.8.5",
+          "smol-toml": "1.9.0",
+          "stream-json": "3.7.0",
+          "write-file-atomic": "7.0.0",
+          "ws": "8.21.0",
+          "yaml": "2.9.0",
+          "zod": "4.4.3"
+        },
+        "devDependencies": {
+          "@fast-check/vitest": "0.5.0",
+          "@types/cross-spawn": "6.0.6",
+          "@types/node": "26.6.4",
+          "@types/semver": "7.7.1",
+          "@types/write-file-atomic": "4.0.3",
+          "@types/ws": "8.18.1",
+          "@vitest/coverage-v8": "5.0.3",
+          "husky": "9.1.7",
+          "jscpd": "5.0.12",
+          "knip": "6.39.0",
+          "lint-staged": "16.4.0",
+          "oxfmt": "0.72.0",
+          "oxlint": "1.87.0",
+          "turbo": "2.11.7",
+          "typescript": "7.0.2",
+          "vitepress": "1.6.4",
+          "vitest": "5.0.3"
+        },
+        "engines": {
+          "node": "^22.19.0 || ^24.11.0 || >=26.0.0"
+        },
+        "license": "MIT",
+        "name": "rea-agents",
+        "version": "6.3.0"
+      },
+      "changed_fields": [
+        "dependencies"
+      ],
+      "path": "",
+      "status": "changed"
+    },
+    {
+      "after": {
+        "dev": true,
+        "funding": {
+          "url": "https://github.com/sponsors/oxc-project"
+        },
+        "integrity": "sha512-SeE8JPwW1xs1tHeNycjUtUBdhorRa8o4jlvjwk49R7/Z291i+4DQa7JJIgOm/TaYQZx+QrPQbVJ/9c8dMIZN8Q==",
+        "license": "MIT",
+        "peer": true,
+        "resolved": "https://registry.npmjs.org/@oxc-project/types/-/types-0.155.0.tgz",
+        "version": "0.155.0"
+      },
+      "before": {
+        "dev": true,
+        "funding": {
+          "url": "https://github.com/sponsors/oxc-project"
+        },
+        "integrity": "sha512-oM/5rLBm2tPkg0iBgkH/FOeR3PCDpY19GTgAZjMFM8h9WI9VW7cLgzp6nwtarYKmovavIQZ+Fe/RKX/8C8O/Rw==",
+        "license": "MIT",
+        "peer": true,
+        "resolved": "https://registry.npmjs.org/@oxc-project/types/-/types-0.152.0.tgz",
+        "version": "0.152.0"
+      },
+      "changed_fields": [
+        "integrity",
+        "resolved",
+        "version"
+      ],
+      "path": "node_modules/@oxc-project/types",
+      "status": "changed"
+    },
+    {
+      "after": {
+        "cpu": [
+          "arm"
+        ],
+        "dev": true,
+        "engines": {
+          "node": "^20.19.0 || >=22.12.0"
+        },
+        "integrity": "sha512-aLcgK9gIJ3YRvrrtfSBbRa27F5WrpiTaPulnFpsHPxpUHgFlSgnU4854MHwoRGEBhfRJDWCS2WQ7lIjskE9Olw==",
+        "license": "MIT",
+        "optional": true,
+        "os": [
+          "android"
+        ],
+        "peer": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-android-arm-eabi/-/binding-android-arm-eabi-1.2.15.tgz",
+        "version": "1.2.15"
+      },
+      "before": {
+        "cpu": [
+          "arm"
+        ],
+        "dev": true,
+        "engines": {
+          "node": "^20.19.0 || >=22.12.0"
+        },
+        "integrity": "sha512-dB/a1214qKfHMXCpgqR4OZT+jS4kTyEXbQGJPqzobt5EwH5rX080pxE37alt3RzvR1bf1Yz/yGqRfrYAxuPw0A==",
+        "license": "MIT",
+        "optional": true,
+        "os": [
+          "android"
+        ],
+        "peer": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-android-arm-eabi/-/binding-android-arm-eabi-1.2.12.tgz",
+        "version": "1.2.12"
+      },
+      "changed_fields": [
+        "integrity",
+        "resolved",
+        "version"
+      ],
+      "path": "node_modules/@rolldown/binding-android-arm-eabi",
+      "status": "changed"
+    },
+    {
+      "after": {
+        "cpu": [
+          "arm64"
+        ],
+        "dev": true,
+        "engines": {
+          "node": "^20.19.0 || >=22.12.0"
+        },
+        "integrity": "sha512-xD7DdZCrbThKuxNg7ooQmvp07ys4J/pnSEMTG3/OdOWl6daC67m/Q4fL78sRHMxTH/N4fGUbYhcPM0MF5WFHkg==",
+        "license": "MIT",
+        "optional": true,
+        "os": [
+          "android"
+        ],
+        "peer": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-android-arm64/-/binding-android-arm64-1.2.15.tgz",
+        "version": "1.2.15"
+      },
+      "before": {
+        "cpu": [
+          "arm64"
+        ],
+        "dev": true,
+        "engines": {
+          "node": "^20.19.0 || >=22.12.0"
+        },
+        "integrity": "sha512-7KHFgQ5VJxIHcLlrwrc3Xbds7oTNQT7Pgi9gQCJKrd2VGab/UksIOYp6VD8MzCstGxOKMgNamPwUCfxPdP1OHg==",
+        "license": "MIT",
+        "optional": true,
+        "os": [
+          "android"
+        ],
+        "peer": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-android-arm64/-/binding-android-arm64-1.2.12.tgz",
+        "version": "1.2.12"
+      },
+      "changed_fields": [
+        "integrity",
+        "resolved",
+        "version"
+      ],
+      "path": "node_modules/@rolldown/binding-android-arm64",
+      "status": "changed"
+    },
+    {
+      "after": {
+        "cpu": [
+          "arm64"
+        ],
+        "dev": true,
+        "engines": {
+          "node": "^20.19.0 || >=22.12.0"
+        },
+        "integrity": "sha512-m2WuQ6r0B4OTYxyPpNLtXaMRbRDUbG8YQV2Q3KTdSSK8Th6KHCnC8jVCJt8bvYeSB5WivkkNbc85mKadaSdOxA==",
+        "license": "MIT",
+        "optional": true,
+        "os": [
+          "darwin"
+        ],
+        "peer": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-darwin-arm64/-/binding-darwin-arm64-1.2.15.tgz",
+        "version": "1.2.15"
+      },
+      "before": {
+        "cpu": [
+          "arm64"
+        ],
+        "dev": true,
+        "engines": {
+          "node": "^20.19.0 || >=22.12.0"
+        },
+        "integrity": "sha512-3YIhqHD96nA5SaYNRBR16HnGv4oavZvXfD/ayHM+oYZ0WD/8lBAtf6zQua4kEyAvpqrluKXl0lnOBoiNby7x9w==",
+        "license": "MIT",
+        "optional": true,
+        "os": [
+          "darwin"
+        ],
+        "peer": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-darwin-arm64/-/binding-darwin-arm64-1.2.12.tgz",
+        "version": "1.2.12"
+      },
+      "changed_fields": [
+        "integrity",
+        "resolved",
+        "version"
+      ],
+      "path": "node_modules/@rolldown/binding-darwin-arm64",
+      "status": "changed"
+    },
+    {
+      "after": {
+        "cpu": [
+          "x64"
+        ],
+        "dev": true,
+        "engines": {
+          "node": "^20.19.0 || >=22.12.0"
+        },
+        "integrity": "sha512-5RtnsHM36nodM9WbMy+zip0LGS/G+y5wro5RHrpOlr4ac24+1zSi9kiV2MP1myZeZ/ifEHfulQcWjnAXzc2C2A==",
+        "license": "MIT",
+        "optional": true,
+        "os": [
+          "darwin"
+        ],
+        "peer": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-darwin-x64/-/binding-darwin-x64-1.2.15.tgz",
+        "version": "1.2.15"
+      },
+      "before": {
+        "cpu": [
+          "x64"
+        ],
+        "dev": true,
+        "engines": {
+          "node": "^20.19.0 || >=22.12.0"
+        },
+        "integrity": "sha512-UuuJ35MFw4gmFOrE9pEqIV+K3syIKveph+Qc1/ljHZVdoDW4pz/JHR/eMVom+TZGl/5OOvGJOWaOCVt3ZfqhxA==",
+        "license": "MIT",
+        "optional": true,
+        "os": [
+          "darwin"
+        ],
+        "peer": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-darwin-x64/-/binding-darwin-x64-1.2.12.tgz",
+        "version": "1.2.12"
+      },
+      "changed_fields": [
+        "integrity",
+        "resolved",
+        "version"
+      ],
+      "path": "node_modules/@rolldown/binding-darwin-x64",
+      "status": "changed"
+    },
+    {
+      "after": {
+        "cpu": [
+          "x64"
+        ],
+        "dev": true,
+        "engines": {
+          "node": "^20.19.0 || >=22.12.0"
+        },
+        "integrity": "sha512-g3l09pyFqhu+135JKkbkwiKGQmwU5hUMUPJ4VdBADvuqR8d33L6H578rh8m7rtxbdp+VmX/+nzI7nvhSZlzpUQ==",
+        "license": "MIT",
+        "optional": true,
+        "os": [
+          "freebsd"
+        ],
+        "peer": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-freebsd-x64/-/binding-freebsd-x64-1.2.15.tgz",
+        "version": "1.2.15"
+      },
+      "before": {
+        "cpu": [
+          "x64"
+        ],
+        "dev": true,
+        "engines": {
+          "node": "^20.19.0 || >=22.12.0"
+        },
+        "integrity": "sha512-uMvssit0a4W+/7D8CbHUvG719mH3R2jwXAlh/XcPvuHTE0g++LymF88DCGNX0HM2rBOn0xrzgXktIB6fLSJBTQ==",
+        "license": "MIT",
+        "optional": true,
+        "os": [
+          "freebsd"
+        ],
+        "peer": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-freebsd-x64/-/binding-freebsd-x64-1.2.12.tgz",
+        "version": "1.2.12"
+      },
+      "changed_fields": [
+        "integrity",
+        "resolved",
+        "version"
+      ],
+      "path": "node_modules/@rolldown/binding-freebsd-x64",
+      "status": "changed"
+    },
+    {
+      "after": {
+        "cpu": [
+          "arm"
+        ],
+        "dev": true,
+        "engines": {
+          "node": "^20.19.0 || >=22.12.0"
+        },
+        "integrity": "sha512-nIe3VugI97nGQtspPxDqA4sXMUpeiocKIP/CqpY/u/vgbT+alX+cVxu1C/oVBPKg4feNTmYovE91v4DgXvXNwQ==",
+        "license": "MIT",
+        "optional": true,
+        "os": [
+          "linux"
+        ],
+        "peer": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-linux-arm-gnueabihf/-/binding-linux-arm-gnueabihf-1.2.15.tgz",
+        "version": "1.2.15"
+      },
+      "before": {
+        "cpu": [
+          "arm"
+        ],
+        "dev": true,
+        "engines": {
+          "node": "^20.19.0 || >=22.12.0"
+        },
+        "integrity": "sha512-XcFu0R0xWnwzSf4IQgFH1rJIckPN1pLy2R+4r9IDB7Yfu/ys9cVqfa4pBrMHj7a3gl8mIR4nRNPg0e5IvEVs6g==",
+        "license": "MIT",
+        "optional": true,
+        "os": [
+          "linux"
+        ],
+        "peer": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-linux-arm-gnueabihf/-/binding-linux-arm-gnueabihf-1.2.12.tgz",
+        "version": "1.2.12"
+      },
+      "changed_fields": [
+        "integrity",
+        "resolved",
+        "version"
+      ],
+      "path": "node_modules/@rolldown/binding-linux-arm-gnueabihf",
+      "status": "changed"
+    },
+    {
+      "after": {
+        "cpu": [
+          "arm64"
+        ],
+        "dev": true,
+        "engines": {
+          "node": "^20.19.0 || >=22.12.0"
+        },
+        "integrity": "sha512-iTBjXx+B5QSvgI89lJfmqh4wTh8NabR1YZIIN3hNx4zSG0EVfVqkOvLulNpG4251pbd6/IAmZ/LefVk1Y4rPhw==",
+        "libc": [
+          "glibc"
+        ],
+        "license": "MIT",
+        "optional": true,
+        "os": [
+          "linux"
+        ],
+        "peer": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-linux-arm64-gnu/-/binding-linux-arm64-gnu-1.2.15.tgz",
+        "version": "1.2.15"
+      },
+      "before": {
+        "cpu": [
+          "arm64"
+        ],
+        "dev": true,
+        "engines": {
+          "node": "^20.19.0 || >=22.12.0"
+        },
+        "integrity": "sha512-260UrKgn8tz39ak+SMDOirKzr7V04M9dWPw5llW00SwBivCZoWcRBKV1d8cXnRkUmSZA3BdiUmBHWk7734Ulpw==",
+        "libc": [
+          "glibc"
+        ],
+        "license": "MIT",
+        "optional": true,
+        "os": [
+          "linux"
+        ],
+        "peer": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-linux-arm64-gnu/-/binding-linux-arm64-gnu-1.2.12.tgz",
+        "version": "1.2.12"
+      },
+      "changed_fields": [
+        "integrity",
+        "resolved",
+        "version"
+      ],
+      "path": "node_modules/@rolldown/binding-linux-arm64-gnu",
+      "status": "changed"
+    },
+    {
+      "after": {
+        "cpu": [
+          "arm64"
+        ],
+        "dev": true,
+        "engines": {
+          "node": "^20.19.0 || >=22.12.0"
+        },
+        "integrity": "sha512-uN26XOnVR7rqQupG3V9oAG2EGGatWjcJHOeDOHUFCh4TBWmP2tHTFoVN13aYbwfm0aHqJAEmcwhAu6sooIjfqQ==",
+        "libc": [
+          "musl"
+        ],
+        "license": "MIT",
+        "optional": true,
+        "os": [
+          "linux"
+        ],
+        "peer": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-linux-arm64-musl/-/binding-linux-arm64-musl-1.2.15.tgz",
+        "version": "1.2.15"
+      },
+      "before": {
+        "cpu": [
+          "arm64"
+        ],
+        "dev": true,
+        "engines": {
+          "node": "^20.19.0 || >=22.12.0"
+        },
+        "integrity": "sha512-5YK1I9SqDkbPgc1IA8BgDl34suqUS2q0KWnBrirm0E51YjOs6eo6dV6jbQfNE/argHRSvd0QUGgtpIoYx+WWpw==",
+        "libc": [
+          "musl"
+        ],
+        "license": "MIT",
+        "optional": true,
+        "os": [
+          "linux"
+        ],
+        "peer": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-linux-arm64-musl/-/binding-linux-arm64-musl-1.2.12.tgz",
+        "version": "1.2.12"
+      },
+      "changed_fields": [
+        "integrity",
+        "resolved",
+        "version"
+      ],
+      "path": "node_modules/@rolldown/binding-linux-arm64-musl",
+      "status": "changed"
+    },
+    {
+      "after": {
+        "cpu": [
+          "ppc64"
+        ],
+        "dev": true,
+        "engines": {
+          "node": "^20.19.0 || >=22.12.0"
+        },
+        "integrity": "sha512-9nWkcdd+H+XhaA3fQIwpHnKIrfx/PQ6rO0pivr78Og07tXlUlctBBJoEYLPfhTmCR/QxEVdn6uPjHV5SymPhdw==",
+        "libc": [
+          "glibc"
+        ],
+        "license": "MIT",
+        "optional": true,
+        "os": [
+          "linux"
+        ],
+        "peer": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-linux-ppc64-gnu/-/binding-linux-ppc64-gnu-1.2.15.tgz",
+        "version": "1.2.15"
+      },
+      "before": {
+        "cpu": [
+          "ppc64"
+        ],
+        "dev": true,
+        "engines": {
+          "node": "^20.19.0 || >=22.12.0"
+        },
+        "integrity": "sha512-Rkcrmp7eFRg74yL5fXEU91JEWbdEPLevWwGtXpmhbjlD1StScbWTmO94Bhly+Mo+ketKYkdmM1vNUKeWSlx8cQ==",
+        "libc": [
+          "glibc"
+        ],
+        "license": "MIT",
+        "optional": true,
+        "os": [
+          "linux"
+        ],
+        "peer": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-linux-ppc64-gnu/-/binding-linux-ppc64-gnu-1.2.12.tgz",
+        "version": "1.2.12"
+      },
+      "changed_fields": [
+        "integrity",
+        "resolved",
+        "version"
+      ],
+      "path": "node_modules/@rolldown/binding-linux-ppc64-gnu",
+      "status": "changed"
+    },
+    {
+      "after": {
+        "cpu": [
+          "s390x"
+        ],
+        "dev": true,
+        "engines": {
+          "node": "^20.19.0 || >=22.12.0"
+        },
+        "integrity": "sha512-Ggh0ciFjLwIusLSLz7LZYEaGdxOAUJXI+Qu5JCbhPJJHEt8vP+IjRATTJheiJsdzzTYgUiHUiw3X1Ea3ZpMBdA==",
+        "libc": [
+          "glibc"
+        ],
+        "license": "MIT",
+        "optional": true,
+        "os": [
+          "linux"
+        ],
+        "peer": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-linux-s390x-gnu/-/binding-linux-s390x-gnu-1.2.15.tgz",
+        "version": "1.2.15"
+      },
+      "before": {
+        "cpu": [
+          "s390x"
+        ],
+        "dev": true,
+        "engines": {
+          "node": "^20.19.0 || >=22.12.0"
+        },
+        "integrity": "sha512-qvK4DuAsQc2BSjlx+Xr+IzOIvvxbGZqxFwdWfG6F518Erj0GGISyQbJ6pIappnOxlNPzNHvo/L0BwB30GZ+zVw==",
+        "libc": [
+          "glibc"
+        ],
+        "license": "MIT",
+        "optional": true,
+        "os": [
+          "linux"
+        ],
+        "peer": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-linux-s390x-gnu/-/binding-linux-s390x-gnu-1.2.12.tgz",
+        "version": "1.2.12"
+      },
+      "changed_fields": [
+        "integrity",
+        "resolved",
+        "version"
+      ],
+      "path": "node_modules/@rolldown/binding-linux-s390x-gnu",
+      "status": "changed"
+    },
+    {
+      "after": {
+        "cpu": [
+          "x64"
+        ],
+        "dev": true,
+        "engines": {
+          "node": "^20.19.0 || >=22.12.0"
+        },
+        "integrity": "sha512-FHg60rS6DBePAYZ9X9F67x+JObFdmgn6tupA1C/a3B+CufFmTD4mX+e8M75tCiAO3foR/6xwVBI0KQiI7sn/rw==",
+        "libc": [
+          "glibc"
+        ],
+        "license": "MIT",
+        "optional": true,
+        "os": [
+          "linux"
+        ],
+        "peer": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-linux-x64-gnu/-/binding-linux-x64-gnu-1.2.15.tgz",
+        "version": "1.2.15"
+      },
+      "before": {
+        "cpu": [
+          "x64"
+        ],
+        "dev": true,
+        "engines": {
+          "node": "^20.19.0 || >=22.12.0"
+        },
+        "integrity": "sha512-Q9uLBO53Xd4QIq1WOycVQyPP1O4HhraEV2qqb3uTrnVw6QZih9duY4vNXOivL1xoUS1/z+W8eF4NMfl2a8Sdjw==",
+        "libc": [
+          "glibc"
+        ],
+        "license": "MIT",
+        "optional": true,
+        "os": [
+          "linux"
+        ],
+        "peer": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-linux-x64-gnu/-/binding-linux-x64-gnu-1.2.12.tgz",
+        "version": "1.2.12"
+      },
+      "changed_fields": [
+        "integrity",
+        "resolved",
+        "version"
+      ],
+      "path": "node_modules/@rolldown/binding-linux-x64-gnu",
+      "status": "changed"
+    },
+    {
+      "after": {
+        "cpu": [
+          "x64"
+        ],
+        "dev": true,
+        "engines": {
+          "node": "^20.19.0 || >=22.12.0"
+        },
+        "integrity": "sha512-/cvV/7v5VGz/moiz0XKRj2dE8DzsKyhIu1KpOvJGPjRywg3yscON889UGvAe8zfiJLHup7VLjBduoGWi3HusWQ==",
+        "libc": [
+          "musl"
+        ],
+        "license": "MIT",
+        "optional": true,
+        "os": [
+          "linux"
+        ],
+        "peer": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-linux-x64-musl/-/binding-linux-x64-musl-1.2.15.tgz",
+        "version": "1.2.15"
+      },
+      "before": {
+        "cpu": [
+          "x64"
+        ],
+        "dev": true,
+        "engines": {
+          "node": "^20.19.0 || >=22.12.0"
+        },
+        "integrity": "sha512-3IBxWFMjbOZskDPKv8Lf9BCnahlKuHthWkYnyIxOH/QcJrFcS4EmcenthApkwr/5+nEqZlLzeYbxeMaX7A5u4g==",
+        "libc": [
+          "musl"
+        ],
+        "license": "MIT",
+        "optional": true,
+        "os": [
+          "linux"
+        ],
+        "peer": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-linux-x64-musl/-/binding-linux-x64-musl-1.2.12.tgz",
+        "version": "1.2.12"
+      },
+      "changed_fields": [
+        "integrity",
+        "resolved",
+        "version"
+      ],
+      "path": "node_modules/@rolldown/binding-linux-x64-musl",
+      "status": "changed"
+    },
+    {
+      "after": {
+        "cpu": [
+          "arm64"
+        ],
+        "dev": true,
+        "engines": {
+          "node": "^20.19.0 || >=22.12.0"
+        },
+        "integrity": "sha512-MyzC5Hrv/sm+Z7TSGKP/j8001RO2xQm1zOpCNVL4j0cY/VhBZviludA2YFQ7i4lH6ZAXxQm0lcMdBzM+99mE7w==",
+        "license": "MIT",
+        "optional": true,
+        "os": [
+          "openharmony"
+        ],
+        "peer": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-openharmony-arm64/-/binding-openharmony-arm64-1.2.15.tgz",
+        "version": "1.2.15"
+      },
+      "before": {
+        "cpu": [
+          "arm64"
+        ],
+        "dev": true,
+        "engines": {
+          "node": "^20.19.0 || >=22.12.0"
+        },
+        "integrity": "sha512-xtX61xg4LKPkPWilZU1ynKClz5Gj4bf74LML4r3eVLWumKnGjoEr1OSHQhMdbBDoYTi+yjrujvpZe2pUnqCrrA==",
+        "license": "MIT",
+        "optional": true,
+        "os": [
+          "openharmony"
+        ],
+        "peer": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-openharmony-arm64/-/binding-openharmony-arm64-1.2.12.tgz",
+        "version": "1.2.12"
+      },
+      "changed_fields": [
+        "integrity",
+        "resolved",
+        "version"
+      ],
+      "path": "node_modules/@rolldown/binding-openharmony-arm64",
+      "status": "changed"
+    },
+    {
+      "after": {
+        "cpu": [
+          "arm64"
+        ],
+        "dev": true,
+        "engines": {
+          "node": "^20.19.0 || >=22.12.0"
+        },
+        "integrity": "sha512-+PgYiS+AH5omy6L45ZLxybasauJaj3M8buoT83D+nzPmCayXlxUV9hydhciCKVyIg0B/v0BtXPDE1uGqNwCPpg==",
+        "license": "MIT",
+        "optional": true,
+        "os": [
+          "win32"
+        ],
+        "peer": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-win32-arm64-msvc/-/binding-win32-arm64-msvc-1.2.15.tgz",
+        "version": "1.2.15"
+      },
+      "before": {
+        "cpu": [
+          "arm64"
+        ],
+        "dev": true,
+        "engines": {
+          "node": "^20.19.0 || >=22.12.0"
+        },
+        "integrity": "sha512-At7fPB6PCaIjzgIhEZFxuT+BBFqiQibJDT4d3PhiR3f4E7bbMZF4aKblbFfEM3sETRDd1YiQx/+U/g/B/ou5Ew==",
+        "license": "MIT",
+        "optional": true,
+        "os": [
+          "win32"
+        ],
+        "peer": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-win32-arm64-msvc/-/binding-win32-arm64-msvc-1.2.12.tgz",
+        "version": "1.2.12"
+      },
+      "changed_fields": [
+        "integrity",
+        "resolved",
+        "version"
+      ],
+      "path": "node_modules/@rolldown/binding-win32-arm64-msvc",
+      "status": "changed"
+    },
+    {
+      "after": {
+        "cpu": [
+          "x64"
+        ],
+        "dev": true,
+        "engines": {
+          "node": "^20.19.0 || >=22.12.0"
+        },
+        "integrity": "sha512-HFZd2QNQYn1JbIi+Hpd7H+r/lkWxcfIu28nirZ6eCn2LafuvmExMlb/P96Sfx5tf7pPArw39IdhmCF8vmV+NhQ==",
+        "license": "MIT",
+        "optional": true,
+        "os": [
+          "win32"
+        ],
+        "peer": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-win32-x64-msvc/-/binding-win32-x64-msvc-1.2.15.tgz",
+        "version": "1.2.15"
+      },
+      "before": {
+        "cpu": [
+          "x64"
+        ],
+        "dev": true,
+        "engines": {
+          "node": "^20.19.0 || >=22.12.0"
+        },
+        "integrity": "sha512-WIw2haVKwjuYdXkHaoC0mF8Le71TuCBxjrdKqLbJGctbBABj+ClfmNvtbOnzpq3RokNo5+V1qhtSzJyXorsklQ==",
+        "license": "MIT",
+        "optional": true,
+        "os": [
+          "win32"
+        ],
+        "peer": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-win32-x64-msvc/-/binding-win32-x64-msvc-1.2.12.tgz",
+        "version": "1.2.12"
+      },
+      "changed_fields": [
+        "integrity",
+        "resolved",
+        "version"
+      ],
+      "path": "node_modules/@rolldown/binding-win32-x64-msvc",
+      "status": "changed"
+    },
+    {
+      "after": {
+        "funding": [
+          {
+            "type": "github",
+            "url": "https://github.com/sponsors/fastify"
+          },
+          {
+            "type": "opencollective",
+            "url": "https://opencollective.com/fastify"
+          }
+        ],
+        "integrity": "sha512-hS/0Wt3Ya043oKXs0sIxrMpKQITXhMLIrVAKKXi4gozGC9v7YRWVnXIZzjNPTO02M9BdxLCWqK1yRXgNziVyJQ==",
+        "license": "BSD-3-Clause",
+        "resolved": "https://registry.npmjs.org/fast-uri/-/fast-uri-3.1.9.tgz",
+        "version": "3.1.9"
+      },
+      "before": {
+        "funding": [
+          {
+            "type": "github",
+            "url": "https://github.com/sponsors/fastify"
+          },
+          {
+            "type": "opencollective",
+            "url": "https://opencollective.com/fastify"
+          }
+        ],
+        "integrity": "sha512-GZMtZUTNRpOVIECoXwLNZS5xUGE+mVNbTB8h/7Rwh2TFWcBQiPzTgyZi05BF9UMZKkLJv8XBRJTlU7zg8+ZfMg==",
+        "license": "BSD-3-Clause",
+        "resolved": "https://registry.npmjs.org/fast-uri/-/fast-uri-3.1.8.tgz",
+        "version": "3.1.8"
+      },
+      "changed_fields": [
+        "integrity",
+        "resolved",
+        "version"
+      ],
+      "path": "node_modules/fast-uri",
+      "status": "changed"
+    },
+    {
+      "after": {
+        "bin": {
+          "rolldown": "bin/cli.mjs"
+        },
+        "dependencies": {
+          "@oxc-project/types": "=0.155.0",
+          "@rolldown/pluginutils": "^1.0.0"
+        },
+        "dev": true,
+        "engines": {
+          "node": "^20.19.0 || >=22.12.0"
+        },
+        "integrity": "sha512-6odND+fel5zVw3I4Yc2e69gvguDnX0CAAGiNDZSq4ik5WUcaLrkD2GLuog0XcODbor31hZ5ayEMgVDno+KPV5g==",
+        "license": "MIT",
+        "optionalDependencies": {
+          "@rolldown/binding-android-arm-eabi": "1.2.15",
+          "@rolldown/binding-android-arm64": "1.2.15",
+          "@rolldown/binding-darwin-arm64": "1.2.15",
+          "@rolldown/binding-darwin-x64": "1.2.15",
+          "@rolldown/binding-freebsd-x64": "1.2.15",
+          "@rolldown/binding-linux-arm-gnueabihf": "1.2.15",
+          "@rolldown/binding-linux-arm64-gnu": "1.2.15",
+          "@rolldown/binding-linux-arm64-musl": "1.2.15",
+          "@rolldown/binding-linux-ppc64-gnu": "1.2.15",
+          "@rolldown/binding-linux-s390x-gnu": "1.2.15",
+          "@rolldown/binding-linux-x64-gnu": "1.2.15",
+          "@rolldown/binding-linux-x64-musl": "1.2.15",
+          "@rolldown/binding-openharmony-arm64": "1.2.15",
+          "@rolldown/binding-win32-arm64-msvc": "1.2.15",
+          "@rolldown/binding-win32-x64-msvc": "1.2.15"
+        },
+        "peer": true,
+        "resolved": "https://registry.npmjs.org/rolldown/-/rolldown-1.2.15.tgz",
+        "version": "1.2.15"
+      },
+      "before": {
+        "bin": {
+          "rolldown": "bin/cli.mjs"
+        },
+        "dependencies": {
+          "@oxc-project/types": "=0.152.0",
+          "@rolldown/pluginutils": "^1.0.0"
+        },
+        "dev": true,
+        "engines": {
+          "node": "^20.19.0 || >=22.12.0"
+        },
+        "integrity": "sha512-8wafseiaG80xmXSfqidUNqZcylTlhmPZZt+za2m+js2sFZ8dTNlhIOV2WcbIPx2hgwPBJpEUGFAMZ9bgBBLTSQ==",
+        "license": "MIT",
+        "optionalDependencies": {
+          "@rolldown/binding-android-arm-eabi": "1.2.12",
+          "@rolldown/binding-android-arm64": "1.2.12",
+          "@rolldown/binding-darwin-arm64": "1.2.12",
+          "@rolldown/binding-darwin-x64": "1.2.12",
+          "@rolldown/binding-freebsd-x64": "1.2.12",
+          "@rolldown/binding-linux-arm-gnueabihf": "1.2.12",
+          "@rolldown/binding-linux-arm64-gnu": "1.2.12",
+          "@rolldown/binding-linux-arm64-musl": "1.2.12",
+          "@rolldown/binding-linux-ppc64-gnu": "1.2.12",
+          "@rolldown/binding-linux-s390x-gnu": "1.2.12",
+          "@rolldown/binding-linux-x64-gnu": "1.2.12",
+          "@rolldown/binding-linux-x64-musl": "1.2.12",
+          "@rolldown/binding-openharmony-arm64": "1.2.12",
+          "@rolldown/binding-win32-arm64-msvc": "1.2.12",
+          "@rolldown/binding-win32-x64-msvc": "1.2.12"
+        },
+        "peer": true,
+        "resolved": "https://registry.npmjs.org/rolldown/-/rolldown-1.2.12.tgz",
+        "version": "1.2.12"
+      },
+      "changed_fields": [
+        "dependencies",
+        "integrity",
+        "optionalDependencies",
+        "resolved",
+        "version"
+      ],
+      "path": "node_modules/rolldown",
+      "status": "changed"
+    },
+    {
+      "after": {
+        "bin": {
+          "vite": "bin/vite.js"
+        },
+        "dependencies": {
+          "lightningcss": "^1.33.0",
+          "picomatch": "^4.0.7",
+          "postcss": "^8.5.30",
+          "rolldown": "~1.2.14",
+          "tinyglobby": "^0.2.17"
+        },
+        "dev": true,
+        "engines": {
+          "node": "^20.19.0 || >=22.12.0"
+        },
+        "funding": {
+          "url": "https://github.com/vitejs/vite?sponsor=1"
+        },
+        "integrity": "sha512-z1YpjieJ9g0ebTmQpLBv/oq9E3F9EIlOe+7LahW8SrE3LTiG3udBRUXQOlYXP9b+IC2q2phHeVxj9xGlw34OEQ==",
+        "license": "MIT",
+        "optionalDependencies": {
+          "fsevents": "~2.3.3"
+        },
+        "peer": true,
+        "peerDependencies": {
+          "@types/node": "^20.19.0 || >=22.12.0",
+          "@vitejs/devtools": "^0.7.1 || ^0.8.0",
+          "esbuild": "^0.27.0 || ^0.28.0",
+          "jiti": ">=1.21.0",
+          "less": "^4.0.0",
+          "sass": "^1.70.0",
+          "sass-embedded": "^1.70.0",
+          "stylus": ">=0.54.8",
+          "sugarss": "^5.0.0",
+          "terser": "^5.16.0",
+          "tsx": "^4.8.1",
+          "yaml": "^2.4.2"
+        },
+        "peerDependenciesMeta": {
+          "@types/node": {
+            "optional": true
+          },
+          "@vitejs/devtools": {
+            "optional": true
+          },
+          "esbuild": {
+            "optional": true
+          },
+          "jiti": {
+            "optional": true
+          },
+          "less": {
+            "optional": true
+          },
+          "sass": {
+            "optional": true
+          },
+          "sass-embedded": {
+            "optional": true
+          },
+          "stylus": {
+            "optional": true
+          },
+          "sugarss": {
+            "optional": true
+          },
+          "terser": {
+            "optional": true
+          },
+          "tsx": {
+            "optional": true
+          },
+          "yaml": {
+            "optional": true
+          }
+        },
+        "resolved": "https://registry.npmjs.org/vite/-/vite-8.3.5.tgz",
+        "version": "8.3.5"
+      },
+      "before": {
+        "bin": {
+          "vite": "bin/vite.js"
+        },
+        "dependencies": {
+          "lightningcss": "^1.33.0",
+          "picomatch": "^4.0.7",
+          "postcss": "^8.5.28",
+          "rolldown": "~1.2.11",
+          "tinyglobby": "^0.2.17"
+        },
+        "dev": true,
+        "engines": {
+          "node": "^20.19.0 || >=22.12.0"
+        },
+        "funding": {
+          "url": "https://github.com/vitejs/vite?sponsor=1"
+        },
+        "integrity": "sha512-SQr1x6W5vVSbROg7vsyXIaxK9b0G7zsT68acdWWRmnBUsgDieLCRG+Rep9WdZgcposvv/GSnr4GUUBqB3vXq6w==",
+        "license": "MIT",
+        "optionalDependencies": {
+          "fsevents": "~2.3.3"
+        },
+        "peer": true,
+        "peerDependencies": {
+          "@types/node": "^20.19.0 || >=22.12.0",
+          "@vitejs/devtools": "^0.7.1",
+          "esbuild": "^0.27.0 || ^0.28.0",
+          "jiti": ">=1.21.0",
+          "less": "^4.0.0",
+          "sass": "^1.70.0",
+          "sass-embedded": "^1.70.0",
+          "stylus": ">=0.54.8",
+          "sugarss": "^5.0.0",
+          "terser": "^5.16.0",
+          "tsx": "^4.8.1",
+          "yaml": "^2.4.2"
+        },
+        "peerDependenciesMeta": {
+          "@types/node": {
+            "optional": true
+          },
+          "@vitejs/devtools": {
+            "optional": true
+          },
+          "esbuild": {
+            "optional": true
+          },
+          "jiti": {
+            "optional": true
+          },
+          "less": {
+            "optional": true
+          },
+          "sass": {
+            "optional": true
+          },
+          "sass-embedded": {
+            "optional": true
+          },
+          "stylus": {
+            "optional": true
+          },
+          "sugarss": {
+            "optional": true
+          },
+          "terser": {
+            "optional": true
+          },
+          "tsx": {
+            "optional": true
+          },
+          "yaml": {
+            "optional": true
+          }
+        },
+        "resolved": "https://registry.npmjs.org/vite/-/vite-8.3.2.tgz",
+        "version": "8.3.2"
+      },
+      "changed_fields": [
+        "dependencies",
+        "integrity",
+        "peerDependencies",
+        "resolved",
+        "version"
+      ],
+      "path": "node_modules/vite",
+      "status": "changed"
+    },
+    {
+      "after": {
+        "dependencies": {
+          "nanoid": "^3.3.20",
+          "picocolors": "^1.1.1",
+          "source-map-js": "^1.2.2"
+        },
+        "dev": true,
+        "engines": {
+          "node": "^10 || ^12 || >=14"
+        },
+        "funding": [
+          {
+            "type": "opencollective",
+            "url": "https://opencollective.com/postcss/"
+          },
+          {
+            "type": "tidelift",
+            "url": "https://tidelift.com/funding/github/npm/postcss"
+          },
+          {
+            "type": "github",
+            "url": "https://github.com/sponsors/ai"
+          }
+        ],
+        "integrity": "sha512-YUbWYCgErwnMAVkjUnYa+KlMBzGpHwiIt/DE7f0G33AuX2LH9UcTk6KgWxd3zRU+pN3u/C+Xl3EnMLM4Hea7Sg==",
+        "license": "MIT",
+        "peer": true,
+        "resolved": "https://registry.npmjs.org/postcss/-/postcss-8.5.31.tgz",
+        "version": "8.5.31"
+      },
+      "before": {},
+      "changed_fields": [
+        "dependencies",
+        "dev",
+        "engines",
+        "funding",
+        "integrity",
+        "license",
+        "peer",
+        "resolved",
+        "version"
+      ],
+      "path": "node_modules/vite/node_modules/postcss",
+      "status": "added"
+    },
+    {
+      "after": {
+        "funding": {
+          "url": "https://github.com/sponsors/colinhacks"
+        },
+        "integrity": "sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==",
+        "license": "MIT",
+        "resolved": "https://registry.npmjs.org/zod/-/zod-4.6.7.tgz",
+        "version": "4.6.7"
+      },
+      "before": {
+        "funding": {
+          "url": "https://github.com/sponsors/colinhacks"
+        },
+        "integrity": "sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==",
+        "license": "MIT",
+        "resolved": "https://registry.npmjs.org/zod/-/zod-4.4.3.tgz",
+        "version": "4.4.3"
+      },
+      "changed_fields": [
+        "integrity",
+        "resolved",
+        "version"
+      ],
+      "path": "node_modules/zod",
+      "status": "changed"
+    }
+  ],
+  "original_commit": "9e22da845bf8b447f81539e0ba57d5deb59e9103",
+  "scope": "complete raw lock entry comparison, including dependency, peer, platform, license and integrity metadata",
+  "subject_commit": "eb3b90beb4ac9245bac415696aa0de5a1a66c6d2"
+}

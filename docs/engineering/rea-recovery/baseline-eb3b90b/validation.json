@@ -1,0 +1,53 @@
+{
+  "application_build_and_tests": "not-run; read-only source-intake evidence scope",
+  "checks": [
+    {
+      "check": "all retained JSON parses",
+      "detail": {
+        "files": 15
+      },
+      "outcome": "pass"
+    },
+    {
+      "check": "collection and reconciliation Python syntax",
+      "outcome": "pass"
+    },
+    {
+      "check": "compatibility collector JavaScript syntax",
+      "outcome": "pass"
+    },
+    {
+      "check": "reject missing tracked registry entry",
+      "outcome": "pass"
+    },
+    {
+      "check": "reject tampered original baseline bytes",
+      "outcome": "pass"
+    },
+    {
+      "check": "complete original/current Git blob and tree reconciliation",
+      "detail": "{\n  \"files\": {\n    \"unchanged\": 2402,\n    \"changed\": 2\n  },\n  \"mode_changed\": [],\n  \"renamed\": [],\n  \"lock_entries\": 561,\n  \"changed_or_added_nonroot_lock_entries\": 21,\n  \"original_advisories\": 11,\n  \"current_known_vulnerabilities\": 0\n}",
+      "outcome": "pass"
+    },
+    {
+      "check": "existing AES-BLD inventory/profile gate",
+      "detail": "AES-BLD profile verified: core=26 private=44 production=70 normative_tests=50",
+      "outcome": "pass"
+    },
+    {
+      "check": "REA checkout unchanged",
+      "outcome": "pass"
+    },
+    {
+      "check": "original baseline unchanged in EVO",
+      "outcome": "pass"
+    },
+    {
+      "check": "local links in evidence report and changed documents",
+      "outcome": "pass"
+    }
+  ],
+  "independent_review": "not-established",
+  "observed_date": "2026-10-27",
+  "publication_verification": "Separate GitHub signed-commit/tree/parent and PR checks must be retained in the publication record."
+}
