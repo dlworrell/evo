@@ -223,11 +223,13 @@ evo_project_analysis_status_t evo_project_analyze(
         return EVO_PROJECT_ANALYSIS_ERROR_OUT_OF_MEMORY;
     }
     evo_project_analysis_make_request(config, baseline_owner, &request);
+    request.cancel_requested = config->cancel_requested;
     status = config->provider(
         &request, config->provider_context, &provider_result);
     if (status != EVO_PROJECT_ANALYSIS_SUCCESS) {
         status = status == EVO_PROJECT_ANALYSIS_ERROR_OUT_OF_MEMORY ||
-                         status == EVO_PROJECT_ANALYSIS_ERROR_RESOURCE_LIMIT
+                         status == EVO_PROJECT_ANALYSIS_ERROR_RESOURCE_LIMIT ||
+                         status == EVO_PROJECT_ANALYSIS_ERROR_CLEANUP
                      ? status
                      : EVO_PROJECT_ANALYSIS_ERROR_PROVIDER;
     } else if (provider_result.schema_version !=
@@ -239,7 +241,7 @@ evo_project_analysis_status_t evo_project_analyze(
             config, baseline_owner, &provider_result, owner);
     }
     snapshot_status = evo_project_snapshot_verify_baseline(baseline_owner);
-    if (snapshot_status != EVO_PROJECT_SUCCESS) {
+    if (snapshot_status != EVO_PROJECT_SUCCESS && status != EVO_PROJECT_ANALYSIS_ERROR_CLEANUP) {
         status = evo_project_analysis_map_snapshot_status(snapshot_status);
     }
     if (status != EVO_PROJECT_ANALYSIS_SUCCESS) {
@@ -306,6 +308,8 @@ const char *evo_project_analysis_status_name(
         return "evidence-io";
     case EVO_PROJECT_ANALYSIS_ERROR_UNSUPPORTED_EVIDENCE:
         return "unsupported-evidence";
+    case EVO_PROJECT_ANALYSIS_ERROR_CLEANUP:
+        return "cleanup";
     case EVO_PROJECT_ANALYSIS_ERROR_STATE:
     default:
         return "state";

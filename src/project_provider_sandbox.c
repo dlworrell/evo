@@ -667,6 +667,12 @@ static evo_project_sandbox_status_t evo_sandbox_run_linux(
             forced_termination = true;
             break;
         }
+        if (command->cancel_requested != NULL &&
+            *command->cancel_requested != 0) {
+            return_status = EVO_PROJECT_SANDBOX_ERROR_INTERRUPTED;
+            forced_termination = !child_reaped;
+            break;
+        }
         descriptors[0].fd = stdout_open ? stdout_pipe[0] : -1;
         descriptors[0].events = POLLIN | POLLHUP;
         descriptors[0].revents = 0;
@@ -827,8 +833,14 @@ evo_project_sandbox_status_t evo_project_sandbox_run(
         result->private_owner != NULL || result->schema_version != 0U) {
         return EVO_PROJECT_SANDBOX_ERROR_INVALID_ARGUMENT;
     }
+    if (command->cancel_requested != NULL && *command->cancel_requested != 0) {
+        return EVO_PROJECT_SANDBOX_ERROR_INTERRUPTED;
+    }
     if (!evo_project_sandbox_available()) {
         return EVO_PROJECT_SANDBOX_ERROR_UNAVAILABLE;
+    }
+    if (command->cancel_requested != NULL && *command->cancel_requested != 0) {
+        return EVO_PROJECT_SANDBOX_ERROR_INTERRUPTED;
     }
 #if defined(__linux__)
     return evo_sandbox_run_linux(command, result);
@@ -872,6 +884,8 @@ const char *evo_project_sandbox_status_name(evo_project_sandbox_status_t status)
         return "process";
     case EVO_PROJECT_SANDBOX_ERROR_CLEANUP:
         return "cleanup";
+    case EVO_PROJECT_SANDBOX_ERROR_INTERRUPTED:
+        return "interrupted";
     default:
         return "unknown";
     }

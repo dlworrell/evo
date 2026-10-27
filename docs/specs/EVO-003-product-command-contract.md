@@ -21,6 +21,13 @@ executes no target-controlled command, and mutates no repository. The installed
 executor in #93 may execute only a plan that passed this contract and only
 through production providers delivered by #114.
 
+The draft installed executor for #93 now implements `analyze` and a derived
+`report` using accepted plans. `evolve`/`replay` remain unavailable before any
+target work. The full four-operation contract below is unchanged; the partial
+executor is specified in [ADR-0047](../adr/ADR-0047-standalone-cli-development-boundary.md)
+and the [standalone CLI guide](../guides/standalone-cli.md). This does not qualify
+the 0.44.0 milestone or expose the private foundation as installed public ABI.
+
 ## Registry
 
 The command registry is complete and ordered:

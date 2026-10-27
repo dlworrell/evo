@@ -287,11 +287,32 @@ make check
 ```
 
 `CMakePresets.json`, `configure.ac`, and `Makefile.am` enumerate the same 26
-installed-core sources, 36 private source-foundation sources, and 45
+installed-core sources, 49 private/product sources, and 51
 normative tests. CI also compares staged install
 manifests, public symbols, package metadata, and a downstream consumer built
 against each installed result. See
 `docs/engineering/AES-BLD-001-toolchain-profile.md`.
+
+### Standalone executable development
+
+Both build frontends install the canonical `evo` program into the configured
+executable directory. The current draft executes `analyze` with the built-in
+Clang 18/Bubblewrap providers and projects retained evidence with `report`.
+`evolve` and `replay` expose help and fail closed as unavailable. Issue #93
+remains open; the package stays 0.43.0 and the installed reusable core stays
+0.37.0 until the full standalone milestone qualifies.
+
+```sh
+evo --help
+evo analyze --manifest /absolute/project-manifest.json \
+  --input /absolute/project --output /absolute/owned-results/analysis
+evo report --evidence /absolute/owned-results/analysis \
+  --output /absolute/owned-results/report
+```
+
+Outputs must be new directories under an existing owner-controlled parent.
+See [the installation, runtime and failure contract](docs/guides/standalone-cli.md)
+for a complete example, declared dependencies and draft blockers.
 
 These profiles currently build and validate the C17 core. The source-optimizer
 roadmap separately requires isolated target-project analysis and compilation,
@@ -314,12 +335,13 @@ retains complete recipe → candidate → assurance → measurement → fitness 
 with exact ordered operator events. Fixed seeds replay the same search and exact fitness ties preserve the earlier
 stable winner. External candidate batches may complete asynchronously, but EVO
 commits only stable candidate order, retains complete worker assignment/cleanup
-traces, and resumes only after exact product dependency identity validation. The
-source-optimizer implementation remains private and uninstalled. EVO 0.43.0
-now fixes the executable-facing `analyze`, `evolve`, `replay`, and `report`
-command contract in EVO-003. Concrete production providers (#114), the installed
-executable (#93), artifact publication (#68), end-to-end proof (#69), and final
-stabilization (#56) remain later dependency-ordered work.
+traces, and resumes only after exact product dependency identity validation.
+The foundation headers/library remain private. The development installed `evo`
+binary now executes `analyze` using the landed production providers (#114), and
+derives `report` from retained evidence. EVO-003 retains the four-operation
+contract; `evolve`/`replay` execution and the rest of #93 remain incomplete.
+Artifact publication (#68), end-to-end proof (#69), and final stabilization
+(#56) remain dependency-ordered work.
 
 EVO 0.16.0 composes the complete deterministic generation pipeline into a
 bounded public `evo_run`. Generation zero is constructed, initialized,
