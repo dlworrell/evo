@@ -1,0 +1,56 @@
+name: PR 139 verified signature repair
+on:
+  push:
+    branches: [bootstrap/pr139-signature-repair-20261027]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  publish:
+    if: github.repository == 'dlworrell/evo' && github.actor == 'dlworrell' && github.ref == 'refs/heads/bootstrap/pr139-signature-repair-20261027'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Publish the exact reviewed packaging files with a verified signature
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          EXPECTED_BOOTSTRAP_BRANCH: bootstrap/pr139-signature-repair-20261027
+          EXPECTED_PAYLOAD_SHA256: bdfa3a43b8df04ef5c5100a1cf1542ed00f5ce8424e3d4aecc8a5693ffe24575
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import base64, gzip, hashlib, io
+          from pathlib import Path
+          import runpy, sys, urllib.request
+          def get(url, limit):
+              with urllib.request.urlopen(url, timeout=30) as response:
+                  value = response.read(limit + 1)
+              if len(value) > limit:
+                  raise SystemExit('Pinned input exceeded its size bound')
+              return value
+          source = get('https://raw.githubusercontent.com/dlworrell/AEMS/e620f4bd3cc45f05f2f18b61e3a087303eb2b4bd/scripts/publish_reviewed_repair.py', 1024 * 1024)
+          if hashlib.sha256(source).hexdigest() != '74d3acbd02420652c9a8f953e305ba4919c684646f0ea444815f8b752b23f290':
+              raise SystemExit('Publisher identity mismatch')
+          encoded = get('https://raw.githubusercontent.com/dlworrell/evo/a03306ee929aec983c5b602aecaca057a52a05d2/.github/pr139-signature-repair/payload.gz.b64', 47093)
+          if len(encoded) != 47093:
+              raise SystemExit('Encoded payload length mismatch')
+          compressed = base64.b64decode(encoded.strip(), validate=True)
+          if len(compressed) != 35318 or hashlib.sha256(compressed).hexdigest() != '47fe2761410af39d36fa7a0c989c0e384b12f187d74d7c3731e6f01e8a3871a9':
+              raise SystemExit('Compressed payload identity mismatch')
+          with gzip.GzipFile(fileobj=io.BytesIO(compressed)) as stream:
+              payload = stream.read(109005)
+          if len(payload) != 109004 or hashlib.sha256(payload).hexdigest() != 'bdfa3a43b8df04ef5c5100a1cf1542ed00f5ce8424e3d4aecc8a5693ffe24575':
+              raise SystemExit('Reviewed payload identity mismatch')
+          publisher = Path('publish_reviewed_repair.py')
+          publisher.write_bytes(source)
+          Path('reviewed-payload.json').write_bytes(payload)
+          sys.argv = [str(publisher), '--payload', 'reviewed-payload.json']
+          runpy.run_path(str(publisher), run_name='__main__')
+          PY
+      - name: Retain signature publication evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: pr139-signature-repair-${{ github.run_id }}
+          path: signing-result.json
+          if-no-files-found: warn
