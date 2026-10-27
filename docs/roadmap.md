@@ -63,10 +63,18 @@ foundation without claiming an installed CLI. Issue #67 fixes the command and
 configuration contract consumed by the next production-provider and installed
 application milestones.
 
-**#67 is complete; #114 is the current dependency-ready implementation boundary.**
-The concrete provider implementation now reconciles against the landed EVO-003
-command/provider contract. Final #114 closure precedes #93 installation of the
-standalone executable.
+**#67 and #114 are complete; #93 is the current dependency-ready implementation boundary.**
+The command contract landed in [PR #122](https://github.com/dlworrell/evo/pull/122)
+and the built-in production providers landed in
+[PR #119](https://github.com/dlworrell/evo/pull/119). Both are on `main`.
+The Catylist classification prerequisite in
+[#112](https://github.com/dlworrell/evo/issues/112) is also resolved on both
+authoritative default branches. The next product increment is installation of
+the standalone executable; existing private providers and a command contract
+do not establish that installed-product acceptance.
+
+The [2026-10-27 issue reconciliation](engineering/reports/EVO-ISS-001-open-issue-reconciliation-20261027.md)
+records the merged evidence, audit closure conditions and remaining work.
 
 ## Cross-Cutting Human-Readable Abstraction Gate
 
@@ -157,10 +165,12 @@ stops before installing or executing a final product binary.
 
 ### #114 — concrete production providers
 
-#114 must implement the exact provider identities, implementation versions, and
-capability vocabulary admitted by EVO-003. Real providers replace private fake
-or caller-supplied seams as the standalone operational path. Unsupported
-provider capabilities fail closed; there is no silent weaker execution mode.
+#114 implemented the exact provider identities, implementation versions, and
+capability vocabulary admitted by EVO-003 and accepted ADR-0044. Its production
+providers remain private/uninstalled until #93 delivers the standalone path.
+Unsupported provider capabilities fail closed; there is no silent weaker
+execution mode. Provider completion does not substitute for the installed
+executable or the later #69 end-to-end proof.
 
 ### #93 — installed executable
 
@@ -193,3 +203,23 @@ verification.
 "Best" is bounded by the recorded input, targets, workloads, transformation
 catalogue, objective, constraints, and search resources. No global-optimality
 or universal-equivalence claim is permitted.
+
+## Issue-state reconciliation
+
+Reconcile the live child issue, its parent checklist and this document when a
+milestone closes, before starting the next milestone, and after a required
+upstream decision lands. Use actual merged source and live child acceptance;
+an open or merely prepared PR is not a completed dependency.
+
+For a cross-repository prerequisite, verify the required record on every owning
+default branch. Retain the merge identities, immutable source links and any
+remaining acceptance conditions. An upstream merge after a downstream merge
+can satisfy a reopened prerequisite without requiring another implementation
+PR, as demonstrated by #112.
+
+An audit index closes only after every indexed finding is resolved or explicitly
+superseded under its close condition. Preserve the audit's original baseline
+and limitations. A completed audit finding does not close separate product
+milestones, and checked planning items cannot qualify unimplemented software.
+Issue state is the operational projection of the linked source/evidence; this
+procedure creates no second evidence authority or automatic closure claim.
