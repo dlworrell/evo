@@ -1,0 +1,93 @@
+name: Standalone CLI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  installed-contract:
+    name: Installed CLI / ${{ matrix.frontend }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        frontend: [cmake-clang, autotools-gcc]
+
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install declared toolchains and isolation runtime
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes autoconf automake libtool bubblewrap clang clang-18 gcc-13 cmake ninja-build pkg-config
+      - name: Enable hosted-runner user namespaces
+        run: |
+          if sysctl kernel.apparmor_restrict_unprivileged_userns >/dev/null 2>&1; then
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          fi
+          if sysctl kernel.unprivileged_userns_clone >/dev/null 2>&1; then
+            sudo sysctl -w kernel.unprivileged_userns_clone=1
+          fi
+      - name: Establish trusted system tool directories
+        run: |
+          stat -Lc '%U %G %a %n' /usr/local/bin /usr/bin /bin
+          sudo chmod go-w /usr/local/bin /usr/bin /bin
+          stat -Lc '%U %G %a %n' /usr/local/bin /usr/bin /bin
+      - name: Require production runtimes
+        run: |
+          clang --version
+          bwrap --version
+          bwrap --die-with-parent --new-session --unshare-user --unshare-pid --unshare-net --ro-bind / / --proc /proc --dev /dev -- /bin/true
+      - name: CMake build and staged installation
+        if: matrix.frontend == 'cmake-clang'
+        env:
+          CC: clang-18
+        run: |
+          cmake -S . -B build/standalone -G Ninja -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_PREFIX="$RUNNER_TEMP/evo-prefix"
+          cmake --build build/standalone --target evo evo_product_cli_test --parallel 2
+          ctest --test-dir build/standalone --output-on-failure -R '^evo_product_cli_test$'
+          cmake --install build/standalone
+      - name: Autotools build and staged installation
+        if: matrix.frontend == 'autotools-gcc'
+        env:
+          CC: gcc-13
+        run: |
+          autoreconf -fvi
+          mkdir -p build/standalone-autotools
+          cd build/standalone-autotools
+          ../../configure --enable-warnings-as-errors --prefix="$RUNNER_TEMP/evo-prefix"
+          make -j2 evo tests/evo_product_cli_test
+          ./tests/evo_product_cli_test
+          make install
+      - name: Relocate and inspect installed dependencies
+        run: |
+          mv "$RUNNER_TEMP/evo-prefix" "$RUNNER_TEMP/evo-relocated"
+          file "$RUNNER_TEMP/evo-relocated/bin/evo"
+          readelf -d "$RUNNER_TEMP/evo-relocated/bin/evo" | tee "$RUNNER_TEMP/evo-dynamic.txt"
+          if grep -E '\((RPATH|RUNPATH)\)' "$RUNNER_TEMP/evo-dynamic.txt"; then
+            echo 'Standalone executable unexpectedly requires a runtime search path.' >&2
+            exit 1
+          fi
+          ldd "$RUNNER_TEMP/evo-relocated/bin/evo" | tee "$RUNNER_TEMP/evo-dependencies.txt"
+          if grep -E 'not found|catalyst|foundation|/home/runner/work/' "$RUNNER_TEMP/evo-dependencies.txt"; then
+            echo 'Standalone executable requires an undeclared build-tree dependency.' >&2
+            exit 1
+          fi
+          find "$RUNNER_TEMP/evo-relocated" -type f | sort
+      - name: Exercise installed commands with real providers and no skips
+        run: python3 tests/test_standalone_cli.py --prefix "$RUNNER_TEMP/evo-relocated" --require-providers
+      - name: Retain dependency evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: standalone-${{ matrix.frontend }}-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/evo-dynamic.txt
+            ${{ runner.temp }}/evo-dependencies.txt
+          if-no-files-found: ignore
+          retention-days: 90

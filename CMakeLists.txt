@@ -99,8 +99,8 @@ add_library(catalyst_evo STATIC
 )
 add_library(catalyst_evo::catalyst_evo ALIAS catalyst_evo)
 
-# The source-optimizer foundation and production providers remain separate from
-# the installed stable core; issue #93 owns standalone executable installation.
+# Product implementation stays private; only the standalone program and stable
+# core are installed. Issue #93 retains the complete executable acceptance gate.
 add_library(catalyst_evo_project_foundation STATIC
     src/project_runtime.c
     src/project_provider.c
@@ -146,6 +146,13 @@ add_library(catalyst_evo_project_foundation STATIC
     src/project_orchestration.c
     src/project_orchestration_checkpoint.c
     src/project_command.c
+    src/product_cli.c
+    src/product_paths.c
+    src/product_execution.c
+    src/product_report.c
+)
+target_compile_definitions(catalyst_evo_project_foundation
+    PRIVATE EVO_PRODUCT_VERSION="${EVO_PRODUCT_VERSION}"
 )
 target_include_directories(catalyst_evo_project_foundation
     PUBLIC
@@ -155,6 +162,13 @@ target_include_directories(catalyst_evo_project_foundation
 )
 target_compile_features(catalyst_evo_project_foundation PRIVATE c_std_17)
 target_link_libraries(catalyst_evo_project_foundation PUBLIC catalyst_evo)
+
+add_executable(evo
+    src/product_main.c
+)
+target_include_directories(evo PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(evo PRIVATE catalyst_evo_project_foundation)
+install(TARGETS evo RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
 
 target_include_directories(catalyst_evo
     PUBLIC
@@ -181,6 +195,10 @@ endif()
 if(BUILD_TESTING)
     add_subdirectory(benchmarks)
     add_subdirectory(tests)
+    add_executable(evo_product_cli_test tests/product_cli_test.c)
+    target_include_directories(evo_product_cli_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    target_link_libraries(evo_product_cli_test PRIVATE catalyst_evo_project_foundation)
+    add_test(NAME evo_product_cli_test COMMAND evo_product_cli_test)
     add_executable(evo_project_command_test tests/project_command_test.c)
     target_include_directories(
         evo_project_command_test

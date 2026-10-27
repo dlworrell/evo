@@ -14,6 +14,13 @@
 typedef struct evo_project_sandbox_command_context {
     size_t environment_count;
     const char *const *environment;
+    const volatile sig_atomic_t *cancel_requested;
+    bool interrupted;
+    bool resource_exhausted;
+    bool cleanup_failed;
+    evo_project_command_stage_t last_stage;
+    evo_project_sandbox_status_t last_status;
+    evo_project_sandbox_resource_t exhausted_resource;
 } evo_project_sandbox_command_context_t;
 
 typedef struct evo_project_sandbox_assurance_context {

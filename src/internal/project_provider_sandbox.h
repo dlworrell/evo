@@ -9,6 +9,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <signal.h>
 
 #define EVO_PROJECT_SANDBOX_SCHEMA_VERSION 1U
 
@@ -19,7 +20,8 @@ typedef enum evo_project_sandbox_status {
     EVO_PROJECT_SANDBOX_ERROR_RESOURCE_LIMIT = 3,
     EVO_PROJECT_SANDBOX_ERROR_OUT_OF_MEMORY = 4,
     EVO_PROJECT_SANDBOX_ERROR_PROCESS = 5,
-    EVO_PROJECT_SANDBOX_ERROR_CLEANUP = 6
+    EVO_PROJECT_SANDBOX_ERROR_CLEANUP = 6,
+    EVO_PROJECT_SANDBOX_ERROR_INTERRUPTED = 7
 } evo_project_sandbox_status_t;
 
 typedef enum evo_project_sandbox_resource {
@@ -51,6 +53,8 @@ typedef struct evo_project_sandbox_command {
     size_t environment_count;
     const char *const *environment;
     evo_project_sandbox_limits_t limits;
+    /* Borrowed process-local cancellation flag; never serialized or owned. */
+    const volatile sig_atomic_t *cancel_requested;
 } evo_project_sandbox_command_t;
 
 typedef struct evo_project_sandbox_result {

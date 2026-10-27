@@ -38,6 +38,10 @@ test_cmake = TEST_CMAKE.read_text(encoding="utf-8")
 bench_cmake = BENCH_CMAKE.read_text(encoding="utf-8")
 core = target_sources(cmake, "catalyst_evo")
 private = target_sources(cmake, "catalyst_evo_project_foundation")
+application = re.search(r"add_executable\(\s*evo\s+(?P<body>.*?)\n\)", cmake, re.DOTALL)
+if application is None:
+    fail("missing standalone evo executable target")
+private += re.findall(r"\bsrc/[A-Za-z0-9_./-]+\.c\b", application.group("body"))
 production = data["build"]["production_sources"]
 normative = data["build"]["normative_tests"]
 

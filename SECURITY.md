@@ -26,6 +26,16 @@ A private or not-yet-installed interface is still inside the repository threat
 model. Moving an existing interface into an installed executable does not make
 its inputs trusted.
 
+The development `evo` executable now exposes production-provider `analyze` and
+a provider-free retained-evidence `report`. Its path, output-ownership,
+environment, interruption and atomic-publication boundaries are specified in
+[ADR-0047](docs/adr/ADR-0047-standalone-cli-development-boundary.md) and the
+[standalone CLI guide](docs/guides/standalone-cli.md). The four-operation #93
+milestone is incomplete: `evolve`/`replay` fail closed, no champion is published,
+and no checkpoint or resume loader is exposed. Report envelope/count checks
+are a derived view, not independent authentication or complete nested-evidence
+validation. FNV identities never authorize admission or source mutation.
+
 This policy is read together with:
 
 - `GOVERNANCE.md`;

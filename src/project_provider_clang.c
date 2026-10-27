@@ -739,13 +739,20 @@ static evo_project_analysis_status_t evo_clang_analyze_unit(
             .wall_timeout_ms = request->timeout_ms,
             .network_access = false,
         },
+        .cancel_requested = request->cancel_requested,
     };
     sandbox_status = evo_project_sandbox_run(&command, &sandbox);
     evo_project_release(arguments);
+    if (sandbox_status == EVO_PROJECT_SANDBOX_ERROR_CLEANUP) {
+        evo_project_sandbox_result_destroy(&sandbox);
+        return EVO_PROJECT_ANALYSIS_ERROR_CLEANUP;
+    }
     if (sandbox_status == EVO_PROJECT_SANDBOX_ERROR_OUT_OF_MEMORY) {
+        evo_project_sandbox_result_destroy(&sandbox);
         return EVO_PROJECT_ANALYSIS_ERROR_OUT_OF_MEMORY;
     }
-    if (sandbox_status == EVO_PROJECT_SANDBOX_ERROR_RESOURCE_LIMIT) {
+    if (sandbox_status == EVO_PROJECT_SANDBOX_ERROR_RESOURCE_LIMIT || sandbox.resource_exhausted) {
+        evo_project_sandbox_result_destroy(&sandbox);
         return EVO_PROJECT_ANALYSIS_ERROR_RESOURCE_LIMIT;
     }
     if (sandbox_status != EVO_PROJECT_SANDBOX_SUCCESS || !sandbox.completed ||

@@ -216,14 +216,15 @@ static bool evo_sandbox_clock_ns(uint64_t *value)
 static bool evo_sandbox_sum_storage(
     const char *path,
     uint64_t limit,
-    uint64_t *total)
+    uint64_t *total,
+    bool missing_is_empty)
 {
     DIR *directory;
     struct dirent *entry;
 
     directory = opendir(path);
     if (directory == NULL) {
-        return false;
+        return missing_is_empty && errno == ENOENT;
     }
     while ((entry = readdir(directory)) != NULL) {
         char child[PATH_MAX];
@@ -236,8 +237,17 @@ static bool evo_sandbox_sum_storage(
         }
         written = evo_project_format(
             child, sizeof(child), "%s/%s", path, entry->d_name);
-        if (written <= 0 || (size_t)written >= sizeof(child) ||
-            lstat(child, &metadata) != 0) {
+        if (written <= 0 || (size_t)written >= sizeof(child)) {
+            (void)closedir(directory);
+            return false;
+        }
+        if (lstat(child, &metadata) != 0) {
+            /* Build tools remove temporary entries while the live scan runs.
+             * A disappeared child contributes no retained bytes; every other
+             * lookup failure remains fail-closed. The root must still exist. */
+            if (errno == ENOENT) {
+                continue;
+            }
             (void)closedir(directory);
             return false;
         }
@@ -256,7 +266,7 @@ static bool evo_sandbox_sum_storage(
             }
             *total += bytes;
         } else if (S_ISDIR(metadata.st_mode)) {
-            if (!evo_sandbox_sum_storage(child, limit, total)) {
+            if (!evo_sandbox_sum_storage(child, limit, total, true)) {
                 (void)closedir(directory);
                 return false;
             }
@@ -273,7 +283,7 @@ static bool evo_sandbox_storage_within(const char *workspace, uint64_t limit)
 {
     uint64_t total = 0U;
 
-    return evo_sandbox_sum_storage(workspace, limit, &total) && total <= limit;
+    return evo_sandbox_sum_storage(workspace, limit, &total, false) && total <= limit;
 }
 
 static bool evo_sandbox_read_children(pid_t process, size_t limit, size_t *count)
@@ -667,6 +677,12 @@ static evo_project_sandbox_status_t evo_sandbox_run_linux(
             forced_termination = true;
             break;
         }
+        if (command->cancel_requested != NULL &&
+            *command->cancel_requested != 0) {
+            return_status = EVO_PROJECT_SANDBOX_ERROR_INTERRUPTED;
+            forced_termination = !child_reaped;
+            break;
+        }
         descriptors[0].fd = stdout_open ? stdout_pipe[0] : -1;
         descriptors[0].events = POLLIN | POLLHUP;
         descriptors[0].revents = 0;
@@ -827,8 +843,14 @@ evo_project_sandbox_status_t evo_project_sandbox_run(
         result->private_owner != NULL || result->schema_version != 0U) {
         return EVO_PROJECT_SANDBOX_ERROR_INVALID_ARGUMENT;
     }
+    if (command->cancel_requested != NULL && *command->cancel_requested != 0) {
+        return EVO_PROJECT_SANDBOX_ERROR_INTERRUPTED;
+    }
     if (!evo_project_sandbox_available()) {
         return EVO_PROJECT_SANDBOX_ERROR_UNAVAILABLE;
+    }
+    if (command->cancel_requested != NULL && *command->cancel_requested != 0) {
+        return EVO_PROJECT_SANDBOX_ERROR_INTERRUPTED;
     }
 #if defined(__linux__)
     return evo_sandbox_run_linux(command, result);
@@ -872,6 +894,8 @@ const char *evo_project_sandbox_status_name(evo_project_sandbox_status_t status)
         return "process";
     case EVO_PROJECT_SANDBOX_ERROR_CLEANUP:
         return "cleanup";
+    case EVO_PROJECT_SANDBOX_ERROR_INTERRUPTED:
+        return "interrupted";
     default:
         return "unknown";
     }
