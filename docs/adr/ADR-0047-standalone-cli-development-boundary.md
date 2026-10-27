@@ -103,19 +103,22 @@ is not applicable because no accelerated representation is added.
 
 The normative C fixture covers output ownership, atomic no-clobber publication,
 special-file/path rejection and pre-cancel behavior. The installed black-box
-contract runs outside the checkout with an installation-only PATH. The proposed
+contract runs outside the checkout with an installation-only PATH. The
 read-only hosted workflow requires real Clang/Bubblewrap execution for both
 CMake/Clang and Autotools/GCC installations, including failures, resource
 exhaustion and active SIGINT/SIGTERM cleanup. Missing runtimes fail that gate.
 AES-BLD inventories, staged install parity and archive/distcheck include the
-executable without relaxing core obligations. Workflow activation and addition
-to exact-commit release readiness await an owner-authorized publisher able to
-change workflow files. The proposal lives at `docs/engineering/ci/standalone.yml`;
-it is not an active gate. Read-only bootstrap validation against an explicit
-verified source commit is separate evidence. No performance improvement is claimed.
+executable without relaxing core obligations. The workflow is activated at
+`.github/workflows/standalone.yml`, with its matching reviewed copy retained at
+`docs/engineering/ci/standalone.yml`. After installed validation, it packages
+the actual executable, provenance, checksums and runtime requirements in a
+tarball, verifies extracted execution, and uploads it separately from failure
+diagnostics. Addition to exact-commit release readiness remains separate work.
+Read-only bootstrap validation against an explicit verified source commit is
+separate evidence. No performance improvement is claimed.
 
 Remaining #93 blockers are full evolve/evaluation and replay execution,
 checkpoint/resume loading and exact retained-identity reconciliation, complete
-evidence validation, qualified supported-platform lifecycle behavior, permanent CI activation, and
+evidence validation, qualified supported-platform lifecycle behavior, release-gate registration, and
 independent security/release review. The executable does not alter REA's
 external-reference classification or satisfy REA admission requirements.
