@@ -56,6 +56,50 @@ Help/version do not probe providers. macOS can build and install the program
 for these provider-free help surfaces; actual analyze/report publication is
 Linux-only in this draft. Windows execution is not supported.
 
+## Downloadable development binary
+
+The active [Standalone CLI workflow](../../.github/workflows/standalone.yml)
+builds both native frontends, relocates each installation, and requires the
+complete real-provider installed contract before packaging. A successful job
+uploads `standalone-linux-x86_64-<frontend>-<run-id>-<attempt>`, containing a
+`.tar.gz` plus its SHA-256 sidecar. The tarball preserves the executable mode
+that a direct Actions artifact upload would lose. After extracting the tarball,
+enter its `evo-linux-x86_64-<frontend>` directory and run:
+
+```sh
+sha256sum -c SHA256SUMS
+./bin/evo --version
+./bin/evo --help
+```
+
+The archive contains `bin/evo`, the repository license, usage instructions,
+`manifest.json`, complete file checksums, and ELF header, program-header,
+dynamic-library, symbol-version, note and resolved-dependency reports.
+The manifest records the actual checkout's source commit, declared compiler,
+frontend, ELF machine, binary hash, required shared libraries and required
+GLIBC symbol versions. Compare these with the destination loader, CPU and
+libraries before use; the maximum GLIBC version alone is not a complete
+compatibility test. No Clang, CMake, Bubblewrap or system runtime is bundled.
+The package is a development build, not a release qualification or REA admission.
+
+`scripts/package_standalone.py` rejects a missing/non-executable ELF, private
+runtime library dependencies, unresolved shared libraries and RPATH/RUNPATH.
+It extracts its own completed archive, verifies every checksum, and runs the
+extracted help/version commands with an installation-only PATH before emitting
+the archive checksum. Failure removes its incomplete download directory;
+existing output is never overwritten. Package uploads fail if their files are
+missing and run only after validation and packaging succeed.
+
+`standalone-diagnostics-<frontend>-<run-id>-<attempt>` is a separate artifact
+that may be retained even when a job fails. Those text reports are diagnostics,
+not an installable package. Run 40592787634's original two-report archive is
+the [before-change example](../engineering/reports/EVO-standalone-artifact-packaging-20261027.md).
+
+Installing a binary does not provide kernel capabilities. In particular, a
+jailed Linux host with `user.max_user_namespaces=0` still cannot run the current
+analysis provider. Provider-free help/version and report keep their documented
+behavior; packaging does not weaken the sandbox or install privileges.
+
 ## Complete small-project invocation
 
 Put an installed `bin` directory on PATH, then run this from an unrelated
@@ -194,25 +238,22 @@ path. SIGKILL/host failure cannot run cooperative cleanup; inspect any retained
 `python3 tests/test_standalone_cli.py --prefix /absolute/installed-prefix`
 for provider-free paths and observed availability behavior. For qualification,
 use `--require-providers`: no unavailable-runtime skip or fake provider is
-accepted. The proposed Standalone CLI workflow does this for relocated
+accepted. The active Standalone CLI workflow does this for relocated
 CMake/Clang and Autotools/GCC installations, checks dynamic dependencies and
 RPATH, and exercises real analysis/report, build/correctness failures,
 attempted input mutation, resource exhaustion and active SIGINT/SIGTERM.
 AES-BLD independently checks install inventories/core symbols and distcheck.
 The archive includes this guide, ADR, workflow proposal and installed contract test.
 
-The proposal is `docs/engineering/ci/standalone.yml`, not an active CI gate.
-The existing owner-gated signed publisher was refused permission when its
-payload included `.github/workflows/standalone.yml`. An owner-authorized
-workflow-capable publisher must activate that exact reviewed proposal and add
-it to the required source-optimizer release-readiness catalog before #93 can
-qualify. A separate read-only bootstrap run against an explicit verified
-source commit can provide validation while activation remains pending; it does
-not substitute for a normative PR/release gate.
+The workflow is `.github/workflows/standalone.yml`; the matching reviewed copy
+remains at `docs/engineering/ci/standalone.yml`. Its inclusion in the required
+source-optimizer release-readiness catalog remains separate #93 work. The
+workflow's successful development package is not a release-readiness pass.
+Earlier read-only bootstrap runs remain evidence for their explicit commits.
 
 Issue #93 remains blocked on evolve/evaluation, replay and complete retained
 identity validation, checkpoint/resume, a full evidence loader, supported
-platform lifecycle qualification, permanent CI activation and independent security/release review.
+platform lifecycle qualification, release-gate registration and independent security/release review.
 There is no third-party provider ABI or runtime plugin search. REA remains an
 external reference; this work changes no REA intake or admission decision.
 See [ADR-0047](../adr/ADR-0047-standalone-cli-development-boundary.md).

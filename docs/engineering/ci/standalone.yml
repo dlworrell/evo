@@ -21,6 +21,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Test standalone package contents and failure behavior
+        run: python3 -m unittest tests/test_standalone_package.py
       - name: Install declared toolchains and isolation runtime
         run: |
           sudo apt-get update
@@ -68,6 +72,9 @@ jobs:
         run: |
           mv "$RUNNER_TEMP/evo-prefix" "$RUNNER_TEMP/evo-relocated"
           file "$RUNNER_TEMP/evo-relocated/bin/evo"
+          readelf -h "$RUNNER_TEMP/evo-relocated/bin/evo" > "$RUNNER_TEMP/evo-header.txt"
+          readelf -l "$RUNNER_TEMP/evo-relocated/bin/evo" > "$RUNNER_TEMP/evo-program-headers.txt"
+          readelf -V "$RUNNER_TEMP/evo-relocated/bin/evo" > "$RUNNER_TEMP/evo-version-info.txt"
           readelf -d "$RUNNER_TEMP/evo-relocated/bin/evo" | tee "$RUNNER_TEMP/evo-dynamic.txt"
           if grep -E '\((RPATH|RUNPATH)\)' "$RUNNER_TEMP/evo-dynamic.txt"; then
             echo 'Standalone executable unexpectedly requires a runtime search path.' >&2
@@ -81,13 +88,33 @@ jobs:
           find "$RUNNER_TEMP/evo-relocated" -type f | sort
       - name: Exercise installed commands with real providers and no skips
         run: python3 tests/test_standalone_cli.py --prefix "$RUNNER_TEMP/evo-relocated" --require-providers
-      - name: Retain dependency evidence
+      - name: Package and verify the extracted executable
+        env:
+          PACKAGE_COMPILER: ${{ matrix.frontend == 'cmake-clang' && 'clang-18' || 'gcc-13' }}
+        run: |
+          python3 scripts/package_standalone.py \
+            --prefix "$RUNNER_TEMP/evo-relocated" \
+            --output "$RUNNER_TEMP/evo-package" \
+            --source-commit "$(git rev-parse HEAD)" \
+            --frontend "${{ matrix.frontend }}" \
+            --compiler "$PACKAGE_COMPILER"
+      - name: Upload verified development binary package
+        uses: actions/upload-artifact@v6
+        with:
+          name: standalone-linux-x86_64-${{ matrix.frontend }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/evo-package/
+          if-no-files-found: error
+          retention-days: 90
+      - name: Retain dependency diagnostics, including failed runs
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: standalone-${{ matrix.frontend }}-${{ github.run_id }}
+          name: standalone-diagnostics-${{ matrix.frontend }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
+            ${{ runner.temp }}/evo-header.txt
+            ${{ runner.temp }}/evo-program-headers.txt
+            ${{ runner.temp }}/evo-version-info.txt
             ${{ runner.temp }}/evo-dynamic.txt
             ${{ runner.temp }}/evo-dependencies.txt
-          if-no-files-found: ignore
+          if-no-files-found: warn
           retention-days: 90
