@@ -867,3 +867,7 @@ The stable GitHub Actions entry points are:
 See `docs/standards/repository-lifecycle-contract.md` and
 `docs/engineering/reports/EVO-P0-002-engineering-ready-certification.md` for
 the governing contract and completed certification boundary.
+
+## Releasing
+
+Changes move `dev-daily` → `fitment` → `main`, and a release is published only after the owner approves it. See [docs/RELEASING.md](docs/RELEASING.md).
