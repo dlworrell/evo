@@ -3,7 +3,7 @@ name: Sanitizers
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, dev-daily, fitment]
   workflow_dispatch:
 
 permissions:

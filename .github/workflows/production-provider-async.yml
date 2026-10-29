@@ -2,7 +2,7 @@ name: Production Provider Async Lifecycle
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev-daily, fitment]
   pull_request:
   workflow_dispatch:
 

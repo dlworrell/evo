@@ -3,7 +3,7 @@ name: Repository Compliance
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, dev-daily, fitment]
   pull_request:
     paths:
       - 'README.md'
