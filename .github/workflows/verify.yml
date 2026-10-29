@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, dev-daily, fitment]
 
 permissions:
   contents: read

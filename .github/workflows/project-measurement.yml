@@ -2,7 +2,7 @@ name: Project Measurement
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev-daily, fitment]
   pull_request:
     paths:
       - 'src/project_measurement*.c'

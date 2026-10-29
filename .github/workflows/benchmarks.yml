@@ -2,7 +2,7 @@ name: Core Benchmarks
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev-daily, fitment]
   pull_request:
   workflow_dispatch:
     inputs:
