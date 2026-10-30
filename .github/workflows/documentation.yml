@@ -10,7 +10,7 @@ on:
         type: choice
         options: [repository, docs, full-tree]
   push:
-    branches: [main]
+    branches: [main, dev-daily, fitment]
   pull_request:
     paths:
       - '**/*.md'
