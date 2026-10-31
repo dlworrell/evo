@@ -26,7 +26,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Companion manifest v0.1 tests (synthetic fixtures only)
+      - name: Install age (vault tests use throwaway keys only)
+        run: sudo apt-get update && sudo apt-get install -y age
+
+      - name: REA recovery tests (synthetic fixtures only)
         run: python3 -m unittest discover -s tests/rea_recovery -p 'test_*.py' -v
 
       - name: Committed fixture is accepted

@@ -1,0 +1,140 @@
+#!/usr/bin/env python3
+"""Tests for the REA build runner and vault (ADR-0048). Synthetic data and throwaway age keys only."""
+import contextlib
+import importlib.util
+import io
+import json
+from pathlib import Path
+import shutil
+import subprocess
+import tempfile
+import unittest
+
+ROOT = Path(__file__).resolve().parents[2]
+spec = importlib.util.spec_from_file_location("rea_build", ROOT / "tools/rea_recovery/rea_build.py")
+rb = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(rb)
+HAVE_AGE = bool(shutil.which("age") and shutil.which("age-keygen"))
+
+
+def git(cwd, *args):
+    return subprocess.run(["git", *args], cwd=cwd, check=True, capture_output=True, text=True).stdout.strip()
+
+
+class Discovery(unittest.TestCase):
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.tmp = Path(tmp.name)
+        self.rea = self.tmp / "rea"
+        self.rea.mkdir()
+        (self.rea / "package.json").write_text(json.dumps({"engines": {"node": ">=1.0.0"}}))
+        git(self.rea, "init", "-q")
+        git(self.rea, "-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false",
+            "add", "-A")
+        git(self.rea, "-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false",
+            "commit", "-qm", "synthetic")
+        self.head = git(self.rea, "rev-parse", "HEAD")
+
+    def test_node_range_matching(self):
+        engines = "^22.19.0 || ^24.11.0 || >=26.0.0"
+        self.assertTrue(rb.node_satisfies("v22.22.0", engines))
+        self.assertTrue(rb.node_satisfies("v26.1.0", engines))
+        self.assertFalse(rb.node_satisfies("v22.18.9", engines))
+        self.assertFalse(rb.node_satisfies("v23.0.0", engines))
+        self.assertFalse(rb.node_satisfies("garbage", engines))
+
+    def test_pinned_clean_checkout_and_writable_destination(self):
+        report = rb.discover(self.rea, self.tmp / "out", None, pin=self.head)
+        self.assertEqual(report["checks"]["rea_source"]["status"], "ok")
+        self.assertEqual(report["checks"]["destination"]["status"], "ok")
+        self.assertNotIn("rea_source", report["blocking"])
+
+    def test_pin_mismatch_and_dirty_tree_block(self):
+        report = rb.discover(self.rea, self.tmp / "out", None)
+        self.assertEqual(report["checks"]["rea_source"]["status"], "mismatch")
+        self.assertIn("rea_source", report["blocking"])
+        (self.rea / "extra.txt").write_text("x")
+        report = rb.discover(self.rea, self.tmp / "out", None, pin=self.head)
+        self.assertIn("local changes", report["checks"]["rea_source"]["evidence"])
+
+    def test_missing_checkout_blocks_build(self):
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            code = rb.main(["build", "--rea", str(self.tmp / "nope"), "--dest", str(self.tmp / "out")])
+        self.assertEqual(code, 3)
+        self.assertIn("rea_source", json.loads(out.getvalue())["blocking"])
+
+    def test_build_is_a_plan_unless_executed(self):
+        plan = [" ".join(c) for c in rb.build_plan(self.rea)]
+        self.assertEqual(plan, ["npm ci", "npm run build:cached", "node scripts/rea.mjs doctor --json"])
+
+    def test_agent_configuring_commands_are_refused(self):
+        for forbidden in ("setup", "update", "uninstall"):
+            with self.assertRaises(ValueError):
+                rb.rea_command([forbidden])
+        self.assertEqual(rb.rea_command(["mcp"]), ["node", "scripts/rea.mjs", "mcp"])
+
+
+@unittest.skipUnless(HAVE_AGE, "age not installed")
+class Vault(unittest.TestCase):
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.tmp = Path(tmp.name)
+        self.source = self.tmp / "source"
+        (self.source / "captures").mkdir(parents=True)
+        (self.source / "captures/synthetic.bin").write_bytes(b"SYNTHETIC capture \x00\x01")
+        (self.source / "notes.txt").write_text("synthetic notes\n")
+        self.keys, self.recipients = [], self.tmp / "recipients.txt"
+        lines = ["# synthetic test recipients"]
+        for name in ("alice", "bob"):
+            identity = self.tmp / f"{name}.key"
+            subprocess.run(["age-keygen", "-o", str(identity)], check=True, capture_output=True)
+            public = subprocess.run(["age-keygen", "-y", str(identity)], check=True,
+                                    capture_output=True, text=True).stdout.strip()
+            self.keys.append(identity)
+            lines.append(public)
+        self.recipients.write_text("\n".join(lines) + "\n")
+        self.vault = self.tmp / "vault"
+
+    def test_seal_verify_open_round_trip_for_each_recipient(self):
+        index = rb.vault_seal(self.source, self.vault, self.recipients)
+        self.assertEqual(len(index["recipients"]), 2)
+        self.assertNotIn(b"SYNTHETIC", (self.vault / "captures/synthetic.bin.age").read_bytes())
+        self.assertEqual(rb.vault_verify(self.vault), [])
+        for identity in self.keys:
+            out = self.tmp / f"open-{identity.stem}"
+            self.assertEqual(sorted(rb.vault_open(self.vault, identity, out)),
+                             ["captures/synthetic.bin", "notes.txt"])
+            self.assertEqual((out / "captures/synthetic.bin").read_bytes(), b"SYNTHETIC capture \x00\x01")
+
+    def test_tampered_ciphertext_and_wrong_key_are_refused(self):
+        rb.vault_seal(self.source, self.vault, self.recipients)
+        stranger = self.tmp / "stranger.key"
+        subprocess.run(["age-keygen", "-o", str(stranger)], check=True, capture_output=True)
+        with self.assertRaises(RuntimeError):
+            rb.vault_open(self.vault, stranger, self.tmp / "out")
+        target = self.vault / "notes.txt.age"
+        target.write_bytes(target.read_bytes() + b"x")
+        self.assertEqual(rb.vault_verify(self.vault), ["changed: notes.txt.age"])
+        with self.assertRaises(ValueError):
+            rb.vault_open(self.vault, self.keys[0], self.tmp / "out2")
+
+    def test_bad_recipients_and_vault_inside_source_are_refused(self):
+        bad = self.tmp / "bad.txt"
+        bad.write_text("not-a-key\n")
+        with self.assertRaises(ValueError):
+            rb.vault_seal(self.source, self.vault, bad)
+        with self.assertRaises(ValueError):
+            rb.vault_seal(self.source, self.source / "vault", self.recipients)
+
+    def test_index_records_no_private_key_material(self):
+        index = rb.vault_seal(self.source, self.vault, self.recipients)
+        text = (self.vault / rb.INDEX).read_text()
+        self.assertNotIn("AGE-SECRET-KEY", text)
+        self.assertTrue(all(len(f) == 16 for f in index["recipients"]))
+
+
+if __name__ == "__main__":
+    unittest.main()
