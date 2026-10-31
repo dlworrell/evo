@@ -44,16 +44,17 @@ ADR-0046 keeps REA an external-reference dependency at `9e22da8` and forbids ven
      - a **Personal** vault (`personal-donovan`);
      - a shared **Team** vault (`team`);
      - **custom** vaults per project or environment, starting with `evo-rea-sources` for EVO/REA source files and original REA evidence.
-   - **Members and roles.** Each member is a label, a public key and a role:
-     - **view** means they can open the vault. This is enforced by encryption: only listed keys can decrypt.
+   - **People and grants.** Each person is listed once, keyed by their sshid.io username, with their public keys. Each vault grants named people a role:
+     - **view** means they can open the vault. This is enforced by encryption: each vault's files are encrypted only to the keys of the people granted it.
      - **edit** means they may also change membership and re-seal. This is enforced by review: `vaults.json` changes go through signed, reviewed PRs.
 
+     Access is fine-grained per vault, not per key: a key is not scoped to anything, but a person opens only the vaults they are granted. A key may belong to only one person.
      Every vault needs at least one editor.
    - **Sealing and opening.**
      - `vault seal NAME` encrypts each file to every member of that vault.
-     - The vault index records each file's hashes, the vault name, and each member's label, role and fingerprint. It never records a key.
+     - The vault index records each file's hashes, the vault name, and each member's person id, label, role and fingerprint. It never records a key.
      - `vault verify` checks ciphertext without decrypting. `vault open` decrypts with the caller's own identity file.
-   - **Adding people.** `vault add-member NAME sshid|github|age WHO --label --role` fetches a published public key from sshid.io or GitHub, or takes an `age1` key. It shows the fingerprint and writes only with `--yes`, after the fingerprint has been confirmed with the person.
+   - **Adding people.** `vault person add USER sshid|github|age [WHO]` fetches a published public key from sshid.io or GitHub, or takes an `age1` key. It shows the fingerprint and writes only with `--yes`, after the fingerprint has been confirmed with the person. `vault grant VAULT USER --role` and `vault revoke VAULT USER` change one vault at a time; `vault access USER` lists a person's vaults.
 3. **Device-bound keys are encrypt-only.**
    - Termius SSH ID passkeys "never leave your device and cannot be copied or exported". age needs the private key as a file to decrypt, so an SSH ID key can lock files for its owner but can never open them.
    - Such members are recorded with `can_decrypt: false`. `vault seal` refuses any vault in which no member can decrypt, so nothing can be locked away from everyone.
@@ -61,7 +62,7 @@ ADR-0046 keeps REA an external-reference dependency at `9e22da8` and forbids ven
 4. **Key custody.**
    - Each person keeps their own private key, and only public keys are committed.
    - The owner holds an offline `age1` recovery key in every vault.
-   - Removing a person means re-sealing to the remaining members. Copies they already decrypted cannot be recalled; the index records this limit.
+   - Removing a person (`vault revoke`) means re-sealing to the remaining members; the last editor cannot be removed. Copies they already decrypted cannot be recalled; the index records this limit.
 5. **Vault location.** The ciphertext and index go to an access-controlled location the owner chooses, such as a private Dropbox folder or a private repository. Never the public EVO repository. CI uses only synthetic files sealed to throwaway test keys.
 
 ## Alternatives considered

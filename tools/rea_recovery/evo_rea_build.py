@@ -7,7 +7,8 @@ pinned by ADR-0046 with its documented npm build, without changing REA's files.
 Commands: ``discover`` (environment report), ``build`` (plan; ``--execute`` to
 run), ``pdf`` (render and optionally print a report such as ``evo report``
 output), ``ui`` (EVO CLI, REA CLI or REA's stdio MCP server), and
-``vault seal|verify|open`` (age encryption, one key pair per authorised person).
+``vault`` (age encryption; people listed once by sshid username and granted
+view or edit per vault).
 
 It never runs ``rea setup``, ``rea update`` or ``rea uninstall`` and never edits
 agent/client configuration. Private keys are read only from the identity file
@@ -157,7 +158,7 @@ def discover(evo: Path, rea: Path, destination: Path, vaults: Path | None,
         checks["vault"] = {"status": "missing", "evidence": "no vault definitions file"}
     else:
         config = load_vaults(vaults)
-        openable = sorted(n for n, v in config["vaults"].items() if any(m["can_decrypt"] for m in v["members"]))
+        openable = sorted(n for n in config["vaults"] if any(m["can_decrypt"] for m in vault_members(config, n)))
         locked = sorted(set(config["vaults"]) - set(openable))
         checks["vault"] = {"status": "ok" if openable and not locked else "missing",
                            "evidence": f"age; vaults that someone can open: {', '.join(openable) or 'none'}"
@@ -245,14 +246,57 @@ def _fingerprint(key: str) -> str:
 
 ROLES = ("view", "edit")
 VAULT_NAME = re.compile(r"[a-z0-9][a-z0-9-]{0,62}")
+PERSON_ID = re.compile(r"[a-z0-9](?:[a-z0-9-]{0,38})")
 DEFAULT_VAULTS = Path(__file__).resolve().parent / "vaults.json"
+SCHEMA_V1, SCHEMA = "evo.rea-vaults.v1", "evo.rea-vaults.v2"
+
+
+def _upgrade_v1(config: dict) -> dict:
+    """v1 listed whole keys inside each vault; v2 lists people once and grants them per vault."""
+    people: dict = {}
+    vaults: dict = {}
+    for name, vault in config["vaults"].items():
+        grants = []
+        for member in vault.get("members", []):
+            pid = re.sub(r"[^a-z0-9-]+", "-", str(member.get("label", "")).lower()).strip("-")[:39]
+            person = people.setdefault(pid, {"name": member.get("label"), "keys": []})
+            if member.get("key") not in [k["key"] for k in person["keys"]]:
+                person["keys"].append({k: member.get(k) for k in ("key", "source", "can_decrypt", "added")})
+            role = member.get("role")
+            existing = next((g for g in grants if g["person"] == pid), None)
+            if existing is None:
+                grants.append({"person": pid, "role": role})
+            elif role == "edit":
+                existing["role"] = "edit"
+        vaults[name] = {"description": vault.get("description", ""), "members": grants}
+    return {"schema": SCHEMA, "people": people, "vaults": vaults}
 
 
 def load_vaults(path: Path) -> dict:
-    """Termius-style vault definitions: named vaults, each with members who can view or edit."""
+    """Termius-style vaults: people are listed once with their keys and granted view or edit per vault.
+
+    A v1 file (keys listed inside each vault) is upgraded in memory and written back as v2.
+    """
     config = json.loads(path.read_text(encoding="utf-8"))
-    if config.get("schema") != "evo.rea-vaults.v1" or not isinstance(config.get("vaults"), dict):
-        raise ValueError(f"{path} is not an evo.rea-vaults.v1 file")
+    if config.get("schema") == SCHEMA_V1 and isinstance(config.get("vaults"), dict):
+        config = _upgrade_v1(config)
+    if config.get("schema") != SCHEMA or not isinstance(config.get("vaults"), dict) \
+            or not isinstance(config.get("people"), dict):
+        raise ValueError(f"{path} is not an {SCHEMA} file")
+    owners: dict = {}
+    for pid, person in config["people"].items():
+        if not PERSON_ID.fullmatch(pid) or not person.get("name"):
+            raise ValueError(f"bad person id or missing name: {pid!r}")
+        keys = person.get("keys")
+        if not isinstance(keys, list) or not keys:
+            raise ValueError(f"person {pid}: needs at least one key")
+        for entry in keys:
+            if not isinstance(entry.get("can_decrypt"), bool):
+                raise ValueError(f"person {pid}: every key needs can_decrypt true/false")
+            key = _public_key(entry.get("key", ""))
+            if key in owners:
+                raise ValueError(f"key {_fingerprint(key)} belongs to both {owners[key]} and {pid}")
+            owners[key] = pid
     for name, vault in config["vaults"].items():
         if not VAULT_NAME.fullmatch(name):
             raise ValueError(f"bad vault name: {name!r}")
@@ -260,24 +304,48 @@ def load_vaults(path: Path) -> dict:
         if not isinstance(members, list):
             raise ValueError(f"vault {name}: members must be a list")
         seen = set()
-        for member in members:
-            if member.get("role") not in ROLES:
+        for grant in members:
+            if grant.get("person") not in config["people"]:
+                raise ValueError(f"vault {name}: unknown person {grant.get('person')!r}")
+            if grant.get("role") not in ROLES:
                 raise ValueError(f"vault {name}: role must be view or edit")
-            if not isinstance(member.get("can_decrypt"), bool) or not member.get("label"):
-                raise ValueError(f"vault {name}: every member needs a label and can_decrypt true/false")
-            key = _public_key(member.get("key", ""))
-            if key in seen:
-                raise ValueError(f"vault {name}: duplicate member key {_fingerprint(key)}")
-            seen.add(key)
-        if members and not any(m["role"] == "edit" for m in members):
+            if grant["person"] in seen:
+                raise ValueError(f"vault {name}: {grant['person']} is listed twice")
+            seen.add(grant["person"])
+        if members and not any(g["role"] == "edit" for g in members):
             raise ValueError(f"vault {name}: needs at least one member who can edit")
     return config
 
 
+def save_vaults(path: Path, config: dict) -> None:
+    """Validate, then replace ``path``; an invalid change never reaches the file."""
+    with tempfile.NamedTemporaryFile("w", dir=path.parent, suffix=".json", delete=False,
+                                     encoding="utf-8") as tmp:
+        tmp.write(json.dumps(config, indent=2, sort_keys=True) + "\n")
+    try:
+        load_vaults(Path(tmp.name))
+        Path(tmp.name).replace(path)
+    finally:
+        Path(tmp.name).unlink(missing_ok=True)
+
+
+def person_access(config: dict, pid: str) -> dict[str, str]:
+    """The vaults ``pid`` is granted, and the role in each: access is per vault, not per key."""
+    return {name: g["role"] for name, vault in sorted(config["vaults"].items())
+            for g in vault["members"] if g["person"] == pid}
+
+
 def vault_members(config: dict, name: str) -> list[dict]:
+    """Every key of every person granted vault ``name``, with that person's role in it."""
     if name not in config["vaults"]:
         raise ValueError(f"no vault named {name!r}; known: {', '.join(sorted(config['vaults']))}")
-    return config["vaults"][name]["members"]
+    members = []
+    for grant in config["vaults"][name]["members"]:
+        person = config["people"][grant["person"]]
+        for entry in person["keys"]:
+            members.append({"person": grant["person"], "label": person["name"], "role": grant["role"],
+                            "key": entry["key"], "can_decrypt": entry["can_decrypt"]})
+    return members
 
 
 KEY_SOURCES = {"sshid": "https://sshid.io/{user}", "github": "https://github.com/{user}.keys"}
@@ -302,24 +370,65 @@ def fetch_public_keys(source: str, user: str, opener=urllib.request.urlopen) -> 
     return url, keys
 
 
-def add_members(path: Path, name: str, label: str, role: str, source: str, keys: list[str],
-                can_decrypt: bool, description: str = "") -> list[str]:
-    """Add members to vault ``name`` (created if new). Returns the fingerprints added."""
-    if role not in ROLES or not VAULT_NAME.fullmatch(name):
-        raise ValueError("role must be view or edit, and the vault name lower-case letters, digits and dashes")
-    config = load_vaults(path) if path.is_file() else {"schema": "evo.rea-vaults.v1", "vaults": {}}
-    vault = config["vaults"].setdefault(name, {"description": description, "members": []})
-    existing = {_public_key(m["key"]) for m in vault["members"]}
+def _load_or_new(path: Path) -> dict:
+    return load_vaults(path) if path.is_file() else {"schema": SCHEMA, "people": {}, "vaults": {}}
+
+
+def add_person_keys(path: Path, pid: str, name: str, source: str, keys: list[str],
+                    can_decrypt: bool) -> list[str]:
+    """Add keys to person ``pid`` (created if new). The id is the person's sshid username."""
+    pid = pid.lower()
+    if not PERSON_ID.fullmatch(pid):
+        raise ValueError("person id must be their sshid username: lower-case letters, digits and dashes")
+    config = _load_or_new(path)
+    person = config["people"].setdefault(pid, {"name": name or pid, "keys": []})
+    if name:
+        person["name"] = name
+    existing = {_public_key(k["key"]) for k in person["keys"]}
     added = []
     for key in (_public_key(k) for k in keys):
         if key not in existing:
-            vault["members"].append({"label": label, "role": role, "key": key, "source": source,
-                                     "can_decrypt": can_decrypt, "added": date.today().isoformat()})
+            person["keys"].append({"key": key, "source": source, "can_decrypt": can_decrypt,
+                                   "added": date.today().isoformat()})
             added.append(_fingerprint(key))
-    if not any(m["role"] == "edit" for m in vault["members"]):
-        raise ValueError(f"vault {name} needs at least one member who can edit; add an editor first")
-    path.write_text(json.dumps(config, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    save_vaults(path, config)
     return added
+
+
+def grant(path: Path, vault: str, pid: str, role: str, description: str = "") -> str:
+    """Grant person ``pid`` view or edit on ``vault`` (created if new). Returns what changed."""
+    if role not in ROLES or not VAULT_NAME.fullmatch(vault):
+        raise ValueError("role must be view or edit, and the vault name lower-case letters, digits and dashes")
+    config = _load_or_new(path)
+    if pid not in config["people"]:
+        raise ValueError(f"unknown person {pid!r}; add their key first with `vault person add`")
+    entry = config["vaults"].setdefault(vault, {"description": description, "members": []})
+    current = next((g for g in entry["members"] if g["person"] == pid), None)
+    if current and current["role"] == role:
+        return "unchanged"
+    if current:
+        current["role"] = role
+    else:
+        entry["members"].append({"person": pid, "role": role})
+    if not any(g["role"] == "edit" for g in entry["members"]):
+        raise ValueError(f"vault {vault} needs at least one member who can edit; grant an editor first")
+    save_vaults(path, config)
+    return f"{pid} is now {role} on {vault}"
+
+
+def revoke(path: Path, vault: str, pid: str) -> None:
+    """Remove ``pid`` from ``vault``. Only later seals exclude them; copies they already had stay readable."""
+    config = load_vaults(path)
+    if vault not in config["vaults"]:
+        raise ValueError(f"no vault named {vault!r}")
+    members = config["vaults"][vault]["members"]
+    remaining = [g for g in members if g["person"] != pid]
+    if len(remaining) == len(members):
+        raise ValueError(f"{pid} is not a member of {vault}")
+    if remaining and not any(g["role"] == "edit" for g in remaining):
+        raise ValueError(f"{pid} is the last editor of {vault}; grant another editor first")
+    config["vaults"][vault]["members"] = remaining
+    save_vaults(path, config)
 
 
 def vault_seal(source: Path, vault: Path, members: list[dict], name: str = "") -> dict:
@@ -349,7 +458,8 @@ def vault_seal(source: Path, vault: Path, members: list[dict], name: str = "") -
                         "ciphertext": f"{rel}.age", "ciphertext_sha256": _sha256(target)})
     index = {"schema": "evo.rea-source-vault.v1", "tool": "age", "vault": name,
              "recipients": sorted(_fingerprint(k) for k in keys),
-             "members": sorted(({"label": m["label"], "role": m["role"], "fingerprint": _fingerprint(_public_key(m["key"])),
+             "members": sorted(({"person": m.get("person", ""), "label": m["label"], "role": m["role"],
+                                 "fingerprint": _fingerprint(_public_key(m["key"])),
                                  "can_decrypt": m["can_decrypt"]} for m in members),
                                key=lambda m: m["fingerprint"]),
              "files": entries,
@@ -426,16 +536,29 @@ def main(argv=None) -> int:
     s.add_argument("source", type=Path)
     s.add_argument("--out", required=True, type=Path, help="where the encrypted vault is written")
     s.add_argument("--vaults", type=Path, default=DEFAULT_VAULTS)
-    s = v.add_parser("add-member", help="add a person's key to a vault, with a view or edit role")
-    s.add_argument("name", help="vault name (created if new)")
+    s = v.add_parser("person", help="register a person by their sshid username and add their public keys")
+    s.add_argument("op", choices=("add",))
+    s.add_argument("person", help="the person's sshid username (their id in every vault)")
     s.add_argument("source", choices=sorted(KEY_SOURCES) + ["age"])
-    s.add_argument("who", help="sshid/github username, or an age1 public key")
-    s.add_argument("--label", required=True, help="the person's name")
-    s.add_argument("--role", choices=ROLES, default="view")
+    s.add_argument("who", nargs="?", help="github username or age1 key (sshid uses the person id)")
+    s.add_argument("--name", default="", help="the person's display name")
     s.add_argument("--can-decrypt", action="store_true",
-                   help="for github keys: the owner confirms the private key is a file age can use")
+                   help="github only: the key is a file-based ed25519 key age can decrypt with")
     s.add_argument("--vaults", type=Path, default=DEFAULT_VAULTS)
     s.add_argument("--yes", action="store_true", help="write after showing the fingerprints")
+    s = v.add_parser("grant", help="give a person view or edit on one vault")
+    s.add_argument("name", help="vault name (created if new)")
+    s.add_argument("person")
+    s.add_argument("--role", choices=ROLES, default="view")
+    s.add_argument("--description", default="")
+    s.add_argument("--vaults", type=Path, default=DEFAULT_VAULTS)
+    s = v.add_parser("revoke", help="remove a person from one vault (re-seal afterwards)")
+    s.add_argument("name")
+    s.add_argument("person")
+    s.add_argument("--vaults", type=Path, default=DEFAULT_VAULTS)
+    s = v.add_parser("access", help="show which vaults a person can open or edit")
+    s.add_argument("person")
+    s.add_argument("--vaults", type=Path, default=DEFAULT_VAULTS)
     s = v.add_parser("verify")
     s.add_argument("vault", type=Path)
     s = v.add_parser("open")
@@ -476,23 +599,29 @@ def main(argv=None) -> int:
             print(" ".join(cmd))
             return subprocess.run(cmd, cwd=cwd).returncode if args.execute else 0
         if args.action == "list":
-            for name, vault in sorted(load_vaults(args.vaults)["vaults"].items()):
-                can_open = any(m["can_decrypt"] for m in vault["members"])
-                print(f"{name}: {vault.get('description', '')} ({'openable' if can_open else 'NOBODY CAN OPEN YET'})")
-                for m in vault["members"]:
-                    print(f"  {m['label']} [{m['role']}] {_fingerprint(_public_key(m['key']))}"
+            config = load_vaults(args.vaults)
+            for name, vault in sorted(config["vaults"].items()):
+                members = vault_members(config, name)
+                can_open = sorted({m["person"] for m in members if m["can_decrypt"]})
+                print(f"{name}: {vault.get('description', '')} "
+                      f"({'can open: ' + ', '.join(can_open) if can_open else 'NOBODY CAN OPEN YET'})")
+                for m in members:
+                    print(f"  {m['label']} ({m['person']}) [{m['role']}] {_fingerprint(_public_key(m['key']))}"
                           f"{'' if m['can_decrypt'] else ' (encrypt-only, device-bound)'}")
             return 0
         if args.action == "seal":
             members = vault_members(load_vaults(args.vaults), args.name)
             index = vault_seal(args.source, args.out, members, args.name)
-            print(f"sealed {len(index['files'])} file(s) into vault {args.name} for {len(index['members'])} member(s)")
+            print(f"sealed {len(index['files'])} file(s) into vault {args.name} for {len(index['members'])} key(s)")
             return 0
-        if args.action == "add-member":
+        if args.action == "person":
             if args.source == "age":
-                url, keys, can_decrypt = "age-keygen", [_public_key(args.who)], True
+                url, keys, can_decrypt = "age-keygen", [_public_key(args.who or "")], True
             else:
-                url, keys = fetch_public_keys(args.source, args.who)
+                user = args.person if args.source == "sshid" else args.who
+                if not user:
+                    raise ValueError("github needs the person's GitHub username")
+                url, keys = fetch_public_keys(args.source, user)
                 # Termius SSH ID passkeys are device-bound and cannot be exported, so age cannot decrypt with them.
                 can_decrypt = args.source == "github" and args.can_decrypt
             for key in keys:
@@ -501,8 +630,26 @@ def main(argv=None) -> int:
             if not args.yes:
                 print("compare the fingerprints with the key owner, then rerun with --yes to add")
                 return 0
-            added = add_members(args.vaults, args.name, args.label, args.role, url, keys, can_decrypt)
-            print(f"added {len(added)} key(s) to vault {args.name}" if added else "already a member")
+            added = add_person_keys(args.vaults, args.person, args.name, url, keys, can_decrypt)
+            print(f"added {len(added)} key(s) to {args.person.lower()}; grant vaults with `vault grant`"
+                  if added else "already registered")
+            return 0
+        if args.action == "grant":
+            print(grant(args.vaults, args.name, args.person, args.role, args.description))
+            return 0
+        if args.action == "revoke":
+            revoke(args.vaults, args.name, args.person)
+            print(f"removed {args.person} from {args.name}. Re-seal {args.name} now; files {args.person} "
+                  "already copied or decrypted stay readable to them, so rotate anything secret in them.")
+            return 0
+        if args.action == "access":
+            config = load_vaults(args.vaults)
+            if args.person not in config["people"]:
+                raise ValueError(f"unknown person {args.person!r}")
+            person = config["people"][args.person]
+            opens = any(k["can_decrypt"] for k in person["keys"])
+            for name, role in person_access(config, args.person).items():
+                print(f"{name}: {role}{'' if opens else ' (cannot open yet: no decrypting key)'}")
             return 0
         if args.action == "verify":
             problems = vault_verify(args.vault)

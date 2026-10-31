@@ -133,25 +133,79 @@ class PublishedKeys(unittest.TestCase):
         with self.assertRaises(ValueError):
             rb.fetch_public_keys("sshid", "someone", opener=fake)
 
-    def test_add_members_builds_termius_style_vaults(self):
+    OTHER = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIrZ0sm6dCnV0hT3zXl2E0ew9fqlfXbwbXKzQz8Gq1Yq"
+
+    def test_people_are_listed_once_and_granted_per_vault(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "vaults.json"
-            with self.assertRaises(ValueError):
-                rb.add_members(path, "staging", "QA", "view", "https://sshid.io/qa", [self.KEY], False)
-            self.assertEqual(len(rb.add_members(path, "staging", "Ops", "edit", "https://sshid.io/ops",
-                                                [self.KEY], False)), 1)
-            self.assertEqual(rb.add_members(path, "staging", "Ops", "edit", "https://sshid.io/ops", [self.KEY], False), [])
+            with self.assertRaisesRegex(ValueError, "unknown person"):
+                rb.grant(path, "staging", "ops", "edit")
+            self.assertEqual(len(rb.add_person_keys(path, "ops", "Ops", "https://sshid.io/ops", [self.KEY], False)), 1)
+            self.assertEqual(rb.add_person_keys(path, "ops", "", "https://sshid.io/ops", [self.KEY], False), [])
+            rb.add_person_keys(path, "qa", "QA", "https://sshid.io/qa", [self.OTHER], False)
+            with self.assertRaisesRegex(ValueError, "at least one member who can edit"):
+                rb.grant(path, "staging", "qa", "view")
+            self.assertFalse(path.read_text().count("staging"))  # refused change never written
+            rb.grant(path, "staging", "ops", "edit")
+            rb.grant(path, "staging", "qa", "view")
+            rb.grant(path, "production", "ops", "edit")
+            self.assertEqual(rb.grant(path, "production", "ops", "edit"), "unchanged")
             config = rb.load_vaults(path)
-            member = rb.vault_members(config, "staging")[0]
-            self.assertEqual((member["role"], member["can_decrypt"]), ("edit", False))
+            self.assertEqual(rb.person_access(config, "qa"), {"staging": "view"})
+            self.assertEqual(rb.person_access(config, "ops"), {"production": "edit", "staging": "edit"})
+            self.assertEqual([m["person"] for m in rb.vault_members(config, "production")], ["ops"])
             with self.assertRaises(ValueError):
-                rb.vault_members(config, "production")
+                rb.vault_members(config, "nowhere")
             with self.assertRaises(ValueError):
-                rb.add_members(path, "Bad Name", "x", "edit", "u", [self.KEY], False)
+                rb.add_person_keys(path, "Bad Id!", "x", "u", [self.KEY], False)
+
+    def test_one_key_cannot_belong_to_two_people(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "vaults.json"
+            rb.add_person_keys(path, "ops", "Ops", "u", [self.KEY], False)
+            with self.assertRaisesRegex(ValueError, "belongs to both"):
+                rb.add_person_keys(path, "qa", "QA", "u", [self.KEY], False)
+
+    def test_revoke_keeps_an_editor_and_names_the_limit(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "vaults.json"
+            rb.add_person_keys(path, "ops", "Ops", "u", [self.KEY], False)
+            rb.add_person_keys(path, "qa", "QA", "u", [self.OTHER], False)
+            rb.grant(path, "staging", "ops", "edit")
+            rb.grant(path, "staging", "qa", "view")
+            with self.assertRaisesRegex(ValueError, "last editor"):
+                rb.revoke(path, "staging", "ops")
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                self.assertEqual(rb.main(["vault", "revoke", "staging", "qa", "--vaults", str(path)]), 0)
+            self.assertIn("Re-seal staging", out.getvalue())
+            self.assertEqual(rb.person_access(rb.load_vaults(path), "qa"), {})
+            with self.assertRaisesRegex(ValueError, "not a member"):
+                rb.revoke(path, "staging", "qa")
+
+    def test_legacy_v1_file_is_upgraded(self):
+        legacy = {"schema": "evo.rea-vaults.v1", "vaults": {
+            "team": {"description": "t", "members": [
+                {"label": "Ops Person", "role": "edit", "key": self.KEY, "source": "s", "can_decrypt": False,
+                 "added": "2026-10-31"}]},
+            "staging": {"description": "s", "members": [
+                {"label": "Ops Person", "role": "edit", "key": self.KEY, "source": "s", "can_decrypt": False,
+                 "added": "2026-10-31"}]}}}
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "vaults.json"
+            path.write_text(json.dumps(legacy))
+            config = rb.load_vaults(path)
+            self.assertEqual(config["schema"], "evo.rea-vaults.v2")
+            self.assertEqual(list(config["people"]), ["ops-person"])
+            self.assertEqual(rb.person_access(config, "ops-person"), {"staging": "edit", "team": "edit"})
+            rb.add_person_keys(path, "qa", "QA", "u", [self.OTHER], False)
+            self.assertEqual(json.loads(path.read_text())["schema"], "evo.rea-vaults.v2")
 
     def test_committed_vaults_file_is_valid_and_public_only(self):
         config = rb.load_vaults(rb.DEFAULT_VAULTS)
         self.assertIn("evo-rea-sources", config["vaults"])
+        self.assertEqual(config["schema"], "evo.rea-vaults.v2")
+        self.assertEqual(json.loads(rb.DEFAULT_VAULTS.read_text())["schema"], "evo.rea-vaults.v2")
         self.assertNotIn("SECRET", rb.DEFAULT_VAULTS.read_text().upper())
 
 
@@ -225,6 +279,22 @@ class Vault(unittest.TestCase):
         out = self.tmp / "ssh-open"
         self.assertIn("notes.txt", rb.vault_open(self.vault, identity, out))
         self.assertEqual((out / "notes.txt").read_text(), "synthetic notes\n")
+
+    def test_access_is_per_vault_not_per_key(self):
+        path = self.tmp / "vaults.json"
+        for identity, member in zip(self.keys, self.members):
+            rb.add_person_keys(path, member["label"], member["label"], "age-keygen", [member["key"]], True)
+        rb.grant(path, "team", "alice", "edit")
+        rb.grant(path, "team", "bob", "view")
+        rb.grant(path, "production", "alice", "edit")
+        config = rb.load_vaults(path)
+        rb.vault_seal(self.source, self.tmp / "production", rb.vault_members(config, "production"), "production")
+        self.assertIn("notes.txt", rb.vault_open(self.tmp / "production", self.keys[0], self.tmp / "a"))
+        with self.assertRaises(RuntimeError):
+            rb.vault_open(self.tmp / "production", self.keys[1], self.tmp / "b")
+        index = rb.vault_seal(self.source, self.tmp / "team", rb.vault_members(config, "team"), "team")
+        self.assertEqual(sorted(m["person"] for m in index["members"]), ["alice", "bob"])
+        self.assertIn("notes.txt", rb.vault_open(self.tmp / "team", self.keys[1], self.tmp / "c"))
 
     def test_index_records_no_private_key_material(self):
         index = rb.vault_seal(self.source, self.vault, self.members, "synthetic")

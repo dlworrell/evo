@@ -12,7 +12,11 @@ python3 tools/rea_recovery/evo_rea_build.py ui evo   --dest /opt/evo-rea [--exec
 python3 tools/rea_recovery/evo_rea_build.py ui rea   --dest /opt/evo-rea [--execute] [mcp | <rea CLI args>]
 python3 tools/rea_recovery/evo_rea_build.py pdf      report.md --out report.pdf [--print]
 python3 tools/rea_recovery/evo_rea_build.py vault list
-python3 tools/rea_recovery/evo_rea_build.py vault add-member VAULT sshid|github|age WHO --label NAME [--role view|edit] [--yes]
+python3 tools/rea_recovery/evo_rea_build.py vault person add SSHID_USER sshid [--name NAME] [--yes]
+python3 tools/rea_recovery/evo_rea_build.py vault person add SSHID_USER age age1...       [--yes]
+python3 tools/rea_recovery/evo_rea_build.py vault grant  VAULT SSHID_USER [--role view|edit]
+python3 tools/rea_recovery/evo_rea_build.py vault revoke VAULT SSHID_USER
+python3 tools/rea_recovery/evo_rea_build.py vault access SSHID_USER
 python3 tools/rea_recovery/evo_rea_build.py vault seal   VAULT SOURCE_DIR --out VAULT_DIR
 python3 tools/rea_recovery/evo_rea_build.py vault verify VAULT_DIR
 python3 tools/rea_recovery/evo_rea_build.py vault open   VAULT_DIR --identity ~/.age/me.key --dest OPENED_DIR
@@ -30,9 +34,13 @@ python3 tools/rea_recovery/evo_rea_build.py vault open   VAULT_DIR --identity ~/
 
   Missing EVO source, C compiler, CMake, Node.js, npm, REA source or destination blocks `build`.
 - **`ui`** runs the installed `evo` CLI, REA's CLI, or REA's stdio MCP server, using the layout `build` records in `evo-rea.json`. The runner refuses `rea setup`, `rea update` and `rea uninstall`, because they write agent configuration or install.
-- **Vaults, modelled on Termius.** `vaults.json` holds the named vaults: `personal-donovan`, `team` and the custom `evo-rea-sources`. Each member has a role: **view** means they can open the vault; **edit** means they may also change members and re-seal, enforced by PR review.
-- **Adding people.** `vault add-member VAULT sshid USER --label NAME --role view` fetches the person's published key and shows its fingerprint. Confirm the fingerprint with the person, then rerun with `--yes`.
-- **SSH ID keys are encrypt-only.** Termius SSH ID passkeys can't be exported, so age can't open files with them. They are stored with `can_decrypt: false`, and `vault seal` refuses any vault that no member can open. Each person who must open a vault adds an `age1` key with `age-keygen -o ~/.age/me.key`, followed by `vault add-member VAULT age age1... --label NAME`. The owner keeps an offline recovery key in every vault.
+- **Vaults, modelled on Termius.** `vaults.json` (schema `evo.rea-vaults.v2`) holds the named vaults: `personal-donovan`, `team` and the custom `evo-rea-sources`.
+- **People, by sshid.** Each person is listed once under `people`, keyed by their sshid.io username, with their public keys. `vault person add USER sshid` fetches the key from sshid.io and shows its fingerprint. Confirm the fingerprint with the person, then rerun with `--yes`.
+- **Grants, per vault.** `vault grant VAULT USER --role view|edit` gives one person access to one vault. **view** means they can open it; **edit** means they may also change members and re-seal, enforced by PR review. `vault access USER` shows exactly which vaults a person has.
+- **Fine-grained by vault, not by key.** A key is not scoped to a vault. Each vault's files are encrypted only to the keys of the people granted that vault, so one person with one key opens exactly the vaults they are granted and no others. A key may belong to only one person.
+- **Revoking.** `vault revoke VAULT USER` removes the grant (never the last editor). Re-seal the vault afterwards. Copies the person already had stay readable to them, so rotate anything secret in them.
+- **SSH ID keys are encrypt-only.** Termius SSH ID passkeys can't be exported, so age can't open files with them. They are stored with `can_decrypt: false`, and `vault seal` refuses any vault that no member can open. Each person who must open a vault adds an `age1` key with `age-keygen -o ~/.age/me.key`, followed by `vault person add USER age age1...`; it applies to every vault they are granted. The owner keeps an offline recovery key in every vault.
+- **Older files.** A v1 file (keys listed inside each vault) is upgraded to v2 when loaded and written back as v2 on the next change.
 
 
 `companion_manifest.py` checks a **companion manifest v0.1** (EVO-004 §3) against the retained artifacts it references. This is the first implementation slice of [#132](https://github.com/dlworrell/evo/issues/132), stage E1. Its tests use synthetic fixtures only.
