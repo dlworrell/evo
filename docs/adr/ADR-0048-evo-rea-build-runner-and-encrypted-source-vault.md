@@ -1,11 +1,11 @@
 # ADR-0048: EVO/REA Fused Build Runner and Encrypted Source Vault
 
-Status: Proposed
+Status: Accepted
 Date: 2026-10-31 (America/Los_Angeles)
 Owner: EVO
 Tracking: [EVO #132](https://github.com/dlworrell/evo/issues/132)
 Builds on: [ADR-0046](ADR-0046-rea-assisted-recovery-and-source-admission.md), [EVO-004](../specs/EVO-004-rea-recovery-integration-contract.md)
-Acceptance: pending an attributable owner decision through the signed PR process
+Acceptance: accepted by Donovan Worrell on 2026-10-31 by merging EVO #153; section 6 (agent access) remains proposed and is not implemented
 
 ## Context
 
