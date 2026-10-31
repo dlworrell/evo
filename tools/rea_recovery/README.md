@@ -40,6 +40,7 @@ python3 tools/rea_recovery/evo_rea_build.py vault open   VAULT_DIR --identity ~/
 - **Fine-grained by vault, not by key.** A key is not scoped to a vault. Each vault's files are encrypted only to the keys of the people granted that vault, so one person with one key opens exactly the vaults they are granted and no others. A key may belong to only one person.
 - **Revoking.** `vault revoke VAULT USER` removes the grant (never the last editor). Re-seal the vault afterwards. Copies the person already had stay readable to them, so rotate anything secret in them.
 - **SSH ID keys are encrypt-only.** Termius SSH ID passkeys can't be exported, so age can't open files with them. They are stored with `can_decrypt: false`, and `vault seal` refuses any vault that no member can open. Each person who must open a vault adds an `age1` key with `age-keygen -o ~/.age/me.key`, followed by `vault person add USER age age1...`; it applies to every vault they are granted. The owner keeps an offline recovery key in every vault.
+- **Names are encrypted too.** `vault seal` stores files as numbered objects; the paths live only in the encrypted `manifest.age`. The public `vault-index.json` lists object hashes and member fingerprints, so `vault verify` needs no key. Seal into an empty directory.
 - **Older files.** A v1 file (keys listed inside each vault) is upgraded to v2 when loaded and written back as v2 on the next change.
 
 

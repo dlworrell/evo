@@ -25,7 +25,7 @@
       ]
     },
     "personal-donovan": {
-      "description": "Donovan's own items, not shared with the team",
+      "description": "Donovan's personal vault: all sensitive directory structure and content, not shared with the team",
       "members": [
         {
           "person": "dlworrell",

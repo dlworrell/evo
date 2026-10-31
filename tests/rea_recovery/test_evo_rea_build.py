@@ -232,7 +232,11 @@ class Vault(unittest.TestCase):
     def test_seal_verify_open_round_trip_for_each_recipient(self):
         index = rb.vault_seal(self.source, self.vault, self.members, "synthetic")
         self.assertEqual(len(index["recipients"]), 2)
-        self.assertNotIn(b"SYNTHETIC", (self.vault / "captures/synthetic.bin.age").read_bytes())
+        self.assertNotIn(b"SYNTHETIC", (self.vault / "objects/000001.age").read_bytes())
+        public = "\n".join(str(p.relative_to(self.vault)) for p in self.vault.rglob("*"))
+        public += (self.vault / rb.INDEX).read_text()
+        for name in ("captures", "synthetic.bin", "notes"):
+            self.assertNotIn(name, public)  # names and structure stay inside manifest.age
         self.assertEqual(rb.vault_verify(self.vault), [])
         for identity in self.keys:
             out = self.tmp / f"open-{identity.stem}"
@@ -246,9 +250,9 @@ class Vault(unittest.TestCase):
         subprocess.run(["age-keygen", "-o", str(stranger)], check=True, capture_output=True)
         with self.assertRaises(RuntimeError):
             rb.vault_open(self.vault, stranger, self.tmp / "out")
-        target = self.vault / "notes.txt.age"
+        target = self.vault / "objects/000002.age"
         target.write_bytes(target.read_bytes() + b"x")
-        self.assertEqual(rb.vault_verify(self.vault), ["changed: notes.txt.age"])
+        self.assertEqual(rb.vault_verify(self.vault), ["changed: objects/000002.age"])
         with self.assertRaises(ValueError):
             rb.vault_open(self.vault, self.keys[0], self.tmp / "out2")
 
@@ -295,6 +299,29 @@ class Vault(unittest.TestCase):
         index = rb.vault_seal(self.source, self.tmp / "team", rb.vault_members(config, "team"), "team")
         self.assertEqual(sorted(m["person"] for m in index["members"]), ["alice", "bob"])
         self.assertIn("notes.txt", rb.vault_open(self.tmp / "team", self.keys[1], self.tmp / "c"))
+
+    def test_reseal_needs_an_empty_directory_and_manifest_must_match(self):
+        rb.vault_seal(self.source, self.vault, self.members, "synthetic")
+        with self.assertRaisesRegex(ValueError, "not empty"):
+            rb.vault_seal(self.source, self.vault, self.members, "synthetic")
+        index = json.loads((self.vault / rb.INDEX).read_text())
+        index["files"].pop()
+        (self.vault / rb.INDEX).write_text(json.dumps(index))
+        with self.assertRaisesRegex(ValueError, "does not match the index"):
+            rb.vault_open(self.vault, self.keys[0], self.tmp / "out")
+
+    def test_legacy_v1_vault_still_opens(self):
+        legacy = self.tmp / "legacy"
+        legacy.mkdir()
+        files = []
+        for rel in ("notes.txt", "captures/synthetic.bin"):
+            (legacy / rel).parent.mkdir(parents=True, exist_ok=True)
+            rb._age_encrypt([self.members[0]["key"]], self.source / rel, legacy / f"{rel}.age")
+            files.append({"path": rel, "sha256": rb._sha256(self.source / rel), "ciphertext": f"{rel}.age",
+                          "ciphertext_sha256": rb._sha256(legacy / f"{rel}.age")})
+        (legacy / rb.INDEX).write_text(json.dumps({"schema": "evo.rea-source-vault.v1", "files": files}))
+        self.assertEqual(sorted(rb.vault_open(legacy, self.keys[0], self.tmp / "o")),
+                         ["captures/synthetic.bin", "notes.txt"])
 
     def test_index_records_no_private_key_material(self):
         index = rb.vault_seal(self.source, self.vault, self.members, "synthetic")

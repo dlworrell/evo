@@ -431,7 +431,26 @@ def revoke(path: Path, vault: str, pid: str) -> None:
     save_vaults(path, config)
 
 
+MANIFEST = "manifest.age"
+
+
+def _age_encrypt(keys: list[str], source: Path, target: Path) -> None:
+    cmd = ["age", "--encrypt", "-o", str(target)]
+    for key in keys:
+        cmd += ["-r", key]
+    code, text = _run(cmd + [str(source)])
+    if code != 0:
+        raise RuntimeError(f"age failed: {text}")
+
+
 def vault_seal(source: Path, vault: Path, members: list[dict], name: str = "") -> dict:
+    """Encrypt every file under ``source`` into ``vault``.
+
+    File names and directory structure are sensitive too: ciphertext is stored as
+    numbered objects, and the map from object to path lives only in the encrypted
+    ``manifest.age``. The public index holds object hashes, the vault name and
+    member fingerprints, so ``vault verify`` works without a key.
+    """
     keys = [_public_key(m["key"]) for m in members]
     if not keys:
         raise ValueError("the vault has no members")
@@ -440,45 +459,57 @@ def vault_seal(source: Path, vault: Path, members: list[dict], name: str = "") -
                          "cannot open age files); add an age1 key or a recovery key first")
     if vault.resolve() == source.resolve() or source.resolve() in vault.resolve().parents:
         raise ValueError("the vault must be outside the source directory")
-    vault.mkdir(parents=True, exist_ok=True)
-    entries = []
-    for path in sorted(p for p in source.rglob("*") if p.is_file() or p.is_symlink()):
-        rel = path.relative_to(source).as_posix()
+    if vault.exists() and any(vault.iterdir()):
+        raise ValueError(f"{vault} is not empty; seal into a new directory and replace the old vault after verify")
+    files = sorted(p for p in source.rglob("*") if p.is_file() or p.is_symlink())
+    for path in files:
         if path.is_symlink():
-            raise ValueError(f"symlink not allowed in vault source: {rel}")
-        target = vault / f"{rel}.age"
-        target.parent.mkdir(parents=True, exist_ok=True)
-        cmd = ["age", "--encrypt", "-o", str(target)]
-        for key in keys:
-            cmd += ["-r", key]
-        code, text = _run(cmd + [str(path)])
-        if code != 0:
-            raise RuntimeError(f"age failed for {rel}: {text}")
-        entries.append({"path": rel, "sha256": _sha256(path), "bytes": path.stat().st_size,
-                        "ciphertext": f"{rel}.age", "ciphertext_sha256": _sha256(target)})
-    index = {"schema": "evo.rea-source-vault.v1", "tool": "age", "vault": name,
+            raise ValueError(f"symlink not allowed in vault source: {path.relative_to(source).as_posix()}")
+    (vault / "objects").mkdir(parents=True, exist_ok=True)
+    manifest, objects = [], []
+    for number, path in enumerate(files, 1):
+        obj = f"objects/{number:06d}.age"
+        _age_encrypt(keys, path, vault / obj)
+        manifest.append({"path": path.relative_to(source).as_posix(), "sha256": _sha256(path),
+                         "bytes": path.stat().st_size, "ciphertext": obj})
+        objects.append({"ciphertext": obj, "ciphertext_sha256": _sha256(vault / obj)})
+    with tempfile.TemporaryDirectory() as tmp:
+        plain = Path(tmp) / "manifest.json"
+        plain.write_text(json.dumps({"vault": name, "files": manifest}, indent=2, sort_keys=True), encoding="utf-8")
+        _age_encrypt(keys, plain, vault / MANIFEST)
+    index = {"schema": "evo.rea-source-vault.v2", "tool": "age", "vault": name,
+             "manifest": {"ciphertext": MANIFEST, "ciphertext_sha256": _sha256(vault / MANIFEST)},
              "recipients": sorted(_fingerprint(k) for k in keys),
              "members": sorted(({"person": m.get("person", ""), "label": m["label"], "role": m["role"],
                                  "fingerprint": _fingerprint(_public_key(m["key"])),
                                  "can_decrypt": m["can_decrypt"]} for m in members),
                                key=lambda m: m["fingerprint"]),
-             "files": entries,
-             "limits": "Encryption protects files at rest and in transit, not after an authorised person decrypts them."}
+             "files": objects,
+             "limits": "Names and structure are encrypted; the number of files and their approximate sizes are not. "
+                       "Encryption protects files at rest and in transit, not after an authorised person decrypts them."}
     (vault / INDEX).write_text(json.dumps(index, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return index
 
 
+def _safe(rel: str) -> str:
+    path = PurePosixPath(rel)
+    if not rel or "\\" in rel or path.is_absolute() or ".." in path.parts:
+        raise ValueError(f"unsafe path in vault: {rel}")
+    return rel
+
+
 def _index(vault: Path) -> dict:
     index = json.loads((vault / INDEX).read_text(encoding="utf-8"))
-    for entry in index["files"]:
-        if PurePosixPath(entry["ciphertext"]).is_absolute() or ".." in PurePosixPath(entry["ciphertext"]).parts:
-            raise ValueError(f"unsafe path in vault index: {entry['ciphertext']}")
+    for entry in index["files"] + ([index["manifest"]] if "manifest" in index else []):
+        _safe(entry["ciphertext"])
     return index
 
 
 def vault_verify(vault: Path) -> list[str]:
+    """Check every ciphertext against the public index, without a key."""
+    index = _index(vault)
     problems = []
-    for entry in _index(vault)["files"]:
+    for entry in index["files"] + ([index["manifest"]] if "manifest" in index else []):
         path = vault / entry["ciphertext"]
         if path.is_symlink() or not path.is_file():
             problems.append(f"missing: {entry['ciphertext']}")
@@ -487,18 +518,34 @@ def vault_verify(vault: Path) -> list[str]:
     return problems
 
 
+def _decrypt(identity: Path, source: Path, target: Path) -> bool:
+    code, _ = _run(["age", "--decrypt", "-i", str(identity), "-o", str(target), str(source)])
+    return code == 0
+
+
 def vault_open(vault: Path, identity: Path, destination: Path) -> list[str]:
     problems = vault_verify(vault)
     if problems:
         raise ValueError("vault failed verification: " + "; ".join(problems))
+    index = _index(vault)
+    if "manifest" in index:
+        with tempfile.TemporaryDirectory() as tmp:
+            plain = Path(tmp) / "manifest.json"
+            if not _decrypt(identity, vault / index["manifest"]["ciphertext"], plain):
+                raise RuntimeError("could not open this vault with this identity")
+            entries = json.loads(plain.read_text(encoding="utf-8"))["files"]
+        listed = {e["ciphertext"] for e in index["files"]}
+        if sorted(e["ciphertext"] for e in entries) != sorted(listed):
+            raise ValueError("vault manifest does not match the index")
+    else:  # evo.rea-source-vault.v1: plaintext paths in the index
+        entries = index["files"]
     opened = []
-    for entry in _index(vault)["files"]:
-        out = destination / entry["path"]
+    for entry in entries:
+        out = destination / _safe(entry["path"])
         out.parent.mkdir(parents=True, exist_ok=True)
         with tempfile.NamedTemporaryFile(dir=out.parent, delete=False) as tmp:
             tmp_path = Path(tmp.name)
-        code, text = _run(["age", "--decrypt", "-i", str(identity), "-o", str(tmp_path), str(vault / entry["ciphertext"])])
-        if code != 0 or _sha256(tmp_path) != entry["sha256"]:
+        if not _decrypt(identity, vault / entry["ciphertext"], tmp_path) or _sha256(tmp_path) != entry["sha256"]:
             tmp_path.unlink(missing_ok=True)
             raise RuntimeError(f"could not open {entry['path']} with this identity")
         tmp_path.replace(out)

@@ -52,7 +52,9 @@ ADR-0046 keeps REA an external-reference dependency at `9e22da8` and forbids ven
      Every vault needs at least one editor.
    - **Sealing and opening.**
      - `vault seal NAME` encrypts each file to every member of that vault.
-     - The vault index records each file's hashes, the vault name, and each member's person id, label, role and fingerprint. It never records a key.
+     - File names and directory structure are encrypted too. Ciphertext is stored as numbered objects (`objects/000001.age`), and the map from object to path, with each file's hash, lives only in the encrypted `manifest.age`.
+     - The public vault index records only object hashes, the vault name, and each member's person id, label, role and fingerprint. It never records a key or a file name. The number of files and their approximate sizes remain visible.
+     - A re-seal goes into a new, empty directory, which replaces the old vault after `vault verify`.
      - `vault verify` checks ciphertext without decrypting. `vault open` decrypts with the caller's own identity file.
    - **Adding people.** `vault person add USER sshid|github|age [WHO]` fetches a published public key from sshid.io or GitHub, or takes an `age1` key. It shows the fingerprint and writes only with `--yes`, after the fingerprint has been confirmed with the person. `vault grant VAULT USER --role` and `vault revoke VAULT USER` change one vault at a time; `vault access USER` lists a person's vaults.
 3. **Device-bound keys are encrypt-only.**
@@ -63,7 +65,12 @@ ADR-0046 keeps REA an external-reference dependency at `9e22da8` and forbids ven
    - Each person keeps their own private key, and only public keys are committed.
    - The owner holds an offline `age1` recovery key in every vault.
    - Removing a person (`vault revoke`) means re-sealing to the remaining members; the last editor cannot be removed. Copies they already decrypted cannot be recalled; the index records this limit.
-5. **Vault location.** The ciphertext and index go to an access-controlled location the owner chooses, such as a private Dropbox folder or a private repository. Never the public EVO repository. CI uses only synthetic files sealed to throwaway test keys.
+5. **Vault location.** The ciphertext and index go to an access-controlled location the owner chooses: a dedicated Dropbox folder that holds only sealed vaults and is not shared, or a private repository. Plaintext never goes there. Never the public EVO repository. CI uses only synthetic files sealed to throwaway test keys.
+
+6. **Agent access (proposed; not yet implemented).**
+   - Agents cannot use SSH ID: its keys are passkeys bound to a person's device and need that person present. Each agent instead gets its own `people` entry (for example `agent-claude`), sponsored by a human editor, with its own `age1` key.
+   - The agent's private key lives only in that agent's secret store, never in a repository or in Dropbox. Agents are granted **view** on named vaults only, never **edit**, and the grant carries an expiry date.
+   - Dropbox access is separate. It follows the Dropbox account an agent's connector signs in as, not any key. An agent that can read the Dropbox folder sees only ciphertext unless it is also granted that vault.
 
 ## Alternatives considered
 
