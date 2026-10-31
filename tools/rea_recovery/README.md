@@ -1,22 +1,24 @@
 # REA recovery companion (EVO-004)
 
-## Build runner and encrypted source vault (ADR-0048, proposed)
+## EVO/REA fused build runner and encrypted source vault (ADR-0048, proposed)
 
-`rea_build.py` drives a separate REA checkout pinned to `9e22da8` and never changes REA's files.
+`evo_rea_build.py` builds the fused product into one destination. EVO is built from this checkout with its documented CMake build. REA is built in a separate checkout pinned to `9e22da8`, and its files are never changed.
 
 ```sh
-python3 tools/rea_recovery/rea_build.py discover --rea ../rea --dest out/ [--recipients vault-recipients.txt]
-python3 tools/rea_recovery/rea_build.py build    --rea ../rea --dest out/            # prints the plan
-python3 tools/rea_recovery/rea_build.py build    --rea ../rea --dest out/ --execute  # npm ci; npm run build:cached; rea doctor --json
-python3 tools/rea_recovery/rea_build.py ui       --rea ../rea [--execute] [mcp | <rea CLI args>]
-python3 tools/rea_recovery/rea_build.py pdf      report.md --out report.pdf [--print]
-python3 tools/rea_recovery/rea_build.py vault seal   SOURCE_DIR --vault VAULT_DIR --recipients vault-recipients.txt
-python3 tools/rea_recovery/rea_build.py vault verify VAULT_DIR
-python3 tools/rea_recovery/rea_build.py vault open   VAULT_DIR --identity ~/.age/me.key --dest OPENED_DIR
+python3 tools/rea_recovery/evo_rea_build.py discover --rea ../rea --dest /opt/evo-rea [--recipients vault-recipients.txt]
+python3 tools/rea_recovery/evo_rea_build.py build    --rea ../rea --dest /opt/evo-rea            # prints the plan
+python3 tools/rea_recovery/evo_rea_build.py build    --rea ../rea --dest /opt/evo-rea --execute  # EVO cmake build/ctest/install, then REA npm ci/build, doctor
+python3 tools/rea_recovery/evo_rea_build.py ui evo   --dest /opt/evo-rea [--execute] [evo args]
+python3 tools/rea_recovery/evo_rea_build.py ui rea   --dest /opt/evo-rea [--execute] [mcp | <rea CLI args>]
+python3 tools/rea_recovery/evo_rea_build.py pdf      report.md --out report.pdf [--print]
+python3 tools/rea_recovery/evo_rea_build.py vault seal   SOURCE_DIR --vault VAULT_DIR --recipients vault-recipients.txt
+python3 tools/rea_recovery/evo_rea_build.py vault verify VAULT_DIR
+python3 tools/rea_recovery/evo_rea_build.py vault open   VAULT_DIR --identity ~/.age/me.key --dest OPENED_DIR
 ```
 
 - **`discover`** checks:
   - the platform;
+  - the EVO checkout and version, a C compiler, CMake 3.20 or later, and Bubblewrap (the sandbox `evo analyze` uses);
   - Node.js against REA's `engines` range, and npm;
   - that the REA checkout is at the pin with a clean tree;
   - that the destination is writable;
@@ -24,8 +26,8 @@ python3 tools/rea_recovery/rea_build.py vault open   VAULT_DIR --identity ~/.age
   - whether a display is available for UI;
   - the vault tool and recipients.
 
-  Missing Node.js, npm, REA source or destination blocks `build`.
-- **`ui`** runs REA's CLI or its stdio MCP server. The runner refuses `rea setup`, `rea update` and `rea uninstall`, because they write agent configuration or install.
+  Missing EVO source, C compiler, CMake, Node.js, npm, REA source or destination blocks `build`.
+- **`ui`** runs the installed `evo` CLI, REA's CLI, or REA's stdio MCP server, using the layout `build` records in `evo-rea.json`. The runner refuses `rea setup`, `rea update` and `rea uninstall`, because they write agent configuration or install.
 - **Vault keys.** Each authorised person runs `age-keygen -o ~/.age/me.key` and adds only the public `age1…` line to the recipients file. Private keys never leave their owner. The vault index records file hashes and recipient fingerprints, never keys.
 
 

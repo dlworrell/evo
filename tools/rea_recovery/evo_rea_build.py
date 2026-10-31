@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
-"""REA build runner and encrypted source vault (EVO ADR-0048, proposed).
+"""EVO/REA fused build runner and encrypted source vault (EVO ADR-0048, proposed).
 
-Drives a separate, pinned REA checkout from EVO without changing REA's files.
+Builds the fused EVO + REA product into one destination: EVO from its own
+checkout with its documented CMake build, and REA from a separate checkout
+pinned by ADR-0046 with its documented npm build, without changing REA's files.
 Commands: ``discover`` (environment report), ``build`` (plan; ``--execute`` to
-run), ``pdf`` (render and optionally print a report), ``ui`` (REA CLI/MCP), and
+run), ``pdf`` (render and optionally print a report such as ``evo report``
+output), ``ui`` (EVO CLI, REA CLI or REA's stdio MCP server), and
 ``vault seal|verify|open`` (age encryption, one key pair per authorised person).
 
 It never runs ``rea setup``, ``rea update`` or ``rea uninstall`` and never edits
@@ -29,6 +32,8 @@ FORBIDDEN_REA_COMMANDS = ("setup", "update", "uninstall")
 PDF_BACKENDS = ("pandoc", "chromium")
 PRINT_COMMANDS = ("lp", "lpr")
 INDEX = "vault-index.json"
+LAYOUT = "evo-rea.json"
+MIN_CMAKE = (3, 20)
 
 
 def _run(cmd: list[str], cwd: Path | None = None) -> tuple[int, str]:
@@ -76,8 +81,33 @@ def _chromium() -> str | None:
     return None
 
 
-def discover(rea: Path, destination: Path, recipients: Path | None, pin: str = CONTRACT_PIN) -> dict:
+def _cmake_version() -> tuple[int, ...] | None:
+    if not shutil.which("cmake"):
+        return None
+    code, text = _run(["cmake", "--version"])
+    found = re.search(r"(\d+)\.(\d+)", text) if code == 0 else None
+    return tuple(int(p) for p in found.groups()) if found else None
+
+
+def discover(evo: Path, rea: Path, destination: Path, recipients: Path | None,
+             pin: str = CONTRACT_PIN) -> dict:
     checks: dict[str, dict] = {}
+    cmake_lists = evo / "CMakeLists.txt"
+    project = re.search(r"project\(catalyst_evo VERSION ([0-9.]+)",
+                        cmake_lists.read_text(encoding="utf-8")) if cmake_lists.is_file() else None
+    checks["evo_source"] = ({"status": "ok", "evidence": f"{evo}: catalyst_evo {project.group(1)}"} if project
+                            else {"status": "missing", "evidence": f"{evo} is not an EVO checkout"})
+    compiler = next((shutil.which(c) for c in ("clang", "gcc", "cc") if shutil.which(c)), None)
+    checks["c_compiler"] = {"status": "ok" if compiler else "missing", "evidence": compiler or "no clang/gcc/cc"}
+    cmake = _cmake_version()
+    if cmake is None:
+        checks["cmake"] = {"status": "missing", "evidence": "cmake not on PATH"}
+    else:
+        checks["cmake"] = {"status": "ok" if cmake >= MIN_CMAKE else "mismatch",
+                           "evidence": f"cmake {'.'.join(map(str, cmake))} (EVO needs >= 3.20)"}
+    bwrap = shutil.which("bwrap")
+    checks["sandbox"] = {"status": "ok" if bwrap else "missing",
+                         "evidence": bwrap or "no Bubblewrap; evo analyze's isolated provider is unavailable"}
     checks["platform"] = {"status": "ok", "evidence": f"{platform.system()} {platform.machine()} python {platform.python_version()}"}
     engines = None
     package = rea / "package.json"
@@ -126,18 +156,49 @@ def discover(rea: Path, destination: Path, recipients: Path | None, pin: str = C
     else:
         keys = _recipients(recipients)
         checks["vault"] = {"status": "ok" if keys else "missing", "evidence": f"age; {len(keys)} recipient(s)"}
-    blocking = sorted(k for k in ("node", "npm", "rea_source", "destination") if checks[k]["status"] != "ok")
+    blocking = sorted(k for k in ("evo_source", "c_compiler", "cmake", "node", "npm", "rea_source", "destination")
+                      if checks[k]["status"] != "ok")
     return {"schema": "evo.rea-build-discovery.v1", "pin": pin, "checks": checks, "blocking": blocking}
 
 
-def build_plan(rea: Path) -> list[list[str]]:
-    return [["npm", "ci"], ["npm", "run", "build:cached"], ["node", "scripts/rea.mjs", "doctor", "--json"]]
+def build_plan(evo: Path, rea: Path, destination: Path) -> list[tuple[Path, list[str]]]:
+    """Each project's own documented build, then install into ``destination``."""
+    work = destination / "build" / "evo"
+    return [
+        (evo, ["cmake", "-S", str(evo), "-B", str(work), "-DCMAKE_BUILD_TYPE=Release",
+               f"-DCMAKE_INSTALL_PREFIX={destination}"]),
+        (evo, ["cmake", "--build", str(work)]),
+        (evo, ["ctest", "--test-dir", str(work), "--output-on-failure"]),
+        (evo, ["cmake", "--install", str(work)]),
+        (rea, ["npm", "ci"]),
+        (rea, ["npm", "run", "build:cached"]),
+        (rea, ["node", "scripts/rea.mjs", "doctor", "--json"]),
+    ]
+
+
+def write_layout(evo: Path, rea: Path, destination: Path, pin: str) -> Path:
+    """Record where the fused product's parts live, for ``ui``."""
+    layout = {"schema": "evo.rea-fused-layout.v1", "evo_binary": str(destination / "bin" / "evo"),
+              "evo_source": str(evo.resolve()), "rea_checkout": str(rea.resolve()), "rea_pin": pin}
+    path = destination / LAYOUT
+    path.write_text(json.dumps(layout, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return path
 
 
 def rea_command(args: list[str]) -> list[str]:
     if args and args[0] in FORBIDDEN_REA_COMMANDS:
         raise ValueError(f"rea {args[0]} changes agent configuration or installs; refused")
     return ["node", "scripts/rea.mjs", *args]
+
+
+def ui_command(destination: Path, component: str, args: list[str]) -> tuple[Path | None, list[str]]:
+    """The command and working directory for the EVO CLI or REA (CLI or stdio MCP)."""
+    layout = json.loads((destination / LAYOUT).read_text(encoding="utf-8"))
+    if component == "evo":
+        return None, [layout["evo_binary"], *args]
+    if component == "rea":
+        return Path(layout["rea_checkout"]), rea_command(args or ["mcp"])
+    raise ValueError("component must be evo or rea")
 
 
 def render_pdf(source: Path, output: Path) -> str:
@@ -244,8 +305,10 @@ def main(argv=None) -> int:
     sub = parser.add_subparsers(dest="command", required=True)
     for name in ("discover", "build"):
         p = sub.add_parser(name)
+        p.add_argument("--evo", default=Path(__file__).resolve().parents[2], type=Path,
+                       help="EVO checkout (default: this repository)")
         p.add_argument("--rea", required=True, type=Path, help="REA checkout")
-        p.add_argument("--dest", required=True, type=Path, help="output directory")
+        p.add_argument("--dest", required=True, type=Path, help="install destination for the fused product")
         p.add_argument("--recipients", type=Path)
         p.add_argument("--pin", default=CONTRACT_PIN)
         if name == "build":
@@ -255,9 +318,10 @@ def main(argv=None) -> int:
     p.add_argument("--out", required=True, type=Path)
     p.add_argument("--print", action="store_true", dest="send_to_printer")
     p = sub.add_parser("ui")
-    p.add_argument("--rea", required=True, type=Path)
+    p.add_argument("component", choices=("evo", "rea"))
+    p.add_argument("--dest", required=True, type=Path, help="fused product destination from build")
     p.add_argument("--execute", action="store_true")
-    p.add_argument("rea_args", nargs="*", default=["mcp"])
+    p.add_argument("args", nargs=argparse.REMAINDER)
     v = sub.add_parser("vault").add_subparsers(dest="action", required=True)
     s = v.add_parser("seal")
     s.add_argument("source", type=Path)
@@ -272,19 +336,21 @@ def main(argv=None) -> int:
     args = parser.parse_args(argv)
     try:
         if args.command in ("discover", "build"):
-            report = discover(args.rea, args.dest, args.recipients, args.pin)
+            report = discover(args.evo, args.rea, args.dest, args.recipients, args.pin)
             if args.command == "discover":
                 print(json.dumps(report, indent=2, sort_keys=True))
                 return 0 if not report["blocking"] else 3
-            plan = build_plan(args.rea)
-            print(json.dumps({"blocking": report["blocking"], "plan": [" ".join(c) for c in plan],
-                              "cwd": str(args.rea), "execute": args.execute}, indent=2))
+            plan = build_plan(args.evo, args.rea, args.dest)
+            print(json.dumps({"blocking": report["blocking"], "execute": args.execute,
+                              "plan": [{"cwd": str(cwd), "run": " ".join(cmd)} for cwd, cmd in plan]}, indent=2))
             if report["blocking"]:
                 return 3
             if args.execute:
-                for cmd in plan:
-                    if subprocess.run(cmd, cwd=args.rea).returncode != 0:
+                args.dest.mkdir(parents=True, exist_ok=True)
+                for cwd, cmd in plan:
+                    if subprocess.run(cmd, cwd=cwd).returncode != 0:
                         return 1
+                print(write_layout(args.evo, args.rea, args.dest, args.pin))
             return 0
         if args.command == "pdf":
             backend = render_pdf(args.source, args.out)
@@ -297,9 +363,9 @@ def main(argv=None) -> int:
                 return subprocess.run([printer, str(args.out)]).returncode
             return 0
         if args.command == "ui":
-            cmd = rea_command(args.rea_args)
+            cwd, cmd = ui_command(args.dest, args.component, args.args)
             print(" ".join(cmd))
-            return subprocess.run(cmd, cwd=args.rea).returncode if args.execute else 0
+            return subprocess.run(cmd, cwd=cwd).returncode if args.execute else 0
         if args.action == "seal":
             index = vault_seal(args.source, args.vault, args.recipients)
             print(f"sealed {len(index['files'])} file(s) to {len(index['recipients'])} recipient(s)")

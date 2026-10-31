@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for the REA build runner and vault (ADR-0048). Synthetic data and throwaway age keys only."""
+"""Tests for the EVO/REA fused build runner and vault (ADR-0048). Synthetic data and throwaway age keys only."""
 import contextlib
 import importlib.util
 import io
@@ -11,7 +11,7 @@ import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
-spec = importlib.util.spec_from_file_location("rea_build", ROOT / "tools/rea_recovery/rea_build.py")
+spec = importlib.util.spec_from_file_location("evo_rea_build", ROOT / "tools/rea_recovery/evo_rea_build.py")
 rb = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(rb)
 HAVE_AGE = bool(shutil.which("age") and shutil.which("age-keygen"))
@@ -35,6 +35,9 @@ class Discovery(unittest.TestCase):
         git(self.rea, "-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false",
             "commit", "-qm", "synthetic")
         self.head = git(self.rea, "rev-parse", "HEAD")
+        self.evo = self.tmp / "evo"
+        self.evo.mkdir()
+        (self.evo / "CMakeLists.txt").write_text("project(catalyst_evo VERSION 9.9.9 LANGUAGES C)\n")
 
     def test_node_range_matching(self):
         engines = "^22.19.0 || ^24.11.0 || >=26.0.0"
@@ -45,29 +48,49 @@ class Discovery(unittest.TestCase):
         self.assertFalse(rb.node_satisfies("garbage", engines))
 
     def test_pinned_clean_checkout_and_writable_destination(self):
-        report = rb.discover(self.rea, self.tmp / "out", None, pin=self.head)
+        report = rb.discover(self.evo, self.rea, self.tmp / "out", None, pin=self.head)
         self.assertEqual(report["checks"]["rea_source"]["status"], "ok")
+        self.assertEqual(report["checks"]["evo_source"]["evidence"], f"{self.evo}: catalyst_evo 9.9.9")
         self.assertEqual(report["checks"]["destination"]["status"], "ok")
         self.assertNotIn("rea_source", report["blocking"])
 
     def test_pin_mismatch_and_dirty_tree_block(self):
-        report = rb.discover(self.rea, self.tmp / "out", None)
+        report = rb.discover(self.evo, self.rea, self.tmp / "out", None)
         self.assertEqual(report["checks"]["rea_source"]["status"], "mismatch")
         self.assertIn("rea_source", report["blocking"])
         (self.rea / "extra.txt").write_text("x")
-        report = rb.discover(self.rea, self.tmp / "out", None, pin=self.head)
+        report = rb.discover(self.evo, self.rea, self.tmp / "out", None, pin=self.head)
         self.assertIn("local changes", report["checks"]["rea_source"]["evidence"])
 
-    def test_missing_checkout_blocks_build(self):
+    def test_missing_checkouts_block_build(self):
         out = io.StringIO()
         with contextlib.redirect_stdout(out):
-            code = rb.main(["build", "--rea", str(self.tmp / "nope"), "--dest", str(self.tmp / "out")])
+            code = rb.main(["build", "--evo", str(self.tmp / "no-evo"), "--rea", str(self.tmp / "nope"),
+                            "--dest", str(self.tmp / "out")])
         self.assertEqual(code, 3)
-        self.assertIn("rea_source", json.loads(out.getvalue())["blocking"])
+        blocking = json.loads(out.getvalue())["blocking"]
+        self.assertIn("rea_source", blocking)
+        self.assertIn("evo_source", blocking)
 
-    def test_build_is_a_plan_unless_executed(self):
-        plan = [" ".join(c) for c in rb.build_plan(self.rea)]
-        self.assertEqual(plan, ["npm ci", "npm run build:cached", "node scripts/rea.mjs doctor --json"])
+    def test_build_plan_builds_both_into_one_destination(self):
+        dest = self.tmp / "out"
+        plan = [(cwd, " ".join(cmd)) for cwd, cmd in rb.build_plan(self.evo, self.rea, dest)]
+        self.assertEqual([c for c, _ in plan[:4]], [self.evo] * 4)
+        self.assertIn(f"-DCMAKE_INSTALL_PREFIX={dest}", plan[0][1])
+        self.assertEqual(plan[3][1], f"cmake --install {dest / 'build' / 'evo'}")
+        self.assertEqual([r for _, r in plan[4:]],
+                         ["npm ci", "npm run build:cached", "node scripts/rea.mjs doctor --json"])
+        self.assertEqual([c for c, _ in plan[4:]], [self.rea] * 3)
+
+    def test_ui_uses_the_recorded_layout(self):
+        dest = self.tmp / "out"
+        dest.mkdir()
+        rb.write_layout(self.evo, self.rea, dest, self.head)
+        self.assertEqual(rb.ui_command(dest, "evo", ["--help"]), (None, [str(dest / "bin" / "evo"), "--help"]))
+        cwd, cmd = rb.ui_command(dest, "rea", [])
+        self.assertEqual((cwd, cmd), (self.rea.resolve(), ["node", "scripts/rea.mjs", "mcp"]))
+        with self.assertRaises(ValueError):
+            rb.ui_command(dest, "rea", ["setup"])
 
     def test_agent_configuring_commands_are_refused(self):
         for forbidden in ("setup", "update", "uninstall"):
