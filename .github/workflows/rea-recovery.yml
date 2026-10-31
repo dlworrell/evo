@@ -1,0 +1,36 @@
+name: REA Recovery Companion Checks
+
+on:
+  pull_request:
+    paths:
+      - 'tools/rea_recovery/**'
+      - 'tests/rea_recovery/**'
+      - 'tests/fixtures/rea-recovery/**'
+      - '.github/workflows/rea-recovery.yml'
+  push:
+    branches: [dev-daily, fitment, main]
+    paths:
+      - 'tools/rea_recovery/**'
+      - 'tests/rea_recovery/**'
+      - 'tests/fixtures/rea-recovery/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  companion-manifest:
+    name: companion-manifest
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Companion manifest v0.1 tests (synthetic fixtures only)
+        run: python3 -m unittest discover -s tests/rea_recovery -p 'test_*.py' -v
+
+      - name: Committed fixture is accepted
+        run: |
+          python3 tools/rea_recovery/companion_manifest.py \
+            tests/fixtures/rea-recovery/synthetic-v0.1/manifest.json \
+            --store tests/fixtures/rea-recovery/synthetic-v0.1/store
