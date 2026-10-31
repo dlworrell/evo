@@ -218,14 +218,25 @@ def render_pdf(source: Path, output: Path) -> str:
     raise RuntimeError("no PDF backend succeeded (need pandoc with a PDF engine, or chromium)")
 
 
+AGE_KEY = re.compile(r"age1[0-9a-z]{58}")
+SSH_KEY = re.compile(r"ssh-ed25519 [A-Za-z0-9+/]{68}")
+
+
 def _recipients(path: Path) -> list[str]:
+    """age public keys (``age1...``) or SSH ed25519 public keys; trailing comments are dropped."""
     keys = []
     for line in path.read_text(encoding="utf-8").splitlines():
         line = line.strip()
-        if line and not line.startswith("#"):
-            if not re.fullmatch(r"age1[0-9a-z]{58}", line):
-                raise ValueError(f"not an age public key: {line[:12]}...")
+        if not line or line.startswith("#"):
+            continue
+        if AGE_KEY.fullmatch(line):
             keys.append(line)
+            continue
+        ssh = SSH_KEY.match(line)
+        if ssh and (len(line) == ssh.end() or line[ssh.end()] == " "):
+            keys.append(ssh.group(0))
+            continue
+        raise ValueError(f"not an age or ssh-ed25519 public key: {line[:12]}...")
     return keys
 
 

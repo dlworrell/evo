@@ -1,0 +1,8 @@
+# Public keys that may open the EVO/REA source vault (ADR-0048).
+# Public keys only. Never add a private key here. Changes are reviewed like code.
+#
+# Donovan Worrell, from https://sshid.io/dlworrell, added 2026-10-31.
+# This is an SSH ed25519 key. To decrypt, age needs the matching private key file
+# (for example ~/.ssh/id_ed25519). A key held in a phone's Secure Enclave cannot
+# be used by age to decrypt, so add an age1 key or a recovery key before sealing.
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL5nlTi5t/zI6AWP54uSPH17XxUOJLiSoAtsn1dPtwvF

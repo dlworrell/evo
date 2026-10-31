@@ -152,6 +152,26 @@ class Vault(unittest.TestCase):
         with self.assertRaises(ValueError):
             rb.vault_seal(self.source, self.source / "vault", self.recipients)
 
+    def test_ssh_ed25519_recipient_round_trip(self):
+        try:
+            from cryptography.hazmat.primitives import serialization
+            from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+        except ImportError:
+            self.skipTest("cryptography not installed")
+        key = Ed25519PrivateKey.generate()
+        identity = self.tmp / "id_ed25519"
+        identity.write_bytes(key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.OpenSSH,
+                                               serialization.NoEncryption()))
+        identity.chmod(0o600)
+        public = key.public_key().public_bytes(serialization.Encoding.OpenSSH,
+                                               serialization.PublicFormat.OpenSSH).decode()
+        recipients = self.tmp / "ssh-recipients.txt"
+        recipients.write_text(f"{public} #SSH ID - synthetic\n")
+        rb.vault_seal(self.source, self.vault, recipients)
+        out = self.tmp / "ssh-open"
+        self.assertIn("notes.txt", rb.vault_open(self.vault, identity, out))
+        self.assertEqual((out / "notes.txt").read_text(), "synthetic notes\n")
+
     def test_index_records_no_private_key_material(self):
         index = rb.vault_seal(self.source, self.vault, self.recipients)
         text = (self.vault / rb.INDEX).read_text()
