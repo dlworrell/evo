@@ -1,0 +1,45 @@
+{
+  "_note": "Public keys only. Modelled on Termius vaults: named vaults whose members can view or edit. 'can_decrypt' is false for device-bound keys such as Termius SSH ID passkeys, which age cannot use to open files. A vault cannot be sealed until at least one member can decrypt.",
+  "schema": "evo.rea-vaults.v1",
+  "vaults": {
+    "evo-rea-sources": {
+      "description": "EVO/REA source files and original REA evidence (ADR-0048)",
+      "members": [
+        {
+          "added": "2026-10-31",
+          "can_decrypt": false,
+          "key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL5nlTi5t/zI6AWP54uSPH17XxUOJLiSoAtsn1dPtwvF",
+          "label": "Donovan Worrell",
+          "role": "edit",
+          "source": "https://sshid.io/dlworrell"
+        }
+      ]
+    },
+    "personal-donovan": {
+      "description": "Donovan's own items, not shared with the team",
+      "members": [
+        {
+          "added": "2026-10-31",
+          "can_decrypt": false,
+          "key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL5nlTi5t/zI6AWP54uSPH17XxUOJLiSoAtsn1dPtwvF",
+          "label": "Donovan Worrell",
+          "role": "edit",
+          "source": "https://sshid.io/dlworrell"
+        }
+      ]
+    },
+    "team": {
+      "description": "Shared with every team member",
+      "members": [
+        {
+          "added": "2026-10-31",
+          "can_decrypt": false,
+          "key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL5nlTi5t/zI6AWP54uSPH17XxUOJLiSoAtsn1dPtwvF",
+          "label": "Donovan Worrell",
+          "role": "edit",
+          "source": "https://sshid.io/dlworrell"
+        }
+      ]
+    }
+  }
+}

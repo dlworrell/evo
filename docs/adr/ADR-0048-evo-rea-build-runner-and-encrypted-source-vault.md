@@ -27,7 +27,7 @@ ADR-0046 keeps REA an external-reference dependency at `9e22da8` and forbids ven
      - whether the destination is writable;
      - which PDF backends and printers exist;
      - whether a display or browser is available for UI use;
-     - the vault tool and recipients.
+     - the vault tool, and which vaults someone can actually open.
 
      Every check reports `ok`, `missing` or `mismatch` with the evidence behind it. Nothing is guessed.
    - **`build`** prints the plan by default and runs only with `--execute`. The plan is each project's own documented build:
@@ -39,23 +39,37 @@ ADR-0046 keeps REA an external-reference dependency at `9e22da8` and forbids ven
    - **`ui`** reports or starts the fused product's interfaces: the installed `evo` CLI, REA's CLI, or REA's stdio MCP server (`rea mcp`). Starting needs `--execute`.
 
    The runner never runs `rea setup`, `rea update` or `rea uninstall`, and never edits agent or client configuration.
-2. **The encrypted vault uses [age](https://age-encryption.org/), with one key pair per authorised person.**
-   - `vault seal` encrypts each source file separately to every listed recipient.
-   - It writes a vault index holding each file's path, plaintext sha256 and byte count, ciphertext sha256, and the fingerprints of the recipients it was sealed to.
-   - `vault verify` checks the ciphertext without decrypting. `vault open` decrypts with the caller's own identity file into a destination that the caller chooses.
-3. **Key custody.**
-   - Each authorised person generates their own key with `age-keygen` and keeps the private key themselves.
-   - Only public keys go into the recipients file, which is reviewed like any other change.
-   - Private keys are never committed, uploaded, printed or sent to an agent.
-   - The owner holds a recovery key kept offline.
-   - Removing a person means re-sealing to the remaining recipients. Files that person has already opened cannot be recalled; the index records this limit.
-4. **Vault location.** The ciphertext and index go to an access-controlled location the owner chooses, such as a private Dropbox folder or a private repository. Never the public EVO repository. CI uses only synthetic files sealed to a throwaway test key.
+2. **Vaults follow the Termius model, encrypted with [age](https://age-encryption.org/).** The owner pointed to [Termius vaults](https://docs.termius.com/getting-started/learn-about-vaults) as the model.
+   - **Named vaults.** `tools/rea_recovery/vaults.json` defines them:
+     - a **Personal** vault (`personal-donovan`);
+     - a shared **Team** vault (`team`);
+     - **custom** vaults per project or environment, starting with `evo-rea-sources` for EVO/REA source files and original REA evidence.
+   - **Members and roles.** Each member is a label, a public key and a role:
+     - **view** means they can open the vault. This is enforced by encryption: only listed keys can decrypt.
+     - **edit** means they may also change membership and re-seal. This is enforced by review: `vaults.json` changes go through signed, reviewed PRs.
+
+     Every vault needs at least one editor.
+   - **Sealing and opening.**
+     - `vault seal NAME` encrypts each file to every member of that vault.
+     - The vault index records each file's hashes, the vault name, and each member's label, role and fingerprint. It never records a key.
+     - `vault verify` checks ciphertext without decrypting. `vault open` decrypts with the caller's own identity file.
+   - **Adding people.** `vault add-member NAME sshid|github|age WHO --label --role` fetches a published public key from sshid.io or GitHub, or takes an `age1` key. It shows the fingerprint and writes only with `--yes`, after the fingerprint has been confirmed with the person.
+3. **Device-bound keys are encrypt-only.**
+   - Termius SSH ID passkeys "never leave your device and cannot be copied or exported". age needs the private key as a file to decrypt, so an SSH ID key can lock files for its owner but can never open them.
+   - Such members are recorded with `can_decrypt: false`. `vault seal` refuses any vault in which no member can decrypt, so nothing can be locked away from everyone.
+   - SSH ID keys stay the right tool for logging in to machines, such as the isolated build machine, through Termius.
+4. **Key custody.**
+   - Each person keeps their own private key, and only public keys are committed.
+   - The owner holds an offline `age1` recovery key in every vault.
+   - Removing a person means re-sealing to the remaining members. Copies they already decrypted cannot be recalled; the index records this limit.
+5. **Vault location.** The ciphertext and index go to an access-controlled location the owner chooses, such as a private Dropbox folder or a private repository. Never the public EVO repository. CI uses only synthetic files sealed to throwaway test keys.
 
 ## Alternatives considered
 
 - **gpg.** Available, but harder to operate safely: a web of trust, many options, and easy mistakes.
 - **git-crypt or SOPS.** These tie the vault to one repository and need extra tooling.
 - **A provider-managed vault.** That needs an account and credentials the project doesn't have yet.
+- **Storing the files in Termius itself.** Termius vaults hold hosts, keys, snippets and port-forwarding rules, not arbitrary files, so they can't hold source trees. Termius is used for access to machines, and the age vaults copy its structure for files.
 
 age is small, audited, packaged on Ubuntu and macOS, and does multi-recipient encryption without configuration.
 

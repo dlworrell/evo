@@ -133,14 +133,26 @@ class PublishedKeys(unittest.TestCase):
         with self.assertRaises(ValueError):
             rb.fetch_public_keys("sshid", "someone", opener=fake)
 
-    def test_add_recipients_records_provenance_and_skips_duplicates(self):
+    def test_add_members_builds_termius_style_vaults(self):
         with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp) / "recipients.txt"
-            self.assertEqual(rb.add_recipients(path, "Someone", "https://sshid.io/someone", [self.KEY]), [self.KEY])
-            self.assertEqual(rb.add_recipients(path, "Someone", "https://sshid.io/someone", [self.KEY]), [])
-            text = path.read_text()
-            self.assertIn("from https://sshid.io/someone", text)
-            self.assertEqual(rb._recipients(path), [self.KEY])
+            path = Path(tmp) / "vaults.json"
+            with self.assertRaises(ValueError):
+                rb.add_members(path, "staging", "QA", "view", "https://sshid.io/qa", [self.KEY], False)
+            self.assertEqual(len(rb.add_members(path, "staging", "Ops", "edit", "https://sshid.io/ops",
+                                                [self.KEY], False)), 1)
+            self.assertEqual(rb.add_members(path, "staging", "Ops", "edit", "https://sshid.io/ops", [self.KEY], False), [])
+            config = rb.load_vaults(path)
+            member = rb.vault_members(config, "staging")[0]
+            self.assertEqual((member["role"], member["can_decrypt"]), ("edit", False))
+            with self.assertRaises(ValueError):
+                rb.vault_members(config, "production")
+            with self.assertRaises(ValueError):
+                rb.add_members(path, "Bad Name", "x", "edit", "u", [self.KEY], False)
+
+    def test_committed_vaults_file_is_valid_and_public_only(self):
+        config = rb.load_vaults(rb.DEFAULT_VAULTS)
+        self.assertIn("evo-rea-sources", config["vaults"])
+        self.assertNotIn("SECRET", rb.DEFAULT_VAULTS.read_text().upper())
 
 
 @unittest.skipUnless(HAVE_AGE, "age not installed")
@@ -153,20 +165,18 @@ class Vault(unittest.TestCase):
         (self.source / "captures").mkdir(parents=True)
         (self.source / "captures/synthetic.bin").write_bytes(b"SYNTHETIC capture \x00\x01")
         (self.source / "notes.txt").write_text("synthetic notes\n")
-        self.keys, self.recipients = [], self.tmp / "recipients.txt"
-        lines = ["# synthetic test recipients"]
-        for name in ("alice", "bob"):
+        self.keys, self.members = [], []
+        for name, role in (("alice", "edit"), ("bob", "view")):
             identity = self.tmp / f"{name}.key"
             subprocess.run(["age-keygen", "-o", str(identity)], check=True, capture_output=True)
             public = subprocess.run(["age-keygen", "-y", str(identity)], check=True,
                                     capture_output=True, text=True).stdout.strip()
             self.keys.append(identity)
-            lines.append(public)
-        self.recipients.write_text("\n".join(lines) + "\n")
+            self.members.append({"label": name, "role": role, "key": public, "can_decrypt": True})
         self.vault = self.tmp / "vault"
 
     def test_seal_verify_open_round_trip_for_each_recipient(self):
-        index = rb.vault_seal(self.source, self.vault, self.recipients)
+        index = rb.vault_seal(self.source, self.vault, self.members, "synthetic")
         self.assertEqual(len(index["recipients"]), 2)
         self.assertNotIn(b"SYNTHETIC", (self.vault / "captures/synthetic.bin.age").read_bytes())
         self.assertEqual(rb.vault_verify(self.vault), [])
@@ -177,7 +187,7 @@ class Vault(unittest.TestCase):
             self.assertEqual((out / "captures/synthetic.bin").read_bytes(), b"SYNTHETIC capture \x00\x01")
 
     def test_tampered_ciphertext_and_wrong_key_are_refused(self):
-        rb.vault_seal(self.source, self.vault, self.recipients)
+        rb.vault_seal(self.source, self.vault, self.members, "synthetic")
         stranger = self.tmp / "stranger.key"
         subprocess.run(["age-keygen", "-o", str(stranger)], check=True, capture_output=True)
         with self.assertRaises(RuntimeError):
@@ -188,13 +198,14 @@ class Vault(unittest.TestCase):
         with self.assertRaises(ValueError):
             rb.vault_open(self.vault, self.keys[0], self.tmp / "out2")
 
-    def test_bad_recipients_and_vault_inside_source_are_refused(self):
-        bad = self.tmp / "bad.txt"
-        bad.write_text("not-a-key\n")
+    def test_bad_keys_vault_inside_source_and_unopenable_vaults_are_refused(self):
         with self.assertRaises(ValueError):
-            rb.vault_seal(self.source, self.vault, bad)
+            rb.vault_seal(self.source, self.vault, [dict(self.members[0], key="not-a-key")])
         with self.assertRaises(ValueError):
-            rb.vault_seal(self.source, self.source / "vault", self.recipients)
+            rb.vault_seal(self.source, self.source / "vault", self.members)
+        device_bound = [dict(m, can_decrypt=False) for m in self.members]
+        with self.assertRaisesRegex(ValueError, "no member of this vault can decrypt"):
+            rb.vault_seal(self.source, self.vault, device_bound)
 
     def test_ssh_ed25519_recipient_round_trip(self):
         try:
@@ -209,18 +220,19 @@ class Vault(unittest.TestCase):
         identity.chmod(0o600)
         public = key.public_key().public_bytes(serialization.Encoding.OpenSSH,
                                                serialization.PublicFormat.OpenSSH).decode()
-        recipients = self.tmp / "ssh-recipients.txt"
-        recipients.write_text(f"{public} #SSH ID - synthetic\n")
-        rb.vault_seal(self.source, self.vault, recipients)
+        member = {"label": "ssh", "role": "edit", "key": f"{public} #synthetic", "can_decrypt": True}
+        rb.vault_seal(self.source, self.vault, [member])
         out = self.tmp / "ssh-open"
         self.assertIn("notes.txt", rb.vault_open(self.vault, identity, out))
         self.assertEqual((out / "notes.txt").read_text(), "synthetic notes\n")
 
     def test_index_records_no_private_key_material(self):
-        index = rb.vault_seal(self.source, self.vault, self.recipients)
+        index = rb.vault_seal(self.source, self.vault, self.members, "synthetic")
         text = (self.vault / rb.INDEX).read_text()
         self.assertNotIn("AGE-SECRET-KEY", text)
         self.assertTrue(all(len(f) == 16 for f in index["recipients"]))
+        self.assertEqual(index["vault"], "synthetic")
+        self.assertEqual(sorted(m["role"] for m in index["members"]), ["edit", "view"])
 
 
 if __name__ == "__main__":

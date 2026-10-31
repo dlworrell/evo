@@ -5,14 +5,15 @@
 `evo_rea_build.py` builds the fused product into one destination. EVO is built from this checkout with its documented CMake build. REA is built in a separate checkout pinned to `9e22da8`, and its files are never changed.
 
 ```sh
-python3 tools/rea_recovery/evo_rea_build.py discover --rea ../rea --dest /opt/evo-rea [--recipients vault-recipients.txt]
+python3 tools/rea_recovery/evo_rea_build.py discover --rea ../rea --dest /opt/evo-rea
 python3 tools/rea_recovery/evo_rea_build.py build    --rea ../rea --dest /opt/evo-rea            # prints the plan
 python3 tools/rea_recovery/evo_rea_build.py build    --rea ../rea --dest /opt/evo-rea --execute  # EVO cmake build/ctest/install, then REA npm ci/build, doctor
 python3 tools/rea_recovery/evo_rea_build.py ui evo   --dest /opt/evo-rea [--execute] [evo args]
 python3 tools/rea_recovery/evo_rea_build.py ui rea   --dest /opt/evo-rea [--execute] [mcp | <rea CLI args>]
 python3 tools/rea_recovery/evo_rea_build.py pdf      report.md --out report.pdf [--print]
-python3 tools/rea_recovery/evo_rea_build.py vault add-recipient sshid USER --recipients tools/rea_recovery/vault-recipients.txt [--label NAME] [--yes]
-python3 tools/rea_recovery/evo_rea_build.py vault seal   SOURCE_DIR --vault VAULT_DIR --recipients vault-recipients.txt
+python3 tools/rea_recovery/evo_rea_build.py vault list
+python3 tools/rea_recovery/evo_rea_build.py vault add-member VAULT sshid|github|age WHO --label NAME [--role view|edit] [--yes]
+python3 tools/rea_recovery/evo_rea_build.py vault seal   VAULT SOURCE_DIR --out VAULT_DIR
 python3 tools/rea_recovery/evo_rea_build.py vault verify VAULT_DIR
 python3 tools/rea_recovery/evo_rea_build.py vault open   VAULT_DIR --identity ~/.age/me.key --dest OPENED_DIR
 ```
@@ -25,12 +26,13 @@ python3 tools/rea_recovery/evo_rea_build.py vault open   VAULT_DIR --identity ~/
   - that the destination is writable;
   - the PDF backends (pandoc, headless Chromium) and printers (`lp`, `lpr`);
   - whether a display is available for UI;
-  - the vault tool and recipients.
+  - the vault tool, and which vaults someone can actually open.
 
   Missing EVO source, C compiler, CMake, Node.js, npm, REA source or destination blocks `build`.
 - **`ui`** runs the installed `evo` CLI, REA's CLI, or REA's stdio MCP server, using the layout `build` records in `evo-rea.json`. The runner refuses `rea setup`, `rea update` and `rea uninstall`, because they write agent configuration or install.
-- **Adding people.** `vault add-recipient sshid USER` (or `github USER`) fetches that person's published public key, keeps only `ssh-ed25519` keys, and prints each fingerprint. Confirm the fingerprint with the person out of band before rerunning with `--yes`. The key is then appended with its source URL and date. A key from sshid.io can encrypt; decrypting needs the matching private key as a file, so a key held only on a phone also needs an `age1` key.
-- **Vault keys.** Each authorised person runs `age-keygen -o ~/.age/me.key` and adds only the public `age1…` line to the recipients file. Private keys never leave their owner. The vault index records file hashes and recipient fingerprints, never keys.
+- **Vaults, modelled on Termius.** `vaults.json` holds the named vaults: `personal-donovan`, `team` and the custom `evo-rea-sources`. Each member has a role: **view** means they can open the vault; **edit** means they may also change members and re-seal, enforced by PR review.
+- **Adding people.** `vault add-member VAULT sshid USER --label NAME --role view` fetches the person's published key and shows its fingerprint. Confirm the fingerprint with the person, then rerun with `--yes`.
+- **SSH ID keys are encrypt-only.** Termius SSH ID passkeys can't be exported, so age can't open files with them. They are stored with `can_decrypt: false`, and `vault seal` refuses any vault that no member can open. Each person who must open a vault adds an `age1` key with `age-keygen -o ~/.age/me.key`, followed by `vault add-member VAULT age age1... --label NAME`. The owner keeps an offline recovery key in every vault.
 
 
 `companion_manifest.py` checks a **companion manifest v0.1** (EVO-004 §3) against the retained artifacts it references. This is the first implementation slice of [#132](https://github.com/dlworrell/evo/issues/132), stage E1. Its tests use synthetic fixtures only.
