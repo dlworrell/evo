@@ -26,6 +26,8 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import urllib.request
+from datetime import date
 
 CONTRACT_PIN = "9e22da845bf8b447f81539e0ba57d5deb59e9103"
 FORBIDDEN_REA_COMMANDS = ("setup", "update", "uninstall")
@@ -244,6 +246,40 @@ def _fingerprint(key: str) -> str:
     return hashlib.sha256(key.encode()).hexdigest()[:16]
 
 
+KEY_SOURCES = {"sshid": "https://sshid.io/{user}", "github": "https://github.com/{user}.keys"}
+USERNAME = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})")
+
+
+def fetch_public_keys(source: str, user: str, opener=urllib.request.urlopen) -> tuple[str, list[str]]:
+    """Public keys published for ``user`` at sshid.io or GitHub; only ssh-ed25519 keys are kept."""
+    if source not in KEY_SOURCES or not USERNAME.fullmatch(user):
+        raise ValueError("source must be sshid or github, with a plain username")
+    url = KEY_SOURCES[source].format(user=user)
+    request = urllib.request.Request(url, headers={"Accept": "text/plain", "User-Agent": "evo-rea-build"})
+    with opener(request, timeout=20) as response:
+        text = response.read(65536).decode("utf-8", "replace")
+    keys = []
+    for line in text.splitlines():
+        found = SSH_KEY.match(line.strip())
+        if found and found.group(0) not in keys:
+            keys.append(found.group(0))
+    if not keys:
+        raise ValueError(f"no ssh-ed25519 public key published at {url}")
+    return url, keys
+
+
+def add_recipients(recipients: Path, label: str, url: str, keys: list[str]) -> list[str]:
+    """Append keys not already present, with a provenance comment. Returns the keys added."""
+    existing = _recipients(recipients) if recipients.is_file() else []
+    new = [k for k in keys if k not in existing]
+    if new:
+        lines = [f"# {label}, from {url}, added {date.today().isoformat()} (fingerprints "
+                 + ", ".join(_fingerprint(k) for k in new) + ")"] + new
+        with recipients.open("a", encoding="utf-8") as handle:
+            handle.write("\n".join(lines) + "\n")
+    return new
+
+
 def vault_seal(source: Path, vault: Path, recipients: Path) -> dict:
     keys = _recipients(recipients)
     if not keys:
@@ -338,6 +374,12 @@ def main(argv=None) -> int:
     s.add_argument("source", type=Path)
     s.add_argument("--vault", required=True, type=Path)
     s.add_argument("--recipients", required=True, type=Path)
+    s = v.add_parser("add-recipient", help="fetch a published public key (sshid.io or GitHub) into the recipients file")
+    s.add_argument("source", choices=sorted(KEY_SOURCES))
+    s.add_argument("user")
+    s.add_argument("--recipients", required=True, type=Path)
+    s.add_argument("--label", help="who the key belongs to (default: the username)")
+    s.add_argument("--yes", action="store_true", help="write after showing the fingerprints")
     s = v.add_parser("verify")
     s.add_argument("vault", type=Path)
     s = v.add_parser("open")
@@ -380,6 +422,16 @@ def main(argv=None) -> int:
         if args.action == "seal":
             index = vault_seal(args.source, args.vault, args.recipients)
             print(f"sealed {len(index['files'])} file(s) to {len(index['recipients'])} recipient(s)")
+            return 0
+        if args.action == "add-recipient":
+            url, keys = fetch_public_keys(args.source, args.user)
+            for key in keys:
+                print(f"{url}: {key.split()[0]} fingerprint {_fingerprint(key)}")
+            if not args.yes:
+                print("compare the fingerprints with the key owner, then rerun with --yes to add")
+                return 0
+            added = add_recipients(args.recipients, args.label or args.user, url, keys)
+            print(f"added {len(added)} key(s) to {args.recipients}" if added else "already present")
             return 0
         if args.action == "verify":
             problems = vault_verify(args.vault)

@@ -11,6 +11,7 @@ python3 tools/rea_recovery/evo_rea_build.py build    --rea ../rea --dest /opt/ev
 python3 tools/rea_recovery/evo_rea_build.py ui evo   --dest /opt/evo-rea [--execute] [evo args]
 python3 tools/rea_recovery/evo_rea_build.py ui rea   --dest /opt/evo-rea [--execute] [mcp | <rea CLI args>]
 python3 tools/rea_recovery/evo_rea_build.py pdf      report.md --out report.pdf [--print]
+python3 tools/rea_recovery/evo_rea_build.py vault add-recipient sshid USER --recipients tools/rea_recovery/vault-recipients.txt [--label NAME] [--yes]
 python3 tools/rea_recovery/evo_rea_build.py vault seal   SOURCE_DIR --vault VAULT_DIR --recipients vault-recipients.txt
 python3 tools/rea_recovery/evo_rea_build.py vault verify VAULT_DIR
 python3 tools/rea_recovery/evo_rea_build.py vault open   VAULT_DIR --identity ~/.age/me.key --dest OPENED_DIR
@@ -28,6 +29,7 @@ python3 tools/rea_recovery/evo_rea_build.py vault open   VAULT_DIR --identity ~/
 
   Missing EVO source, C compiler, CMake, Node.js, npm, REA source or destination blocks `build`.
 - **`ui`** runs the installed `evo` CLI, REA's CLI, or REA's stdio MCP server, using the layout `build` records in `evo-rea.json`. The runner refuses `rea setup`, `rea update` and `rea uninstall`, because they write agent configuration or install.
+- **Adding people.** `vault add-recipient sshid USER` (or `github USER`) fetches that person's published public key, keeps only `ssh-ed25519` keys, and prints each fingerprint. Confirm the fingerprint with the person out of band before rerunning with `--yes`. The key is then appended with its source URL and date. A key from sshid.io can encrypt; decrypting needs the matching private key as a file, so a key held only on a phone also needs an `age1` key.
 - **Vault keys.** Each authorised person runs `age-keygen -o ~/.age/me.key` and adds only the public `age1…` line to the recipients file. Private keys never leave their owner. The vault index records file hashes and recipient fingerprints, never keys.
 
 
