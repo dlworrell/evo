@@ -183,6 +183,28 @@ class PublishedKeys(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "not a member"):
                 rb.revoke(path, "staging", "qa")
 
+    def test_one_key_per_device_and_remove_a_lost_one(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "vaults.json"
+            rb.add_person_keys(path, "ops", "Ops", "age-keygen", [self.KEY], True, device="iphone")
+            rb.add_person_keys(path, "ops", "", "age-keygen", [self.OTHER], True, device="mac")
+            rb.grant(path, "staging", "ops", "edit")
+            members = rb.vault_members(rb.load_vaults(path), "staging")
+            self.assertEqual(sorted(m["device"] for m in members), ["iphone", "mac"])
+            lost = rb._fingerprint(self.KEY)
+            with self.assertRaisesRegex(ValueError, "no key with fingerprint"):
+                rb.remove_person_key(path, "ops", "0" * 16)
+            self.assertEqual(rb.remove_person_key(path, "ops", lost), ["staging"])
+            self.assertEqual([m["device"] for m in rb.vault_members(rb.load_vaults(path), "staging")], ["mac"])
+            with self.assertRaisesRegex(ValueError, "last key"):
+                rb.remove_person_key(path, "ops", rb._fingerprint(self.OTHER))
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                self.assertEqual(rb.main(["vault", "list", "--vaults", str(path)]), 0)
+            self.assertIn("on mac", out.getvalue())
+            with contextlib.redirect_stderr(io.StringIO()):
+                self.assertEqual(rb.main(["vault", "person", "remove-key", "ops", "--vaults", str(path)]), 2)
+
     def test_legacy_v1_file_is_upgraded(self):
         legacy = {"schema": "evo.rea-vaults.v1", "vaults": {
             "team": {"description": "t", "members": [

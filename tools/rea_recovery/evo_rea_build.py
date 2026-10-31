@@ -344,7 +344,8 @@ def vault_members(config: dict, name: str) -> list[dict]:
         person = config["people"][grant["person"]]
         for entry in person["keys"]:
             members.append({"person": grant["person"], "label": person["name"], "role": grant["role"],
-                            "key": entry["key"], "can_decrypt": entry["can_decrypt"]})
+                            "key": entry["key"], "can_decrypt": entry["can_decrypt"],
+                            "device": entry.get("device", "")})
     return members
 
 
@@ -375,7 +376,7 @@ def _load_or_new(path: Path) -> dict:
 
 
 def add_person_keys(path: Path, pid: str, name: str, source: str, keys: list[str],
-                    can_decrypt: bool) -> list[str]:
+                    can_decrypt: bool, device: str = "") -> list[str]:
     """Add keys to person ``pid`` (created if new). The id is the person's sshid username."""
     pid = pid.lower()
     if not PERSON_ID.fullmatch(pid):
@@ -388,11 +389,33 @@ def add_person_keys(path: Path, pid: str, name: str, source: str, keys: list[str
     added = []
     for key in (_public_key(k) for k in keys):
         if key not in existing:
-            person["keys"].append({"key": key, "source": source, "can_decrypt": can_decrypt,
-                                   "added": date.today().isoformat()})
+            entry = {"key": key, "source": source, "can_decrypt": can_decrypt, "added": date.today().isoformat()}
+            if device:
+                entry["device"] = device
+            person["keys"].append(entry)
             added.append(_fingerprint(key))
     save_vaults(path, config)
     return added
+
+
+def remove_person_key(path: Path, pid: str, fingerprint: str) -> list[str]:
+    """Remove one key (say, a lost phone's) from ``pid``. Returns the vaults that must be re-sealed.
+
+    The person keeps their other keys and grants. A person's last key cannot be removed:
+    revoke their vault grants instead.
+    """
+    config = load_vaults(path)
+    if pid not in config["people"]:
+        raise ValueError(f"unknown person {pid!r}")
+    keys = config["people"][pid]["keys"]
+    remaining = [k for k in keys if _fingerprint(_public_key(k["key"])) != fingerprint]
+    if len(remaining) == len(keys):
+        raise ValueError(f"{pid} has no key with fingerprint {fingerprint}; see `vault list`")
+    if not remaining:
+        raise ValueError(f"that is {pid}'s last key; revoke their vault grants instead")
+    config["people"][pid]["keys"] = remaining
+    save_vaults(path, config)
+    return list(person_access(config, pid))
 
 
 def grant(path: Path, vault: str, pid: str, role: str, description: str = "") -> str:
@@ -584,10 +607,13 @@ def main(argv=None) -> int:
     s.add_argument("--out", required=True, type=Path, help="where the encrypted vault is written")
     s.add_argument("--vaults", type=Path, default=DEFAULT_VAULTS)
     s = v.add_parser("person", help="register a person by their sshid username and add their public keys")
-    s.add_argument("op", choices=("add",))
+    s.add_argument("op", choices=("add", "remove-key"))
     s.add_argument("person", help="the person's sshid username (their id in every vault)")
-    s.add_argument("source", choices=sorted(KEY_SOURCES) + ["age"])
-    s.add_argument("who", nargs="?", help="github username or age1 key (sshid uses the person id)")
+    s.add_argument("source", nargs="?", choices=sorted(KEY_SOURCES) + ["age"],
+                   help="add: where the key comes from")
+    s.add_argument("who", nargs="?", help="add: github username or age1 key (sshid uses the person id)")
+    s.add_argument("--device", default="", help="add: which device holds this key, e.g. iphone or mac")
+    s.add_argument("--fingerprint", default="", help="remove-key: the key's fingerprint from `vault list`")
     s.add_argument("--name", default="", help="the person's display name")
     s.add_argument("--can-decrypt", action="store_true",
                    help="github only: the key is a file-based ed25519 key age can decrypt with")
@@ -654,6 +680,7 @@ def main(argv=None) -> int:
                       f"({'can open: ' + ', '.join(can_open) if can_open else 'NOBODY CAN OPEN YET'})")
                 for m in members:
                     print(f"  {m['label']} ({m['person']}) [{m['role']}] {_fingerprint(_public_key(m['key']))}"
+                          f"{' on ' + m['device'] if m['device'] else ''}"
                           f"{'' if m['can_decrypt'] else ' (encrypt-only, device-bound)'}")
             return 0
         if args.action == "seal":
@@ -661,7 +688,16 @@ def main(argv=None) -> int:
             index = vault_seal(args.source, args.out, members, args.name)
             print(f"sealed {len(index['files'])} file(s) into vault {args.name} for {len(index['members'])} key(s)")
             return 0
+        if args.action == "person" and args.op == "remove-key":
+            if not args.fingerprint:
+                raise ValueError("remove-key needs --fingerprint (see `vault list`)")
+            vaults = remove_person_key(args.vaults, args.person, args.fingerprint)
+            print(f"removed key {args.fingerprint} from {args.person}. Re-seal now: {', '.join(vaults) or 'no vaults'}. "
+                  "Until then the old sealed copies still open with that key.")
+            return 0
         if args.action == "person":
+            if not args.source:
+                raise ValueError("add needs a source: sshid, github or age")
             if args.source == "age":
                 url, keys, can_decrypt = "age-keygen", [_public_key(args.who or "")], True
             else:
@@ -677,7 +713,7 @@ def main(argv=None) -> int:
             if not args.yes:
                 print("compare the fingerprints with the key owner, then rerun with --yes to add")
                 return 0
-            added = add_person_keys(args.vaults, args.person, args.name, url, keys, can_decrypt)
+            added = add_person_keys(args.vaults, args.person, args.name, url, keys, can_decrypt, args.device)
             print(f"added {len(added)} key(s) to {args.person.lower()}; grant vaults with `vault grant`"
                   if added else "already registered")
             return 0

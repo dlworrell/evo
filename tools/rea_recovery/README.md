@@ -13,7 +13,8 @@ python3 tools/rea_recovery/evo_rea_build.py ui rea   --dest /opt/evo-rea [--exec
 python3 tools/rea_recovery/evo_rea_build.py pdf      report.md --out report.pdf [--print]
 python3 tools/rea_recovery/evo_rea_build.py vault list
 python3 tools/rea_recovery/evo_rea_build.py vault person add SSHID_USER sshid [--name NAME] [--yes]
-python3 tools/rea_recovery/evo_rea_build.py vault person add SSHID_USER age age1...       [--yes]
+python3 tools/rea_recovery/evo_rea_build.py vault person add SSHID_USER age age1... [--device iphone] [--yes]
+python3 tools/rea_recovery/evo_rea_build.py vault person remove-key SSHID_USER --fingerprint FP
 python3 tools/rea_recovery/evo_rea_build.py vault grant  VAULT SSHID_USER [--role view|edit]
 python3 tools/rea_recovery/evo_rea_build.py vault revoke VAULT SSHID_USER
 python3 tools/rea_recovery/evo_rea_build.py vault access SSHID_USER
@@ -41,6 +42,7 @@ python3 tools/rea_recovery/evo_rea_build.py vault open   VAULT_DIR --identity ~/
 - **Revoking.** `vault revoke VAULT USER` removes the grant (never the last editor). Re-seal the vault afterwards. Copies the person already had stay readable to them, so rotate anything secret in them.
 - **SSH ID keys are encrypt-only.** Termius SSH ID passkeys can't be exported, so age can't open files with them. They are stored with `can_decrypt: false`, and `vault seal` refuses any vault that no member can open. Each person who must open a vault adds an `age1` key with `age-keygen -o ~/.age/me.key`, followed by `vault person add USER age age1...`; it applies to every vault they are granted. The owner keeps an offline recovery key in every vault.
 - **Names are encrypted too.** `vault seal` stores files as numbered objects; the paths live only in the encrypted `manifest.age`. The public `vault-index.json` lists object hashes and member fingerprints, so `vault verify` needs no key. Seal into an empty directory.
+- **One key per device.** Add each device's key with `--device` (for example `iphone`, `mac`, `recovery`); any of a person's keys opens their vaults. If a device is lost, `vault person remove-key USER --fingerprint FP` removes just that key and lists the vaults to re-seal. A person's last key can't be removed; revoke their grants instead.
 - **Older files.** A v1 file (keys listed inside each vault) is upgraded to v2 when loaded and written back as v2 on the next change.
 
 
