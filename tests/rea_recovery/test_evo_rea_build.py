@@ -99,6 +99,50 @@ class Discovery(unittest.TestCase):
         self.assertEqual(rb.rea_command(["mcp"]), ["node", "scripts/rea.mjs", "mcp"])
 
 
+class PublishedKeys(unittest.TestCase):
+    KEY = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL5nlTi5t/zI6AWP54uSPH17XxUOJLiSoAtsn1dPtwvF"
+
+    def opener(self, body):
+        seen = []
+
+        class Response(io.BytesIO):
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *exc):
+                return False
+
+        def fake(request, timeout):
+            self.assertEqual(request.get_header("Accept"), "text/plain")
+            seen.append(request.full_url)
+            return Response(body.encode())
+        return fake, seen
+
+    def test_sshid_and_github_urls_and_ed25519_only(self):
+        fake, seen = self.opener(f"{self.KEY} #SSH ID - @someone\nssh-rsa AAAAB3Nza rsa-key\n{self.KEY}\n")
+        url, keys = rb.fetch_public_keys("sshid", "someone", opener=fake)
+        self.assertEqual((url, keys), ("https://sshid.io/someone", [self.KEY]))
+        rb.fetch_public_keys("github", "someone", opener=fake)
+        self.assertEqual(seen[-1], "https://github.com/someone.keys")
+
+    def test_bad_source_username_or_empty_page_is_refused(self):
+        fake, _ = self.opener("")
+        for source, user in (("gitlab", "a"), ("sshid", "../etc"), ("sshid", "a/b")):
+            with self.assertRaises(ValueError):
+                rb.fetch_public_keys(source, user, opener=fake)
+        with self.assertRaises(ValueError):
+            rb.fetch_public_keys("sshid", "someone", opener=fake)
+
+    def test_add_recipients_records_provenance_and_skips_duplicates(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "recipients.txt"
+            self.assertEqual(rb.add_recipients(path, "Someone", "https://sshid.io/someone", [self.KEY]), [self.KEY])
+            self.assertEqual(rb.add_recipients(path, "Someone", "https://sshid.io/someone", [self.KEY]), [])
+            text = path.read_text()
+            self.assertIn("from https://sshid.io/someone", text)
+            self.assertEqual(rb._recipients(path), [self.KEY])
+
+
 @unittest.skipUnless(HAVE_AGE, "age not installed")
 class Vault(unittest.TestCase):
     def setUp(self):
