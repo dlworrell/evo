@@ -1,0 +1,53 @@
+{
+  "access_scope": "public",
+  "artifacts": [
+    {
+      "access": "public",
+      "bytes": 403,
+      "evidence_ids": [
+        "synthetic:record-0001",
+        "synthetic:record-0002"
+      ],
+      "locator": "native-bundle.json",
+      "media_type": "application/json",
+      "role": "native-bundle",
+      "sha256": "2c4ee6c032c7b92ce1145fe267b83eef24553f0f9c4cc30fe181c10d591054ec"
+    }
+  ],
+  "calibration": {
+    "rationale": "Synthetic fixture; no measurement claim.",
+    "status": "not-applicable"
+  },
+  "claims": [
+    {
+      "actual": "see check report",
+      "disposition": "pass",
+      "evidence": [
+        "native-bundle.json"
+      ],
+      "expected": "manifest matches retained bytes and IDs",
+      "id": "E1-handoff-consistency",
+      "requirement": "EVO-004 E1"
+    }
+  ],
+  "contract": "evo.rea-companion-manifest",
+  "created_by": "Claude Code (synthetic test fixture)",
+  "interface": {
+    "specification": null
+  },
+  "manifest_id": "synthetic-fixture-0001",
+  "owner": "EVO",
+  "rea": {
+    "commit": "9e22da845bf8b447f81539e0ba57d5deb59e9103"
+  },
+  "revision": 1,
+  "stage": "E1",
+  "subject": {
+    "description": "synthetic placeholder; no device"
+  },
+  "synthetic": true,
+  "unknowns": [
+    "No real instrument or capture selected (EVO-004 C1)."
+  ],
+  "version": "0.1"
+}

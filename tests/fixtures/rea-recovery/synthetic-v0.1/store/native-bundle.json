@@ -1,0 +1,12 @@
+{
+  "artifacts": [],
+  "captures": [],
+  "environments": [],
+  "providers": [],
+  "records": [
+    {"evidence_id": "synthetic:record-0001", "operation": "synthetic-observation", "note": "SYNTHETIC placeholder, not REA output"},
+    {"evidence_id": "synthetic:record-0002", "operation": "synthetic-observation", "note": "SYNTHETIC placeholder, not REA output"}
+  ],
+  "scenarios": [],
+  "unknowns": []
+}
