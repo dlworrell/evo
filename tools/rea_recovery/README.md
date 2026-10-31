@@ -1,6 +1,6 @@
 # REA recovery companion (EVO-004)
 
-## EVO/REA fused build runner and encrypted source vault (ADR-0048, proposed)
+## EVO/REA fused build runner and encrypted source vault (ADR-0048, accepted)
 
 `evo_rea_build.py` builds the fused product into one destination. EVO is built from this checkout with its documented CMake build. REA is built in a separate checkout pinned to `9e22da8`, and its files are never changed.
 

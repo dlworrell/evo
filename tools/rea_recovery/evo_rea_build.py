@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""EVO/REA fused build runner and encrypted source vault (EVO ADR-0048, proposed).
+"""EVO/REA fused build runner and encrypted source vault (EVO ADR-0048, accepted).
 
 Builds the fused EVO + REA product into one destination: EVO from its own
 checkout with its documented CMake build, and REA from a separate checkout
