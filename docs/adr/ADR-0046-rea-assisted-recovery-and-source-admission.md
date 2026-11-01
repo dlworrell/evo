@@ -94,9 +94,11 @@ hardware, production or ecosystem-wide qualification.
 
 ## Security, migration and recovery
 
-EVO-004 specifies the trust boundary and refusal cases. This PR
-changes documentation only; it grants no execution authority and changes no
-workflow, runner, credential, public ABI or existing schema. Existing AES
+EVO-004 specifies the trust boundary and refusal cases. This ADR by itself
+grants no execution authority and changes no workflow, runner, credential,
+public ABI or existing schema. The build runner, the `rea-recovery` workflow
+and the encrypted source vault that implement it are decided separately in
+[ADR-0048](ADR-0048-evo-rea-build-runner-and-encrypted-source-vault.md). Existing AES
 obligations remain in force; new cross-ecosystem normative requirements belong
 in AES, not this ADR. Catylist ADR-0007 is Accepted while repository-specific
 implementation qualification remains open.
