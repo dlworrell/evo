@@ -15,7 +15,8 @@ python3 tools/rea_recovery/evo_rea_build.py vault list
 python3 tools/rea_recovery/evo_rea_build.py vault person add SSHID_USER sshid [--name NAME] [--yes]
 python3 tools/rea_recovery/evo_rea_build.py vault person add SSHID_USER age age1... [--device iphone] [--yes]
 python3 tools/rea_recovery/evo_rea_build.py vault person remove-key SSHID_USER --fingerprint FP
-python3 tools/rea_recovery/evo_rea_build.py vault grant  VAULT SSHID_USER [--role view|edit]
+python3 tools/rea_recovery/evo_rea_build.py vault agent add AGENT_ID age1... --sponsor SSHID_USER [--yes]
+python3 tools/rea_recovery/evo_rea_build.py vault grant  VAULT SSHID_USER [--role view|edit] [--expires YYYY-MM-DD]
 python3 tools/rea_recovery/evo_rea_build.py vault revoke VAULT SSHID_USER
 python3 tools/rea_recovery/evo_rea_build.py vault access SSHID_USER
 python3 tools/rea_recovery/evo_rea_build.py vault seal   VAULT SOURCE_DIR --out VAULT_DIR
@@ -43,6 +44,12 @@ python3 tools/rea_recovery/evo_rea_build.py vault open   VAULT_DIR --identity ~/
 - **SSH ID keys are encrypt-only.** Termius SSH ID passkeys can't be exported, so age can't open files with them. They are stored with `can_decrypt: false`, and `vault seal` refuses any vault that no member can open. Each person who must open a vault adds an `age1` key with `age-keygen -o ~/.age/me.key`, followed by `vault person add USER age age1...`; it applies to every vault they are granted. The owner keeps an offline recovery key in every vault.
 - **Names are encrypted too.** `vault seal` stores files as numbered objects; the paths live only in the encrypted `manifest.age`. The public `vault-index.json` lists object hashes and member fingerprints, so `vault verify` needs no key. Seal into an empty directory.
 - **One key per device.** Add each device's key with `--device` (for example `iphone`, `mac`, `recovery`); any of a person's keys opens their vaults. If a device is lost, `vault person remove-key USER --fingerprint FP` removes just that key and lists the vaults to re-seal. A person's last key can't be removed; revoke their grants instead.
+- **Agents (ADR-0048 §6).** Agents cannot use SSH ID passkeys, because those need a person present. Each agent instead gets its own entry, with an id starting `agent-` (for example `agent-claude`), `kind: agent`, and a human `sponsor`.
+  - **Adding an agent.** Run `vault agent add agent-claude age1... --sponsor dlworrell`. It shows the fingerprint and writes only with `--yes`. The key must be the agent's own `age1` key. Its private half lives only in that agent's secret store, never in a repository or Dropbox.
+  - **Grants.** Adding an agent grants nothing. An agent may hold only **view**, only with `--expires` (at most 90 days ahead, inclusive of that day), and only on vaults where its sponsor is an editor. Granting again with a later date renews the grant.
+  - **Expiry.** Once a grant expires, `vault list` and `vault access` show it as expired, and the next `vault seal` leaves the agent out. Seals made before the expiry still open with the agent's key, so re-seal after expiry or revocation, as with any revoke.
+  - **Hand-edited files.** `load_vaults` refuses agent edit grants, agent grants with no expiry, agent SSH keys, and agents with no sponsor or a sponsor who is not a human editor.
+  - **Dropbox access is separate.** It follows the Dropbox account the agent's connector signs in as. Without a vault grant, that account sees only ciphertext.
 - **Older files.** A v1 file (keys listed inside each vault) is upgraded to v2 when loaded and written back as v2 on the next change.
 
 
