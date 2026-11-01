@@ -15,6 +15,13 @@
           "device": "iphone",
           "key": "age170hg4t5h4fnvwtcrstk9pnzq9g6w8xvl60s65d5zaud2ldcx2vlqs3hpwr",
           "source": "age-keygen"
+        },
+        {
+          "added": "2026-11-01",
+          "can_decrypt": true,
+          "device": "recovery",
+          "key": "age1nszueh7ywj2ktysyv4gn6sm7x64lyvsdplw2n7hnnzzuyg27y5nspuk5x9",
+          "source": "age-keygen"
         }
       ],
       "name": "Donovan Worrell"
