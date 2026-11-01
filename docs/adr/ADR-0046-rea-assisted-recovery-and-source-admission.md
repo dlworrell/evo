@@ -1,10 +1,10 @@
 # ADR-0046: REA-Assisted Recovery and C Source Admission
 
-Status: Proposed
+Status: Accepted
 Date: 2026-10-26 (America/Los_Angeles)
 Owner: EVO
 Tracking: [EVO #132](https://github.com/dlworrell/evo/issues/132)
-Acceptance: pending an attributable owner decision through the signed PR process
+Acceptance: accepted by Donovan Worrell on 2026-10-31 (owner decision, with Catylist ADR-0015 and EVO-004); acceptance governs the design, not implementation evidence
 Upstream authority: Catylist's inventory/ADR-0004/ADR-0006/ADR-0007 and applicable adopted AES obligations
 
 ## Context
@@ -22,7 +22,7 @@ accepts buildable C projects under [EVO-002](../specs/EVO-002-source-optimizer-c
 and [ADR-0035](ADR-0035-immutable-project-ingestion-and-baselines.md). Analysis
 output alone cannot bridge that correctness and execution boundary.
 
-## Proposed decision
+## Decision
 
 Adopt [EVO-004](../specs/EVO-004-rea-recovery-integration-contract.md) as the
 companion integration contract, with this ordered handoff:
@@ -94,7 +94,7 @@ hardware, production or ecosystem-wide qualification.
 
 ## Security, migration and recovery
 
-EVO-004 specifies the proposed trust boundary and refusal cases. This PR
+EVO-004 specifies the trust boundary and refusal cases. This PR
 changes documentation only; it grants no execution authority and changes no
 workflow, runner, credential, public ABI or existing schema. Existing AES
 obligations remain in force; new cross-ecosystem normative requirements belong
