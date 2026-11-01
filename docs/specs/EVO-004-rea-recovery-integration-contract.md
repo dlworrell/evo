@@ -1,6 +1,6 @@
 # EVO-004: REA Recovery Integration Contract
 
-Status: Proposed; documentation contract, no implementation acceptance
+Status: Accepted 2026-10-31 (owner decision); documentation contract, no implementation acceptance
 Version: 0.1
 Owner: EVO
 Decision: [ADR-0046](../adr/ADR-0046-rea-assisted-recovery-and-source-admission.md)
@@ -10,7 +10,7 @@ Date: 2026-10-26 (America/Los_Angeles)
 ## 1. Purpose and authority
 
 Define the admission boundary between REA recovery evidence and EVO's existing
-source optimizer. Requirements below are proposed **EVO integration acceptance
+source optimizer. Requirements below are the accepted **EVO integration acceptance
 criteria**, subordinate to adopted AES obligations. They do not create a new
 AES standard, AEMS evaluator or authoritative observation database.
 
@@ -41,7 +41,7 @@ and issue checkboxes do not establish runtime acceptance.
 The companion belongs to EVO's repository-level governance remainder. Planned
 ordinary module locations are `tools/rea_recovery/`, `tests/rea_recovery/`,
 `tests/fixtures/rea-recovery/` and `docs/engineering/rea-recovery/`, as described
-in ADR-0046. This proposal creates none of those runtime/test modules and no
+in ADR-0046. This contract itself creates none of those runtime/test modules and no
 formal top-level governed scope. Keep provider-specific runtime behavior out
 of `catalyst_evo` and its public C17 ABI.
 
