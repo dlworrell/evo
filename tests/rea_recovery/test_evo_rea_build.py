@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import tempfile
 import unittest
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
 spec = importlib.util.spec_from_file_location("evo_rea_build", ROOT / "tools/rea_recovery/evo_rea_build.py")
@@ -159,6 +160,33 @@ class PublishedKeys(unittest.TestCase):
                 rb.vault_members(config, "nowhere")
             with self.assertRaises(ValueError):
                 rb.add_person_keys(path, "Bad Id!", "x", "u", [self.KEY], False)
+
+    def test_sole_editor_cannot_be_revoked(self):
+        # Fixes #156: removing the only member used to skip the last-editor check.
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "vaults.json"
+            rb.add_person_keys(path, "ops", "Ops", "u", [self.KEY], False)
+            rb.grant(path, "team", "ops", "edit")
+            with self.assertRaisesRegex(ValueError, "last editor of team"):
+                rb.revoke(path, "team", "ops")
+            self.assertEqual(rb.person_access(rb.load_vaults(path), "ops"), {"team": "edit"})
+
+    def test_mixed_case_ids_work_in_every_command(self):
+        # Fixes #160: ids are lower-cased on add, so grant, revoke, remove-key and access accept any case.
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "vaults.json"
+            rb.add_person_keys(path, "Ops", "Ops", "age-keygen", [self.KEY], True, device="iphone")
+            rb.add_person_keys(path, "QA", "QA", "age-keygen", [self.OTHER], True)
+            rb.grant(path, "team", "OPS", "edit")
+            rb.grant(path, "team", "Qa", "view")
+            rb.add_person_keys(path, "ops", "", "age-keygen", ["age1" + "q" * 58], True, device="mac")
+            self.assertEqual(rb.remove_person_key(path, "Ops", rb._fingerprint(self.KEY)), ["team"])
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                self.assertEqual(rb.main(["vault", "access", "QA", "--vaults", str(path)]), 0)
+            self.assertIn("team: view", out.getvalue())
+            rb.revoke(path, "team", "QA")
+            self.assertEqual(rb.person_access(rb.load_vaults(path), "qa"), {})
 
     def test_one_key_cannot_belong_to_two_people(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -324,6 +352,62 @@ class AgentAccess(unittest.TestCase):
             with self.subTest(label), self.assertRaises(ValueError):
                 rb.load_vaults(self.path)
 
+    def test_human_view_grants_can_expire_and_edit_grants_cannot(self):
+        # Fixes #168.
+        rb.add_person_keys(self.path, "qa", "QA", "age-keygen", ["age1" + "r" * 58], True)
+        self.assertIn("until 2027-06-01",  # no 90-day ceiling for people
+                      rb.grant(self.path, "team", "qa", "view", expires="2027-06-01", today=self.TODAY))
+        config = rb.load_vaults(self.path)
+        self.assertEqual(rb.person_access(config, "qa", self.TODAY), {"team": "view until 2027-06-01"})
+        lapsed = date(2027, 6, 2)
+        self.assertEqual(rb.person_access(config, "qa", lapsed), {"team": "expired 2027-06-01"})
+        self.assertNotIn("qa", [m["person"] for m in rb.vault_members(config, "team", lapsed)])
+        with self.assertRaisesRegex(ValueError, "only view grants expire"):
+            rb.grant(self.path, "team", "qa", "edit", expires="2026-12-01", today=self.TODAY)
+
+    def test_agent_ceiling_is_inclusive_of_day_90(self):
+        # Fixes #168: day 90 is accepted, day 91 refused.
+        rb.add_agent(self.path, "agent-claude", "Claude", "ops", self.AGENT)
+        day90 = (self.TODAY + timedelta(days=rb.AGENT_MAX_DAYS)).isoformat()
+        day91 = (self.TODAY + timedelta(days=rb.AGENT_MAX_DAYS + 1)).isoformat()
+        with self.assertRaisesRegex(ValueError, "at most 90 days"):
+            rb.grant(self.path, "team", "agent-claude", "view", expires=day91, today=self.TODAY)
+        self.assertIn(f"until {day90}",
+                      rb.grant(self.path, "team", "agent-claude", "view", expires=day90, today=self.TODAY))
+
+    def test_cli_shows_lapsed_grants_in_list_and_access(self):
+        # Fixes #169: a hand-built file with a past expiry.
+        config = json.loads(self.path.read_text())
+        config["people"]["agent-claude"] = {"name": "Claude", "kind": "agent", "sponsor": "ops",
+                                            "keys": [{"key": self.AGENT, "can_decrypt": True}]}
+        config["vaults"]["team"]["members"].append({"person": "agent-claude", "role": "view",
+                                                    "expires": "2020-01-31"})
+        self.path.write_text(json.dumps(config))
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            self.assertEqual(rb.main(["vault", "list", "--vaults", str(self.path)]), 0)
+            self.assertEqual(rb.main(["vault", "access", "agent-claude", "--vaults", str(self.path)]), 0)
+        text = out.getvalue()
+        self.assertIn("expired, excluded from the next seal: agent-claude", text)
+        self.assertIn("team: expired 2020-01-31", text)
+        self.assertNotIn("agent until", text)  # a lapsed agent is not listed as a member
+
+    def test_cli_preview_refuses_what_the_write_would_refuse(self):
+        # Fixes #170: no fingerprint prompt for a key, id or sponsor that --yes would reject.
+        rb.add_agent(self.path, "agent-claude", "Claude", "ops", self.AGENT)
+        for agent, key, sponsor, message in (
+                ("agent-x", self.PASSKEY, "ops", "own age1 key"),
+                ("claude", "age1" + "z" * 58, "ops", "must start with"),
+                ("agent-y", "age1" + "y" * 58, "nobody", "sponsor must be a listed human"),
+                ("agent-z", "age1" + "x" * 58, "agent-claude", "sponsor must be a listed human"),
+                ("agent-claude", "age1" + "w" * 58, "ops", "already exists")):
+            out, err = io.StringIO(), io.StringIO()
+            with self.subTest(agent=agent), contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+                self.assertEqual(rb.main(["vault", "agent", "add", agent, key, "--sponsor", sponsor,
+                                          "--vaults", str(self.path)]), 2)
+                self.assertNotIn("fingerprint", out.getvalue())
+                self.assertIn(message, err.getvalue())
+
     def test_cli_add_needs_yes_and_grant_needs_expires(self):
         args = ["vault", "agent", "add", "agent-claude", self.AGENT, "--sponsor", "ops", "--vaults", str(self.path)]
         out = io.StringIO()
@@ -343,6 +427,81 @@ class AgentAccess(unittest.TestCase):
                                       "--vaults", str(self.path)]), 0)
             self.assertEqual(rb.main(["vault", "list", "--vaults", str(self.path)]), 0)
         self.assertIn(f"agent until {until}", out.getvalue())
+
+
+class Pdf(unittest.TestCase):
+    """Fixes #157: render_pdf's backends and the pdf command, with tools faked."""
+
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.tmp = Path(tmp.name)
+        self.source = self.tmp / "notes.md"
+        self.source.write_text("# Synthetic\n")
+        self.out = self.tmp / "notes.pdf"
+        self.calls = []
+
+    def fake(self, *, pandoc, pandoc_pdf_ok=True, chromium=None, chromium_ok=True, printers=()):
+        tools = {"pandoc": "/usr/bin/pandoc" if pandoc else None, **{p: f"/usr/bin/{p}" for p in printers}}
+
+        def run(cmd, cwd=None):
+            self.calls.append(cmd)
+            if cmd[0] == "pandoc":
+                if "-s" in cmd:
+                    Path(cmd[-1]).write_text("<h1>Synthetic</h1>")
+                    return 0, ""
+                return (0, "") if pandoc_pdf_ok else (43, "no pdf engine")
+            if chromium_ok:
+                self.out.write_bytes(b"%PDF-1.7 synthetic")
+                return 0, ""
+            return 1, "crashed"
+        patches = [mock.patch.object(rb.shutil, "which", side_effect=lambda name: tools.get(name)),
+                   mock.patch.object(rb, "_run", side_effect=run),
+                   mock.patch.object(rb, "_chromium", return_value=chromium)]
+        for patch in patches:
+            patch.start()
+            self.addCleanup(patch.stop)
+
+    def test_pandoc_success(self):
+        self.fake(pandoc=True)
+        self.assertEqual(rb.render_pdf(self.source, self.out), "pandoc")
+        self.assertEqual(self.calls, [["pandoc", str(self.source), "-o", str(self.out)]])
+
+    def test_pandoc_failure_falls_back_to_chromium_via_html(self):
+        self.fake(pandoc=True, pandoc_pdf_ok=False, chromium="/usr/bin/chromium")
+        self.assertEqual(rb.render_pdf(self.source, self.out), "chromium")
+        html = self.out.with_suffix(".html")
+        self.assertEqual(self.calls[1], ["pandoc", "-s", str(self.source), "-o", str(html)])
+        self.assertEqual(self.calls[2][-1], html.resolve().as_uri())  # Markdown goes to HTML first
+
+    def test_chromium_alone_prints_the_source_directly(self):
+        self.fake(pandoc=False, chromium="/usr/bin/chromium")
+        self.assertEqual(rb.render_pdf(self.source, self.out), "chromium")
+        self.assertEqual(len(self.calls), 1)
+        self.assertEqual(self.calls[0][-1], self.source.resolve().as_uri())  # no pandoc, no HTML step
+
+    def test_no_backend_raises(self):
+        for kwargs in ({"pandoc": False},                                  # nothing installed
+                       {"pandoc": True, "pandoc_pdf_ok": False},            # pandoc has no PDF engine, no chromium
+                       {"pandoc": False, "chromium": "/usr/bin/chromium", "chromium_ok": False}):  # chromium fails
+            self.fake(**kwargs)  # a later patch replaces the earlier one
+            with self.subTest(**kwargs), self.assertRaisesRegex(RuntimeError, "no PDF backend succeeded"):
+                rb.render_pdf(self.source, self.out)
+
+    def test_pdf_command_with_print_and_no_printer_returns_3(self):
+        self.fake(pandoc=True)
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            self.assertEqual(rb.main(["pdf", str(self.source), "--out", str(self.out), "--print"]), 3)
+        self.assertIn("(pandoc)", out.getvalue())
+        self.assertIn("no lp/lpr found; PDF written but not printed", err.getvalue())
+
+    def test_pdf_command_prints_when_a_printer_exists(self):
+        self.fake(pandoc=True, printers=("lpr",))
+        with mock.patch.object(rb.subprocess, "run", return_value=mock.Mock(returncode=0)) as run, \
+                contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(rb.main(["pdf", str(self.source), "--out", str(self.out), "--print"]), 0)
+        run.assert_called_once_with(["lpr", str(self.out)])
 
 
 @unittest.skipUnless(HAVE_AGE, "age not installed")

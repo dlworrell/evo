@@ -463,11 +463,11 @@ def add_person_keys(path: Path, pid: str, name: str, source: str, keys: list[str
     return added
 
 
-def add_agent(path: Path, aid: str, name: str, sponsor: str, key: str) -> str:
-    """Register agent ``aid`` with its own age1 key, sponsored by human ``sponsor``.
+def check_new_agent(config: dict, aid: str, sponsor: str, key: str) -> tuple[str, str]:
+    """Everything ``add_agent`` would refuse, checked without writing: returns the normalised id and key.
 
-    The agent's private key stays in that agent's secret store; only the public key is recorded here.
-    Adding an agent grants nothing: use ``grant(..., expires=...)`` per vault.
+    The CLI runs this before showing a fingerprint, so an operator is never asked to confirm an agent
+    that the write would then reject.
     """
     aid = aid.lower()
     if not aid.startswith(AGENT_PREFIX) or not PERSON_ID.fullmatch(aid):
@@ -475,9 +475,22 @@ def add_agent(path: Path, aid: str, name: str, sponsor: str, key: str) -> str:
     key = _public_key(key)
     if not AGE_KEY.fullmatch(key):
         raise ValueError("an agent needs its own age1 key (age-keygen); SSH ID passkeys need a person present")
-    config = _load_or_new(path)
     if aid in config["people"]:
         raise ValueError(f"{aid} already exists; revoke and remove it before re-adding")
+    person = config["people"].get(sponsor)
+    if person is None or _is_agent(person):
+        raise ValueError(f"sponsor must be a listed human, not {sponsor!r}; add them with `vault person add` first")
+    return aid, key
+
+
+def add_agent(path: Path, aid: str, name: str, sponsor: str, key: str) -> str:
+    """Register agent ``aid`` with its own age1 key, sponsored by human ``sponsor``.
+
+    The agent's private key stays in that agent's secret store; only the public key is recorded here.
+    Adding an agent grants nothing: use ``grant(..., expires=...)`` per vault.
+    """
+    config = _load_or_new(path)
+    aid, key = check_new_agent(config, aid, sponsor, key)
     config["people"][aid] = {"name": name or aid, "kind": "agent", "sponsor": sponsor,
                              "keys": [{"key": key, "source": "age-keygen", "can_decrypt": True,
                                        "added": date.today().isoformat()}]}
@@ -491,6 +504,7 @@ def remove_person_key(path: Path, pid: str, fingerprint: str) -> list[str]:
     The person keeps their other keys and grants. A person's last key cannot be removed:
     revoke their vault grants instead.
     """
+    pid = pid.lower()
     config = load_vaults(path)
     if pid not in config["people"]:
         raise ValueError(f"unknown person {pid!r}")
@@ -514,6 +528,7 @@ def grant(path: Path, vault: str, pid: str, role: str, description: str = "", ex
     """
     if role not in ROLES or not VAULT_NAME.fullmatch(vault):
         raise ValueError("role must be view or edit, and the vault name lower-case letters, digits and dashes")
+    pid = pid.lower()
     today = today or date.today()
     config = _load_or_new(path)
     if pid not in config["people"]:
@@ -545,6 +560,7 @@ def grant(path: Path, vault: str, pid: str, role: str, description: str = "", ex
 
 def revoke(path: Path, vault: str, pid: str) -> None:
     """Remove ``pid`` from ``vault``. Only later seals exclude them; copies they already had stay readable."""
+    pid = pid.lower()
     config = load_vaults(path)
     if vault not in config["vaults"]:
         raise ValueError(f"no vault named {vault!r}")
@@ -552,7 +568,8 @@ def revoke(path: Path, vault: str, pid: str) -> None:
     remaining = [g for g in members if g["person"] != pid]
     if len(remaining) == len(members):
         raise ValueError(f"{pid} is not a member of {vault}")
-    if remaining and not any(g["role"] == "edit" for g in remaining):
+    # Also when nobody would remain: a vault with no editor cannot be re-sealed or managed.
+    if not any(g["role"] == "edit" for g in remaining):
         raise ValueError(f"{pid} is the last editor of {vault}; grant another editor first")
     config["vaults"][vault]["members"] = remaining
     save_vaults(path, config)
@@ -836,7 +853,7 @@ def main(argv=None) -> int:
                   if added else "already registered")
             return 0
         if args.action == "agent":
-            key = _public_key(args.key)
+            _, key = check_new_agent(_load_or_new(args.vaults), args.agent, args.sponsor, args.key)
             print(f"agent {args.agent}: age1 fingerprint {_fingerprint(key)}, sponsor {args.sponsor}")
             if not args.yes:
                 print("confirm the fingerprint with the agent's operator, then rerun with --yes to add")
@@ -855,6 +872,7 @@ def main(argv=None) -> int:
             return 0
         if args.action == "access":
             config = load_vaults(args.vaults)
+            args.person = args.person.lower()
             if args.person not in config["people"]:
                 raise ValueError(f"unknown person {args.person!r}")
             person = config["people"][args.person]
