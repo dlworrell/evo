@@ -8,6 +8,13 @@
           "can_decrypt": false,
           "key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL5nlTi5t/zI6AWP54uSPH17XxUOJLiSoAtsn1dPtwvF",
           "source": "https://sshid.io/dlworrell"
+        },
+        {
+          "added": "2026-11-01",
+          "can_decrypt": true,
+          "device": "iphone",
+          "key": "age170hg4t5h4fnvwtcrstk9pnzq9g6w8xvl60s65d5zaud2ldcx2vlqs3hpwr",
+          "source": "age-keygen"
         }
       ],
       "name": "Donovan Worrell"
