@@ -5,7 +5,7 @@ Date: 2026-10-31 (America/Los_Angeles)
 Owner: EVO
 Tracking: [EVO #132](https://github.com/dlworrell/evo/issues/132)
 Builds on: [ADR-0046](ADR-0046-rea-assisted-recovery-and-source-admission.md), [EVO-004](../specs/EVO-004-rea-recovery-integration-contract.md)
-Acceptance: accepted by Donovan Worrell on 2026-10-31 by merging EVO #153; section 6 (agent access) remains proposed and is not implemented
+Acceptance: accepted by Donovan Worrell on 2026-10-31 by merging EVO #153; section 6 (agent access) accepted on 2026-11-01 and implemented in `evo_rea_build.py` on 2026-11-01
 
 ## Context
 
@@ -67,10 +67,11 @@ ADR-0046 keeps REA an external-reference dependency at `9e22da8` and forbids ven
    - Removing a person (`vault revoke`) means re-sealing to the remaining members; the last editor cannot be removed. Copies they already decrypted cannot be recalled; the index records this limit.
 5. **Vault location.** The ciphertext and index go to an access-controlled location the owner chooses: a dedicated Dropbox folder that holds only sealed vaults and is not shared, or a private repository. Plaintext never goes there. Never the public EVO repository. CI uses only synthetic files sealed to throwaway test keys.
 
-6. **Agent access (proposed; not yet implemented).**
+6. **Agent access (accepted 2026-11-01; implemented).**
    - Agents cannot use SSH ID: its keys are passkeys bound to a person's device and need that person present. Each agent instead gets its own `people` entry (for example `agent-claude`), sponsored by a human editor, with its own `age1` key.
    - The agent's private key lives only in that agent's secret store, never in a repository or in Dropbox. Agents are granted **view** on named vaults only, never **edit**, and the grant carries an expiry date.
    - Dropbox access is separate. It follows the Dropbox account an agent's connector signs in as, not any key. An agent that can read the Dropbox folder sees only ciphertext unless it is also granted that vault.
+   - Implementation: `vault agent add` and `vault grant --expires`; `load_vaults` refuses any file that breaks these rules. The sponsor must be an editor of every vault the agent is granted. An expired grant is left out of the next seal. The 90-day ceiling on one grant is an implementation default rather than part of this decision; renewing means granting again.
 
 ## Alternatives considered
 

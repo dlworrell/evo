@@ -249,6 +249,26 @@ VAULT_NAME = re.compile(r"[a-z0-9][a-z0-9-]{0,62}")
 PERSON_ID = re.compile(r"[a-z0-9](?:[a-z0-9-]{0,38})")
 DEFAULT_VAULTS = Path(__file__).resolve().parent / "vaults.json"
 SCHEMA_V1, SCHEMA = "evo.rea-vaults.v1", "evo.rea-vaults.v2"
+# ADR-0048 section 6: an agent is its own entry, sponsored by a human editor, holding only age1 keys,
+# granted view (never edit) on named vaults, and every grant expires.
+AGENT_PREFIX = "agent-"
+AGENT_MAX_DAYS = 90  # longest agent grant; renew by granting again
+
+
+def _is_agent(person: dict) -> bool:
+    return person.get("kind") == "agent"
+
+
+def _expiry(value, where: str) -> date:
+    try:
+        return date.fromisoformat(value)
+    except (TypeError, ValueError):
+        raise ValueError(f"{where}: expires must be a date like 2026-12-31") from None
+
+
+def _active(grant: dict, today: date) -> bool:
+    """A grant is active until the end of its ``expires`` day; grants without one never lapse."""
+    return "expires" not in grant or date.fromisoformat(grant["expires"]) >= today
 
 
 def _upgrade_v1(config: dict) -> dict:
@@ -287,6 +307,16 @@ def load_vaults(path: Path) -> dict:
     for pid, person in config["people"].items():
         if not PERSON_ID.fullmatch(pid) or not person.get("name"):
             raise ValueError(f"bad person id or missing name: {pid!r}")
+        if person.get("kind", "person") not in ("person", "agent"):
+            raise ValueError(f"person {pid}: kind must be person or agent")
+        if _is_agent(person) != pid.startswith(AGENT_PREFIX):
+            raise ValueError(f"person {pid}: agent ids start with {AGENT_PREFIX!r}, and only agents' ids do")
+        if _is_agent(person):
+            sponsor = config["people"].get(person.get("sponsor"))
+            if sponsor is None or _is_agent(sponsor):
+                raise ValueError(f"agent {pid}: sponsor must be a listed human, not {person.get('sponsor')!r}")
+        elif "sponsor" in person:
+            raise ValueError(f"person {pid}: only agents have a sponsor")
         keys = person.get("keys")
         if not isinstance(keys, list) or not keys:
             raise ValueError(f"person {pid}: needs at least one key")
@@ -294,6 +324,8 @@ def load_vaults(path: Path) -> dict:
             if not isinstance(entry.get("can_decrypt"), bool):
                 raise ValueError(f"person {pid}: every key needs can_decrypt true/false")
             key = _public_key(entry.get("key", ""))
+            if _is_agent(person) and not (AGE_KEY.fullmatch(key) and entry["can_decrypt"]):
+                raise ValueError(f"agent {pid}: only its own age1 key, never an SSH ID passkey")
             if key in owners:
                 raise ValueError(f"key {_fingerprint(key)} belongs to both {owners[key]} and {pid}")
             owners[key] = pid
@@ -312,6 +344,17 @@ def load_vaults(path: Path) -> dict:
             if grant["person"] in seen:
                 raise ValueError(f"vault {name}: {grant['person']} is listed twice")
             seen.add(grant["person"])
+            if "expires" in grant:
+                _expiry(grant["expires"], f"vault {name}: {grant['person']}")
+                if grant["role"] != "view":
+                    raise ValueError(f"vault {name}: only view grants expire")
+            person = config["people"][grant["person"]]
+            if _is_agent(person):
+                if grant["role"] != "view" or "expires" not in grant:
+                    raise ValueError(f"vault {name}: agent {grant['person']} may only have view with an expiry")
+                if not any(g.get("person") == person["sponsor"] and g.get("role") == "edit" for g in members):
+                    raise ValueError(f"vault {name}: agent {grant['person']}'s sponsor {person['sponsor']} "
+                                     "must be an editor of this vault")
         if members and not any(g["role"] == "edit" for g in members):
             raise ValueError(f"vault {name}: needs at least one member who can edit")
     return config
@@ -329,23 +372,43 @@ def save_vaults(path: Path, config: dict) -> None:
         Path(tmp.name).unlink(missing_ok=True)
 
 
-def person_access(config: dict, pid: str) -> dict[str, str]:
-    """The vaults ``pid`` is granted, and the role in each: access is per vault, not per key."""
-    return {name: g["role"] for name, vault in sorted(config["vaults"].items())
-            for g in vault["members"] if g["person"] == pid}
+def person_access(config: dict, pid: str, today: date | None = None) -> dict[str, str]:
+    """The vaults ``pid`` is granted, and the role in each: access is per vault, not per key.
+
+    A grant with an expiry reads ``view until 2026-12-31``, or ``expired 2026-12-31`` once it lapsed.
+    """
+    today = today or date.today()
+    access = {}
+    for name, vault in sorted(config["vaults"].items()):
+        for g in vault["members"]:
+            if g["person"] == pid:
+                if "expires" not in g:
+                    access[name] = g["role"]
+                elif _active(g, today):
+                    access[name] = f"{g['role']} until {g['expires']}"
+                else:
+                    access[name] = f"expired {g['expires']}"
+    return access
 
 
-def vault_members(config: dict, name: str) -> list[dict]:
-    """Every key of every person granted vault ``name``, with that person's role in it."""
+def vault_members(config: dict, name: str, today: date | None = None) -> list[dict]:
+    """Every key of every person with an active grant on vault ``name``, with that person's role in it.
+
+    Expired grants are left out, so the next seal no longer encrypts to that agent.
+    """
     if name not in config["vaults"]:
         raise ValueError(f"no vault named {name!r}; known: {', '.join(sorted(config['vaults']))}")
+    today = today or date.today()
     members = []
     for grant in config["vaults"][name]["members"]:
+        if not _active(grant, today):
+            continue
         person = config["people"][grant["person"]]
         for entry in person["keys"]:
             members.append({"person": grant["person"], "label": person["name"], "role": grant["role"],
                             "key": entry["key"], "can_decrypt": entry["can_decrypt"],
-                            "device": entry.get("device", "")})
+                            "device": entry.get("device", ""), "kind": person.get("kind", "person"),
+                            "expires": grant.get("expires", "")})
     return members
 
 
@@ -381,6 +444,8 @@ def add_person_keys(path: Path, pid: str, name: str, source: str, keys: list[str
     pid = pid.lower()
     if not PERSON_ID.fullmatch(pid):
         raise ValueError("person id must be their sshid username: lower-case letters, digits and dashes")
+    if pid.startswith(AGENT_PREFIX):
+        raise ValueError(f"ids starting with {AGENT_PREFIX!r} are agents; use `vault agent add`")
     config = _load_or_new(path)
     person = config["people"].setdefault(pid, {"name": name or pid, "keys": []})
     if name:
@@ -396,6 +461,28 @@ def add_person_keys(path: Path, pid: str, name: str, source: str, keys: list[str
             added.append(_fingerprint(key))
     save_vaults(path, config)
     return added
+
+
+def add_agent(path: Path, aid: str, name: str, sponsor: str, key: str) -> str:
+    """Register agent ``aid`` with its own age1 key, sponsored by human ``sponsor``.
+
+    The agent's private key stays in that agent's secret store; only the public key is recorded here.
+    Adding an agent grants nothing: use ``grant(..., expires=...)`` per vault.
+    """
+    aid = aid.lower()
+    if not aid.startswith(AGENT_PREFIX) or not PERSON_ID.fullmatch(aid):
+        raise ValueError(f"agent id must start with {AGENT_PREFIX!r}, e.g. agent-claude")
+    key = _public_key(key)
+    if not AGE_KEY.fullmatch(key):
+        raise ValueError("an agent needs its own age1 key (age-keygen); SSH ID passkeys need a person present")
+    config = _load_or_new(path)
+    if aid in config["people"]:
+        raise ValueError(f"{aid} already exists; revoke and remove it before re-adding")
+    config["people"][aid] = {"name": name or aid, "kind": "agent", "sponsor": sponsor,
+                             "keys": [{"key": key, "source": "age-keygen", "can_decrypt": True,
+                                       "added": date.today().isoformat()}]}
+    save_vaults(path, config)
+    return _fingerprint(key)
 
 
 def remove_person_key(path: Path, pid: str, fingerprint: str) -> list[str]:
@@ -418,25 +505,42 @@ def remove_person_key(path: Path, pid: str, fingerprint: str) -> list[str]:
     return list(person_access(config, pid))
 
 
-def grant(path: Path, vault: str, pid: str, role: str, description: str = "") -> str:
-    """Grant person ``pid`` view or edit on ``vault`` (created if new). Returns what changed."""
+def grant(path: Path, vault: str, pid: str, role: str, description: str = "", expires: str = "",
+          today: date | None = None) -> str:
+    """Grant person ``pid`` view or edit on ``vault`` (created if new). Returns what changed.
+
+    Agents get view only, and only with ``expires`` (at most AGENT_MAX_DAYS ahead); granting
+    again with a later date renews.
+    """
     if role not in ROLES or not VAULT_NAME.fullmatch(vault):
         raise ValueError("role must be view or edit, and the vault name lower-case letters, digits and dashes")
+    today = today or date.today()
     config = _load_or_new(path)
     if pid not in config["people"]:
         raise ValueError(f"unknown person {pid!r}; add their key first with `vault person add`")
+    if expires:
+        until = _expiry(expires, pid)
+        if until < today:
+            raise ValueError(f"{expires} is already past")
+        if _is_agent(config["people"][pid]) and (until - today).days > AGENT_MAX_DAYS:
+            raise ValueError(f"agent grants last at most {AGENT_MAX_DAYS} days; renew by granting again")
+        expires = until.isoformat()
+    elif _is_agent(config["people"][pid]):
+        raise ValueError(f"{pid} is an agent: its grant needs --expires (at most {AGENT_MAX_DAYS} days)")
     entry = config["vaults"].setdefault(vault, {"description": description, "members": []})
     current = next((g for g in entry["members"] if g["person"] == pid), None)
-    if current and current["role"] == role:
+    wanted = {"person": pid, "role": role, **({"expires": expires} if expires else {})}
+    if current == wanted:
         return "unchanged"
     if current:
-        current["role"] = role
+        current.clear()
+        current.update(wanted)
     else:
-        entry["members"].append({"person": pid, "role": role})
+        entry["members"].append(wanted)
     if not any(g["role"] == "edit" for g in entry["members"]):
         raise ValueError(f"vault {vault} needs at least one member who can edit; grant an editor first")
     save_vaults(path, config)
-    return f"{pid} is now {role} on {vault}"
+    return f"{pid} is now {role} on {vault}{' until ' + expires if expires else ''}"
 
 
 def revoke(path: Path, vault: str, pid: str) -> None:
@@ -619,10 +723,19 @@ def main(argv=None) -> int:
                    help="github only: the key is a file-based ed25519 key age can decrypt with")
     s.add_argument("--vaults", type=Path, default=DEFAULT_VAULTS)
     s.add_argument("--yes", action="store_true", help="write after showing the fingerprints")
+    s = v.add_parser("agent", help="register an agent with its own age1 key, sponsored by a human editor")
+    s.add_argument("op", choices=("add",))
+    s.add_argument("agent", help="agent id, starting with agent-, e.g. agent-claude")
+    s.add_argument("key", help="the agent's age1 public key (its private key stays in its secret store)")
+    s.add_argument("--sponsor", required=True, help="the human editor responsible for this agent")
+    s.add_argument("--name", default="")
+    s.add_argument("--vaults", type=Path, default=DEFAULT_VAULTS)
+    s.add_argument("--yes", action="store_true", help="write after showing the fingerprint")
     s = v.add_parser("grant", help="give a person view or edit on one vault")
     s.add_argument("name", help="vault name (created if new)")
     s.add_argument("person")
     s.add_argument("--role", choices=ROLES, default="view")
+    s.add_argument("--expires", default="", help="last day of a view grant, YYYY-MM-DD (required for agents)")
     s.add_argument("--description", default="")
     s.add_argument("--vaults", type=Path, default=DEFAULT_VAULTS)
     s = v.add_parser("revoke", help="remove a person from one vault (re-seal afterwards)")
@@ -681,7 +794,12 @@ def main(argv=None) -> int:
                 for m in members:
                     print(f"  {m['label']} ({m['person']}) [{m['role']}] {_fingerprint(_public_key(m['key']))}"
                           f"{' on ' + m['device'] if m['device'] else ''}"
+                          f"{' agent' if m['kind'] == 'agent' else ''}"
+                          f"{' until ' + m['expires'] if m['expires'] else ''}"
                           f"{'' if m['can_decrypt'] else ' (encrypt-only, device-bound)'}")
+                lapsed = sorted(g["person"] for g in vault["members"] if not _active(g, date.today()))
+                if lapsed:
+                    print(f"  expired, excluded from the next seal: {', '.join(lapsed)}")
             return 0
         if args.action == "seal":
             members = vault_members(load_vaults(args.vaults), args.name)
@@ -717,8 +835,18 @@ def main(argv=None) -> int:
             print(f"added {len(added)} key(s) to {args.person.lower()}; grant vaults with `vault grant`"
                   if added else "already registered")
             return 0
+        if args.action == "agent":
+            key = _public_key(args.key)
+            print(f"agent {args.agent}: age1 fingerprint {_fingerprint(key)}, sponsor {args.sponsor}")
+            if not args.yes:
+                print("confirm the fingerprint with the agent's operator, then rerun with --yes to add")
+                return 0
+            add_agent(args.vaults, args.agent, args.name, args.sponsor, key)
+            print(f"added {args.agent.lower()}; it can open nothing until granted: "
+                  f"`vault grant <vault> {args.agent.lower()} --expires YYYY-MM-DD`")
+            return 0
         if args.action == "grant":
-            print(grant(args.vaults, args.name, args.person, args.role, args.description))
+            print(grant(args.vaults, args.name, args.person, args.role, args.description, args.expires))
             return 0
         if args.action == "revoke":
             revoke(args.vaults, args.name, args.person)

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Tests for the EVO/REA fused build runner and vault (ADR-0048). Synthetic data and throwaway age keys only."""
 import contextlib
+from datetime import date, timedelta
 import importlib.util
 import io
 import json
@@ -231,6 +232,119 @@ class PublishedKeys(unittest.TestCase):
         self.assertNotIn("SECRET", rb.DEFAULT_VAULTS.read_text().upper())
 
 
+class AgentAccess(unittest.TestCase):
+    """ADR-0048 section 6: agents get their own age1 key, a human sponsor, view only, and an expiry."""
+    HUMAN = "age1" + "q" * 58
+    AGENT = "age1" + "p" * 58
+    PASSKEY = PublishedKeys.KEY
+    TODAY = date(2026, 11, 1)
+
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.path = Path(tmp.name) / "vaults.json"
+        rb.add_person_keys(self.path, "ops", "Ops", "age-keygen", [self.HUMAN], True)
+        rb.grant(self.path, "team", "ops", "edit")
+
+    def test_agent_is_registered_with_its_own_age_key_and_a_human_sponsor(self):
+        self.assertEqual(rb.add_agent(self.path, "agent-claude", "Claude", "ops", self.AGENT),
+                         rb._fingerprint(self.AGENT))
+        agent = rb.load_vaults(self.path)["people"]["agent-claude"]
+        self.assertEqual((agent["kind"], agent["sponsor"], agent["keys"][0]["can_decrypt"]), ("agent", "ops", True))
+        self.assertEqual(rb.person_access(rb.load_vaults(self.path), "agent-claude"), {})  # adding grants nothing
+        refusals = {
+            "SSH ID passkey": lambda: rb.add_agent(self.path, "agent-x", "", "ops", self.PASSKEY),
+            "id without the agent- prefix": lambda: rb.add_agent(self.path, "claude", "", "ops", self.AGENT),
+            "unknown sponsor": lambda: rb.add_agent(self.path, "agent-y", "", "nobody", "age1" + "z" * 58),
+            "agent sponsoring an agent": lambda: rb.add_agent(self.path, "agent-z", "", "agent-claude",
+                                                              "age1" + "y" * 58),
+            "re-adding": lambda: rb.add_agent(self.path, "agent-claude", "", "ops", "age1" + "x" * 58),
+            "person add with an agent id": lambda: rb.add_person_keys(self.path, "agent-w", "", "age-keygen",
+                                                                      ["age1" + "w" * 58], True),
+        }
+        for label, attempt in refusals.items():
+            with self.subTest(label), self.assertRaises(ValueError):
+                attempt()
+
+    def test_agent_grants_are_view_only_bounded_and_expire(self):
+        rb.add_agent(self.path, "agent-claude", "Claude", "ops", self.AGENT)
+        today = self.TODAY
+        for role, expires, message in (("view", "", "needs --expires"),
+                                       ("edit", "2026-11-30", "only view grants expire"),
+                                       ("view", "2026-10-31", "already past"),
+                                       ("view", "2027-03-01", "at most 90 days"),
+                                       ("view", "soon", "a date like")):
+            with self.subTest(role=role, expires=expires), self.assertRaisesRegex(ValueError, message):
+                rb.grant(self.path, "team", "agent-claude", role, expires=expires, today=today)
+        self.assertEqual(rb.grant(self.path, "team", "agent-claude", "view", expires="2026-11-30", today=today),
+                         "agent-claude is now view on team until 2026-11-30")
+        config = rb.load_vaults(self.path)
+        self.assertEqual(rb.person_access(config, "agent-claude", today), {"team": "view until 2026-11-30"})
+        self.assertIn("agent-claude", [m["person"] for m in rb.vault_members(config, "team", today)])
+        self.assertTrue(rb.vault_members(config, "team", date(2026, 11, 30)))  # last day still counts
+        lapsed = date(2026, 12, 1)
+        self.assertNotIn("agent-claude", [m["person"] for m in rb.vault_members(config, "team", lapsed)])
+        self.assertEqual(rb.person_access(config, "agent-claude", lapsed), {"team": "expired 2026-11-30"})
+        self.assertEqual(rb.grant(self.path, "team", "agent-claude", "view", expires="2026-11-30", today=today),
+                         "unchanged")
+        self.assertIn("until 2027-01-15",
+                      rb.grant(self.path, "team", "agent-claude", "view", expires="2027-01-15", today=today))
+
+    def test_sponsor_must_edit_every_vault_the_agent_sees(self):
+        rb.add_person_keys(self.path, "qa", "QA", "age-keygen", ["age1" + "r" * 58], True)
+        rb.grant(self.path, "staging", "qa", "edit")
+        rb.add_agent(self.path, "agent-claude", "Claude", "ops", self.AGENT)
+        with self.assertRaisesRegex(ValueError, "sponsor ops must be an editor"):
+            rb.grant(self.path, "staging", "agent-claude", "view", expires="2026-11-30", today=self.TODAY)
+        rb.grant(self.path, "team", "qa", "edit")
+        rb.grant(self.path, "team", "agent-claude", "view", expires="2026-11-30", today=self.TODAY)
+        with self.assertRaisesRegex(ValueError, "sponsor ops must be an editor"):
+            rb.revoke(self.path, "team", "ops")  # revoke the agent first
+        rb.revoke(self.path, "team", "agent-claude")
+        rb.revoke(self.path, "team", "ops")
+
+    def test_hand_edited_files_cannot_widen_agent_access(self):
+        rb.add_agent(self.path, "agent-claude", "Claude", "ops", self.AGENT)
+        rb.grant(self.path, "team", "agent-claude", "view", expires="2026-11-30", today=self.TODAY)
+        good = json.loads(self.path.read_text())
+        edits = {
+            "agent with edit": lambda c: c["vaults"]["team"]["members"][1].update(role="edit"),
+            "agent without expiry": lambda c: c["vaults"]["team"]["members"][1].pop("expires"),
+            "agent with an ssh key": lambda c: c["people"]["agent-claude"]["keys"].append(
+                {"key": self.PASSKEY, "can_decrypt": False}),
+            "agent without sponsor": lambda c: c["people"]["agent-claude"].pop("sponsor"),
+            "agent kind dropped": lambda c: c["people"]["agent-claude"].pop("kind"),
+            "sponsor on a human": lambda c: c["people"]["ops"].update(sponsor="ops"),
+            "unknown kind": lambda c: c["people"]["ops"].update(kind="robot"),
+        }
+        for label, edit in edits.items():
+            config = json.loads(json.dumps(good))
+            edit(config)
+            self.path.write_text(json.dumps(config))
+            with self.subTest(label), self.assertRaises(ValueError):
+                rb.load_vaults(self.path)
+
+    def test_cli_add_needs_yes_and_grant_needs_expires(self):
+        args = ["vault", "agent", "add", "agent-claude", self.AGENT, "--sponsor", "ops", "--vaults", str(self.path)]
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            self.assertEqual(rb.main(args), 0)
+        self.assertIn(rb._fingerprint(self.AGENT), out.getvalue())
+        self.assertNotIn("agent-claude", self.path.read_text())  # shown, not written
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(rb.main(args + ["--yes"]), 0)
+        with contextlib.redirect_stderr(io.StringIO()) as err:
+            self.assertEqual(rb.main(["vault", "grant", "team", "agent-claude", "--vaults", str(self.path)]), 2)
+        self.assertIn("needs --expires", err.getvalue())
+        until = (date.today() + timedelta(days=30)).isoformat()
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            self.assertEqual(rb.main(["vault", "grant", "team", "agent-claude", "--expires", until,
+                                      "--vaults", str(self.path)]), 0)
+            self.assertEqual(rb.main(["vault", "list", "--vaults", str(self.path)]), 0)
+        self.assertIn(f"agent until {until}", out.getvalue())
+
+
 @unittest.skipUnless(HAVE_AGE, "age not installed")
 class Vault(unittest.TestCase):
     def setUp(self):
@@ -321,6 +435,23 @@ class Vault(unittest.TestCase):
         index = rb.vault_seal(self.source, self.tmp / "team", rb.vault_members(config, "team"), "team")
         self.assertEqual(sorted(m["person"] for m in index["members"]), ["alice", "bob"])
         self.assertIn("notes.txt", rb.vault_open(self.tmp / "team", self.keys[1], self.tmp / "c"))
+
+    def test_expired_agent_grant_is_left_out_of_the_next_seal(self):
+        path = self.tmp / "vaults.json"
+        alice, agent = self.members[0]["key"], self.members[1]["key"]
+        rb.add_person_keys(path, "alice", "Alice", "age-keygen", [alice], True)
+        rb.add_agent(path, "agent-claude", "Claude", "alice", agent)
+        rb.grant(path, "team", "alice", "edit")
+        today = date.today()
+        rb.grant(path, "team", "agent-claude", "view", expires=(today + timedelta(days=1)).isoformat())
+        config = rb.load_vaults(path)
+        rb.vault_seal(self.source, self.tmp / "now", rb.vault_members(config, "team", today), "team")
+        self.assertIn("notes.txt", rb.vault_open(self.tmp / "now", self.keys[1], self.tmp / "a"))
+        later = today + timedelta(days=2)
+        index = rb.vault_seal(self.source, self.tmp / "later", rb.vault_members(config, "team", later), "team")
+        self.assertEqual([m["person"] for m in index["members"]], ["alice"])
+        with self.assertRaises(RuntimeError):
+            rb.vault_open(self.tmp / "later", self.keys[1], self.tmp / "b")
 
     def test_reseal_needs_an_empty_directory_and_manifest_must_match(self):
         rb.vault_seal(self.source, self.vault, self.members, "synthetic")
