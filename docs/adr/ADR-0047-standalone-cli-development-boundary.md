@@ -1,6 +1,7 @@
 # ADR-0047: Installed standalone CLI development boundary
 
-Status: Proposed; draft delivery for issue #93
+Status: Accepted (issue #93)
+Acceptance: accepted by Donovan Worrell on 2026-11-01, as owner decision, by merging this status change.
 
 Date: 2026-10-27
 
