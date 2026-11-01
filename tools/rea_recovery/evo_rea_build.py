@@ -504,6 +504,7 @@ def remove_person_key(path: Path, pid: str, fingerprint: str) -> list[str]:
     The person keeps their other keys and grants. A person's last key cannot be removed:
     revoke their vault grants instead.
     """
+    pid = pid.lower()
     config = load_vaults(path)
     if pid not in config["people"]:
         raise ValueError(f"unknown person {pid!r}")
@@ -527,6 +528,7 @@ def grant(path: Path, vault: str, pid: str, role: str, description: str = "", ex
     """
     if role not in ROLES or not VAULT_NAME.fullmatch(vault):
         raise ValueError("role must be view or edit, and the vault name lower-case letters, digits and dashes")
+    pid = pid.lower()
     today = today or date.today()
     config = _load_or_new(path)
     if pid not in config["people"]:
@@ -558,6 +560,7 @@ def grant(path: Path, vault: str, pid: str, role: str, description: str = "", ex
 
 def revoke(path: Path, vault: str, pid: str) -> None:
     """Remove ``pid`` from ``vault``. Only later seals exclude them; copies they already had stay readable."""
+    pid = pid.lower()
     config = load_vaults(path)
     if vault not in config["vaults"]:
         raise ValueError(f"no vault named {vault!r}")
@@ -565,7 +568,8 @@ def revoke(path: Path, vault: str, pid: str) -> None:
     remaining = [g for g in members if g["person"] != pid]
     if len(remaining) == len(members):
         raise ValueError(f"{pid} is not a member of {vault}")
-    if remaining and not any(g["role"] == "edit" for g in remaining):
+    # Also when nobody would remain: a vault with no editor cannot be re-sealed or managed.
+    if not any(g["role"] == "edit" for g in remaining):
         raise ValueError(f"{pid} is the last editor of {vault}; grant another editor first")
     config["vaults"][vault]["members"] = remaining
     save_vaults(path, config)
@@ -868,6 +872,7 @@ def main(argv=None) -> int:
             return 0
         if args.action == "access":
             config = load_vaults(args.vaults)
+            args.person = args.person.lower()
             if args.person not in config["people"]:
                 raise ValueError(f"unknown person {args.person!r}")
             person = config["people"][args.person]

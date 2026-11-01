@@ -27,7 +27,10 @@ one into `main` whose head is not `fitment`.
 3. **Fitment review.** AEMS reviews what reached `fitment` and files each
    finding as an issue labelled `fitment` and its severity. Fix it on
    `fix/<issue>-<slug>` into `dev-daily` with `Fixes #<issue>` in the commit
-   message; the issue closes when that commit reaches `fitment`. The
+   message. The AEMS fitment cycle closes the issue (with a comment naming the
+   commit) when that commit reaches `fitment`; GitHub's own closing keywords
+   would only act once it reached `main`. A minor finding about a fix is
+   posted as a comment on the issue it fixes rather than as a new issue. The
    `fitment` check fails while any test check fails or a `blocker` or `major`
    fitment issue is open.
 4. **Release candidate.** When the `fitment` check passes, AEMS opens the
