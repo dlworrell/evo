@@ -392,6 +392,20 @@ class AgentAccess(unittest.TestCase):
         self.assertIn("team: expired 2020-01-31", text)
         self.assertNotIn("agent until", text)  # a lapsed agent is not listed as a member
 
+    def test_mixed_case_agent_and_sponsor_are_normalised(self):
+        # Fixes #174: the sponsor is matched and stored lower-cased, like every other person id.
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            self.assertEqual(rb.main(["vault", "agent", "add", "Agent-Claude", self.AGENT, "--sponsor", "OPS",
+                                      "--vaults", str(self.path), "--yes"]), 0)
+        self.assertIn("agent agent-claude: age1 fingerprint", out.getvalue())
+        self.assertIn("sponsor ops", out.getvalue())
+        agent = rb.load_vaults(self.path)["people"]["agent-claude"]
+        self.assertEqual(agent["sponsor"], "ops")
+        rb.grant(self.path, "team", "AGENT-CLAUDE", "view", expires="2026-11-30", today=self.TODAY)
+        self.assertEqual(rb.person_access(rb.load_vaults(self.path), "agent-claude", self.TODAY),
+                         {"team": "view until 2026-11-30"})
+
     def test_cli_preview_refuses_what_the_write_would_refuse(self):
         # Fixes #170: no fingerprint prompt for a key, id or sponsor that --yes would reject.
         rb.add_agent(self.path, "agent-claude", "Claude", "ops", self.AGENT)
