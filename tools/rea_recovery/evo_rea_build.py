@@ -463,11 +463,11 @@ def add_person_keys(path: Path, pid: str, name: str, source: str, keys: list[str
     return added
 
 
-def add_agent(path: Path, aid: str, name: str, sponsor: str, key: str) -> str:
-    """Register agent ``aid`` with its own age1 key, sponsored by human ``sponsor``.
+def check_new_agent(config: dict, aid: str, sponsor: str, key: str) -> tuple[str, str]:
+    """Everything ``add_agent`` would refuse, checked without writing: returns the normalised id and key.
 
-    The agent's private key stays in that agent's secret store; only the public key is recorded here.
-    Adding an agent grants nothing: use ``grant(..., expires=...)`` per vault.
+    The CLI runs this before showing a fingerprint, so an operator is never asked to confirm an agent
+    that the write would then reject.
     """
     aid = aid.lower()
     if not aid.startswith(AGENT_PREFIX) or not PERSON_ID.fullmatch(aid):
@@ -475,9 +475,22 @@ def add_agent(path: Path, aid: str, name: str, sponsor: str, key: str) -> str:
     key = _public_key(key)
     if not AGE_KEY.fullmatch(key):
         raise ValueError("an agent needs its own age1 key (age-keygen); SSH ID passkeys need a person present")
-    config = _load_or_new(path)
     if aid in config["people"]:
         raise ValueError(f"{aid} already exists; revoke and remove it before re-adding")
+    person = config["people"].get(sponsor)
+    if person is None or _is_agent(person):
+        raise ValueError(f"sponsor must be a listed human, not {sponsor!r}; add them with `vault person add` first")
+    return aid, key
+
+
+def add_agent(path: Path, aid: str, name: str, sponsor: str, key: str) -> str:
+    """Register agent ``aid`` with its own age1 key, sponsored by human ``sponsor``.
+
+    The agent's private key stays in that agent's secret store; only the public key is recorded here.
+    Adding an agent grants nothing: use ``grant(..., expires=...)`` per vault.
+    """
+    config = _load_or_new(path)
+    aid, key = check_new_agent(config, aid, sponsor, key)
     config["people"][aid] = {"name": name or aid, "kind": "agent", "sponsor": sponsor,
                              "keys": [{"key": key, "source": "age-keygen", "can_decrypt": True,
                                        "added": date.today().isoformat()}]}
@@ -836,7 +849,7 @@ def main(argv=None) -> int:
                   if added else "already registered")
             return 0
         if args.action == "agent":
-            key = _public_key(args.key)
+            _, key = check_new_agent(_load_or_new(args.vaults), args.agent, args.sponsor, args.key)
             print(f"agent {args.agent}: age1 fingerprint {_fingerprint(key)}, sponsor {args.sponsor}")
             if not args.yes:
                 print("confirm the fingerprint with the agent's operator, then rerun with --yes to add")

@@ -324,6 +324,62 @@ class AgentAccess(unittest.TestCase):
             with self.subTest(label), self.assertRaises(ValueError):
                 rb.load_vaults(self.path)
 
+    def test_human_view_grants_can_expire_and_edit_grants_cannot(self):
+        # Fixes #168.
+        rb.add_person_keys(self.path, "qa", "QA", "age-keygen", ["age1" + "r" * 58], True)
+        self.assertIn("until 2027-06-01",  # no 90-day ceiling for people
+                      rb.grant(self.path, "team", "qa", "view", expires="2027-06-01", today=self.TODAY))
+        config = rb.load_vaults(self.path)
+        self.assertEqual(rb.person_access(config, "qa", self.TODAY), {"team": "view until 2027-06-01"})
+        lapsed = date(2027, 6, 2)
+        self.assertEqual(rb.person_access(config, "qa", lapsed), {"team": "expired 2027-06-01"})
+        self.assertNotIn("qa", [m["person"] for m in rb.vault_members(config, "team", lapsed)])
+        with self.assertRaisesRegex(ValueError, "only view grants expire"):
+            rb.grant(self.path, "team", "qa", "edit", expires="2026-12-01", today=self.TODAY)
+
+    def test_agent_ceiling_is_inclusive_of_day_90(self):
+        # Fixes #168: day 90 is accepted, day 91 refused.
+        rb.add_agent(self.path, "agent-claude", "Claude", "ops", self.AGENT)
+        day90 = (self.TODAY + timedelta(days=rb.AGENT_MAX_DAYS)).isoformat()
+        day91 = (self.TODAY + timedelta(days=rb.AGENT_MAX_DAYS + 1)).isoformat()
+        with self.assertRaisesRegex(ValueError, "at most 90 days"):
+            rb.grant(self.path, "team", "agent-claude", "view", expires=day91, today=self.TODAY)
+        self.assertIn(f"until {day90}",
+                      rb.grant(self.path, "team", "agent-claude", "view", expires=day90, today=self.TODAY))
+
+    def test_cli_shows_lapsed_grants_in_list_and_access(self):
+        # Fixes #169: a hand-built file with a past expiry.
+        config = json.loads(self.path.read_text())
+        config["people"]["agent-claude"] = {"name": "Claude", "kind": "agent", "sponsor": "ops",
+                                            "keys": [{"key": self.AGENT, "can_decrypt": True}]}
+        config["vaults"]["team"]["members"].append({"person": "agent-claude", "role": "view",
+                                                    "expires": "2020-01-31"})
+        self.path.write_text(json.dumps(config))
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            self.assertEqual(rb.main(["vault", "list", "--vaults", str(self.path)]), 0)
+            self.assertEqual(rb.main(["vault", "access", "agent-claude", "--vaults", str(self.path)]), 0)
+        text = out.getvalue()
+        self.assertIn("expired, excluded from the next seal: agent-claude", text)
+        self.assertIn("team: expired 2020-01-31", text)
+        self.assertNotIn("agent until", text)  # a lapsed agent is not listed as a member
+
+    def test_cli_preview_refuses_what_the_write_would_refuse(self):
+        # Fixes #170: no fingerprint prompt for a key, id or sponsor that --yes would reject.
+        rb.add_agent(self.path, "agent-claude", "Claude", "ops", self.AGENT)
+        for agent, key, sponsor, message in (
+                ("agent-x", self.PASSKEY, "ops", "own age1 key"),
+                ("claude", "age1" + "z" * 58, "ops", "must start with"),
+                ("agent-y", "age1" + "y" * 58, "nobody", "sponsor must be a listed human"),
+                ("agent-z", "age1" + "x" * 58, "agent-claude", "sponsor must be a listed human"),
+                ("agent-claude", "age1" + "w" * 58, "ops", "already exists")):
+            out, err = io.StringIO(), io.StringIO()
+            with self.subTest(agent=agent), contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+                self.assertEqual(rb.main(["vault", "agent", "add", agent, key, "--sponsor", sponsor,
+                                          "--vaults", str(self.path)]), 2)
+                self.assertNotIn("fingerprint", out.getvalue())
+                self.assertIn(message, err.getvalue())
+
     def test_cli_add_needs_yes_and_grant_needs_expires(self):
         args = ["vault", "agent", "add", "agent-claude", self.AGENT, "--sponsor", "ops", "--vaults", str(self.path)]
         out = io.StringIO()
