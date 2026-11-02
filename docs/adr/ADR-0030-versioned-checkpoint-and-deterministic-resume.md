@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:3974f3b5-0188-48ef-8d6c-db97ba21cbf3
+-->
+
 # ADR-0030: Versioned Checkpoint and Deterministic Resume
 
 Status: Accepted

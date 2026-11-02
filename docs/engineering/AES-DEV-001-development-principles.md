@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:24f5db14-e752-499b-ab76-a5d7fe5bb042
+-->
+
 # AES-DEV-001 Local Profile
 
 Status: Active

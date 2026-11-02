@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:a5d270f1-cfa6-492f-b47d-102b45fa4b6d
+-->
+
 # Repository Scoring Reference Adapter
 
 `repository_scoring.c` searches four one-byte weights over an immutable,

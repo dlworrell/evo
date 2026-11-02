@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:f7e9d762-d49d-4ed5-977c-95fc1996a182
+-->
+
 # EVO Reference Consumer Adapters
 
 These four bounded programs are external consumers of the installed

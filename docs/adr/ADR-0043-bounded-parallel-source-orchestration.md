@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:ceb27540-fa15-4d75-9ae8-c8605e7b584c
+-->
+
 # ADR-0043: Bounded Parallel Source Orchestration
 
 Status: Accepted

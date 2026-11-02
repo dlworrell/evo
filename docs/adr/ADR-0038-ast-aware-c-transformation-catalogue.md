@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:b12afef6-ddba-4201-b37e-496ffd180ddc
+-->
+
 # ADR-0038: AST-Aware C Transformation Catalogue
 
 Status: Accepted

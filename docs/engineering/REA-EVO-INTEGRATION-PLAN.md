@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:ae0cc1b9-400f-4066-8261-eb2ee228a61c
+-->
+
 # REA ingestion plan for EVO equipment-preservation capability
 
 - Date: 2026-10-23

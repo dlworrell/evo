@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:ce090274-faf3-43b3-adf6-5789014b5c06
+-->
+
 # ADR-0012: Deterministic Odd-Tail Elite Cloning
 
 Status: Accepted (0.24.0 compatibility subset; generalized by ADR-0024)

@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:e2912b75-833c-4410-a141-d758fd80b508
+-->
+
 # ADR-0010: Versioned Operator Substreams and Parent-Pair Planning
 
 Status: Accepted (operator dispatch extended by ADR-0025 and ADR-0027)

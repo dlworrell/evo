@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:b0cbd83c-cb58-442b-bc29-1c44cd54fb4f
+-->
+
 # Contributing
 
 Thank you for contributing to Catalyst EVO.

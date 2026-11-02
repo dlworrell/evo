@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:9bee1c93-3417-4d99-9ad9-8e13763b7734
+-->
+
 # ADR-0002: Deterministic RNG and Population Initialization
 
 Status: Accepted

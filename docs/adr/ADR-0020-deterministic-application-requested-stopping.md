@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:bd674475-895f-4c68-bd7f-dcbfb0d3f446
+-->
+
 # ADR-0020: Deterministic Application-Requested Stopping
 
 Status: Accepted

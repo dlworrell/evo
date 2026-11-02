@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:60ef94cc-edd0-4897-9db8-3bc2a4382a3b
+-->
+
 # ADR-0037: Versioned Source-Transformation Recipes
 
 Status: Accepted

@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:aebcba5a-1bef-436e-a79c-19b23128677c
+-->
+
 # Benchmark and Evidence Requirements
 
 EVO distinguishes benchmarks of the evolutionary core from measurements used

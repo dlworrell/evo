@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:9736fa0e-1613-4e1d-a17d-865ec56f5007
+-->
+
 # Security Policy
 
 ## Supported Versions

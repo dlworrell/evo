@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:6dcb2c9a-19ba-47d0-9e28-da967a22b6b5
+-->
+
 # Standalone CLI development guide
 
 Status: Draft implementation for [#93](https://github.com/dlworrell/evo/issues/93).

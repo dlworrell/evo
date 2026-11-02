@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:a9d9b82e-77c4-487d-b6fd-37801c0dcfd9
+-->
+
 # ADR-0016: Layered Source-to-Source C Optimizer
 
 Status: Accepted (human-readable acceleration clarified by ADR-0026)

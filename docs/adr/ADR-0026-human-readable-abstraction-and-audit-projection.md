@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:1204b099-6032-4f03-bda0-8c4d5b15e497
+-->
+
 # ADR-0026: Human-Readable Abstraction and Audit Projection
 
 Status: Accepted

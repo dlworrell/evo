@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:19adb4f5-8540-4223-8dd6-bd814358ba1f
+-->
+
 # ADR-0013: Deterministic Produced-Child Evaluation
 
 Status: Accepted (operator provenance extended by ADR-0025 and ADR-0027)

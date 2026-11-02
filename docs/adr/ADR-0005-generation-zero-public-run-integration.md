@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:0a0ebfa8-43f2-48d5-a29c-7ac210cee0cd
+-->
+
 # ADR-0005: Generation-Zero Public Run Integration
 
 Status: Accepted

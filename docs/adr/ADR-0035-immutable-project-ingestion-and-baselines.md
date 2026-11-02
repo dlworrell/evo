@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:1064016b-2ba3-4748-9fbe-894a2aa773f2
+-->
+
 # ADR-0035: Immutable Project Ingestion and Baselines
 
 Status: Accepted

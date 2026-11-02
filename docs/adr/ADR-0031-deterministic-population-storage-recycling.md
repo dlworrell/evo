@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:e2a173b6-2273-44b9-9f4d-8b207b838358
+-->
+
 # ADR-0031: Deterministic Population-Storage Recycling
 
 Status: Accepted

@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:ff98c92f-0154-4b0a-9320-bb237f30910a
+-->
+
 # ADR-0007: Deterministic Crossover Dispatch
 
 Status: Accepted (extended by ADR-0027)

@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:15844d46-285b-4e2c-bf30-e741a6f3b4eb
+-->
+
 # ADR-0011: Deterministic Complete-Pair Child Production
 
 Status: Accepted (operator provenance extended by ADR-0025 and ADR-0027)

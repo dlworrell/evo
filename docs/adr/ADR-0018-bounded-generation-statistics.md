@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:566aef23-f967-4abd-9b73-f6d639681bcb
+-->
+
 # ADR-0018: Bounded Deterministic Generation Statistics
 
 Status: Accepted

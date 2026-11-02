@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:f546fef5-59e2-4a04-9efe-b9acb7f4026d
+-->
+
 # EVO-003: Product Command Contract
 
 Status: Implemented for EVO 0.43.0; installed executable delivery remains #93

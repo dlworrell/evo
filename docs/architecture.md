@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:20db1349-5981-423d-bf75-a3c5b81ba019
+-->
+
 # EVO Architecture
 
 ## Design Goals

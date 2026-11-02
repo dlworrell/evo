@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:4c3bd223-d186-4edf-91ce-fc1fb3c2e617
+-->
+
 # ADR-0019: Synchronous Read-Only Generation Observer
 
 Status: Accepted
