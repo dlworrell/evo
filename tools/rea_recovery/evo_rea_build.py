@@ -438,15 +438,38 @@ def _load_or_new(path: Path) -> dict:
     return load_vaults(path) if path.is_file() else {"schema": SCHEMA, "people": {}, "vaults": {}}
 
 
-def add_person_keys(path: Path, pid: str, name: str, source: str, keys: list[str],
-                    can_decrypt: bool, device: str = "") -> list[str]:
-    """Add keys to person ``pid`` (created if new). The id is the person's sshid username."""
+def check_person_id(pid: str) -> str:
+    """The normalised person id, or ValueError. Checked before fetching or previewing anything."""
     pid = pid.lower()
     if not PERSON_ID.fullmatch(pid):
         raise ValueError("person id must be their sshid username: lower-case letters, digits and dashes")
     if pid.startswith(AGENT_PREFIX):
         raise ValueError(f"ids starting with {AGENT_PREFIX!r} are agents; use `vault agent add`")
+    return pid
+
+
+def _key_owner(config: dict, key: str) -> str | None:
+    return next((pid for pid, person in config["people"].items()
+                 if key in {_public_key(k["key"]) for k in person.get("keys", [])}), None)
+
+
+def check_new_person_keys(config: dict, pid: str, keys: list[str]) -> tuple[str, list[str]]:
+    """Everything ``add_person_keys`` would refuse, checked without writing: the id, and a key that
+    already belongs to someone else. Returns the normalised id and keys."""
+    pid = check_person_id(pid)
+    keys = [_public_key(k) for k in keys]
+    for key in keys:
+        owner = _key_owner(config, key)
+        if owner is not None and owner != pid:
+            raise ValueError(f"key {_fingerprint(key)} already belongs to {owner}")
+    return pid, keys
+
+
+def add_person_keys(path: Path, pid: str, name: str, source: str, keys: list[str],
+                    can_decrypt: bool, device: str = "") -> list[str]:
+    """Add keys to person ``pid`` (created if new). The id is the person's sshid username."""
     config = _load_or_new(path)
+    pid, keys = check_new_person_keys(config, pid, keys)
     person = config["people"].setdefault(pid, {"name": name or pid, "keys": []})
     if name:
         person["name"] = name
@@ -477,6 +500,9 @@ def check_new_agent(config: dict, aid: str, sponsor: str, key: str) -> tuple[str
         raise ValueError("an agent needs its own age1 key (age-keygen); SSH ID passkeys need a person present")
     if aid in config["people"]:
         raise ValueError(f"{aid} already exists; revoke and remove it before re-adding")
+    owner = _key_owner(config, key)
+    if owner is not None:
+        raise ValueError(f"key {_fingerprint(key)} already belongs to {owner}; an agent needs its own key")
     sponsor = sponsor.lower()  # person ids are stored lower-cased, as for every other command
     person = config["people"].get(sponsor)
     if person is None or _is_agent(person):
@@ -834,6 +860,7 @@ def main(argv=None) -> int:
         if args.action == "person":
             if not args.source:
                 raise ValueError("add needs a source: sshid, github or age")
+            args.person = check_person_id(args.person)  # before any fetch or preview
             if args.source == "age":
                 url, keys, can_decrypt = "age-keygen", [_public_key(args.who or "")], True
             else:
@@ -843,6 +870,7 @@ def main(argv=None) -> int:
                 url, keys = fetch_public_keys(args.source, user)
                 # Termius SSH ID passkeys are device-bound and cannot be exported, so age cannot decrypt with them.
                 can_decrypt = args.source == "github" and args.can_decrypt
+            _, keys = check_new_person_keys(_load_or_new(args.vaults), args.person, keys)
             for key in keys:
                 print(f"{url}: {key.split()[0]} fingerprint {_fingerprint(key)}"
                       f"{'' if can_decrypt else ' (encrypt-only)'}")

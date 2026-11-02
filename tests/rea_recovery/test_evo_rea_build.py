@@ -192,8 +192,13 @@ class PublishedKeys(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "vaults.json"
             rb.add_person_keys(path, "ops", "Ops", "u", [self.KEY], False)
-            with self.assertRaisesRegex(ValueError, "belongs to both"):
+            with self.assertRaisesRegex(ValueError, "already belongs to ops"):
                 rb.add_person_keys(path, "qa", "QA", "u", [self.KEY], False)
+            config = json.loads(path.read_text())  # a hand-edited file is still refused on load
+            config["people"]["qa"] = {"name": "QA", "keys": [{"key": self.KEY, "can_decrypt": False}]}
+            path.write_text(json.dumps(config))
+            with self.assertRaisesRegex(ValueError, "belongs to both"):
+                rb.load_vaults(path)
 
     def test_revoke_keeps_an_editor_and_names_the_limit(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -405,6 +410,46 @@ class AgentAccess(unittest.TestCase):
         rb.grant(self.path, "team", "AGENT-CLAUDE", "view", expires="2026-11-30", today=self.TODAY)
         self.assertEqual(rb.person_access(rb.load_vaults(self.path), "agent-claude", self.TODAY),
                          {"team": "view until 2026-11-30"})
+
+    def test_preview_and_write_refuse_the_same_inputs(self):
+        # Em's 2026-11-02 review: every refusal the write makes is made before the fingerprint preview,
+        # across the add commands, and nothing is written. Valid inputs pass both the same way.
+        rb.add_agent(self.path, "agent-claude", "Claude", "ops", self.AGENT)
+        before = self.path.read_text()
+        cases = [
+            (["vault", "agent", "add", "agent-new", self.HUMAN, "--sponsor", "ops"], "already belongs to ops"),
+            (["vault", "agent", "add", "agent-new", self.AGENT, "--sponsor", "ops"], "already belongs to agent-claude"),
+            (["vault", "person", "add", "qa", "age", self.HUMAN], "already belongs to ops"),
+            (["vault", "person", "add", "Bad Id!", "age", "age1" + "u" * 58], "person id must be"),
+            (["vault", "person", "add", "agent-sneaky", "age", "age1" + "u" * 58], "are agents"),
+        ]
+        for argv, message in cases:
+            for confirm in ([], ["--yes"]):
+                out, err = io.StringIO(), io.StringIO()
+                with self.subTest(argv=argv, confirm=confirm), contextlib.redirect_stdout(out), \
+                        contextlib.redirect_stderr(err):
+                    self.assertEqual(rb.main(argv + ["--vaults", str(self.path)] + confirm), 2)
+                    self.assertNotIn("fingerprint", out.getvalue())
+                    self.assertIn(message, err.getvalue())
+                    self.assertEqual(self.path.read_text(), before)  # nothing written
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):  # a valid person preview still shows and writes nothing
+            self.assertEqual(rb.main(["vault", "person", "add", "QA", "age", "age1" + "u" * 58,
+                                      "--vaults", str(self.path)]), 0)
+        self.assertIn("fingerprint", out.getvalue())
+        self.assertEqual(self.path.read_text(), before)
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(rb.main(["vault", "person", "add", "QA", "age", "age1" + "u" * 58,
+                                      "--vaults", str(self.path), "--yes"]), 0)
+        self.assertIn("qa", rb.load_vaults(self.path)["people"])
+        self.assertEqual(rb.load_vaults(self.path)["people"]["qa"]["keys"][0]["key"], "age1" + "u" * 58)
+
+    def test_sshid_add_checks_the_id_before_fetching(self):
+        fetched = []
+        with mock.patch.object(rb, "fetch_public_keys", side_effect=lambda *a, **k: fetched.append(a) or ("u", [])), \
+                contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(rb.main(["vault", "person", "add", "Bad Id!", "sshid", "--vaults", str(self.path)]), 2)
+        self.assertEqual(fetched, [])
 
     def test_cli_preview_refuses_what_the_write_would_refuse(self):
         # Fixes #170: no fingerprint prompt for a key, id or sponsor that --yes would reject.
