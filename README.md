@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:498a77a6-da71-418e-ba8e-425ca94c07fd
+-->
+
 # Catalyst EVO
 
 Catalyst EVO is a source-to-source evolutionary optimization system for C

@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:61e9078a-4896-44c9-b1e1-620ac662dbb1
+-->
+
 # Evolutionary Search Theory
 
 EVO treats optimization as a population-based search over encoded candidate solutions.

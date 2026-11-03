@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:d6bd0256-369d-46af-8f18-4429c67743fe
+-->
+
 # ADR-0039: Isolated Candidate Materialization
 
 Status: Accepted

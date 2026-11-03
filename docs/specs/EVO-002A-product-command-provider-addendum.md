@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:280f990f-9dfb-4d8d-8f11-1ff467eff57f
+-->
+
 # EVO-002A: Product Command and Provider Addendum
 
 Status: Normative for EVO 0.43.0

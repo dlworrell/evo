@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:e98e1fed-3226-49a4-96ed-b184d5f8d4ca
+-->
+
 # Scheduler Tuning Reference Adapter
 
 `scheduler_tuning.c` searches quantum, logical-lane, batch, and backoff values

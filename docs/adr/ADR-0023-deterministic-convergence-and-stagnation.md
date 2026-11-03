@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:3910f7ac-50d0-4d51-913c-b1a60e2ad46c
+-->
+
 # ADR-0023: Deterministic Convergence and Stagnation Stopping
 
 Status: Accepted

@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:4b3363f4-ec81-4c21-97b7-2f108959bff7
+-->
+
 # EVO Version Surfaces
 
 EVO deliberately carries two semantic version surfaces while the source optimizer remains private and the reusable `catalyst_evo` C17 core is the installed package.

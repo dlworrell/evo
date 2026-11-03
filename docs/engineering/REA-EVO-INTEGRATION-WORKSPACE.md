@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:b8681cd8-a7de-453e-a4ad-12abcb0872d8
+-->
+
 # REA and EVO integration workspace
 
 Status: integration investigation and review; implementation qualification open.

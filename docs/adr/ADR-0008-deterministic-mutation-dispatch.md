@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:02821404-67b8-493d-a479-b4db6ef63ce8
+-->
+
 # ADR-0008: Deterministic Mutation Dispatch
 
 Status: Accepted (extended by ADR-0027)

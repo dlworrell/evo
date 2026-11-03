@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:affee47d-0092-4a13-b29b-6dee7ba8f876
+-->
+
 # ADR-0001: Reusable C17 Library with CMake
 
 Status: Accepted for the `catalyst_evo` core; superseded as the repository-wide

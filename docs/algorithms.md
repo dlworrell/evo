@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:d3ab7755-cdaa-4a0f-b4da-96a3a13fb377
+-->
+
 # EVO Algorithms and Source-Evolution Roadmap
 
 This document distinguishes algorithms implemented by the reusable

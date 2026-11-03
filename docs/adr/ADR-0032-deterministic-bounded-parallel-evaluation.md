@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:53fe12f1-4d9f-487d-b72b-77be3a6abfd5
+-->
+
 # ADR-0032: Deterministic Bounded Parallel Evaluation
 
 Status: Accepted

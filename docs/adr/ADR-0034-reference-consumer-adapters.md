@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:8a631229-621e-42f2-8201-3d9c06a01e05
+-->
+
 # ADR-0034: Installed Reference Consumer Adapters
 
 Status: Accepted

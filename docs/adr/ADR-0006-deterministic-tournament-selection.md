@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:459e83c7-c5e3-4d15-9264-57a6b9d7745a
+-->
+
 # ADR-0006: Deterministic Tournament Selection
 
 Status: Accepted (0.25.0 tournament compatibility mode; extended by ADR-0025)

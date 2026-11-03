@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:7016fd25-abc5-4f0c-8caa-47a51feedb5f
+-->
+
 # ADR-0021: Versioned Hard-Constraint and Fitness-Comparison Policy
 
 Status: Accepted

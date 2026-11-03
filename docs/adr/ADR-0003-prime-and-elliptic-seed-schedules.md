@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:17cd9f46-dee8-456c-a7b6-04e81145be3e
+-->
+
 # ADR-0003: Prime and Elliptic Seed Schedules
 
 Status: Accepted  

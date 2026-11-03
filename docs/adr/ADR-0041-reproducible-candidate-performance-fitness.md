@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:52c4dad4-c601-4fc2-aef7-93e1c9db7666
+-->
+
 # ADR-0041: Reproducible Candidate Performance Measurement and Fitness
 
 Status: Accepted

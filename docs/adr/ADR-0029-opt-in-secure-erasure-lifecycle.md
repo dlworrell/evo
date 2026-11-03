@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:56f04020-edaf-45ca-94e2-69bf6d73ddc3
+-->
+
 # ADR-0029: Opt-In Secure-Erasure Lifecycle
 
 Status: Accepted

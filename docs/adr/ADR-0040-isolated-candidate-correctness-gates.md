@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:6baa4dd3-f0f7-460e-a9e8-443008b1c6f2
+-->
+
 # ADR-0040: Isolated Candidate Build and Correctness Gates
 
 Status: Accepted
