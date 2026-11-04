@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:ca3a9492-967d-4230-b5c7-326782e0dcb7
+-->
+
 # ADR-0025: Stable Rank-Based Parent Selection
 
 Status: Accepted

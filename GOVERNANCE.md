@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:2ed0150f-0de1-4643-a53c-25f94aff1044
+-->
+
 # Governance
 
 Catalyst EVO is the source-to-source C optimization product in the Catalyst

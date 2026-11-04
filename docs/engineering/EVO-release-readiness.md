@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:21cbc01e-c54b-42af-a4fd-496c4fb8e816
+-->
+
 # EVO Release Readiness Authority
 
 Status: Adopted for the current pre-1.0 release-readiness workflow  

@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:5148a526-31b3-431b-8870-486a5e4dfd03
+-->
+
 # Archive Integrity Cycle Counting (external research consumer)
 
 Status: experimental; no production recovery or source deletion authorized.

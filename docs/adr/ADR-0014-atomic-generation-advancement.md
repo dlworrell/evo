@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:2e381b32-ca5f-4d1c-8004-9cc0a499b7ff
+-->
+
 # ADR-0014: Atomic Generation Advancement
 
 Status: Accepted (operator provenance extended by ADR-0025 and ADR-0027)

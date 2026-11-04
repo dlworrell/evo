@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:98bfc443-1fdf-45d7-82a9-fcd04a0b49d3
+-->
+
 # ADR-0028: Evidence-Driven Adaptive Mutation
 
 Status: Accepted

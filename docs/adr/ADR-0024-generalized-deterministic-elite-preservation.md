@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:8c380ae7-bb46-4ea7-bc99-930f07fd33e2
+-->
+
 # ADR-0024: Generalized Deterministic Elite Preservation
 
 Status: Accepted (operator dispatch extended by ADR-0025 and ADR-0027)

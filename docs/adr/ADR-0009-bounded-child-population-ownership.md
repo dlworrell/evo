@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:ffffacbe-15c6-4898-b2e9-36ff324162af
+-->
+
 # ADR-0009: Bounded Child-Population Ownership
 
 Status: Accepted

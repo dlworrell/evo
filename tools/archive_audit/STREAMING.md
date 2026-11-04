@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:6d090a40-956f-43fb-acc9-2f1de6aa36e0
+-->
+
 # One-pass chunking, hashing and index acceleration
 
 Status: read-only research prototype; no archive data or secrets in this public repository.

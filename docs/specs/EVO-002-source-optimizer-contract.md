@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:5556f035-07e1-482a-8541-60e4e4567bc7
+-->
+
 # EVO-002: Source-to-Source C Optimizer Contract
 
 Status: Implemented through the 0.43.0 product command-contract boundary; draft 1.0 target

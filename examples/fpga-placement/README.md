@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:b959c5cd-fde6-4ef1-a130-92b455d37bc7
+-->
+
 # FPGA Placement Reference Adapter
 
 `fpga_placement.c` searches x/y position, pipeline depth, and memory bank over

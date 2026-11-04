@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:a52d40a0-123a-4e07-929f-4a072d3b1af8
+-->
+
 # EVO 1.0 Roadmap
 
 The operational roadmap is GitHub issue

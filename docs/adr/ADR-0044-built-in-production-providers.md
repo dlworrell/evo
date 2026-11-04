@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:ecf7fbeb-7d31-41cf-85de-f67a76ec825d
+-->
+
 # ADR-0044: Built-in Production Providers for Standalone EVO
 
 Status: Accepted

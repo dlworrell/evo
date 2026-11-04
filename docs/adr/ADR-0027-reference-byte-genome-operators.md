@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:070d5264-efbc-494c-9ca1-fdc068563794
+-->
+
 # ADR-0027: Reference Byte-Genome Crossover and Mutation Operators
 
 Status: Accepted

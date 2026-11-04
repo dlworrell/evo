@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:f43f2611-0180-4edb-beb8-1d66ca393d84
+-->
+
 # Repository Lifecycle Contract
 
 Status: Adopted implementation contract

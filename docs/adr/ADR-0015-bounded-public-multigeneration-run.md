@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:2eba76e2-895b-4f22-97f8-3a242c0b65ad
+-->
+
 # ADR-0015: Bounded Public Multi-Generation Run
 
 Status: Accepted (extended through checkpoint continuation by ADR-0030)

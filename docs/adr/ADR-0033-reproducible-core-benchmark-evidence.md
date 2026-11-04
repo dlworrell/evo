@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:180c35d3-b6ec-4b88-a115-52982696bbb9
+-->
+
 # ADR-0033: Reproducible Core Benchmark Evidence
 
 Status: Accepted

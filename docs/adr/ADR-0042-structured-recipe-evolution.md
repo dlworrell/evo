@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:c0c9ccd9-be2c-41cd-ad7b-b0ed38a38124
+-->
+
 # ADR-0042: Structured Recipe Evolution
 
 Status: Accepted

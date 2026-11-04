@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:73ea042b-c642-490e-aeaa-ee672084d273
+-->
+
 # EVO-001: Evolutionary Optimization Library Contract
 
 Status: Baseline

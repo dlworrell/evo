@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:0c6b8fcc-b5f1-47f0-8531-6658e91065e1
+-->
+
 # ADR-0022: Bounded Deterministic Population Diversity
 
 Status: Accepted

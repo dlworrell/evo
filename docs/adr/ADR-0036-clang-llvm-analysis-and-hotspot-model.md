@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:4c5eb222-938c-4601-837c-302cbe5353d1
+-->
+
 # ADR-0036: Clang/LLVM Analysis and Hotspot Model
 
 Status: Accepted

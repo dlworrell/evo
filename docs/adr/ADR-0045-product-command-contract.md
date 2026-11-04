@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:4bd2abe1-aaf4-4fb6-844c-6a9bb73f308f
+-->
+
 # ADR-0045: Declarative Product Command Contract
 
 Status: Accepted

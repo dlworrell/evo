@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:d68f03be-55ae-45d6-9d1a-b0c1284457dc
+-->
+
 # Compiler-Option Search Reference Adapter
 
 `compiler_options.c` searches a small deterministic model containing

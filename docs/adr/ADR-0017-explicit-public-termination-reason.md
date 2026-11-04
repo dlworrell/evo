@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:c0fdc137-dbe8-4319-a3e5-746019d121c3
+-->
+
 # ADR-0017: Explicit Public Termination Reason
 
 Status: Accepted

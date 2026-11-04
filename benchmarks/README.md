@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell and Just a Geek LLC
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:0f62924c-4d51-4141-ac47-259d39f3c8dc
+-->
+
 # EVO Benchmarks
 
 EVO 0.32.0 provides `EVO-CORE-001`, a reproducible byte-genome core benchmark
