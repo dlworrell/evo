@@ -18,7 +18,7 @@ ADR-0046 keeps REA an external-reference dependency at `9e22da8` and forbids ven
 
 ## Decision
 
-1. **The build runner lives in EVO, not in REA.** `tools/rea_recovery/evo_rea_build.py` builds the fused product into one destination. EVO is built from its own checkout; REA is driven from a separate checkout pinned by ADR-0046, and its files are never changed. It has four commands:
+1. **The build runner lives in EVO, not in REA.** `tools/rea_recovery/evo_rea_build.py` builds the fused product into one destination. EVO is built from its own checkout; REA is driven from a separate checkout pinned by ADR-0046, and its files are never changed. *(Amended 2026-11-06 by ADR-0046 Amendment 1: once REA is ingested, the runner builds REA from EVO's `rea/` scope instead of a separate checkout. All other rules here are unchanged.)* It has four commands:
    - **`discover`** writes a JSON report of:
      - the operating system and architecture;
      - the EVO checkout and version, a C compiler, CMake 3.20 or later, and Bubblewrap (the sandbox `evo analyze` uses);
