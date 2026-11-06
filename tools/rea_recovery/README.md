@@ -83,3 +83,35 @@ It never runs REA and never changes an artifact. An accepted manifest only match
 2. **Synthetic first record.** No instrument or capture has been chosen, and private captures may not enter public CI. Synthetic fixtures can prove the E1 refusal behaviour now. They are labelled synthetic and may pass only E1 and C2. C2 (negative and unknown cases) is exempt because EVO-004 expects labelled synthetic corruption, truncation and mismatch cases there. They are barred from C1, A1, O1, P1 and H1.
 3. **The evidence store is just a directory.** Locators are paths relative to a store root given at run time. That keeps the validator independent of where originals live (local disk, an access-controlled share), so choosing the real store stays a separate decision.
 4. **Strict, closed format.** Unknown top-level fields are refused so that equipment detail cannot leak into the native bundle or drift unreviewed. Groups whose fields EVO-004 leaves to later stages (`subject`, `interface`) are accepted as objects for now and tightened when C1 is implemented.
+
+## REA history in Dropbox (ADR-0046 Amendment 1)
+
+`rea_history.py` keeps REA's full upstream git history in `Dropbox:/repo/Rea/`
+as git bundles. The owner runs it on their own machine (decision of
+2026-11-06). It uses the Python standard library and `git`.
+
+```sh
+python3 tools/rea_recovery/rea_history.py            # add any new upstream history
+python3 tools/rea_recovery/rea_history.py --dry-run  # report only, write nothing
+python3 tools/rea_recovery/rea_history.py --verify   # re-hash every bundle
+```
+
+- **Where things go.** Bundles and `MANIFEST.json` go to
+  `~/Dropbox/repo/Rea` (`--dropbox` changes it). A bare mirror of upstream
+  branches and tags is kept in `~/.cache/evo/rea-history.git` (`--cache`). The
+  mirror stays outside Dropbox, because file sync corrupts a live `.git`.
+- **First run.** Writes one full bundle, `rea-full-<date>-<sha>.bundle`, with
+  every upstream branch and tag. The full history is several hundred MB, so the
+  first run takes a while and needs that much free space twice: once for the
+  mirror and once for the bundle.
+- **Later runs.** Write `rea-incr-<date>-<from>-<to>.bundle` with only the new
+  history. If upstream hasn't changed, nothing is written. If a branch only moved
+  to history that is already bundled, the move is recorded in the manifest
+  without a bundle.
+- **Safety.** Each bundle passes `git bundle verify` before it is published.
+  Files are written under a `.partial` name and renamed into place, so Dropbox
+  never syncs half a file. An existing bundle is never overwritten. The manifest
+  records each bundle's SHA-256, size, refs and prerequisites.
+- **Restoring.** `git clone rea-full-….bundle rea`, then for each incremental
+  bundle in manifest order:
+  `git -C rea fetch ../rea-incr-….bundle 'refs/heads/*:refs/remotes/bundle/*'`.
