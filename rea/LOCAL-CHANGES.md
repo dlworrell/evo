@@ -10,8 +10,13 @@ from `rea/UPSTREAM.json` and nothing is recorded here.
 Each fix is an EVO pull request that changes files under `rea/` and carries a
 `REA-Local: <reason>` commit trailer.
 
-| Commit | Paths | Reason | Upstream status |
-| ------ | ----- | ------ | --------------- |
+| Commit  | Paths                                               | Reason                                                                                 | Upstream status |
+| ------- | --------------------------------------------------- | -------------------------------------------------------------------------------------- | --------------- |
+| 27f6294 | src/application/desktop/DesktopBuildBundle.ts       | Apt key read through one bounded descriptor (CodeQL js/file-system-race)               | Not offered yet |
+| 27f6294 | src/application/decompileDirectory/exportTree.ts    | Resume journal opened non-blocking and checked on its descriptor (js/file-system-race) | Not offered yet |
+| 27f6294 | src/javascript/analysis/JavaScriptAnalysisWorker.ts | Static checkpoint size checks and read on one descriptor (js/file-system-race)         | Not offered yet |
+| 27f6294 | scripts/electron-active-hook-boundaries.cjs         | dlopen digest through one bounded descriptor (js/file-system-race)                     | Not offered yet |
+| 27f6294 | scripts/build-windows-native.mjs                    | Downloads verified before they are written (js/http-to-file-access)                    | Not offered yet |
 
 ## Divergences
 
