@@ -1,16 +1,20 @@
 #!/usr/bin/env python3
-"""Fail on high or critical security results in the files a change touches (EVO ADR-0049).
+"""Report, and optionally block on, high or critical security results in the files a change touches.
 
-Reads CodeQL SARIF files and the changed paths (one per line, from
-changed_languages.py --list). A result blocks when it is in a changed file and
-its rule's ``security-severity`` is at or above the threshold (7.0: high and
-critical). Results elsewhere, and lower severities, are reported but do not
-block: they stay visible in code scanning without making every change pay for
-existing code.
+EVO ADR-0049 under Catylist ADR-0009. Reads CodeQL SARIF files and the changed
+paths (one per line, from changed_languages.py --list). A result is *flagged*
+when it is in a changed file and its rule's ``security-severity`` is at or above
+the threshold (7.0: high and critical). Results elsewhere, and lower
+severities, are listed but never flagged.
 
-With no changed-path list (a manual or scheduled run) nothing blocks: the run
-is a report of the whole tree. A SARIF file that records a failed analysis
-always blocks, so a broken analysis never reads as clean.
+``--mode report`` (the default, and the only mode ADR-0009 allows before a
+profile is promoted) annotates flagged results as warnings and exits 0.
+``--mode block`` exits 1 when anything is flagged; it exists for a promoted
+profile and is not used until the owner records that promotion.
+
+With no changed-path list (a manual or scheduled run) nothing is flagged: the
+run is a report of the whole tree. A missing, malformed or failed analysis exits
+2 in either mode: ADR-0009 treats it as indeterminate, never as a clean pass.
 
 Writes a Markdown summary to --summary (e.g. $GITHUB_STEP_SUMMARY).
 """
@@ -77,14 +81,17 @@ def gate(found: list[dict], changed: set[str] | None, threshold: float = THRESHO
     return [r for r in found if r["path"] in changed and r["severity"] is not None and r["severity"] >= threshold]
 
 
-def summary(found: list[dict], blocking: list[dict], changed: set[str] | None, threshold: float) -> str:
+def summary(found: list[dict], blocking: list[dict], changed: set[str] | None, threshold: float,
+            mode: str = "report") -> str:
     lines = ["## Security analysis", ""]
     if changed is None:
         lines.append(f"Whole-tree report: {len(found)} result(s); nothing blocks on a run without a change list.")
     else:
         touched = [r for r in found if r["path"] in changed]
         lines.append(f"{len(found)} result(s) in total, {len(touched)} in the {len(changed)} changed file(s); "
-                     f"{len(blocking)} at security severity {threshold} or higher block this change.")
+                     f"{len(blocking)} at security severity {threshold} or higher "
+                     + ("block this change." if mode == "block"
+                        else "are flagged (report-only until promoted under Catylist ADR-0009)."))
     shown = blocking or [r for r in found if changed is not None and r["path"] in changed][:50]
     if shown:
         lines += ["", "| Severity | File | Line | Rule | Message |", "| --- | --- | --- | --- | --- |"]
@@ -100,6 +107,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("sarif", nargs="+", type=Path)
     parser.add_argument("--changed", type=Path, help="changed paths, one per line; omit for a whole-tree report")
     parser.add_argument("--threshold", type=float, default=THRESHOLD)
+    parser.add_argument("--mode", choices=("report", "block"), default="report",
+                        help="report: annotate and exit 0 (default); block: exit 1 on flagged results")
     parser.add_argument("--summary", type=Path)
     args = parser.parse_args(argv)
     try:
@@ -113,15 +122,16 @@ def main(argv: list[str] | None = None) -> int:
     if args.changed is not None:
         changed = {line.strip() for line in args.changed.read_text(encoding="utf-8").splitlines() if line.strip()}
     blocking = gate(found, changed, args.threshold)
-    text = summary(found, blocking, changed, args.threshold)
+    text = summary(found, blocking, changed, args.threshold, args.mode)
     if args.summary:
         with args.summary.open("a", encoding="utf-8") as stream:
             stream.write(text)
     print(text)
+    level = "error" if args.mode == "block" else "warning"
     for r in blocking:
-        print(f"::error file={r['path']},line={r['line'] or 1}::{r['rule']} (security severity "
+        print(f"::{level} file={r['path']},line={r['line'] or 1}::{r['rule']} (security severity "
               f"{r['severity']:.1f}): {r['message']}")
-    return 1 if blocking else 0
+    return 1 if blocking and args.mode == "block" else 0
 
 
 if __name__ == "__main__":

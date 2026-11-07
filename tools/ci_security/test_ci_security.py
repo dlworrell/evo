@@ -4,7 +4,8 @@ L1 each language's files select its CodeQL language; workflow files select actio
 L2 a rea/-only change leaves evo_native false; anything outside rea/ sets it;
 L3 a manual run, a new branch or a missing base runs every check;
 L4 the CLI diffs a real repository and writes the changed-path list;
-G1 a high result in a changed file blocks; the same result in an unchanged file, or a medium one, does not;
+G1 a high result in a changed file is flagged: it blocks in block mode and only warns in report mode (the
+   default); the same result in an unchanged file, or a medium one, is not flagged;
 G2 a whole-tree run (no change list) never blocks;
 G3 suppressed results are ignored; a failed analysis or a non-SARIF file is an error (exit 2);
 G4 rules are found by index when ruleId is absent, and ./ prefixes are normalised.
@@ -90,11 +91,11 @@ class ChangedLanguagesTests(unittest.TestCase):
 
 
 class SarifGateTests(unittest.TestCase):
-    def run_gate(self, document, changed):
+    def run_gate(self, document, changed, mode="block"):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "x.sarif"
             path.write_text(json.dumps(document))
-            argv = [str(path)]
+            argv = [str(path), "--mode", mode]
             if changed is not None:
                 (Path(tmp) / "changed.txt").write_text("".join(f"{c}\n" for c in changed))
                 argv += ["--changed", str(Path(tmp) / "changed.txt")]
@@ -111,6 +112,10 @@ class SarifGateTests(unittest.TestCase):
         self.assertIn("::error file=rea/src/a.ts,line=3::js/sql", out)
         self.assertNotIn("old.ts,line", out)
         self.assertEqual(self.run_gate(doc, ["rea/src/b.ts"])[0], 0)
+        code, out = self.run_gate(doc, ["rea/src/a.ts"], mode="report")
+        self.assertEqual(code, 0)
+        self.assertIn("::warning file=rea/src/a.ts,line=3::js/sql", out)
+        self.assertIn("report-only until promoted", out)
 
     def test_g2_whole_tree_never_blocks(self):
         code, out = self.run_gate(sarif([result("js/sql", "rea/src/a.ts")]), None)
@@ -121,6 +126,7 @@ class SarifGateTests(unittest.TestCase):
         doc = sarif([result("js/sql", "a.ts", suppressions=[{"kind": "inSource"}])])
         self.assertEqual(self.run_gate(doc, ["a.ts"])[0], 0)
         self.assertEqual(self.run_gate(sarif([], ok=False), ["a.ts"])[0], 2)
+        self.assertEqual(self.run_gate(sarif([], ok=False), ["a.ts"], mode="report")[0], 2)
         self.assertEqual(self.run_gate({"version": "1.0"}, ["a.ts"])[0], 2)
 
     def test_g4_rule_index_and_prefixes(self):
