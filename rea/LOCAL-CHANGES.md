@@ -10,15 +10,20 @@ from `rea/UPSTREAM.json` and nothing is recorded here.
 Each fix is an EVO pull request that changes files under `rea/` and carries a
 `REA-Local: <reason>` commit trailer.
 
-| Commit           | Paths                                                        | Reason                                                                          | Upstream status |
-| ---------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------- | --------------- |
-| 27f6294          | src/application/desktop/DesktopBuildBundle.ts                | Apt key read through one bounded descriptor (CodeQL js/file-system-race)        | Not offered yet |
-| 27f6294, b6f0095 | src/application/decompileDirectory/exportTree.ts             | Resume journal opened first and checked on its descriptor (js/file-system-race) | Not offered yet |
-| 27f6294          | src/javascript/analysis/JavaScriptAnalysisWorker.ts          | Static checkpoint size checks and read on one descriptor (js/file-system-race)  | Not offered yet |
-| 27f6294          | scripts/electron-active-hook-boundaries.cjs                  | dlopen digest through one bounded descriptor (js/file-system-race)              | Not offered yet |
-| 27f6294          | scripts/build-windows-native.mjs                             | Downloads verified before they are written (js/http-to-file-access)             | Not offered yet |
-| bc712dd          | src/application/decompileDirectory/exportTreeJournal.test.ts | Tests for the journal's open-first refusals (EVO #212)                          | Not offered yet |
-| b989e54          | bridge/hopper_bridge.py                                      | Docstring lists every global the bootstrap injects (EVO #204)                   | Not offered yet |
+| Commit           | Paths                                                                   | Reason                                                                          | Upstream status |
+| ---------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------- | --------------- |
+| 27f6294          | src/application/desktop/DesktopBuildBundle.ts                           | Apt key read through one bounded descriptor (CodeQL js/file-system-race)        | Not offered yet |
+| 27f6294, b6f0095 | src/application/decompileDirectory/exportTree.ts                        | Resume journal opened first and checked on its descriptor (js/file-system-race) | Not offered yet |
+| 27f6294          | src/javascript/analysis/JavaScriptAnalysisWorker.ts                     | Static checkpoint size checks and read on one descriptor (js/file-system-race)  | Not offered yet |
+| 27f6294          | scripts/electron-active-hook-boundaries.cjs                             | dlopen digest through one bounded descriptor (js/file-system-race)              | Not offered yet |
+| 27f6294          | scripts/build-windows-native.mjs                                        | Downloads verified before they are written (js/http-to-file-access)             | Not offered yet |
+| bc712dd          | src/application/decompileDirectory/exportTreeJournal.test.ts            | Tests for the journal's open-first refusals (EVO #212)                          | Not offered yet |
+| b989e54          | bridge/hopper_bridge.py                                                 | Docstring lists every global the bootstrap injects (EVO #204)                   | Not offered yet |
+| 2342e53          | bridge/agentenv/computer.py, bridge/agentenv/test_computer.py           | Usage error keeps the JSON-line protocol and exits 2 (EVO #203)                 | Not offered yet |
+| de29ba2          | bridge/ghidra/ReaGhidraApplySeeds.java                                  | Unknown seed kinds refused as malformed (EVO #205)                              | Not offered yet |
+| a2210ed          | bridge/mitmproxy/capture.py, bridge/mitmproxy/test_capture.py           | mitmdump shut down on an unreadable request (EVO #206)                          | Not offered yet |
+| 03e6ee0          | bridge/native/rea_lldb_tracer.py, bridge/native/test_rea_lldb_tracer.py | Identity-acknowledgement wait bounded at 30 s (EVO #208)                        | Not offered yet |
+| cca59a5          | bridge/nativeaot/NativeAotExtension.java                                | inspectImage() before analyze() is an IllegalStateException (EVO #209)          | Not offered yet |
 
 ## Vendored layout
 
