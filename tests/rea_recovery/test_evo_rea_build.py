@@ -475,6 +475,39 @@ class AgentAccess(unittest.TestCase):
             self.assertEqual(rb.main(["vault", "person", "add", "Bad Id!", "sshid", "--vaults", str(self.path)]), 2)
         self.assertEqual(fetched, [])
 
+    def test_fetched_key_owned_by_someone_else_is_refused_before_preview(self):
+        # EVO #182: a key fetched from sshid or GitHub that ops already holds is refused before the
+        # fingerprint preview, with and without --yes, and nothing is written.
+        before = self.path.read_text()
+        for source in (["sshid"], ["github", "qa-on-github"]):  # github takes the GitHub username
+            for confirm in ([], ["--yes"]):
+                out, err = io.StringIO(), io.StringIO()
+                with self.subTest(source=source, confirm=confirm), \
+                        mock.patch.object(rb, "fetch_public_keys", return_value=("https://example.invalid/qa",
+                                                                                 [self.HUMAN])) as fetch, \
+                        contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+                    self.assertEqual(rb.main(["vault", "person", "add", "qa", *source,
+                                              "--vaults", str(self.path)] + confirm), 2)
+                    fetch.assert_called_once()
+                    self.assertNotIn("fingerprint", out.getvalue())
+                    self.assertIn("already belongs to ops", err.getvalue())
+                    self.assertEqual(self.path.read_text(), before)
+
+    def test_a_person_can_re_add_their_own_key(self):
+        # EVO #183: the owner exemption in check_new_person_keys, in any case of the id.
+        for pid in ("ops", "OPS"):
+            with self.subTest(pid=pid):
+                self.assertEqual(rb.check_new_person_keys(rb.load_vaults(self.path), pid, [self.HUMAN]),
+                                 ("ops", [self.HUMAN]))
+                self.assertEqual(rb.add_person_keys(self.path, pid, "", "age-keygen", [self.HUMAN], True), [])
+                out, err = io.StringIO(), io.StringIO()
+                with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+                    self.assertEqual(rb.main(["vault", "person", "add", pid, "age", self.HUMAN,
+                                              "--vaults", str(self.path)]), 0)
+                self.assertNotIn("already belongs", err.getvalue())
+        keys = [k["key"] for k in rb.load_vaults(self.path)["people"]["ops"]["keys"]]
+        self.assertEqual(keys.count(self.HUMAN), 1)
+
     def test_cli_preview_refuses_what_the_write_would_refuse(self):
         # Fixes #170: no fingerprint prompt for a key, id or sponsor that --yes would reject.
         rb.add_agent(self.path, "agent-claude", "Claude", "ops", self.AGENT)
