@@ -54,8 +54,14 @@ Before this ADR:
      It needs the CQL-G01 to CQL-G10 evidence and the owner's recorded approval
      for EVO's profile. This ADR does not authorize it.
    - ShellCheck and dependency review are not CodeQL. They fail on their
-     findings: ShellCheck at warning severity in changed scripts, and dependency
-     review when a pull request adds a high-severity vulnerable dependency.
+     findings: ShellCheck at warning severity in changed scripts EVO owns
+     (outside `rea/`, and `rea/ci/`), and dependency review when a pull request
+     adds a high-severity vulnerable dependency. ShellCheck findings in upstream
+     REA and vendored scripts are reported as warnings: those files change
+     through ingestion and syncs, and a fix to them is an `REA-Local` change.
+     *(Added 2026-11-07, after the first promotion carrying all of `rea/`.)*
+   - Each CodeQL run keeps its SARIF as a workflow artifact for 30 days
+     (ADR-0009 decision 5).
 3. **Languages with no check here are named, not hidden.** CodeQL's Swift
    analysis needs a macOS build. A change to Swift files produces a notice that
    no analysis ran for them.
