@@ -200,6 +200,12 @@ class ReaUpstreamTests(unittest.TestCase):
         self.assertEqual(entry["symlinks_not_ingested"], ["CLAUDE.md"])
         self.assertEqual(entry["license_files"], ["LICENSE"])
         self.assertEqual(entry["lfs_files_not_ingested"]["count"], 1)
+        # #202: the record says how to get the objects for a vendored (non-clone) tree.
+        lfs = entry["lfs_files_not_ingested"]
+        self.assertEqual(lfs["top_paths"], ["fixtures/big.bin"])
+        self.assertNotIn("top_directories", lfs)
+        self.assertIn(f"clone https://example.invalid/dep.git at {head}, run git lfs pull", lfs["reason"])
+        self.assertIn("into rea/third_party/dep.", lfs["reason"])
         self.assertEqual(data["file_count"], 5)
         self.track()
         ok, message = ru.check(self.rea)
