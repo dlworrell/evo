@@ -11,11 +11,11 @@ Each fix is an EVO pull request that changes files under `rea/` and carries a
 `REA-Local: <reason>` commit trailer.
 
 | Commit | Paths | Reason | Upstream status |
-| --- | --- | --- | --- |
+| ------ | ----- | ------ | --------------- |
 
 ## Divergences
 
 Paths where EVO has stopped taking upstream changes (owner decision).
 
 | Path | Date | Reason | Last upstream commit taken |
-| --- | --- | --- | --- |
+| ---- | ---- | ------ | -------------------------- |
