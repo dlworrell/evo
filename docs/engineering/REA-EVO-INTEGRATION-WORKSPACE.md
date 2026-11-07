@@ -10,6 +10,13 @@ Status: integration investigation and review; implementation qualification open.
 Owner direction: 2026-10-26, America/Los_Angeles.
 Tracking: [EVO #132](https://github.com/dlworrell/evo/issues/132).
 
+> **Status update, 2026-11-07.** A sibling REA checkout is no longer needed. REA
+> is ingested into EVO as the `rea/` scope (ADR-0046 Amendment 1, EVO #189), and
+> `tools/rea_recovery/evo_rea_build.py` builds it from there. The pinned-checkout
+> steps below describe the investigation before that decision and are kept as
+> history. To work on REA now, change files under `rea/` in an ordinary EVO pull
+> request and record the change in `rea/LOCAL-CHANGES.md`.
+
 ## Working area and merge boundary
 
 Use the existing EVO issue branch:
