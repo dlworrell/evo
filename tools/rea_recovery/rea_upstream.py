@@ -154,8 +154,12 @@ def vendor_record(sub: dict, checkout: Path, rea: Path) -> dict:
     if lfs:
         entry["lfs_files_not_ingested"] = {
             "count": len(lfs),
-            "reason": "Git LFS objects were not fetched; only pointer files existed. Fetch them with git lfs at the pinned commit.",
-            "top_directories": sorted({"/".join(f.split("/")[:2]) for f in lfs}),
+            "reason": (f"Deliberately excluded: the vendored tree is plain files, so it holds neither the "
+                       f"LFS objects nor their pointer files. To get them, clone {sub.get('url')} at "
+                       f"{sub['commit']}, run git lfs pull, and copy the files under top_paths into "
+                       f"rea/{sub['path']}."),
+            # Leading one or two path components of the excluded files; an entry can be a file.
+            "top_paths": sorted({"/".join(f.split("/")[:2]) for f in lfs}),
         }
     return entry
 

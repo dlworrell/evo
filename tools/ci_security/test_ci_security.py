@@ -3,7 +3,7 @@
 L1 each language's files select its CodeQL language; workflow files select actions; shell selects ShellCheck;
 L2 a rea/-only change leaves evo_native false; anything outside rea/ sets it;
 L3 a manual run, a new branch or a missing base runs every check for the languages the repository holds
-   (CodeQL fails on a language with no files);
+   (CodeQL fails on a language with no files); when git cannot list the files, every check runs;
 L4 the CLI diffs a real repository and writes the changed-path list;
 G1 a high result in a changed file is flagged: it blocks in block mode and only warns in report mode (the
    default); the same result in an unchanged file, or a medium one, is not flagged;
@@ -75,6 +75,19 @@ class ChangedLanguagesTests(unittest.TestCase):
                 self.assertEqual(lines["all"], "true", event)
                 self.assertEqual(json.loads(lines["codeql"]), ["c-cpp", "javascript-typescript"])
                 self.assertEqual((lines["shell"], lines["evo_native"]), ("true", "true"))
+
+    def test_l3_listing_failure_runs_every_check(self):
+        # EVO #216: when `git ls-files` fails, everything() falls back to every CodeQL
+        # language plus actions, shell and EVO's native checks. A path that does not
+        # exist makes `git -C` fail wherever the temporary folder lives.
+        with tempfile.TemporaryDirectory() as tmp:
+            out = io.StringIO()
+            with redirect_stdout(out), redirect_stderr(io.StringIO()):
+                cl.main(["--event", "workflow_dispatch", "--repo", str(Path(tmp) / "not-a-repository")])
+            lines = dict(line.split("=", 1) for line in out.getvalue().splitlines())
+            self.assertEqual(json.loads(lines["codeql"]), sorted([*cl.CODEQL, "actions"]))
+            self.assertEqual((lines["shell"], lines["evo_native"], lines["all"]), ("true", "true", "true"))
+            self.assertEqual(json.loads(lines["uncovered"]), [])
 
     def test_l4_cli_against_git(self):
         with tempfile.TemporaryDirectory() as tmp:
