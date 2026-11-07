@@ -1,0 +1,265 @@
+---
+source: crates/core/tests/webpack4_unpack.rs
+assertion_line: 210
+expression: code
+---
+const i = function(e) {
+    return `@@redux-saga/${e}`;
+};
+export { i as x };
+const a = i("TASK");
+export { a as e };
+const u = i("HELPER");
+const l = i("MATCH");
+export { l as b };
+const c = i("CANCEL_PROMISE");
+export { c as a };
+const s = i("SAGA_ACTION");
+export { s as c };
+const f = i("SELF_CANCELLATION");
+export { f as d };
+const d = (e)=>function() {
+        return e;
+    };
+export const r = d(true);
+const h = function() {};
+export { h as u };
+export const o = function(e) {
+    return e;
+};
+function y(e, t, n) {
+    if (!t(e)) {
+        R("error", "uncaught at check", n);
+        throw new Error(n);
+    }
+}
+export { y as h };
+const hasOwnProperty = Object.prototype.hasOwnProperty;
+function b(e, t) {
+    return q.notUndef(e) && hasOwnProperty.call(e, t);
+}
+export var q = {
+    undef: function(e) {
+        return e === null || e === undefined;
+    },
+    notUndef: function(e) {
+        return e !== null && e !== undefined;
+    },
+    func: function(e) {
+        return typeof e === "function";
+    },
+    number: function(e) {
+        return typeof e === "number";
+    },
+    string: function(e) {
+        return typeof e === "string";
+    },
+    array: Array.isArray,
+    object: function(e) {
+        return e && !q.array(e) && (e === undefined ? "undefined" : typeof e) === "object";
+    },
+    promise: function(e) {
+        return e && q.func(e.then);
+    },
+    iterator: function(e) {
+        return e && q.func(e.next) && q.func(e.throw);
+    },
+    iterable: function(e) {
+        if (e && q.func(Symbol)) {
+            return q.func(e[Symbol.iterator]);
+        }
+        return q.array(e);
+    },
+    task: function(e) {
+        return e && e[a];
+    },
+    observable: function(e) {
+        return e && q.func(e.subscribe);
+    },
+    buffer: function(e) {
+        return e && q.func(e.isEmpty) && q.func(e.take) && q.func(e.put);
+    },
+    pattern: function(e) {
+        return e && (q.string(e) || (e === undefined ? "undefined" : typeof e) === "symbol" || q.func(e) || q.array(e));
+    },
+    channel: function(e) {
+        return e && q.func(e.take) && q.func(e.close);
+    },
+    helper: function(e) {
+        return e && e[u];
+    },
+    stringableFunc: function(e) {
+        return q.func(e) && b(e, "toString");
+    }
+};
+export const v = {
+    assign: function(e, t) {
+        for(const n in t){
+            if (b(t, n)) {
+                e[n] = t[n];
+            }
+        }
+    }
+};
+export function w(e, t) {
+    const n = e.indexOf(t);
+    if (n >= 0) {
+        e.splice(n, 1);
+    }
+}
+const x = {
+    from: function(e) {
+        const t = Array(e.length);
+        for(const n in e){
+            if (b(e, n)) {
+                t[n] = e[n];
+            }
+        }
+        return t;
+    }
+};
+export { x as f };
+function k(e = {}) {
+    const t = {
+        ...e
+    };
+    const n = new Promise((resolve, reject)=>{
+        t.resolve = resolve;
+        t.reject = reject;
+    });
+    t.promise = n;
+    return t;
+}
+export { k as l };
+export function g(e) {
+    const t = [];
+    for(let n = 0; n < e; n++){
+        t.push(k());
+    }
+    return t;
+}
+export function m(e, t = true) {
+    let n;
+    const r = new Promise((resolve)=>{
+        n = setTimeout(()=>resolve(t), e);
+    });
+    r[c] = function() {
+        return clearTimeout(n);
+    };
+    return r;
+}
+export function j() {
+    let t = true;
+    let n;
+    let r;
+    return {
+        [a]: true,
+        isRunning: function() {
+            return t;
+        },
+        result: function() {
+            return n;
+        },
+        error: function() {
+            return r;
+        },
+        setRunning: function(e) {
+            return t = e;
+        },
+        setResult: function(e) {
+            return n = e;
+        },
+        setError: function(e) {
+            return r = e;
+        }
+    };
+}
+const C = ((e = 0)=>function() {
+        return ++e;
+    })();
+export { C as y };
+const P = function(e) {
+    throw e;
+};
+const _ = function(value) {
+    return {
+        value,
+        done: true
+    };
+};
+export function t(next, t = P, name = "", r) {
+    const o = {
+        name,
+        next,
+        throw: t,
+        return: _
+    };
+    if (r) {
+        o[u] = true;
+    }
+    if (typeof Symbol !== "undefined") {
+        o[Symbol.iterator] = function() {
+            return o;
+        };
+    }
+    return o;
+}
+function R(e, t, n = "") {
+    if (typeof window === "undefined") {
+        console.log(`redux-saga ${e}: ${t}
+${n && n.stack || n}`);
+    } else {
+        console[e](t, n);
+    }
+}
+export { R as s };
+export function n(e, t) {
+    return function() {
+        return e(...arguments);
+    };
+}
+export const z = function(e, t) {
+    return `${e} has been deprecated in favor of ${t}, please update your code`;
+};
+export const p = function(e) {
+    return new Error(`
+  redux-saga: Error checking hooks detected an inconsistent state. This is likely a bug
+  in redux-saga code and not yours. Thanks for reporting this in the project's github repo.
+  Error: ${e}
+`);
+};
+const L = function(e, t) {
+    return `${e ? `${e}.` : ""}setContext(props): argument ${t} is not a plain object`;
+};
+export { L as k };
+export const A = function(e) {
+    return function(t) {
+        return e(Object.defineProperty(t, s, {
+            value: true
+        }));
+    };
+};
+const D = function e(t) {
+    return function(...r) {
+        const i = [];
+        const a = t(...r);
+        return {
+            next: function(e) {
+                i.push(e);
+                return a.next(e);
+            },
+            clone: function() {
+                const n = e(t)(...r);
+                i.forEach((e)=>n.next(e));
+                return n;
+            },
+            return: function(e) {
+                return a.return(e);
+            },
+            throw: function(e) {
+                return a.throw(e);
+            }
+        };
+    };
+};
+export { D as i };

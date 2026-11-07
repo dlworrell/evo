@@ -10,3 +10,13 @@ rea/LOCAL-CHANGES.md). REA is Copyright (c) 2026 morluto and is licensed under
 the MIT License (rea/LICENSE). Its third-party notices are in
 rea/THIRD_PARTY_NOTICES.md and rea/licenses/. Files under rea/ keep the MIT
 License unless EVO rewrites them; EVO's own files remain Apache-2.0.
+
+REA's git submodules are vendored under rea/third_party/ at the commits REA
+pins (recorded in rea/UPSTREAM.json). Each keeps its own license file:
+
+- binwalk (https://github.com/ReFirmLabs/binwalk), MIT License
+- ghidra-nativeaot (https://github.com/Washi1337/ghidra-nativeaot), MIT License
+- jadx-headless-mcp (https://github.com/1013503897/jadx-headless-mcp),
+  Apache License 2.0
+- unblob (https://github.com/onekey-sec/unblob), MIT License, with its NOTICE
+- wakaru (https://github.com/pionxzh/wakaru), Apache License 2.0
