@@ -74,6 +74,30 @@ class Discovery(unittest.TestCase):
         self.assertIn("rea_source", blocking)
         self.assertIn("evo_source", blocking)
 
+    def test_in_tree_rea_scope_is_the_default_source(self):
+        rea = self.evo / "rea"
+        rea.mkdir()
+        (rea / "UPSTREAM.json").write_text(json.dumps(
+            {"schema": "evo.rea-upstream.v1", "repository": "https://example.invalid/rea", "commit": "ab" * 20,
+             "tree_sha256": "0" * 64}))
+        report = rb.discover(self.evo, rea, self.tmp / "out", None)
+        self.assertEqual(report["checks"]["rea_source"]["status"], "ok")
+        self.assertIn("in-tree REA", report["checks"]["rea_source"]["evidence"])
+        self.assertEqual(report["pin"], "ab" * 20)
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            rb.main(["build", "--evo", str(self.evo), "--dest", str(self.tmp / "out")])
+        plan = json.loads(out.getvalue())["plan"]
+        self.assertEqual([step["cwd"] for step in plan[4:]], [str(rea)] * 3)
+        self.assertNotIn("rea_source", json.loads(out.getvalue())["blocking"])
+        dest = self.tmp / "out"
+        dest.mkdir()
+        layout = json.loads(rb.write_layout(self.evo, rea, dest, "ignored").read_text())
+        self.assertEqual(layout["rea_pin"], "ab" * 20)
+        (rea / "UPSTREAM.json").write_text("{not json")
+        self.assertEqual(rb.discover(self.evo, rea, self.tmp / "out", None)["checks"]["rea_source"]["status"],
+                         "mismatch")
+
     def test_build_plan_builds_both_into_one_destination(self):
         dest = self.tmp / "out"
         plan = [(cwd, " ".join(cmd)) for cwd, cmd in rb.build_plan(self.evo, self.rea, dest)]

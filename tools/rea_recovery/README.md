@@ -2,12 +2,12 @@
 
 ## EVO/REA fused build runner and encrypted source vault (ADR-0048, accepted)
 
-`evo_rea_build.py` builds the fused product into one destination. EVO is built from this checkout with its documented CMake build. REA is built in a separate checkout pinned to `9e22da8`, and its files are never changed.
+`evo_rea_build.py` builds the fused product into one destination. EVO is built from this checkout with its documented CMake build. REA is built from EVO's own `rea/` scope (ADR-0046 Amendment 1), recorded by `rea/UPSTREAM.json`; the build never changes REA's files. `--rea DIR` still accepts a separate REA git checkout, checked against `--pin` (default `9e22da8`).
 
 ```sh
-python3 tools/rea_recovery/evo_rea_build.py discover --rea ../rea --dest /opt/evo-rea
-python3 tools/rea_recovery/evo_rea_build.py build    --rea ../rea --dest /opt/evo-rea            # prints the plan
-python3 tools/rea_recovery/evo_rea_build.py build    --rea ../rea --dest /opt/evo-rea --execute  # EVO cmake build/ctest/install, then REA npm ci/build, doctor
+python3 tools/rea_recovery/evo_rea_build.py discover --dest /opt/evo-rea                      # REA from rea/
+python3 tools/rea_recovery/evo_rea_build.py build    --dest /opt/evo-rea            # prints the plan
+python3 tools/rea_recovery/evo_rea_build.py build    --dest /opt/evo-rea --execute  # EVO cmake build/ctest/install, then REA npm ci/build, doctor
 python3 tools/rea_recovery/evo_rea_build.py ui evo   --dest /opt/evo-rea [--execute] [evo args]
 python3 tools/rea_recovery/evo_rea_build.py ui rea   --dest /opt/evo-rea [--execute] [mcp | <rea CLI args>]
 python3 tools/rea_recovery/evo_rea_build.py pdf      report.md --out report.pdf [--print]
@@ -28,7 +28,7 @@ python3 tools/rea_recovery/evo_rea_build.py vault open   VAULT_DIR --identity ~/
   - the platform;
   - the EVO checkout and version, a C compiler, CMake 3.20 or later, and Bubblewrap (the sandbox `evo analyze` uses);
   - Node.js against REA's `engines` range, and npm;
-  - that the REA checkout is at the pin with a clean tree;
+  - that `rea/UPSTREAM.json` is readable (or, for a separate `--rea` checkout, that it is at the pin with a clean tree);
   - that the destination is writable;
   - the PDF backends (pandoc, headless Chromium) and printers (`lp`, `lpr`);
   - whether a display is available for UI;
@@ -83,6 +83,31 @@ It never runs REA and never changes an artifact. An accepted manifest only match
 2. **Synthetic first record.** No instrument or capture has been chosen, and private captures may not enter public CI. Synthetic fixtures can prove the E1 refusal behaviour now. They are labelled synthetic and may pass only E1 and C2. C2 (negative and unknown cases) is exempt because EVO-004 expects labelled synthetic corruption, truncation and mismatch cases there. They are barred from C1, A1, O1, P1 and H1.
 3. **The evidence store is just a directory.** Locators are paths relative to a store root given at run time. That keeps the validator independent of where originals live (local disk, an access-controlled share), so choosing the real store stays a separate decision.
 4. **Strict, closed format.** Unknown top-level fields are refused so that equipment detail cannot leak into the native bundle or drift unreviewed. Groups whose fields EVO-004 leaves to later stages (`subject`, `interface`) are accepted as objects for now and tightened when C1 is implemented.
+
+## Ingested REA under `rea/` (ADR-0046 Amendment 1)
+
+`rea/` holds REA's working tree from upstream `morluto/rea`, maintained by EVO as
+its own governed scope. `rea_upstream.py` records and checks it:
+
+```sh
+python3 tools/rea_recovery/rea_upstream.py record ../rea-upstream   # after copying a clean upstream tree into rea/
+python3 tools/rea_recovery/rea_upstream.py check                    # rea/ against rea/UPSTREAM.json
+```
+
+- `record` writes `rea/UPSTREAM.json`: repository, commit, commit date, retrieval
+  time, the tree's SHA-256, file count, license files, and the upstream git
+  submodules that are not ingested (with their pinned commits).
+- `check` passes when `rea/` matches the record, or when it differs and
+  `rea/LOCAL-CHANGES.md` records at least one local change. An unrecorded edit
+  fails.
+- The digest leaves out EVO-owned paths: `UPSTREAM.json`, `LOCAL-CHANGES.md`,
+  `ci/` (the scope's automation) and `docs/engineering/` (its AES-SEC-001
+  evidence). `record` refuses an upstream tree with files there.
+- CI: `.github/workflows/rea.yml` runs `rea/ci/check-upstream.sh` and
+  `rea/ci/node-checks.sh` (`npm ci`, `check:ci:fast`, `test:fast`) only when
+  `rea/` changes, on hosted runners with no secrets. The AES-SEC-001 governance
+  workflow scans `rea/` as its own scope and the rest of EVO with `rea/`
+  excluded.
 
 ## REA history in Dropbox (ADR-0046 Amendment 1)
 

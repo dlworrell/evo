@@ -1,0 +1,56 @@
+name: REA scope
+
+# Thin caller for the rea/ scope (EVO ADR-0046 Amendment 1; Catylist ADR-0004).
+# It runs only when rea/ or its checker changes, so REA's Node gates never run
+# on EVO-only changes. The logic lives in rea/ci/. REA's install and tests run
+# third-party code, so this workflow uses hosted runners, a read-only token and
+# no secrets, and never runs on pull_request_target.
+
+on:
+  pull_request:
+    paths:
+      - 'rea/**'
+      - 'tools/rea_recovery/rea_upstream.py'
+      - '.github/workflows/rea.yml'
+  push:
+    branches: [main, dev-daily, fitment]
+    paths:
+      - 'rea/**'
+      - 'tools/rea_recovery/rea_upstream.py'
+      - '.github/workflows/rea.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rea-scope-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  upstream:
+    name: Upstream record
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: rea/ matches rea/UPSTREAM.json or recorded local changes
+        run: bash rea/ci/check-upstream.sh
+
+  node:
+    name: REA build and tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: rea/.nvmrc
+          cache: npm
+          cache-dependency-path: rea/package-lock.json
+      - name: npm ci, fast static checks and source tests
+        run: bash rea/ci/node-checks.sh
