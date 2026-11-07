@@ -2,7 +2,8 @@
 
 L1 each language's files select its CodeQL language; workflow files select actions; shell selects ShellCheck;
 L2 a rea/-only change leaves evo_native false; anything outside rea/ sets it;
-L3 a manual run, a new branch or a missing base runs every check;
+L3 a manual run, a new branch or a missing base runs every check for the languages the repository holds
+   (CodeQL fails on a language with no files);
 L4 the CLI diffs a real repository and writes the changed-path list;
 G1 a high result in a changed file is flagged: it blocks in block mode and only warns in report mode (the
    default); the same result in an unchanged file, or a medium one, is not flagged;
@@ -57,15 +58,22 @@ class ChangedLanguagesTests(unittest.TestCase):
         self.assertFalse(cl.language_flags(["rea/src/a.ts", "rea/README.md"])["evo_native"])
         self.assertTrue(cl.language_flags(["rea/src/a.ts", "docs/adr/x.md"])["evo_native"])
 
-    def test_l3_unknown_change_runs_everything(self):
-        for event, base in (("workflow_dispatch", "abc"), ("push", cl.ZERO), ("pull_request", "")):
-            out = io.StringIO()
-            with redirect_stdout(out), redirect_stderr(io.StringIO()):
-                cl.main(["--event", event, "--base", base, "--head", "HEAD"])
-            lines = dict(line.split("=", 1) for line in out.getvalue().splitlines())
-            self.assertEqual(lines["all"], "true", event)
-            self.assertIn("c-cpp", json.loads(lines["codeql"]))
-            self.assertEqual(lines["evo_native"], "true")
+    def test_l3_unknown_change_runs_everything_present(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+            subprocess.run(["git", "-C", tmp, "init", "-q"], check=True)
+            for name in ("src/a.c", "rea/x.ts", "rea/run.sh"):
+                (repo / name).parent.mkdir(parents=True, exist_ok=True)
+                (repo / name).write_text("x\n")
+            subprocess.run(["git", "-C", tmp, "add", "."], check=True)
+            for event, base in (("workflow_dispatch", "abc"), ("push", cl.ZERO), ("pull_request", "")):
+                out = io.StringIO()
+                with redirect_stdout(out), redirect_stderr(io.StringIO()):
+                    cl.main(["--event", event, "--base", base, "--head", "HEAD", "--repo", tmp])
+                lines = dict(line.split("=", 1) for line in out.getvalue().splitlines())
+                self.assertEqual(lines["all"], "true", event)
+                self.assertEqual(json.loads(lines["codeql"]), ["c-cpp", "javascript-typescript"])
+                self.assertEqual((lines["shell"], lines["evo_native"]), ("true", "true"))
 
     def test_l4_cli_against_git(self):
         with tempfile.TemporaryDirectory() as tmp:
