@@ -1,9 +1,14 @@
 name: Production Provider Async Lifecycle
 
+# rea/-only changes skip this workflow: the rea/ scope has its own checks (ADR-0049).
 on:
   push:
     branches: [main, dev-daily, fitment]
+    paths-ignore:
+      - 'rea/**'
   pull_request:
+    paths-ignore:
+      - 'rea/**'
   workflow_dispatch:
 
 permissions:

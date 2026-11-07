@@ -10,7 +10,28 @@ permissions:
   contents: read
 
 jobs:
+  # Required checks cannot use paths-ignore (a check that never reports blocks
+  # merging), so a changes job decides: a rea/-only change skips EVO's native
+  # checks, which then report as skipped (ADR-0049).
+  changes:
+    runs-on: ubuntu-24.04
+    outputs:
+      evo_native: ${{ steps.detect.outputs.evo_native }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: detect
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: python3 tools/ci_security/changed_languages.py --event "$EVENT" --base "$BASE" --head "$HEAD_SHA" >> "$GITHUB_OUTPUT"
+
   formatting:
+    needs: changes
+    if: needs.changes.outputs.evo_native == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -30,6 +51,8 @@ jobs:
           clang-format --dry-run --Werror "${files[@]}"
 
   static-analysis:
+    needs: changes
+    if: needs.changes.outputs.evo_native == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
