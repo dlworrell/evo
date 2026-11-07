@@ -8,11 +8,19 @@ Catalyst-File-ID: urn:uuid:ae0cc1b9-400f-4066-8261-eb2ee228a61c
 
 - Date: 2026-10-23
 - Updated: 2026-10-26 (America/Los_Angeles)
-- Status: Owner-directed placement under EVO; detailed contracts and implementation remain open
-- REA commit: 9e22da845bf8b447f81539e0ba57d5deb59e9103
+- Status: Owner-directed placement under EVO; REA ingested under `rea/` on 2026-11-07 (see the note below)
+- REA commit: 9e22da845bf8b447f81539e0ba57d5deb59e9103 (the reviewed fork snapshot; the ingested commit is in `rea/UPSTREAM.json`)
 - Existing records: REA / PRJ-8, EVO / PRJ-7, documentation-mining task TASK-38, and [EVO #132](https://github.com/dlworrell/evo/issues/132)
 
 See [the integration workspace](REA-EVO-INTEGRATION-WORKSPACE.md) for the isolated branch, pinned checkouts, integration options and delivery sequence. This repository copy brings the prior ingestion plan into EVO review; the draft does not itself qualify an implementation.
+
+> **Status update, 2026-11-07.** REA is now ingested into EVO as the governed
+> scope `rea/` ([ADR-0046 Amendment 1](../adr/ADR-0046-rea-assisted-recovery-and-source-admission.md),
+> EVO #189), from upstream `morluto/rea` at the commit recorded in
+> `rea/UPSTREAM.json`, not the fork pin `9e22da8` below. Its history is kept as
+> git bundles in Dropbox (`tools/rea_recovery/rea_history.py`). The statements
+> below that keep REA external-reference, pinned and unvendored describe the
+> plan before that decision and are kept as history.
 
 ## Owner direction and current baseline
 
