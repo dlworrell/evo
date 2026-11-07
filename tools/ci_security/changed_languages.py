@@ -59,8 +59,17 @@ def language_flags(paths: list[str]) -> dict:
     return {"codeql": sorted(codeql), "shell": shell, "evo_native": native, "uncovered": sorted(uncovered)}
 
 
-def everything() -> dict:
-    return {"codeql": sorted([*CODEQL, "actions"]), "shell": True, "evo_native": True, "uncovered": []}
+def everything(cwd: Path) -> dict:
+    """Every check for the languages the repository actually contains.
+
+    CodeQL fails on a language with no source files, so a whole-tree run lists
+    only languages present in ``git ls-files`` (all of them if that fails)."""
+    done = subprocess.run(["git", "-C", str(cwd), "ls-files", "-z"], capture_output=True, text=True)
+    if done.returncode != 0:
+        return {"codeql": sorted([*CODEQL, "actions"]), "shell": True, "evo_native": True, "uncovered": []}
+    flags = language_flags([p for p in done.stdout.split("\0") if p])
+    flags["evo_native"] = True
+    return flags
 
 
 def changed_paths(base: str, head: str, cwd: Path) -> list[str] | None:
@@ -94,7 +103,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--list", type=Path, help="write the changed paths here")
     args = parser.parse_args(argv)
     paths = changed_paths(args.base, args.head, args.repo) if args.event in ("pull_request", "push") else None
-    flags = everything() if paths is None else language_flags(paths)
+    flags = everything(args.repo) if paths is None else language_flags(paths)
     if args.list:
         args.list.write_text("".join(f"{p}\n" for p in (paths or [])), encoding="utf-8")
     print("\n".join(outputs(flags, paths is None)))

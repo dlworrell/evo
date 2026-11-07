@@ -2,13 +2,15 @@
 
 L1 each language's files select its CodeQL language; workflow files select actions; shell selects ShellCheck;
 L2 a rea/-only change leaves evo_native false; anything outside rea/ sets it;
-L3 a manual run, a new branch or a missing base runs every check;
+L3 a manual run, a new branch or a missing base runs every check for the languages the repository holds
+   (CodeQL fails on a language with no files);
 L4 the CLI diffs a real repository and writes the changed-path list;
 G1 a high result in a changed file is flagged: it blocks in block mode and only warns in report mode (the
    default); the same result in an unchanged file, or a medium one, is not flagged;
 G2 a whole-tree run (no change list) never blocks;
 G3 suppressed results are ignored; a failed analysis or a non-SARIF file is an error (exit 2);
-G4 rules are found by index when ruleId is absent, and ./ prefixes are normalised.
+G4 rules are found by index when ruleId is absent, and ./ prefixes are normalised;
+G5 CodeQL's layout: rule metadata in tool.extensions (query packs), found by ruleId and by toolComponent index.
 """
 from __future__ import annotations
 
@@ -57,15 +59,22 @@ class ChangedLanguagesTests(unittest.TestCase):
         self.assertFalse(cl.language_flags(["rea/src/a.ts", "rea/README.md"])["evo_native"])
         self.assertTrue(cl.language_flags(["rea/src/a.ts", "docs/adr/x.md"])["evo_native"])
 
-    def test_l3_unknown_change_runs_everything(self):
-        for event, base in (("workflow_dispatch", "abc"), ("push", cl.ZERO), ("pull_request", "")):
-            out = io.StringIO()
-            with redirect_stdout(out), redirect_stderr(io.StringIO()):
-                cl.main(["--event", event, "--base", base, "--head", "HEAD"])
-            lines = dict(line.split("=", 1) for line in out.getvalue().splitlines())
-            self.assertEqual(lines["all"], "true", event)
-            self.assertIn("c-cpp", json.loads(lines["codeql"]))
-            self.assertEqual(lines["evo_native"], "true")
+    def test_l3_unknown_change_runs_everything_present(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+            subprocess.run(["git", "-C", tmp, "init", "-q"], check=True)
+            for name in ("src/a.c", "rea/x.ts", "rea/run.sh"):
+                (repo / name).parent.mkdir(parents=True, exist_ok=True)
+                (repo / name).write_text("x\n")
+            subprocess.run(["git", "-C", tmp, "add", "."], check=True)
+            for event, base in (("workflow_dispatch", "abc"), ("push", cl.ZERO), ("pull_request", "")):
+                out = io.StringIO()
+                with redirect_stdout(out), redirect_stderr(io.StringIO()):
+                    cl.main(["--event", event, "--base", base, "--head", "HEAD", "--repo", tmp])
+                lines = dict(line.split("=", 1) for line in out.getvalue().splitlines())
+                self.assertEqual(lines["all"], "true", event)
+                self.assertEqual(json.loads(lines["codeql"]), ["c-cpp", "javascript-typescript"])
+                self.assertEqual((lines["shell"], lines["evo_native"]), ("true", "true"))
 
     def test_l4_cli_against_git(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -135,6 +144,23 @@ class SarifGateTests(unittest.TestCase):
         found = sg.results(sarif([res], rules=[{"id": "actions/x", "properties": {"security-severity": "9.1"}}]))
         self.assertEqual((found[0]["path"], found[0]["rule"], found[0]["severity"]),
                          (".github/workflows/ci.yml", "actions/x", 9.1))
+
+    def test_g5_codeql_rules_in_extensions(self):
+        pack = {"name": "codeql/javascript-queries",
+                "rules": [{"id": "js/other", "properties": {}},
+                          {"id": "js/file-system-race", "properties": {"security-severity": "7.7"}}]}
+        doc = {"version": "2.1.0", "runs": [{
+            "tool": {"driver": {"name": "CodeQL"}, "extensions": [pack]},
+            "invocations": [{"executionSuccessful": True}],
+            "results": [
+                result("js/file-system-race", "rea/src/a.ts"),
+                {**result(None, "rea/src/b.ts"), "rule": {"index": 1, "toolComponent": {"index": 0}}},
+            ]}]}
+        found = sg.results(doc)
+        self.assertEqual([(r["path"], r["rule"], r["severity"]) for r in found],
+                         [("rea/src/a.ts", "js/file-system-race", 7.7), ("rea/src/b.ts", "js/file-system-race", 7.7)])
+        code, out = self.run_gate(doc, ["rea/src/a.ts"])
+        self.assertEqual(code, 1)
 
 
 if __name__ == "__main__":

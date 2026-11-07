@@ -91,6 +91,14 @@ jobs:
         with:
           category: /language:${{ matrix.language }}
           output: sarif-results
+      - name: Retain SARIF (Catylist ADR-0009 decision 5)
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: codeql-sarif-${{ matrix.language }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: sarif-results/
+          if-no-files-found: warn
+          retention-days: 30
       - name: Changed files
         run: python3 tools/ci_security/changed_languages.py --event "$EVENT" --base "$BASE" --head "$HEAD_SHA" --list changed.txt > /dev/null
       - name: Flag high and critical results in changed files (report-only)
@@ -120,6 +128,9 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      # EVO's own scripts (outside rea/, and rea/ci/) fail on findings. Upstream
+      # REA and vendored scripts are reported as warnings: they change through
+      # ingestion and syncs, and fixes to them are REA-Local changes.
       - name: ShellCheck changed shell scripts
         run: |
           set -euo pipefail
@@ -134,7 +145,20 @@ jobs:
             exit 0
           fi
           shellcheck --version
-          shellcheck --severity=warning "${scripts[@]}"
+          evo=()
+          upstream=()
+          for f in "${scripts[@]}"; do
+            if [[ "$f" != rea/* || "$f" == rea/ci/* ]]; then evo+=("$f"); else upstream+=("$f"); fi
+          done
+          if (( ${#upstream[@]} )); then
+            echo "Upstream REA scripts (report only): ${#upstream[@]}"
+            { shellcheck --severity=warning --format=gcc "${upstream[@]}" || true; } |
+              sed -E 's/^([^:]+):([0-9]+):([0-9]+): [a-z]+: (.*)$/::warning file=\1,line=\2,col=\3::ShellCheck (upstream, report only): \4/'
+          fi
+          if (( ${#evo[@]} )); then
+            echo "EVO scripts (blocking): ${#evo[@]}"
+            shellcheck --severity=warning "${evo[@]}"
+          fi
 
   dependencies:
     name: Dependency review

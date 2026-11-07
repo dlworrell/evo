@@ -53,15 +53,29 @@ def results(document: dict) -> list[dict]:
         invocations = run.get("invocations") or []
         if any(item.get("executionSuccessful") is False for item in invocations):
             raise ValueError("SARIF records a failed analysis")
-        driver = (run.get("tool") or {}).get("driver") or {}
-        rules = {rule.get("id"): rule for rule in driver.get("rules") or []}
+        tool = run.get("tool") or {}
+        driver = tool.get("driver") or {}
+        # CodeQL keeps its query metadata (security-severity included) in the
+        # query packs under tool.extensions; results point there with
+        # rule.toolComponent.index. Other tools use tool.driver.rules.
+        components = [driver, *(tool.get("extensions") or [])]
+        rules = {}
+        for component in components:
+            for rule in component.get("rules") or []:
+                rules.setdefault(rule.get("id"), rule)
         by_index = list(driver.get("rules") or [])
         for result in run.get("results") or []:
             if result.get("suppressions"):
                 continue
             rule = rules.get(result.get("ruleId"))
-            index = (result.get("rule") or {}).get("index")
-            if rule is None and isinstance(index, int) and 0 <= index < len(by_index):
+            reference = result.get("rule") or {}
+            index = reference.get("index")
+            component = (reference.get("toolComponent") or {}).get("index")
+            if isinstance(component, int) and 0 <= component < len(components) - 1:
+                pack = list(components[component + 1].get("rules") or [])
+                if isinstance(index, int) and 0 <= index < len(pack):
+                    rule = pack[index]
+            elif rule is None and isinstance(index, int) and 0 <= index < len(by_index):
                 rule = by_index[index]
             location = ((result.get("locations") or [{}])[0].get("physicalLocation") or {})
             uri = (location.get("artifactLocation") or {}).get("uri", "")
