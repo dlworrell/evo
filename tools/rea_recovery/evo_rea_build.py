@@ -2,8 +2,10 @@
 """EVO/REA fused build runner and encrypted source vault (EVO ADR-0048, accepted).
 
 Builds the fused EVO + REA product into one destination: EVO from its own
-checkout with its documented CMake build, and REA from a separate checkout
-pinned by ADR-0046 with its documented npm build, without changing REA's files.
+checkout with its documented CMake build, and REA with its documented npm
+build. REA is built from EVO's own ``rea/`` scope (ADR-0046 Amendment 1, recorded
+by ``rea/UPSTREAM.json``); a separate REA git checkout pinned with ``--pin`` is
+still accepted. It does not change REA's files.
 Commands: ``discover`` (environment report), ``build`` (plan; ``--execute`` to
 run), ``pdf`` (render and optionally print a report such as ``evo report``
 output), ``ui`` (EVO CLI, REA CLI or REA's stdio MCP server), and
@@ -127,7 +129,17 @@ def discover(evo: Path, rea: Path, destination: Path, vaults: Path | None,
     else:
         checks["node"] = {"status": "ok", "evidence": f"{node} (REA requires {engines or 'unknown'})"}
     checks["npm"] = {"status": "ok", "evidence": shutil.which("npm")} if shutil.which("npm") else {"status": "missing", "evidence": "npm not on PATH"}
-    if not (rea / ".git").exists():
+    upstream = rea / "UPSTREAM.json"
+    if upstream.is_file():
+        try:
+            record = json.loads(upstream.read_text(encoding="utf-8"))
+            origin = f"{record['repository']} at {record['commit'][:12]}"
+            pin = record["commit"]
+        except (ValueError, KeyError, TypeError):
+            checks["rea_source"] = {"status": "mismatch", "evidence": f"{upstream} is unreadable"}
+        else:
+            checks["rea_source"] = {"status": "ok", "evidence": f"{rea}: EVO's in-tree REA from {origin}"}
+    elif not (rea / ".git").exists():
         checks["rea_source"] = {"status": "missing", "evidence": f"{rea} is not a git checkout"}
     else:
         _, head = _run(["git", "rev-parse", "HEAD"], rea)
@@ -185,6 +197,9 @@ def build_plan(evo: Path, rea: Path, destination: Path) -> list[tuple[Path, list
 
 def write_layout(evo: Path, rea: Path, destination: Path, pin: str) -> Path:
     """Record where the fused product's parts live, for ``ui``."""
+    upstream = rea / "UPSTREAM.json"
+    if upstream.is_file():
+        pin = json.loads(upstream.read_text(encoding="utf-8"))["commit"]
     layout = {"schema": "evo.rea-fused-layout.v1", "evo_binary": str(destination / "bin" / "evo"),
               "evo_source": str(evo.resolve()), "rea_checkout": str(rea.resolve()), "rea_pin": pin}
     path = destination / LAYOUT
@@ -731,7 +746,8 @@ def main(argv=None) -> int:
         p = sub.add_parser(name)
         p.add_argument("--evo", default=Path(__file__).resolve().parents[2], type=Path,
                        help="EVO checkout (default: this repository)")
-        p.add_argument("--rea", required=True, type=Path, help="REA checkout")
+        p.add_argument("--rea", type=Path, default=None,
+                       help="REA source (default: the rea/ scope of the EVO checkout)")
         p.add_argument("--dest", required=True, type=Path, help="install destination for the fused product")
         p.add_argument("--vaults", type=Path, default=DEFAULT_VAULTS, help="vault definitions (vaults.json)")
         p.add_argument("--pin", default=CONTRACT_PIN)
@@ -797,6 +813,8 @@ def main(argv=None) -> int:
     s.add_argument("--dest", required=True, type=Path)
     args = parser.parse_args(argv)
     try:
+        if args.command in ("discover", "build") and args.rea is None:
+            args.rea = args.evo / "rea"
         if args.command in ("discover", "build"):
             report = discover(args.evo, args.rea, args.dest, args.vaults, args.pin)
             if args.command == "discover":

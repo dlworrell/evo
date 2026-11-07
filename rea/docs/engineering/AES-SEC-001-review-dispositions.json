@@ -1,0 +1,221 @@
+{
+  "schema_version": "1.0.0",
+  "repository": "dlworrell/evo",
+  "scope": "rea",
+  "baseline": {
+    "captured_at": "2026-11-07",
+    "source": "AEMS scripts/aes_sec_001_scan.py at AEMS 280208a over rea/ as ingested from morluto/rea 99db80a13e369885e7de99417475c25380446081 (--include-dangerous-primitives --strict)",
+    "findings": [
+      {
+        "finding_id": "aes-sec-001:9ad57895917ed7db1d88f39b4ec1f8de603b4d6316fd3abf92f22fc734733754",
+        "source_fingerprint": "sha256:82a4ae7c070982c0a83281f51d6152cf70b149a5e839d70e0fffc7a0f7881d7f",
+        "path": "scripts/fixtures/binary-layout-limited-python.c",
+        "line": 25,
+        "symbol": "calloc"
+      },
+      {
+        "finding_id": "aes-sec-001:1c1076627ef447f30150de2fc60019328cf5f892d6c2fdda5c71509b203cf03c",
+        "source_fingerprint": "sha256:02124031414f0b36ecef7e64d1fef740a5eb8f7ad1d213de9e832f4f9efc48e2",
+        "path": "scripts/fixtures/binary-layout-limited-python.c",
+        "line": 38,
+        "symbol": "free"
+      },
+      {
+        "finding_id": "aes-sec-001:657cd9d73c56fa32304b985dbd53bb5afacf1e93c001f914cf73f2f2629b72a9",
+        "source_fingerprint": "sha256:3f0fc250cbb43bf41df01ad4af8e144ea411aee7cf40a855023385e546c681da",
+        "path": "scripts/fixtures/binary-layout.c",
+        "line": 11,
+        "symbol": "snprintf"
+      },
+      {
+        "finding_id": "aes-sec-001:b72f1c3a9fc517db1c5d11dc894717a6238a7fbb475baca3f75a8abbadc90587",
+        "source_fingerprint": "sha256:96ab71aa870af00fb5640e2bf3ba3df1fec18de1cc5053c5732bd0e44601ad19",
+        "path": "tests/conformance/ghidra/no-return.c",
+        "line": 12,
+        "symbol": "malloc"
+      },
+      {
+        "finding_id": "aes-sec-001:7991bd8ab4b591ddece392df697d52f802a2746c5ab62267b2f022fe2c787f07",
+        "source_fingerprint": "sha256:96ab71aa870af00fb5640e2bf3ba3df1fec18de1cc5053c5732bd0e44601ad19",
+        "path": "tests/conformance/ghidra/no-return.c",
+        "line": 17,
+        "symbol": "malloc"
+      },
+      {
+        "finding_id": "aes-sec-001:a021c5e4c6ece46b67a81136226647bc4e70d238c535dacb87c58c4f987e4c31",
+        "source_fingerprint": "sha256:fd57132e0fb180892b0b276188689f800508cfea4d92cce737e787e5ac37be09",
+        "path": "tests/conformance/ghidra/no-return.c",
+        "line": 37,
+        "symbol": "memcpy"
+      },
+      {
+        "finding_id": "aes-sec-001:d9d12d01e290a22e6025f111411075efccb573a393d78d3ffbdfb11525d68eab",
+        "source_fingerprint": "sha256:b19ba819480b9dd891be8b028f493efe66c5cc5a8f574e032cb2a1fb68c30c36",
+        "path": "tests/conformance/ghidra/no-return.c",
+        "line": 42,
+        "symbol": "memset"
+      },
+      {
+        "finding_id": "aes-sec-001:fd92f50ca1e75eaadd2515c08b934d28231fb18e93fe884ef60fabfb9d5cc03d",
+        "source_fingerprint": "sha256:55c8bee85f576d558426a5e4fd4e30e827180433f5e21b7f156c47822dee2818",
+        "path": "tests/conformance/native/calls.m",
+        "line": 22,
+        "symbol": "memset"
+      }
+    ]
+  },
+  "dispositions": [
+    {
+      "finding_id": "aes-sec-001:9ad57895917ed7db1d88f39b4ec1f8de603b4d6316fd3abf92f22fc734733754",
+      "source_fingerprint": "sha256:82a4ae7c070982c0a83281f51d6152cf70b149a5e839d70e0fffc7a0f7881d7f",
+      "path": "scripts/fixtures/binary-layout-limited-python.c",
+      "line": 25,
+      "symbol": "calloc",
+      "classification": "approved-invariant",
+      "rationale": "Test fixture: compiled only as an input for REA's analysis verification, never shipped or linked into REA or EVO. The array holds argc + 4 pointers for execv.",
+      "invariant": "The count is (size_t)argc + 4 with argc bounded by the kernel argument limit, calloc checks count*size overflow itself, and the NULL result is checked on the next line before use.",
+      "evidence": [
+        "scripts/fixtures/binary-layout-limited-python.c:25-31",
+        "scripts/verify-binary-layout.mjs"
+      ],
+      "owner": "dlworrell",
+      "reviewer": "claude-code (agent review at ingestion; owner confirmation pending)",
+      "reviewed_at": "2026-11-07",
+      "reassess_after": "2027-05-07",
+      "resolution_commit": null
+    },
+    {
+      "finding_id": "aes-sec-001:1c1076627ef447f30150de2fc60019328cf5f892d6c2fdda5c71509b203cf03c",
+      "source_fingerprint": "sha256:02124031414f0b36ecef7e64d1fef740a5eb8f7ad1d213de9e832f4f9efc48e2",
+      "path": "scripts/fixtures/binary-layout-limited-python.c",
+      "line": 38,
+      "symbol": "free",
+      "classification": "approved-invariant",
+      "rationale": "Test fixture: compiled only as an input for REA's analysis verification, never shipped or linked into REA or EVO. Releases the argument array after fork.",
+      "invariant": "Freed exactly once in the parent after fork; the child either replaces its image with execv or exits with _exit, and the parent does not touch the array again.",
+      "evidence": [
+        "scripts/fixtures/binary-layout-limited-python.c:25-38",
+        "scripts/verify-binary-layout.mjs"
+      ],
+      "owner": "dlworrell",
+      "reviewer": "claude-code (agent review at ingestion; owner confirmation pending)",
+      "reviewed_at": "2026-11-07",
+      "reassess_after": "2027-05-07",
+      "resolution_commit": null
+    },
+    {
+      "finding_id": "aes-sec-001:657cd9d73c56fa32304b985dbd53bb5afacf1e93c001f914cf73f2f2629b72a9",
+      "source_fingerprint": "sha256:3f0fc250cbb43bf41df01ad4af8e144ea411aee7cf40a855023385e546c681da",
+      "path": "scripts/fixtures/binary-layout.c",
+      "line": 11,
+      "symbol": "snprintf",
+      "classification": "approved-invariant",
+      "rationale": "Test fixture: compiled only as an input for REA's analysis verification, never shipped or linked into REA or EVO. Gives the binary a stack buffer and data references for layout analysis.",
+      "invariant": "The write is bounded by sizeof(buffer) with a literal \"%s\" format; truncation of a longer argument is intended and harmless.",
+      "evidence": [
+        "scripts/fixtures/binary-layout.c:9-13",
+        "scripts/verify-binary-layout.mjs"
+      ],
+      "owner": "dlworrell",
+      "reviewer": "claude-code (agent review at ingestion; owner confirmation pending)",
+      "reviewed_at": "2026-11-07",
+      "reassess_after": "2027-05-07",
+      "resolution_commit": null
+    },
+    {
+      "finding_id": "aes-sec-001:b72f1c3a9fc517db1c5d11dc894717a6238a7fbb475baca3f75a8abbadc90587",
+      "source_fingerprint": "sha256:96ab71aa870af00fb5640e2bf3ba3df1fec18de1cc5053c5732bd0e44601ad19",
+      "path": "tests/conformance/ghidra/no-return.c",
+      "line": 12,
+      "symbol": "malloc",
+      "classification": "approved-invariant",
+      "rationale": "Test fixture: compiled only as an input for REA's analysis verification, never shipped or linked into REA or EVO. Thin wrappers whose call sites Ghidra must not mark as no-return.",
+      "invariant": "The wrapper returns malloc's result unchanged to its caller; the fixture is analysed statically by Ghidra and never executed, so the unchecked result is never dereferenced.",
+      "evidence": [
+        "tests/conformance/ghidra/no-return.c:11-20",
+        "scripts/verify-real-ghidra-noreturn.mjs"
+      ],
+      "owner": "dlworrell",
+      "reviewer": "claude-code (agent review at ingestion; owner confirmation pending)",
+      "reviewed_at": "2026-11-07",
+      "reassess_after": "2027-05-07",
+      "resolution_commit": null
+    },
+    {
+      "finding_id": "aes-sec-001:7991bd8ab4b591ddece392df697d52f802a2746c5ab62267b2f022fe2c787f07",
+      "source_fingerprint": "sha256:96ab71aa870af00fb5640e2bf3ba3df1fec18de1cc5053c5732bd0e44601ad19",
+      "path": "tests/conformance/ghidra/no-return.c",
+      "line": 17,
+      "symbol": "malloc",
+      "classification": "approved-invariant",
+      "rationale": "Test fixture: compiled only as an input for REA's analysis verification, never shipped or linked into REA or EVO. Thin wrappers whose call sites Ghidra must not mark as no-return.",
+      "invariant": "The wrapper returns malloc's result unchanged to its caller; the fixture is analysed statically by Ghidra and never executed, so the unchecked result is never dereferenced.",
+      "evidence": [
+        "tests/conformance/ghidra/no-return.c:11-20",
+        "scripts/verify-real-ghidra-noreturn.mjs"
+      ],
+      "owner": "dlworrell",
+      "reviewer": "claude-code (agent review at ingestion; owner confirmation pending)",
+      "reviewed_at": "2026-11-07",
+      "reassess_after": "2027-05-07",
+      "resolution_commit": null
+    },
+    {
+      "finding_id": "aes-sec-001:a021c5e4c6ece46b67a81136226647bc4e70d238c535dacb87c58c4f987e4c31",
+      "source_fingerprint": "sha256:fd57132e0fb180892b0b276188689f800508cfea4d92cce737e787e5ac37be09",
+      "path": "tests/conformance/ghidra/no-return.c",
+      "line": 37,
+      "symbol": "memcpy",
+      "classification": "approved-invariant",
+      "rationale": "Test fixture: compiled only as an input for REA's analysis verification, never shipped or linked into REA or EVO. Pass-through wrapper analysed for call-return behaviour.",
+      "invariant": "The size and buffers come only from the wrapper's caller and are passed through unchanged; the fixture is analysed statically and never executed.",
+      "evidence": [
+        "tests/conformance/ghidra/no-return.c:36-40",
+        "scripts/verify-real-ghidra-noreturn.mjs"
+      ],
+      "owner": "dlworrell",
+      "reviewer": "claude-code (agent review at ingestion; owner confirmation pending)",
+      "reviewed_at": "2026-11-07",
+      "reassess_after": "2027-05-07",
+      "resolution_commit": null
+    },
+    {
+      "finding_id": "aes-sec-001:d9d12d01e290a22e6025f111411075efccb573a393d78d3ffbdfb11525d68eab",
+      "source_fingerprint": "sha256:b19ba819480b9dd891be8b028f493efe66c5cc5a8f574e032cb2a1fb68c30c36",
+      "path": "tests/conformance/ghidra/no-return.c",
+      "line": 42,
+      "symbol": "memset",
+      "classification": "approved-invariant",
+      "rationale": "Test fixture: compiled only as an input for REA's analysis verification, never shipped or linked into REA or EVO. Pass-through wrapper analysed for call-return behaviour.",
+      "invariant": "The size and buffer come only from the wrapper's caller and are passed through unchanged; the fixture is analysed statically and never executed.",
+      "evidence": [
+        "tests/conformance/ghidra/no-return.c:41-45",
+        "scripts/verify-real-ghidra-noreturn.mjs"
+      ],
+      "owner": "dlworrell",
+      "reviewer": "claude-code (agent review at ingestion; owner confirmation pending)",
+      "reviewed_at": "2026-11-07",
+      "reassess_after": "2027-05-07",
+      "resolution_commit": null
+    },
+    {
+      "finding_id": "aes-sec-001:fd92f50ca1e75eaadd2515c08b934d28231fb18e93fe884ef60fabfb9d5cc03d",
+      "source_fingerprint": "sha256:55c8bee85f576d558426a5e4fd4e30e827180433f5e21b7f156c47822dee2818",
+      "path": "tests/conformance/native/calls.m",
+      "line": 22,
+      "symbol": "memset",
+      "classification": "approved-invariant",
+      "rationale": "Test fixture: compiled only as an input for REA's analysis verification, never shipped or linked into REA or EVO. Fills a write buffer for native-call tracing.",
+      "invariant": "memset fills a fixed local array with exactly sizeof(chunk) bytes; it is not used as secret erasure.",
+      "evidence": [
+        "tests/conformance/native/calls.m:20-30",
+        "scripts/verify-native-calls.mjs"
+      ],
+      "owner": "dlworrell",
+      "reviewer": "claude-code (agent review at ingestion; owner confirmation pending)",
+      "reviewed_at": "2026-11-07",
+      "reassess_after": "2027-05-07",
+      "resolution_commit": null
+    }
+  ]
+}

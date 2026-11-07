@@ -1,0 +1,62 @@
+{
+  "schema": "evo.rea-upstream.v1",
+  "repository": "https://github.com/morluto/rea",
+  "commit": "99db80a13e369885e7de99417475c25380446081",
+  "commit_date": "2026-11-07T11:52:39+08:00",
+  "retrieved_at": "2026-11-07T04:15:37+00:00",
+  "tree_sha256": "8e0d070b0e77958118c808729e437ef2721f0bc6831f8b0ada0142dde2c1bd69",
+  "file_count": 7519,
+  "license_files": [
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    "licenses/Apache-2.0.txt",
+    "licenses/GCC-Runtime-Library-Exception-3.1.txt",
+    "licenses/GPL-3.0.txt",
+    "licenses/LGPL-2.0.txt",
+    "licenses/MIT-template.txt",
+    "licenses/MinGW-w64-runtime.txt",
+    "licenses/Node-22.19.0-LICENSE.txt",
+    "licenses/README.md",
+    "licenses/cfworker-MIT.txt",
+    "licenses/dotnet-runtime-MIT.txt",
+    "licenses/frida-17.23.2-COPYING.txt",
+    "licenses/ghidra-12.1.4-DISCLAIMER.txt",
+    "licenses/ghidra-12.1.4-LICENSE.txt",
+    "licenses/ghidra-12.1.4-NOTICE.txt",
+    "licenses/microsoft-uf2-MIT.txt",
+    "licenses/nativeaot-parser-MIT.txt",
+    "licenses/npm-dependencies.txt",
+    "licenses/npm-runtime-notices.txt",
+    "licenses/pefile-2024.8.26-LICENSE.txt",
+    "licenses/protobuf-es-v2.16.0-LICENSE.txt",
+    "licenses/upstream-sources.json",
+    "licenses/xterm-MIT.txt"
+  ],
+  "submodules_not_ingested": [
+    {
+      "path": "third_party/binwalk",
+      "commit": "4fdab3d464d97b68e0af9088df3f9e2e1545b21c",
+      "url": "https://github.com/ReFirmLabs/binwalk.git"
+    },
+    {
+      "path": "third_party/ghidra-nativeaot",
+      "commit": "effeb734fc570c32650f88b159608979dc7b423e",
+      "url": "https://github.com/Washi1337/ghidra-nativeaot.git"
+    },
+    {
+      "path": "third_party/jadx-headless-mcp",
+      "commit": "5844800a486d2248fa949b74c9896285f5b54de2",
+      "url": "https://github.com/1013503897/jadx-headless-mcp.git"
+    },
+    {
+      "path": "third_party/unblob",
+      "commit": "1fcc7a0a584a70a96c31f5a276c20944d199a089",
+      "url": "https://github.com/onekey-sec/unblob.git"
+    },
+    {
+      "path": "third_party/wakaru",
+      "commit": "8219bf5016a063d7fb215101a8c45d5959ec733f",
+      "url": "https://github.com/pionxzh/wakaru.git"
+    }
+  ]
+}
