@@ -2,12 +2,12 @@
 
 ## EVO/REA fused build runner and encrypted source vault (ADR-0048, accepted)
 
-`evo_rea_build.py` builds the fused product into one destination. EVO is built from this checkout with its documented CMake build. REA is built in a separate checkout pinned to `9e22da8`, and its files are never changed.
+`evo_rea_build.py` builds the fused product into one destination. EVO is built from this checkout with its documented CMake build. REA is built from EVO's own `rea/` scope (ADR-0046 Amendment 1), recorded by `rea/UPSTREAM.json`; the build never changes REA's files. `--rea DIR` still accepts a separate REA git checkout, checked against `--pin` (default `9e22da8`).
 
 ```sh
-python3 tools/rea_recovery/evo_rea_build.py discover --rea ../rea --dest /opt/evo-rea
-python3 tools/rea_recovery/evo_rea_build.py build    --rea ../rea --dest /opt/evo-rea            # prints the plan
-python3 tools/rea_recovery/evo_rea_build.py build    --rea ../rea --dest /opt/evo-rea --execute  # EVO cmake build/ctest/install, then REA npm ci/build, doctor
+python3 tools/rea_recovery/evo_rea_build.py discover --dest /opt/evo-rea                      # REA from rea/
+python3 tools/rea_recovery/evo_rea_build.py build    --dest /opt/evo-rea            # prints the plan
+python3 tools/rea_recovery/evo_rea_build.py build    --dest /opt/evo-rea --execute  # EVO cmake build/ctest/install, then REA npm ci/build, doctor
 python3 tools/rea_recovery/evo_rea_build.py ui evo   --dest /opt/evo-rea [--execute] [evo args]
 python3 tools/rea_recovery/evo_rea_build.py ui rea   --dest /opt/evo-rea [--execute] [mcp | <rea CLI args>]
 python3 tools/rea_recovery/evo_rea_build.py pdf      report.md --out report.pdf [--print]
@@ -28,7 +28,7 @@ python3 tools/rea_recovery/evo_rea_build.py vault open   VAULT_DIR --identity ~/
   - the platform;
   - the EVO checkout and version, a C compiler, CMake 3.20 or later, and Bubblewrap (the sandbox `evo analyze` uses);
   - Node.js against REA's `engines` range, and npm;
-  - that the REA checkout is at the pin with a clean tree;
+  - that `rea/UPSTREAM.json` is readable (or, for a separate `--rea` checkout, that it is at the pin with a clean tree);
   - that the destination is writable;
   - the PDF backends (pandoc, headless Chromium) and printers (`lp`, `lpr`);
   - whether a display is available for UI;
@@ -83,3 +83,67 @@ It never runs REA and never changes an artifact. An accepted manifest only match
 2. **Synthetic first record.** No instrument or capture has been chosen, and private captures may not enter public CI. Synthetic fixtures can prove the E1 refusal behaviour now. They are labelled synthetic and may pass only E1 and C2. C2 (negative and unknown cases) is exempt because EVO-004 expects labelled synthetic corruption, truncation and mismatch cases there. They are barred from C1, A1, O1, P1 and H1.
 3. **The evidence store is just a directory.** Locators are paths relative to a store root given at run time. That keeps the validator independent of where originals live (local disk, an access-controlled share), so choosing the real store stays a separate decision.
 4. **Strict, closed format.** Unknown top-level fields are refused so that equipment detail cannot leak into the native bundle or drift unreviewed. Groups whose fields EVO-004 leaves to later stages (`subject`, `interface`) are accepted as objects for now and tightened when C1 is implemented.
+
+## Ingested REA under `rea/` (ADR-0046 Amendment 1)
+
+`rea/` holds REA's working tree from upstream `morluto/rea`, maintained by EVO as
+its own governed scope. `rea_upstream.py` records and checks it:
+
+```sh
+python3 tools/rea_recovery/rea_upstream.py record ../rea-upstream   # after copying a clean upstream tree into rea/
+python3 tools/rea_recovery/rea_upstream.py record ../rea-upstream \
+    --vendored third_party/wakaru=../wakaru                         # also record a vendored submodule
+python3 tools/rea_recovery/rea_upstream.py check                    # rea/ against rea/UPSTREAM.json
+```
+
+- `record` writes `rea/UPSTREAM.json`: repository, commit, commit date, retrieval
+  time, the tree's SHA-256, file count, license files, and the upstream git
+  submodules that are not ingested (with their pinned commits).
+- REA's git submodules are vendored under `rea/third_party/<name>` at the
+  commits REA pins. Each has its own entry under `vendored_submodules` with its
+  own digest. Git LFS files and symbolic links in them are not copied; the record
+  lists them. `rea/third_party/.gitattributes` (EVO-owned) keeps their bytes
+  exact.
+- `check` passes when `rea/` matches the record, or when it differs and
+  `rea/LOCAL-CHANGES.md` records at least one local change. An unrecorded edit
+  fails.
+- The digest leaves out EVO-owned paths: `UPSTREAM.json`, `LOCAL-CHANGES.md`,
+  `ci/` (the scope's automation) and `docs/engineering/` (its AES-SEC-001
+  evidence). `record` refuses an upstream tree with files there.
+- CI: `.github/workflows/rea.yml` runs `rea/ci/check-upstream.sh` and
+  `rea/ci/node-checks.sh` (`npm ci`, `check:ci:fast`, `test:fast`) only when
+  `rea/` changes, on hosted runners with no secrets. The AES-SEC-001 governance
+  workflow scans `rea/` as its own scope and the rest of EVO with `rea/`
+  excluded.
+
+## REA history in Dropbox (ADR-0046 Amendment 1)
+
+`rea_history.py` keeps REA's full upstream git history in `Dropbox:/repo/Rea/`
+as git bundles. The owner runs it on their own machine (decision of
+2026-11-06). It uses the Python standard library and `git`.
+
+```sh
+python3 tools/rea_recovery/rea_history.py            # add any new upstream history
+python3 tools/rea_recovery/rea_history.py --dry-run  # report only, write nothing
+python3 tools/rea_recovery/rea_history.py --verify   # re-hash every bundle
+```
+
+- **Where things go.** Bundles and `MANIFEST.json` go to
+  `~/Dropbox/repo/Rea` (`--dropbox` changes it). A bare mirror of upstream
+  branches and tags is kept in `~/.cache/evo/rea-history.git` (`--cache`). The
+  mirror stays outside Dropbox, because file sync corrupts a live `.git`.
+- **First run.** Writes one full bundle, `rea-full-<date>-<sha>.bundle`, with
+  every upstream branch and tag. The full history is several hundred MB, so the
+  first run takes a while and needs that much free space twice: once for the
+  mirror and once for the bundle.
+- **Later runs.** Write `rea-incr-<date>-<from>-<to>.bundle` with only the new
+  history. If upstream hasn't changed, nothing is written. If a branch only moved
+  to history that is already bundled, the move is recorded in the manifest
+  without a bundle.
+- **Safety.** Each bundle passes `git bundle verify` before it is published.
+  Files are written under a `.partial` name and renamed into place, so Dropbox
+  never syncs half a file. An existing bundle is never overwritten. The manifest
+  records each bundle's SHA-256, size, refs and prerequisites.
+- **Restoring.** `git clone rea-full-….bundle rea`, then for each incremental
+  bundle in manifest order:
+  `git -C rea fetch ../rea-incr-….bundle 'refs/heads/*:refs/remotes/bundle/*'`.

@@ -1,0 +1,172 @@
+mod common;
+
+use common::{assert_eq_normalized, render_rule};
+use wakaru_core::rules::FlipComparisons;
+
+fn apply(input: &str) -> String {
+    render_rule(input, FlipComparisons::new)
+}
+
+#[test]
+fn flips_supported_literal_on_left() {
+    // Reused subset from packages/unminify/src/transformations/__tests__/un-flip-comparisons.spec.ts
+    let input = r#"
+void 0 === foo;
+undefined === foo;
+null !== foo;
+1 == foo;
+true != foo;
+"str" == foo;
+`test` == foo;
+NaN == foo;
+Infinity == foo;
+-Infinity == foo;
+
+1 < bar;
+1 > bar;
+1 <= bar;
+1 >= bar;
+"#;
+    let expected = r#"
+    foo === void 0;
+foo === undefined;
+foo !== null;
+foo == 1;
+foo != true;
+foo == "str";
+foo == `test`;
+foo == NaN;
+foo == Infinity;
+foo == -Infinity;
+
+bar > 1;
+bar < 1;
+bar >= 1;
+bar <= 1;
+"#;
+
+    let output = apply(input);
+    assert_eq_normalized(&output, expected);
+}
+
+#[test]
+fn flips_comparison_for_expression_right_hand_side() {
+    // Reused from packages/unminify/src/transformations/__tests__/un-flip-comparisons.spec.ts
+    let input = r#"
+1 == obj.props;
+1 == obj.props[0];
+1 == method();
+"#;
+    let expected = r#"
+obj.props == 1;
+obj.props[0] == 1;
+method() == 1;
+"#;
+
+    let output = apply(input);
+    assert_eq_normalized(&output, expected);
+}
+
+#[test]
+fn does_not_flip_when_left_is_not_supported_literal_like() {
+    // Reused subset from packages/unminify/src/transformations/__tests__/un-flip-comparisons.spec.ts
+    let input = r#"
+foo === undefined;
+foo !== null;
+foo == 1;
+({}) == foo;
+`test${1}` == foo;
+bar > 1;
+bar < 1.2;
+"#;
+
+    let output = apply(input);
+    assert_eq_normalized(&output, input);
+}
+
+#[test]
+fn flips_bang_zero_and_bang_one() {
+    let input = r#"
+!0 === foo;
+!1 === foo;
+!0 !== bar;
+!1 == baz;
+"#;
+    let expected = r#"
+foo === !0;
+foo === !1;
+bar !== !0;
+baz == !1;
+"#;
+    let output = apply(input);
+    assert_eq_normalized(&output, expected);
+}
+
+#[test]
+fn does_not_flip_shadowed_global_identifiers() {
+    let input = r#"
+function test(undefined, NaN, Infinity) {
+    return [
+        undefined === (undefined = 1),
+        NaN === (NaN = 1),
+        Infinity === (Infinity = 1),
+        -Infinity === value
+    ];
+}
+"#;
+
+    let output = apply(input);
+    assert_eq_normalized(&output, input);
+}
+
+#[test]
+fn flips_negative_numeric_literals() {
+    let input = r#"
+-1 !== s.indexOf(t);
+-1 < i;
+-2n === big;
+-x === y;
+"#;
+    let expected = r#"
+s.indexOf(t) !== -1;
+i > -1;
+big === -2n;
+-x === y;
+"#;
+
+    let output = apply(input);
+    assert_eq_normalized(&output, expected);
+}
+
+#[test]
+fn keeps_global_constant_comparisons_in_module_with_direct_eval() {
+    // A literal still flips; `undefined`, `NaN`, and `Infinity` reads keep
+    // their order.
+    let input = r#"
+eval(s);
+if (NaN < x()) g();
+if (undefined === y) g();
+if (1 === undefined) g();
+if (-Infinity > z) g();
+if (null == w) g();
+"#;
+    let expected = r#"
+eval(s);
+if (NaN < x()) g();
+if (undefined === y) g();
+if (1 === undefined) g();
+if (-Infinity > z) g();
+if (w == null) g();
+"#;
+    assert_eq_normalized(&apply(input), expected);
+}
+
+#[test]
+fn keeps_global_constant_comparisons_in_module_with_with_statement() {
+    let input = r#"
+with (o) {
+    if (NaN < x()) g();
+}
+"#;
+    assert_eq_normalized(&apply(input), input);
+}

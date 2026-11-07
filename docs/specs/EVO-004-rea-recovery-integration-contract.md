@@ -1,7 +1,7 @@
 # EVO-004: REA Recovery Integration Contract
 
 Status: Accepted 2026-10-31 (owner decision); documentation contract, no implementation acceptance
-Version: 0.1
+Version: 0.2 (2026-11-07: REA ingested under `rea/`, per ADR-0046 Amendment 1; 0.1 accepted 2026-10-31)
 Owner: EVO
 Decision: [ADR-0046](../adr/ADR-0046-rea-assisted-recovery-and-source-admission.md)
 Tracking: [EVO #132](https://github.com/dlworrell/evo/issues/132)
@@ -38,6 +38,13 @@ and issue checkboxes do not establish runtime acceptance.
 
 ## 2. Placement and supported boundary
 
+REA itself is no longer an external reference. Under ADR-0046 Amendment 1 its
+working tree is ingested into EVO as the governed scope `rea/`, from upstream
+`morluto/rea` at the commit recorded in `rea/UPSTREAM.json` (first ingestion:
+`99db80a13e369885e7de99417475c25380446081`, EVO #189), with its git submodules
+vendored under `rea/third_party/`. EVO maintains it: local fixes are recorded in
+`rea/LOCAL-CHANGES.md`, and upstream syncs are owner-approved pull requests.
+
 The companion belongs to EVO's repository-level governance remainder. Planned
 ordinary module locations are `tools/rea_recovery/`, `tests/rea_recovery/`,
 `tests/fixtures/rea-recovery/` and `docs/engineering/rea-recovery/`, as described
@@ -45,8 +52,13 @@ in ADR-0046. This contract itself creates none of those runtime/test modules and
 formal top-level governed scope. Keep provider-specific runtime behavior out
 of `catalyst_evo` and its public C17 ABI.
 
-Use the public CLI/MCP/evidence boundary of the REA fork at full commit
-`9e22da845bf8b447f81539e0ba57d5deb59e9103`. Runtime packaging and supported
+Use the public CLI/MCP/evidence boundary of the REA tree in `rea/`, identified
+by the upstream commit and tree digest in `rea/UPSTREAM.json`. The interface and
+evidence-format analysis in this contract was done at the REA fork commit
+`9e22da845bf8b447f81539e0ba57d5deb59e9103`, and the companion manifest validator
+still defaults to it. Moving the evidence contract to the ingested tree needs the
+same check against `src/domain/evidence.ts` and `evidenceBundle.ts` (open, see
+§2.1 item 6). Runtime packaging and supported
 provider/platform combinations require an implementing PR. A package version,
 an unpinned setup command or a version banner is insufficient source identity.
 No current REA firmware capability is expanded by this contract.
@@ -93,8 +105,11 @@ requirement.
    plus added/removed/renamed, mode and content changes. Re-evaluate changed
    scanners, policy, dependencies and toolchains even for unchanged file bytes.
 
-This project acceptance requirement changes no external-reference classification
-or AES adoption. TASK-38 retains its existing read-only mining scope. Required
+This requirement applies to every ingestion and upstream sync of `rea/`. The
+full-file baseline of the first ingested commit `99db80a` is still to be
+produced; until then the C admission blockers below stay in force. Ingesting REA
+(ADR-0046 Amendment 1) replaced its external-reference classification; it did not
+change AES adoption, and `rea/` carries its own AES-SEC-001 evidence. TASK-38 retains its existing read-only mining scope. Required
 findings, unsupported analysis and missing dependency contents remain explicit
 admission blockers until their claim-specific dispositions/evidence exist.
 

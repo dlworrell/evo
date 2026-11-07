@@ -238,3 +238,12 @@ Makefile.in
 .libs/
 test-driver
 test-suite.log
+
+# rea/ holds REA's upstream tree, ingested whole (ADR-0046 Amendment 1).
+# EVO's build-output patterns above must not drop REA's tracked sources;
+# REA's own rea/.gitignore still applies inside rea/.
+!/rea/**/lib/
+!/rea/**/Makefile
+!/rea/**/*.pot
+!/rea/**/*.manifest
+!/rea/**/.envrc

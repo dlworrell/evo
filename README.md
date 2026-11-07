@@ -245,6 +245,9 @@ repository.
 - `examples/` — application examples
 - `benchmarks/` — performance and algorithm benchmarks
 - `docs/` — architecture, theory, algorithms, and evidence guidance
+- `rea/` — REA, ingested from upstream `morluto/rea` and maintained in EVO as its
+  own governed scope (MIT; ADR-0046 Amendment 1). See `rea/UPSTREAM.json`,
+  `rea/LOCAL-CHANGES.md` and `rea/ci/`.
 
 The private source-optimizer foundation now includes 0.34.0 immutable project
 ingestion, the 0.35.0 normalized Clang/LLVM analysis and hotspot model, the

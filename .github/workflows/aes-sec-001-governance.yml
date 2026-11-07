@@ -16,5 +16,16 @@ jobs:
   governance:
     uses: dlworrell/AEMS/.github/workflows/aes-sec-001-distributed.yml@main
     with:
+      # The rea/ scope (ADR-0046 Amendment 1) is scanned by its own job below;
+      # the repository-level scan covers the remainder (Catylist ADR-0004 rule 5).
+      exclude_paths: rea
+      include_dangerous_primitives: true
+      strict: true
+
+  rea:
+    uses: dlworrell/AEMS/.github/workflows/aes-sec-001-distributed.yml@main
+    with:
+      scan_root: rea
+      evidence_name: rea
       include_dangerous_primitives: true
       strict: true

@@ -1,0 +1,43 @@
+---
+source: crates/core/tests/webpack4_unpack.rs
+assertion_line: 210
+expression: code
+---
+import "./module-13.js";
+import { ERROR, START, SUCCESS } from "./module-26.js";
+import { FETCH_DATA } from "./module-19.js";
+let r;
+const u = {
+    isLoading: false,
+    data: [],
+    error: ""
+};
+r = {};
+r[FETCH_DATA + START] = function(e) {
+    return {
+        ...e,
+        isLoading: true
+    };
+};
+r[FETCH_DATA + SUCCESS] = function(e, data) {
+    return {
+        ...e,
+        isLoading: false,
+        data
+    };
+};
+r[FETCH_DATA + ERROR] = function(e, error) {
+    return {
+        ...e,
+        isLoading: false,
+        error
+    };
+};
+const l = r;
+export default function(e = u, t) {
+    const n = l[t.type];
+    if (n) {
+        return n(e, t.payload);
+    }
+    return e;
+};

@@ -68,3 +68,26 @@ testing:
   root: tests
 benchmarks:
   root: benchmarks
+
+# Governed project scopes (Catylist ADR-0004). Files outside every scope are the
+# repository-level remainder, scanned with the scopes excluded.
+scopes:
+  - id: rea
+    path: rea/
+    owner: dlworrell
+    class: engineering-application
+    lifecycle: bootstrap
+    origin:
+      ingested_from: https://github.com/morluto/rea
+      record: rea/UPSTREAM.json
+      local_changes: rea/LOCAL-CHANGES.md
+      decision: docs/adr/ADR-0046-rea-assisted-recovery-and-source-admission.md
+    license: MIT (rea/LICENSE); EVO's own files remain Apache-2.0
+    automation: rea/ci/
+    standards:
+      - id: AES-SEC-001
+        applicability: applicable
+        evidence:
+          profile: rea/docs/engineering/SECURE-C-CXX.md
+          waiver_log: rea/docs/engineering/AES-SEC-001-waivers.md
+          review_dispositions: rea/docs/engineering/AES-SEC-001-review-dispositions.json
