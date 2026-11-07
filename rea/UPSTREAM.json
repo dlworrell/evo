@@ -281,8 +281,8 @@
       ],
       "lfs_files_not_ingested": {
         "count": 2648,
-        "reason": "Git LFS objects were not fetched; only pointer files existed. Fetch them with git lfs at the pinned commit.",
-        "top_directories": ["docs/demo.gif", "tests/files", "tests/integration"]
+        "reason": "Deliberately excluded: the vendored tree is plain files, so it holds neither the LFS objects nor their pointer files. To get them, clone https://github.com/onekey-sec/unblob.git at 1fcc7a0a584a70a96c31f5a276c20944d199a089, run git lfs pull, and copy the files under top_paths into rea/third_party/unblob.",
+        "top_paths": ["docs/demo.gif", "tests/files", "tests/integration"]
       }
     },
     {
