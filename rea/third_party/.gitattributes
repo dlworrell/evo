@@ -1,0 +1,5 @@
+# EVO-owned (ADR-0046 Amendment 1): vendored submodule trees keep upstream's
+# exact bytes. rea/.gitattributes normalises text to LF, which would rewrite
+# files such as jadx-headless-mcp/gradlew.bat (CRLF) and break the tree digest
+# recorded in rea/UPSTREAM.json.
+* -text

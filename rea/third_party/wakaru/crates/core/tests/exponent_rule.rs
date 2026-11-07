@@ -1,0 +1,111 @@
+mod common;
+
+use common::{assert_eq_normalized, render_rule};
+use wakaru_core::rules::Exponent;
+
+fn apply(input: &str) -> String {
+    render_rule(input, Exponent::new)
+}
+
+#[test]
+fn math_pow_becomes_exponent() {
+    let input = r#"const x = Math.pow(2, 10);"#;
+    let expected = r#"const x = 2 ** 10;"#;
+    assert_eq_normalized(&apply(input), expected);
+}
+
+#[test]
+fn math_pow_with_variables() {
+    let input = r#"const x = Math.pow(a, b);"#;
+    let expected = r#"const x = a ** b;"#;
+    assert_eq_normalized(&apply(input), expected);
+}
+
+#[test]
+fn math_pow_with_expressions() {
+    let input = r#"const x = Math.pow(a + 1, b * 2);"#;
+    let expected = r#"const x = (a + 1) ** (b * 2);"#;
+    assert_eq_normalized(&apply(input), expected);
+}
+
+#[test]
+fn nested_math_pow() {
+    // ** is right-associative: Math.pow(Math.pow(2,3), 4) = (2**3)**4 which needs parens
+    let input = r#"const x = Math.pow(Math.pow(2, 3), 4);"#;
+    let expected = r#"const x = (2 ** 3) ** 4;"#;
+    assert_eq_normalized(&apply(input), expected);
+}
+
+#[test]
+fn math_pow_one_arg_not_converted() {
+    let input = r#"const x = Math.pow(2);"#;
+    assert_eq_normalized(&apply(input), input);
+}
+
+#[test]
+fn math_pow_three_args_not_converted() {
+    let input = r#"const x = Math.pow(2, 3, 4);"#;
+    assert_eq_normalized(&apply(input), input);
+}
+
+#[test]
+fn math_pow_spread_arg_not_converted() {
+    let input = r#"const x = Math.pow(...args);"#;
+    assert_eq_normalized(&apply(input), input);
+}
+
+#[test]
+fn other_math_methods_not_converted() {
+    let input = r#"const x = Math.sqrt(4);"#;
+    assert_eq_normalized(&apply(input), input);
+}
+
+#[test]
+fn non_math_pow_not_converted() {
+    let input = r#"const x = foo.pow(2, 3);"#;
+    assert_eq_normalized(&apply(input), input);
+}
+
+#[test]
+fn local_math_binding_is_not_converted() {
+    let input = r#"
+function calculate(Math) {
+    return Math.pow(2, 3);
+}
+"#;
+    assert_eq_normalized(&apply(input), input);
+}
+
+#[test]
+fn keeps_math_pow_in_module_with_direct_eval() {
+    let input = r#"
+function f(a, b, s) {
+    eval(s);
+    return Math.pow(a, b);
+}
+"#;
+    assert_eq_normalized(&apply(input), input);
+}
+
+#[test]
+fn keeps_math_pow_in_module_with_with_statement() {
+    let input = r#"
+with (o) {
+    x = Math.pow(a, b);
+}
+"#;
+    assert_eq_normalized(&apply(input), input);
+}
+
+#[test]
+fn converts_math_pow_when_eval_only_reads_require() {
+    let input = r#"
+var crypto = eval("require('crypto')");
+x = Math.pow(a, b);
+"#;
+    let expected = r#"
+var crypto = eval("require('crypto')");
+x = a ** b;
+"#;
+    assert_eq_normalized(&apply(input), expected);
+}

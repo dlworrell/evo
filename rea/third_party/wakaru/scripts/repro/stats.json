@@ -1,0 +1,137 @@
+{
+  "commit": "d723b4f09",
+  "date": "2026-10-07",
+  "aggregate": {
+    "yes": 2830,
+    "total": 2991,
+    "pct": 94.6
+  },
+  "matrices": [
+    {
+      "name": "array-spread-rest",
+      "yes": 289,
+      "no": 22,
+      "error": 0,
+      "info": 0,
+      "total": 311,
+      "pct": 92.9
+    },
+    {
+      "name": "async-await",
+      "yes": 685,
+      "no": 118,
+      "error": 0,
+      "info": 6,
+      "total": 803,
+      "pct": 85.3
+    },
+    {
+      "name": "cjs-export-storage",
+      "yes": 380,
+      "no": 5,
+      "error": 2,
+      "info": 19,
+      "total": 385,
+      "pct": 98.7
+    },
+    {
+      "name": "class-accessor",
+      "yes": 32,
+      "no": 0,
+      "error": 0,
+      "info": 0,
+      "total": 32,
+      "pct": 100
+    },
+    {
+      "name": "closure-compiler",
+      "yes": 15,
+      "no": 0,
+      "error": 0,
+      "info": 0,
+      "total": 15,
+      "pct": 100
+    },
+    {
+      "name": "conditional-switch",
+      "yes": 25,
+      "no": 0,
+      "error": 0,
+      "info": 0,
+      "total": 25,
+      "pct": 100
+    },
+    {
+      "name": "enum",
+      "yes": 93,
+      "no": 0,
+      "error": 0,
+      "info": 0,
+      "total": 93,
+      "pct": 100
+    },
+    {
+      "name": "for-of-iteration",
+      "yes": 92,
+      "no": 0,
+      "error": 0,
+      "info": 0,
+      "total": 92,
+      "pct": 100
+    },
+    {
+      "name": "object-rest-spread",
+      "yes": 252,
+      "no": 0,
+      "error": 0,
+      "info": 0,
+      "total": 252,
+      "pct": 100
+    },
+    {
+      "name": "optional-nullish",
+      "yes": 464,
+      "no": 12,
+      "error": 0,
+      "info": 0,
+      "total": 476,
+      "pct": 97.5
+    },
+    {
+      "name": "parameters",
+      "yes": 128,
+      "no": 0,
+      "error": 0,
+      "info": 0,
+      "total": 128,
+      "pct": 100
+    },
+    {
+      "name": "swc-minifier",
+      "yes": 32,
+      "no": 4,
+      "error": 0,
+      "info": 9,
+      "total": 36,
+      "pct": 88.9
+    },
+    {
+      "name": "template-literal",
+      "yes": 178,
+      "no": 0,
+      "error": 0,
+      "info": 0,
+      "total": 178,
+      "pct": 100
+    },
+    {
+      "name": "tslib-helpers",
+      "yes": 165,
+      "no": 0,
+      "error": 0,
+      "info": 0,
+      "total": 165,
+      "pct": 100
+    }
+  ]
+}

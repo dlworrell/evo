@@ -245,3 +245,5 @@ test-suite.log
 !/rea/**/lib/
 !/rea/**/Makefile
 !/rea/**/*.pot
+!/rea/**/*.manifest
+!/rea/**/.envrc
