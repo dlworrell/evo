@@ -650,12 +650,20 @@ const readJournalBytes = async (
   const stat = await lstat(path).catch((cause: unknown) => cause);
   if (!isStat(stat)) return stat;
   if (!stat.isFile()) return new Error("journal is not a regular file");
-  const handle = await open(path, constants.O_RDONLY | NO_FOLLOW).catch(
-    (cause: unknown) => cause,
-  );
+  // Non-blocking, so a FIFO swapped in after lstat cannot stall the open; the
+  // descriptor itself is then checked (CodeQL js/file-system-race).
+  const handle = await open(
+    path,
+    constants.O_RDONLY | NO_FOLLOW | (constants.O_NONBLOCK ?? 0),
+  ).catch((cause: unknown) => cause);
   if (!isFileHandle(handle)) return handle;
   const close = resources.ownFile(handle, path);
-  const bytes = await handle.readFile().catch((cause: unknown) => cause);
+  const opened = await handle.stat().catch((cause: unknown) => cause);
+  const bytes = !isStat(opened)
+    ? opened
+    : !opened.isFile()
+      ? new Error("journal is not a regular file")
+      : await handle.readFile().catch((cause: unknown) => cause);
   return (await close())
     ? bytes
     : new Error("decompile journal read handle could not be closed");
