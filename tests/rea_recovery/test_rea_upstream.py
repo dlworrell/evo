@@ -9,7 +9,9 @@ U6 record refuses a tree that does not match the checkout, and a dirty checkout;
 U7 a malformed UPSTREAM.json is refused (exit 2);
 U8 EVO-owned ci/ and docs/engineering/ are outside the digest, and record refuses upstream files there;
 U9 a vendored submodule is recorded with its own digest, LFS files left out, and edits inside it fail check;
-   a checkout at the wrong commit is refused.
+   a checkout at the wrong commit is refused;
+U10 UPSTREAM.json is written the way REA's oxfmt formats JSON (scalar arrays inline when the line fits
+    in 80 columns, counting a trailing comma), and still parses to the same data.
 """
 from __future__ import annotations
 
@@ -213,6 +215,18 @@ class ReaUpstreamTests(unittest.TestCase):
            "--allow-empty", "-m", "newer")
         with self.assertRaisesRegex(ru.UpstreamError, "pins third_party/dep"):
             ru.record(self.up, "https://example.invalid/rea", self.rea, NOW, {"third_party/dep": sub})
+
+    def test_u10_oxfmt_compatible_json(self) -> None:
+        exact = "x" * 69  # '  "k": ["' + 69 + '"]' is 80 columns as the last key, 81 with a comma
+        data = {"a": ["LICENSE", "NOTICE"], "k": [exact]}
+        text = ru.dumps(data)
+        self.assertEqual(text, '{\n  "a": ["LICENSE", "NOTICE"],\n  "k": ["' + exact + '"]\n}')
+        self.assertEqual(max(len(line) for line in text.splitlines()), 80)
+        wrapped = ru.dumps({"k": [exact], "z": 1})
+        self.assertIn('  "k": [\n    "' + exact + '"\n  ],', wrapped)
+        nested = {"list": [{"path": "p", "files": []}], "empty": {}}
+        self.assertEqual(json.loads(ru.dumps(nested)), nested)
+        self.assertIn('"files": []', ru.dumps(nested))
 
 
 if __name__ == "__main__":

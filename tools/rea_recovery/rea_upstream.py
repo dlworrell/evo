@@ -200,8 +200,36 @@ def record(checkout: Path, repository: str, rea: Path, now: dt.datetime,
         "submodules_not_ingested": sorted((s for s in submodules if s["path"] not in vendored),
                                           key=lambda s: s["path"]),
     }
-    (rea / "UPSTREAM.json").write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+    (rea / "UPSTREAM.json").write_text(dumps(data) + "\n", encoding="utf-8")
     return data
+
+
+def dumps(value, indent: int = 0, used: int = 0) -> str:
+    """JSON the way REA's formatter (oxfmt, printWidth 80) writes it, so rea/UPSTREAM.json
+    passes REA's format:check: objects one key per line, scalar arrays on one line when
+    the whole line fits in 80 columns. ``used`` counts the columns already on the line,
+    including a trailing comma."""
+    pad = " " * indent
+    if isinstance(value, dict):
+        if not value:
+            return "{}"
+        items = []
+        for i, (key, item) in enumerate(value.items()):
+            lead = f"{pad}  {json.dumps(key)}: "
+            comma = 1 if i < len(value) - 1 else 0
+            items.append(lead + dumps(item, indent + 2, len(lead) + comma))
+        return "{\n" + ",\n".join(items) + f"\n{pad}}}"
+    if isinstance(value, list):
+        if not value:
+            return "[]"
+        if all(not isinstance(v, (dict, list)) for v in value):
+            inline = "[" + ", ".join(json.dumps(v) for v in value) + "]"
+            if used + len(inline) <= 80:
+                return inline
+        items = [f"{pad}  " + dumps(v, indent + 2, indent + 2 + (1 if i < len(value) - 1 else 0))
+                 for i, v in enumerate(value)]
+        return "[\n" + ",\n".join(items) + f"\n{pad}]"
+    return json.dumps(value)
 
 
 def load(rea: Path) -> dict:

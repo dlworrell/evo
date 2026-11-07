@@ -39,9 +39,7 @@
       "commit": "4fdab3d464d97b68e0af9088df3f9e2e1545b21c",
       "tree_sha256": "08b26309f8fd869d96f8df147a8a70798be3f418f9633133df5fa41626fb5f22",
       "file_count": 210,
-      "license_files": [
-        "LICENSE"
-      ]
+      "license_files": ["LICENSE"]
     },
     {
       "path": "third_party/ghidra-nativeaot",
@@ -49,9 +47,7 @@
       "commit": "effeb734fc570c32650f88b159608979dc7b423e",
       "tree_sha256": "8da804cf3ca3f6f253a1cad3c34e50f9631d8126118fd08552d0457950a7fe43",
       "file_count": 64,
-      "license_files": [
-        "LICENSE.md"
-      ]
+      "license_files": ["LICENSE.md"]
     },
     {
       "path": "third_party/jadx-headless-mcp",
@@ -59,9 +55,7 @@
       "commit": "5844800a486d2248fa949b74c9896285f5b54de2",
       "tree_sha256": "986aeaafb6d1b0d40fdae65a769daab00dd8da342e887c2d2ea94ff37597ea54",
       "file_count": 50,
-      "license_files": [
-        "LICENSE"
-      ]
+      "license_files": ["LICENSE"]
     },
     {
       "path": "third_party/unblob",
@@ -69,10 +63,7 @@
       "commit": "1fcc7a0a584a70a96c31f5a276c20944d199a089",
       "tree_sha256": "311d53959867102504569cf26f1f41e48c3df01ebcda2cd76d4327959c7329e7",
       "file_count": 225,
-      "license_files": [
-        "LICENSE",
-        "NOTICE"
-      ],
+      "license_files": ["LICENSE", "NOTICE"],
       "symlinks_not_ingested": [
         "tests/integration/archive/cpio/cpio_binary/__output__/duplicate_entries.cpio_extract/colors/purple",
         "tests/integration/archive/sevenzip/__output__/multi-sevenzip-dangling-symlinks.tar_extract/dangling-symlink.7z.001",
@@ -291,11 +282,7 @@
       "lfs_files_not_ingested": {
         "count": 2648,
         "reason": "Git LFS objects were not fetched; only pointer files existed. Fetch them with git lfs at the pinned commit.",
-        "top_directories": [
-          "docs/demo.gif",
-          "tests/files",
-          "tests/integration"
-        ]
+        "top_directories": ["docs/demo.gif", "tests/files", "tests/integration"]
       }
     },
     {
@@ -304,12 +291,8 @@
       "commit": "8219bf5016a063d7fb215101a8c45d5959ec733f",
       "tree_sha256": "bd5a5d1b83a1fa70f9c84499b97c29910bf9f446be0659109f6725880a675e61",
       "file_count": 1503,
-      "license_files": [
-        "LICENSE"
-      ],
-      "symlinks_not_ingested": [
-        "CLAUDE.md"
-      ]
+      "license_files": ["LICENSE"],
+      "symlinks_not_ingested": ["CLAUDE.md"]
     }
   ],
   "submodules_not_ingested": []
