@@ -91,12 +91,19 @@ its own governed scope. `rea_upstream.py` records and checks it:
 
 ```sh
 python3 tools/rea_recovery/rea_upstream.py record ../rea-upstream   # after copying a clean upstream tree into rea/
+python3 tools/rea_recovery/rea_upstream.py record ../rea-upstream \
+    --vendored third_party/wakaru=../wakaru                         # also record a vendored submodule
 python3 tools/rea_recovery/rea_upstream.py check                    # rea/ against rea/UPSTREAM.json
 ```
 
 - `record` writes `rea/UPSTREAM.json`: repository, commit, commit date, retrieval
   time, the tree's SHA-256, file count, license files, and the upstream git
   submodules that are not ingested (with their pinned commits).
+- REA's git submodules are vendored under `rea/third_party/<name>` at the
+  commits REA pins. Each has its own entry under `vendored_submodules` with its
+  own digest. Git LFS files and symbolic links in them are not copied; the record
+  lists them. `rea/third_party/.gitattributes` (EVO-owned) keeps their bytes
+  exact.
 - `check` passes when `rea/` matches the record, or when it differs and
   `rea/LOCAL-CHANGES.md` records at least one local change. An unrecorded edit
   fails.
