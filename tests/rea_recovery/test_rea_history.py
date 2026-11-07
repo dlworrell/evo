@@ -13,11 +13,13 @@ from __future__ import annotations
 
 import datetime as dt
 import json
+import os
 import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "rea_recovery"))
 import rea_history  # noqa: E402
@@ -32,6 +34,15 @@ def sh(cwd: Path, *args: str) -> str:
 
 class ReaHistoryTests(unittest.TestCase):
     def setUp(self) -> None:
+        # No background gc or maintenance from any git these tests start (the tool's
+        # fetch included): a detached process still writing objects/ made the
+        # temporary folder's cleanup fail with "Directory not empty" (EVO #221 CI).
+        self.enterContext(mock.patch.dict(os.environ, {
+            "GIT_CONFIG_COUNT": "3",
+            "GIT_CONFIG_KEY_0": "gc.auto", "GIT_CONFIG_VALUE_0": "0",
+            "GIT_CONFIG_KEY_1": "gc.autoDetach", "GIT_CONFIG_VALUE_1": "false",
+            "GIT_CONFIG_KEY_2": "maintenance.auto", "GIT_CONFIG_VALUE_2": "false",
+        }))
         self.root = Path(self.enterContext(tempfile.TemporaryDirectory()))
         self.upstream = self.root / "upstream"
         self.upstream.mkdir()
